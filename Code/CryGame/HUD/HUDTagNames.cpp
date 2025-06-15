@@ -26,6 +26,7 @@ History:
 #include "CryCommon/CryAction/IUIDraw.h"
 
 #include "Library/StringTools.h"
+#include "CryMP/Client/HealthManager.h"
 
 //-----------------------------------------------------------------------------------------------------
 
@@ -33,6 +34,14 @@ History:
 #define COLOR_ENEMY		ColorF(0.9f,0.1f,0.1f)
 #define COLOR_FRIEND	ColorF(0.0353f,0.6235f,0.9137f)
 #define COLOR_TAGGED	ColorF(0.6f, 0.8f, 0.196078f)
+
+#define COLOR_ARMOR     ColorF(0.175f, 0.425f, 0.5f, 1.0f)
+#define COLOR_HEALTH    ColorF(0.35f, 0.475f, 0.2f, 1.0f)
+#define COLOR_VEHICLE_HEALTH    ColorF(1.0f, 1.0f, 0.0f, 1.0f)
+
+#define MAX_HEALTH_BARS 10
+
+static wchar_t healthBars[MAX_HEALTH_BARS + 1][MAX_HEALTH_BARS + 1];
 
 //-----------------------------------------------------------------------------------------------------
 
@@ -66,6 +75,16 @@ CHUDTagNames::CHUDTagNames(CHUD *pHUD)
 		{
 			m_rankNames.emplace_back(rankName.c_str(), rankName.length());
 		}
+	}
+
+	for (int i = 0; i <= MAX_HEALTH_BARS; i++) {
+		float progress = i / (float)MAX_HEALTH_BARS;
+		wchar_t* row = healthBars[i];
+		for (int j = 0; j < MAX_HEALTH_BARS; j++) {
+			float now = j / (float)MAX_HEALTH_BARS;
+			row[j] = now < progress ? (wchar_t)0x2588 : (wchar_t)0x2581;
+		}
+		row[MAX_HEALTH_BARS] = 0;
 	}
 }
 
@@ -234,16 +253,20 @@ void CHUDTagNames::DrawTagName(IActor* pActor, bool bLocalVehicle)
 	CGameRules* pGameRules = m_pHUD->m_pGameRules;
 	const int iClientTeam = pGameRules->GetTeam(pClientActor->GetEntityId());
 
+	bool friendly = false;
+
 	if (0 == iClientTeam)
 	{
 		if (IsFriendlyToClient(entityId))
 		{
 			tagColor = COLOR_FRIEND;
+			friendly = true;
 		}
 	}
 	else if (pGameRules->GetTeam(entityId) == iClientTeam)
 	{
 		tagColor = COLOR_FRIEND;
+		friendly = true;
 	}
 
 	if (pActor->GetHealth() <= 0)
@@ -272,18 +295,7 @@ void CHUDTagNames::DrawTagName(IActor* pActor, bool bLocalVehicle)
 	}
 
 	NameTag& nameTag = m_nameTags.emplace_back();
-
-	if (const std::wstring& rank = GetPlayerRank(entityId); !rank.empty())
-	{
-		nameTag.text += rank;
-		nameTag.text += L' ';
-	}
-
-	StringTools::AppendTo(nameTag.text, pEntity->GetName());
-
-	nameTag.pos = vWorldPos;
-	nameTag.drawOnTop = bDrawOnTop;
-	nameTag.color = tagColor;
+	FillNameTag(nameTag, entityId, pActor, pEntity, bDrawOnTop, vWorldPos, tagColor, friendly);
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -370,16 +382,19 @@ void CHUDTagNames::DrawTagName(IVehicle* pVehicle)
 		if (!pEntity)
 			continue;
 
+		bool friendly = false;
 		if (0 == iClientTeam)
 		{
 			if (uiEntityId && IsFriendlyToClient(uiEntityId))
 			{
 				rgbTagName = COLOR_FRIEND;
+				friendly = true;
 			}
 		}
 		else if (uiEntityId && pGameRules->GetTeam(uiEntityId) == iClientTeam)
 		{
 			rgbTagName = COLOR_FRIEND;
+			friendly = true;
 		}
 
 		if (pActor->GetHealth() <= 0)
@@ -395,18 +410,7 @@ void CHUDTagNames::DrawTagName(IVehicle* pVehicle)
 		}
 
 		NameTag& nameTag = m_nameTags.emplace_back();
-
-		if (const std::wstring& rank = GetPlayerRank(uiEntityId); !rank.empty())
-		{
-			nameTag.text += rank;
-			nameTag.text += L' ';
-		}
-
-		StringTools::AppendTo(nameTag.text, pEntity->GetName());
-
-		nameTag.pos = vWorldPos;
-		nameTag.drawOnTop = bDrawOnTop;
-		nameTag.color = rgbTagName;
+		FillNameTag(nameTag, uiEntityId, pActor, pEntity, bDrawOnTop, vWorldPos, rgbTagName, friendly);
 	}
 }
 
@@ -631,16 +635,116 @@ void CHUDTagNames::DrawTagNames()
 			vScreenSpace.z = 1.0f;
 		}
 
-		m_pMPNamesFont->SetEffect("simple");
-		m_pMPNamesFont->SetColor(ColorF(0, 0, 0, fAlpha));
-		m_pMPNamesFont->DrawStringW(fTextX + 1.0f, fTextY + 1.0f, vScreenSpace.z, text);
+		if (nameTag.vehicle) {
+			if (nameTag.healthBars) {
+				DrawProgressBars(m_pMPNamesFont, vScreenSpace.x, vScreenSpace.y, 3.0f, vScreenSpace.z, nameTag.health, COLOR_VEHICLE_HEALTH);
+			}
+		} else {
+			m_pMPNamesFont->SetEffect("simple");
+			m_pMPNamesFont->SetColor(ColorF(0, 0, 0, fAlpha));
+			m_pMPNamesFont->DrawStringW(fTextX + 1.0f, fTextY + 1.0f, vScreenSpace.z, text);
 
-		m_pMPNamesFont->SetEffect("default");
-		m_pMPNamesFont->SetColor(ColorF(nameTag.color.r, nameTag.color.g, nameTag.color.b, fAlpha));
-		m_pMPNamesFont->DrawStringW(fTextX, fTextY, vScreenSpace.z, text);
+			m_pMPNamesFont->SetEffect("default");
+			m_pMPNamesFont->SetColor(ColorF(nameTag.color.r, nameTag.color.g, nameTag.color.b, fAlpha));
+			m_pMPNamesFont->DrawStringW(fTextX, fTextY, vScreenSpace.z, text);
+
+			if (nameTag.healthBars) {
+				DrawProgressBars(m_pMPNamesFont, vScreenSpace.x, vScreenSpace.y, 4.0f, vScreenSpace.z, nameTag.armor, COLOR_ARMOR);
+				DrawProgressBars(m_pMPNamesFont, vScreenSpace.x, vScreenSpace.y, 3.0f, vScreenSpace.z, nameTag.health, COLOR_HEALTH);
+			}
+		}
 
 		m_pUIDraw->PostRender();
 	}
+}
+
+void CHUDTagNames::DrawProgressBars(IFFont *pFont, float centerX, float centerY, float marginY, float z, float progress, ColorF color) {
+	int rowIndex = (int)round(progress * MAX_HEALTH_BARS);
+	if (rowIndex > MAX_HEALTH_BARS) rowIndex = MAX_HEALTH_BARS;
+	else if (rowIndex < 0) rowIndex = 0;
+
+	vector2f size = pFont->GetSize();
+	pFont->SetSize(vector2f(size.x, size.y * 0.25));
+
+	wchar_t* row = healthBars[rowIndex];
+	vector2f vDim = pFont->GetTextSizeW(row);
+	float fTextX = centerX - vDim.x * (0.5f);
+	float fTextY = centerY - vDim.y * (marginY * 1.2f + 0.5f);
+	
+	pFont->SetEffect("default");
+	pFont->SetColor(color);
+	pFont->DrawStringW(fTextX, fTextY, z, row);
+
+	pFont->SetSize(size);
+}
+
+void CHUDTagNames::FillNameTag(
+	NameTag& nameTag,
+	EntityId entityId,
+	IActor *iActor,
+	IEntity *pEntity,
+	bool bDrawOnTop,
+	Vec3 vWorldPos,
+	ColorF tagColor,
+	bool friendly
+) {
+	CActor* pActor = static_cast<CActor*>(iActor);
+	if(iActor != NULL && g_pGameCVars->mp_healthBars ) {
+		nameTag.healthBars = /*!friendly &&*/ NeedsHealthBar(pActor);
+		nameTag.vehicle = false;
+		nameTag.armor = pActor->GetArmor() / (float)pActor->GetMaxArmor();
+		if (nameTag.healthBars) {
+			int health = g_pGame->GetHealthManager()->GetHealth(pActor);
+			nameTag.health = health / (float)pActor->GetMaxHealth();
+		} else {
+			nameTag.health = 1.0f;
+		}
+	} else {
+		nameTag.healthBars = false;
+		nameTag.vehicle = false;
+		nameTag.armor = 0.0f;
+		nameTag.health = 1.0f;
+	}
+
+	if (const std::wstring& rank = GetPlayerRank(entityId); !rank.empty())
+	{
+		nameTag.text += rank;
+		nameTag.text += L' ';
+	}
+
+	StringTools::AppendTo(nameTag.text, pEntity->GetName());
+
+	nameTag.pos = vWorldPos;
+	nameTag.drawOnTop = bDrawOnTop;
+	nameTag.color = tagColor;
+}
+
+
+bool CHUDTagNames::NeedsHealthBar(IActor* iActor) {
+	bool outcome = true;
+	CActor* pActor = static_cast<CActor*>(iActor);
+
+	if (!g_pGame->GetHealthManager()->IsActive()) {
+		return false;
+	}
+
+	bool healthDamaged = g_pGame->GetHealthManager()->GetHealth(pActor) < pActor->GetMaxHealth();
+	if (pActor->GetActorClass() == CPlayer::GetActorClassType()) {
+		CPlayer* pPlayer = static_cast<CPlayer*>(pActor);
+		CNanoSuit* pNanoSuit = pPlayer->GetNanoSuit();
+		if (pNanoSuit && pNanoSuit->GetMode() == ENanoMode::NANOMODE_DEFENSE) {
+			outcome = healthDamaged || pActor->GetArmor() < pActor->GetMaxArmor();
+		} else {
+			outcome = healthDamaged;
+		}
+	} else {
+		outcome = healthDamaged;
+	}
+	return outcome;
+}
+
+bool CHUDTagNames::NeedsHealthBar(IVehicle* pVehicle) {
+	return pVehicle->GetStatus().health < 1.0f;
 }
 
 //-----------------------------------------------------------------------------------------------------

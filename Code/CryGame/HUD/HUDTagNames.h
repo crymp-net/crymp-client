@@ -48,6 +48,11 @@ private:
 		ColorF color;
 		std::wstring text;
 		bool drawOnTop = false;
+		// CryMP:
+		bool healthBars = false;
+		bool vehicle = false;
+		float armor = 0.0f;
+		float health = 1.0f;
 	};
 
 	struct EnemyTag
@@ -63,6 +68,22 @@ private:
 	void DrawTagName(IActor *pActor,bool bLocalVehicle = false);
 	void DrawTagName(IVehicle *pVehicle);
 	void DrawTagNames();
+
+	void FillNameTag(
+		NameTag& nameTag,
+		EntityId entityId,
+		IActor *pActor,
+		IEntity *pEntity,
+		bool bDrawOnTop,
+		Vec3 vWorldPos,
+		ColorF tagColor,
+		bool friendly
+	);
+
+	void DrawProgressBars(IFFont *pFont, float centerX, float centerY, float marginY, float z, float progress, ColorF color);
+
+	bool NeedsHealthBar(IActor* pActor);
+	bool NeedsHealthBar(IVehicle* pVehicle);
 };
 
 //-----------------------------------------------------------------------------------------------------

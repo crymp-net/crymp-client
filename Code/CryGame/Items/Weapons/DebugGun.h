@@ -22,6 +22,7 @@ History:
 #include "CryCommon/CryAction/IItemSystem.h"
 #include "Weapon.h"
 
+struct IRenderNode;
 
 class CDebugGun :
   public CWeapon
@@ -34,6 +35,7 @@ public:
 	virtual void GetMemoryStatistics(ICrySizer * s) { s->Add(*this); CWeapon::GetMemoryStatistics(s); s->AddContainer(m_fireModes); }
 
   virtual void Select(bool select);
+  virtual void PostUpdate(float frameTime) override;
 
 private:
   ICVar* m_pAIDebugDraw;
@@ -42,6 +44,17 @@ private:
   typedef std::pair<string, float> TFmPair;
   std::vector<TFmPair> m_fireModes;    
   size_t m_fireMode;
+
+  void LogMaterial(IMaterial* pMat, IRenderNode* pNode, int& x, int& y, float font, float* color, const char* label);
+  void EnableHighlighting(IMaterial* pMat, IRenderNode *pNode);
+  void DisableHighLighting();
+  void DrawBackgroundBox2D(float x, float y, float width, float height, float alpha);
+  void DrawLog(int& x, int& y, float font, float* color, const char* fmt, ...);
+  IRenderNode* GetRenderNodeFromCollider(IPhysicalEntity* pCollider);
+  IMaterial* m_pLastHighlightedMat = nullptr;
+  int m_lastHighlightedType = -1;
+  int m_selectedSurfaceIdx = 0;
+
 };
 
 #endif // __DebugGun_H__

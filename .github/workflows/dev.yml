@@ -1,5 +1,5 @@
 ################################################################################
-# Developer workflow running on pushes to the master branch and pull requests
+# Create and publish a new development version from the master branch
 ################################################################################
 
 name: Dev
@@ -8,7 +8,6 @@ on:
   push:
     branches:
       - master
-  pull_request:
 
 jobs:
   build_32:
@@ -27,12 +26,12 @@ jobs:
       type: RelWithDebInfo
       sign: true
 
-  upload:
+  publish:
     if: github.ref == 'refs/heads/master' && github.repository_owner == 'crymp-net'
     needs:
       - build_32
       - build_64
-    uses: ./.github/workflows/upload.yml
+    uses: ./.github/workflows/publish.yml
     secrets: inherit
     with:
       context: dev

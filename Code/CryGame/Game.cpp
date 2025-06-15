@@ -58,6 +58,7 @@
 
 #include "CryMP/Client/WeatherSystem.h"
 #include "CryMP/Client/Advertising.h"
+#include "CryMP/Client/HealthManager.h"
 
 #if defined(CRYSIS_BETA)
 #define CRYSIS_GUID "{CDC82B4A-7540-45A5-B92E-9A7C7033DBF4}"
@@ -115,6 +116,7 @@ CGame::CGame()
 
 	m_pWeatherSystem = new CWeatherSystem();
 	m_pAdManager = new CAdManager();
+	m_pHealthManager = new CHealthManager();
 
 	GetISystem()->SetIGame(this);
 }
@@ -134,6 +136,7 @@ CGame::~CGame()
 	m_pWeaponSystem->Release();
 	m_pWeatherSystem->Reset();
 	m_pAdManager->Reset();
+	SAFE_DELETE(m_pHealthManager);
 	SAFE_DELETE(m_pItemStrings);
 	SAFE_DELETE(m_pItemSharedParamsList);
 	SAFE_DELETE(m_pCVars);

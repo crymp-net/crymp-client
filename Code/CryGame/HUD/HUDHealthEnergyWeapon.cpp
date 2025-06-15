@@ -114,12 +114,14 @@ void CHUD::SetFireMode(IItem* pItem, IFireMode* pFM, bool forceUpdate)
 			if (!pItem)
 				return;
 		}
+	}
 
-		IWeapon* pWeapon = pItem->GetIWeapon();
-		if (!pWeapon)
-			return;
-
+	IZoomMode* pZM = nullptr;
+	IWeapon* pWeapon = pItem->GetIWeapon();
+	if (pWeapon)
+	{
 		pFM = pWeapon->GetFireMode(pWeapon->GetCurrentFireMode());
+		pZM = pWeapon->GetZoomMode(pWeapon->GetCurrentZoomMode());
 	}
 
 	int iFireMode = stl::find_in_map(m_hudFireModes, CONST_TEMP_STRING(pItem->GetEntity()->GetClass()->GetName()), 0);
@@ -159,7 +161,8 @@ void CHUD::SetFireMode(IItem* pItem, IFireMode* pFM, bool forceUpdate)
 			ShowProgress(-1);
 	}
 	
-	if (pItem->GetIWeapon() && pItem->GetIWeapon()->IsZoomed() && !g_pGameCVars->g_enableAlternateIronSight)
+	if (pWeapon && pWeapon->IsZoomed() &&
+		(pZM && pZM->IsToggle())) // CryMP: old code: !g_pGameCVars->g_enableAlternateIronSight
 	{
 		if (m_pHUDCrosshair->GetCrosshairType() != 0)
 		{

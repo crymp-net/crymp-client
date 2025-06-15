@@ -1,8 +1,8 @@
 ################################################################################
-# Reusable workflow for uploading new executables to CryMP master server
+# Reusable workflow for publishing new executables
 ################################################################################
 
-name: Upload
+name: Publish
 
 on:
   workflow_call:

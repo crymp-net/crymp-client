@@ -112,6 +112,7 @@ public:
 	void Update(float frameTime);
 	unsigned int TimerAction(unsigned int time, ISchedulerAction *action, bool persistent=false);
 	void KillTimer(unsigned int timerId);
+	bool IsTimerActive(unsigned int timerId) const;
 	void ScheduleAction(ISchedulerAction *action, bool persistent=false);
 	void GetMemoryStatistics(ICrySizer * s);
 

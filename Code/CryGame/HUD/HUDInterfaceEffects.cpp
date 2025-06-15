@@ -783,9 +783,9 @@ void CHUD::IndicateHit(bool enemyIndicator,IEntity *pEntity, bool explosionFeedb
 	if (m_pHUDCrosshair->GetFlashAnim()->GetVisible())
 	{
 		m_pHUDCrosshair->GetFlashAnim()->Invoke("indicateHit");
-
-		ShowPlayerHitIndicator();
 	}
+
+	bool skipHitIndicator = false;
 
 	IVehicle* pVehicle = m_pClientActor->GetLinkedVehicle();
 	if (pVehicle)
@@ -800,6 +800,7 @@ void CHUD::IndicateHit(bool enemyIndicator,IEntity *pEntity, bool explosionFeedb
 			else if (m_pHUDVehicleInterface->HasMainHUD())
 			{
 				ShowVehicleHitIndicator();
+				skipHitIndicator = true;
 			}
 
 			if (pEntity && !gEnv->bMultiplayer)
@@ -821,11 +822,11 @@ void CHUD::IndicateHit(bool enemyIndicator,IEntity *pEntity, bool explosionFeedb
 				}
 			}
 		}
+	}
 
-		if (m_pHUDCrosshair->GetFlashAnim()->GetVisible())
-		{
-			m_pHUDCrosshair->GetFlashAnim()->Invoke("indicateHit");
-		}
+	if (!skipHitIndicator)
+	{
+		ShowPlayerHitIndicator();
 	}
 }
 

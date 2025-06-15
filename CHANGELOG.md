@@ -2,6 +2,55 @@
 
 Notable changes in each release.
 
+## [v23] - 2025-06-08
+### Resolved issues
+- [#284](https://github.com/crymp-net/client-server/issues/284): Crosshair dissapears when friendly cross active in SniperScope ([griseraner](https://github.com/griseraner))
+- [#283](https://github.com/crymp-net/client-server/issues/283): Game hangs 4-5 sec on first server connection attempt ([griseraner](https://github.com/griseraner))
+- [#267](https://github.com/crymp-net/client-server/issues/267): Integrate advertising system into CryMP client ([diznq](https://github.com/diznq))
+- [#261](https://github.com/crymp-net/client-server/issues/261): Some vehicle modifications are incorrect ([ccomrade](https://github.com/ccomrade))
+- [#252](https://github.com/crymp-net/client-server/issues/252): Spawn truck is broken ([ccomrade](https://github.com/ccomrade))
+- [#136](https://github.com/crymp-net/client-server/issues/136): Add a way to limit extreme wall jumps ([ccomrade](https://github.com/ccomrade))
+- [#81](https://github.com/crymp-net/client-server/issues/81): Indoor areas are sometimes all white with new ToD ([ccomrade](https://github.com/ccomrade))
+- [#69](https://github.com/crymp-net/client-server/issues/69): Game crash at startup if profile.xml corrupted ([griseraner](https://github.com/griseraner))
+
+### Changes
+- [#298](https://github.com/crymp-net/client-server/pull/298): Use GitHub-generated release notes ([ccomrade](https://github.com/ccomrade))
+- [#297](https://github.com/crymp-net/client-server/pull/297): Add health bars over enemies ([diznq](https://github.com/diznq))
+- [#296](https://github.com/crymp-net/client-server/pull/296): Fix watchtower ([griseraner](https://github.com/griseraner))
+- [#295](https://github.com/crymp-net/client-server/pull/295): Improved DebugGun ([griseraner](https://github.com/griseraner))
+- [#294](https://github.com/crymp-net/client-server/pull/294): Replace VeraMono with DejaVuSansMono ([ccomrade](https://github.com/ccomrade))
+- [#293](https://github.com/crymp-net/client-server/pull/293): Completly remove aim assistant implementation from game ([diznq](https://github.com/diznq))
+- [#292](https://github.com/crymp-net/client-server/pull/292): Fix attachment menu bugs ([griseraner](https://github.com/griseraner))
+- [#291](https://github.com/crymp-net/client-server/pull/291): Fix CryWarning and GameWarning ([ccomrade](https://github.com/ccomrade))
+- [#290](https://github.com/crymp-net/client-server/pull/290): Weapon attachment menu improvements ([griseraner](https://github.com/griseraner))
+- [#289](https://github.com/crymp-net/client-server/pull/289): Fix game hang on first connect ([ccomrade](https://github.com/ccomrade))
+- [#288](https://github.com/crymp-net/client-server/pull/288): Friendly cross and indicator bugs ([griseraner](https://github.com/griseraner))
+- [#286](https://github.com/crymp-net/client-server/pull/286): Fix new ToD and enable it by default ([ccomrade](https://github.com/ccomrade))
+- [#282](https://github.com/crymp-net/client-server/pull/282): Synch entity pos with physics ([griseraner](https://github.com/griseraner))
+- [#281](https://github.com/crymp-net/client-server/pull/281): Add support for tia gamerules to default maps ([griseraner](https://github.com/griseraner))
+- [#280](https://github.com/crymp-net/client-server/pull/280): Fix vehicle tread mtls (credits 76th) ([griseraner](https://github.com/griseraner))
+- [#279](https://github.com/crymp-net/client-server/pull/279): Fix nk suit helmet not applying nanomaterials ([griseraner](https://github.com/griseraner))
+- [#278](https://github.com/crymp-net/client-server/pull/278): Add system scriptbinds ([griseraner](https://github.com/griseraner))
+- [#277](https://github.com/crymp-net/client-server/pull/277): Fix Asian_ltv modifications ([ccomrade](https://github.com/ccomrade))
+- [#275](https://github.com/crymp-net/client-server/pull/275): Add identifiers into advertising fetch request ([diznq](https://github.com/diznq))
+- [#274](https://github.com/crymp-net/client-server/pull/274): Fix sky color & fog color in the weather system ([diznq](https://github.com/diznq))
+- [#272](https://github.com/crymp-net/client-server/pull/272): Minor client improvements ([diznq](https://github.com/diznq))
+- [#271](https://github.com/crymp-net/client-server/pull/271): Happy New Year 2025 ([ccomrade](https://github.com/ccomrade))
+- [#270](https://github.com/crymp-net/client-server/pull/270): Integrate advertising system into the client ([diznq](https://github.com/diznq))
+- [#269](https://github.com/crymp-net/client-server/pull/269): Introduce CryMP-Server executable ([ccomrade](https://github.com/ccomrade))
+- [#268](https://github.com/crymp-net/client-server/pull/268): Alien crash bug fix and optimization ([griseraner](https://github.com/griseraner))
+- [#266](https://github.com/crymp-net/client-server/pull/266): Restrict walljump velocity ([diznq](https://github.com/diznq))
+- [#264](https://github.com/crymp-net/client-server/pull/264): Add combat organization using radio ([diznq](https://github.com/diznq))
+- [#263](https://github.com/crymp-net/client-server/pull/263): Add weather system using synchronized server storage ([diznq](https://github.com/diznq))
+- [#262](https://github.com/crymp-net/client-server/pull/262): Fix I3DEngine::GetObjectsByType ([ccomrade](https://github.com/ccomrade))
+- [#260](https://github.com/crymp-net/client-server/pull/260): Fix crash after switching views with flashlight enabled ([griseraner](https://github.com/griseraner))
+- [#258](https://github.com/crymp-net/client-server/pull/258): Clear non existing entities in synched storage ([griseraner](https://github.com/griseraner))
+- [#257](https://github.com/crymp-net/client-server/pull/257): Add new interactive modes for vehicles ([griseraner](https://github.com/griseraner))
+- [#256](https://github.com/crymp-net/client-server/pull/256): Add CPPAPI actionfilter functions  ([griseraner](https://github.com/griseraner))
+- [#255](https://github.com/crymp-net/client-server/pull/255): Fix missing item in hand after leaving spawntruck + potential AI bug ([griseraner](https://github.com/griseraner))
+- [#254](https://github.com/crymp-net/client-server/pull/254): Fix revive HUD visible while alive ([griseraner](https://github.com/griseraner))
+- [#253](https://github.com/crymp-net/client-server/pull/253): Case-insensitive comparison of vehicle modification and paint ([ccomrade](https://github.com/ccomrade))
+
 ## [v22] - 2024-11-16
 ### Resolved issues
 - [#237](https://github.com/crymp-net/client-server/issues/237): Extend mute functionality ([griseraner](https://github.com/griseraner))

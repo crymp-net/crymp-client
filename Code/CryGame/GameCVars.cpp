@@ -616,6 +616,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_netSerializePhysVel", &mp_netSerializePhysVel, 0, OPTIONAL_SYNC, "Serialize the player physics velocity for more precise speed");
 	pConsole->Register("mp_netSerializeMaxSpeed", &mp_netSerializeMaxSpeed, 9.0f, OPTIONAL_SYNC, "Maximum character speed");
 	pConsole->Register("mp_radioTagging", &mp_radioTagging, 0, OPTIONAL_SYNC, "Enable tagging positions using radio");
+	pConsole->Register("mp_healthBars", &mp_healthBars, 0, OPTIONAL_SYNC, "Enable displaying health bars");
 
 	//CryMP CVars (un-synced)
 	pConsole->Register("mp_newSpectator", &mp_newSpectator, 1, VF_NOT_NET_SYNCED, "");
@@ -946,6 +947,7 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("mp_flyMode", true);
 	pConsole->UnregisterVariable("mp_messageCenterColor", true);
 	pConsole->UnregisterVariable("mp_radioTagging", true);
+	pConsole->UnregisterVariable("mp_healthBars", true);
 }
 
 //------------------------------------------------------------------------

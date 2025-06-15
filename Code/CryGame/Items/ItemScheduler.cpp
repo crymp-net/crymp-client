@@ -186,6 +186,19 @@ void CItemScheduler::KillTimer(unsigned int timerId)
 }
 
 //------------------------------------------------------------------------
+bool CItemScheduler::IsTimerActive(unsigned int timerId) const
+{
+	for (const auto& timer : m_timers)
+	{
+		if (static_cast<unsigned int>(timer.id) == timerId)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+//------------------------------------------------------------------------
 void CItemScheduler::SetBusy(bool busy)
 {
 	if (m_locked)

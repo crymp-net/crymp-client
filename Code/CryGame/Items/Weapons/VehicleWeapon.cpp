@@ -548,7 +548,7 @@ void CVehicleWeapon::CheckForFriendlyPlayers(float frameTime)
 			const int nSkip = CSingle::GetSkipEntities(this, pSkipEnts, 10);
 
 			const int intersect = gEnv->pPhysicalWorld->RayWorldIntersection(info.weaponPosition, info.aimDirection * 150.0f, 
-				ent_living | ent_sleeping_rigid | ent_rigid, //CryMP: IsFriendlyEntity checks for players and vehicles
+				ent_living | ent_sleeping_rigid | ent_rigid | ent_independent, //CryMP: IsFriendlyEntity checks for players and vehicles
 				rwi_stop_at_pierceable | rwi_colltype_any, &rayhit, 1, pSkipEnts, nSkip);
 
 			IEntity* pLookAtEntity = nullptr;

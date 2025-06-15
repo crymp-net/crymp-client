@@ -470,6 +470,7 @@ struct SCVars
 	float		mp_netAimLerpFactorCrymp;
 	int         mp_explosiveSilhouettes;
 	int         mp_radioTagging;
+	int         mp_healthBars;
 
 	SCVars();
 	~SCVars();
