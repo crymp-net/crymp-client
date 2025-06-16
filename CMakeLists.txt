@@ -506,6 +506,8 @@ add_library(Base OBJECT
 	Code/CryMP/Client/FileCache.h
 	Code/CryMP/Client/FileDownloader.cpp
 	Code/CryMP/Client/FileDownloader.h
+	Code/CryMP/Client/HealthManager.cpp
+	Code/CryMP/Client/HealthManager.h
 	Code/CryMP/Client/MapDownloader.cpp
 	Code/CryMP/Client/MapDownloader.h
 	Code/CryMP/Client/MapExtractor.cpp
@@ -674,8 +676,7 @@ add_library(Base OBJECT
 	ThirdParty/picosha2.h
 	ThirdParty/tracy/public/TracyClient.cpp
 	${PROJECT_BINARY_DIR}/config.h
-	${PROJECT_BINARY_DIR}/version.h
-)
+	${PROJECT_BINARY_DIR}/version.h)
 
 if(BUILD_BITS EQUAL 64)
 	target_compile_definitions(Base PUBLIC BUILD_64BIT)
@@ -1074,8 +1075,7 @@ add_library(CryGame OBJECT
 	Code/CryGame/Vehicles/VehicleClient.cpp
 	Code/CryGame/Vehicles/VehicleClient.h
 	Code/CryGame/Voting.cpp
-	Code/CryGame/Voting.h
-)
+	Code/CryGame/Voting.h)
 
 target_link_libraries(CryGame PUBLIC Base)
 
@@ -1097,8 +1097,7 @@ add_executable(${CRYMP_CLIENT_EXE} WIN32
 	Code/Launcher/StartupTime.cpp
 	Code/Launcher/StartupTime.h
 	Resources/ClientLauncher.rc
-	Resources/Launcher.manifest
-)
+	Resources/Launcher.manifest)
 
 add_executable(${CRYMP_SERVER_EXE} WIN32
 	Code/Launcher/Launcher.cpp
@@ -1110,8 +1109,7 @@ add_executable(${CRYMP_SERVER_EXE} WIN32
 	Code/Launcher/StartupTime.cpp
 	Code/Launcher/StartupTime.h
 	Resources/ServerLauncher.rc
-	Resources/Launcher.manifest
-)
+	Resources/Launcher.manifest)
 
 target_link_libraries(${CRYMP_CLIENT_EXE} PRIVATE Base CryGame)
 target_link_libraries(${CRYMP_SERVER_EXE} PRIVATE Base CryGame)

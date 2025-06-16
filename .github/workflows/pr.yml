@@ -1,0 +1,25 @@
+################################################################################
+# Pull request checks
+################################################################################
+
+name: PR
+
+on:
+  pull_request:
+
+jobs:
+  build_32:
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      bits: 32
+      type: RelWithDebInfo
+      sign: true
+
+  build_64:
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      bits: 64
+      type: RelWithDebInfo
+      sign: true

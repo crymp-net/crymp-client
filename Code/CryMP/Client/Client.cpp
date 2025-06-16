@@ -111,14 +111,30 @@ void Client::OnConnectCmd(IConsoleCmdArgs *pArgs)
 	const char *port = "";
 
 	if (pArgs->GetArgCount() > 1)
+	{
 		host = pArgs->GetArg(1);
+	}
 	else
-		host = pConsole->GetCVar("cl_serveraddr")->GetString();
+	{
+		ICVar* pClServerAddr = pConsole->GetCVar("cl_serveraddr");
+		if (pClServerAddr)
+		{
+			host = pClServerAddr->GetString();
+		}
+	}
 
 	if (pArgs->GetArgCount() > 2)
+	{
 		port = pArgs->GetArg(2);
+	}
 	else
-		port = pConsole->GetCVar("cl_serverport")->GetString();
+	{
+		ICVar* pClServerPort = pConsole->GetCVar("cl_serverport");
+		if (pClServerPort)
+		{
+			port = pClServerPort->GetString();
+		}
+	}
 
 	ServerInfo server;
 	server.master = gClient->m_masters[0];
@@ -228,6 +244,27 @@ void Client::Init(IGameFramework *pGameFramework)
 	pConsole->AddCommand("disconnect", OnDisconnectCmd, VF_RESTRICTEDMODE, "Usage: disconnect");
 	pConsole->AddCommand("bind", OnKeyBindCmd, VF_NOT_NET_SYNCED, "Usage: bind key command");
 	pConsole->AddCommand("dumpbinds", OnDumpKeyBindsCmd, VF_RESTRICTEDMODE, "Usage: dumpbinds");
+
+	ICVar* pSvPassword = pConsole->GetCVar("sv_password");
+	if (pSvPassword)
+	{
+		// disable adding password flag to GameSpy server report
+		pSvPassword->SetOnChangeCallback(nullptr);
+	}
+
+	ICVar* pSvGsReport = pConsole->GetCVar("sv_gs_report");
+	if (pSvGsReport)
+	{
+		// disable GameSpy server report
+		pSvGsReport->Set(0);
+	}
+
+	ICVar* pSvGsTrackStats = pConsole->GetCVar("sv_gs_trackstats");
+	if (pSvGsTrackStats)
+	{
+		// disable collecting game statistics for GameSpy
+		pSvGsTrackStats->Set(0);
+	}
 
 	if (!WinAPI::CmdLine::HasArg("-keepcdkey"))
 	{

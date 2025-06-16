@@ -999,7 +999,7 @@ public:
 
 	typedef CryFixedStringT<256> TempResourceName;
 	void FixResourceName(const ItemString& name, TempResourceName& fixedName, int flags, const char *hand=0, const char *suffix=0, const char *pose=0, const char *pov=0, const char *env=0);
-	virtual tSoundID PlayAction(const ItemString& action, int layer=0, bool loop=false, unsigned int flags = eIPAF_Default, float speedOverride = -1.0f);
+	virtual tSoundID PlayAction(const ItemString& action, int layer=0, bool loop=false, unsigned int flags = eIPAF_Default, float speedOverride = -1.0f, float blendOverride = -1.0f);
 	void PlayAnimation(const char* animationName, int layer=0, bool loop=false, unsigned int flags = eIPAF_Default);
 	void PlayAnimationEx(const char* animationName, int slot=eIGS_FirstPerson, int layer=0, bool loop=false, float blend=0.175f, float speed=1.0f, unsigned int flags = eIPAF_Default);
 	void PlayLayer(const ItemString& name, int flags = eIPAF_Default, bool record=true);

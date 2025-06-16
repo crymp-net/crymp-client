@@ -48,6 +48,7 @@
 #include "CryMP/Client/ScriptCallbacks.h"
 #include "CryMP/Client/WeatherSystem.h"
 #include "CryMP/Client/Advertising.h"
+#include "CryMP/Client/HealthManager.h"
 
 int CGameRules::s_invulnID = 0;
 int CGameRules::s_barbWireID = 0;
@@ -95,6 +96,7 @@ CGameRules::~CGameRules()
 
 	g_pGame->GetWeatherSystem()->Reset(false);
 	g_pGame->GetAdManager()->Reset(false);
+	g_pGame->GetHealthManager()->Reset(false);
 	g_pGame->GetWeaponSystem()->GetTracerManager().Reset();
 	m_pGameFramework->GetIGameRulesSystem()->SetCurrentGameRules(0);
 	if (m_pGameFramework->GetIViewSystem())

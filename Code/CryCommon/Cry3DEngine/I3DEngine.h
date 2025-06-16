@@ -2157,22 +2157,38 @@ struct I3DEngine : public IProcess
 
 	float GetDawnStart()
 	{
+#ifdef BUILD_64BIT
 		return *(reinterpret_cast<float*>(this) + 91);
+#else
+		return *(reinterpret_cast<float*>(this) + 88);
+#endif
 	}
 
 	float GetDawnEnd()
 	{
+#ifdef BUILD_64BIT
 		return *(reinterpret_cast<float*>(this) + 92);
+#else
+		return *(reinterpret_cast<float*>(this) + 89);
+#endif
 	}
 
 	float GetDuskStart()
 	{
+#ifdef BUILD_64BIT
 		return *(reinterpret_cast<float*>(this) + 93);
+#else
+		return *(reinterpret_cast<float*>(this) + 90);
+#endif
 	}
 
 	float GetDuskEnd()
 	{
+#ifdef BUILD_64BIT
 		return *(reinterpret_cast<float*>(this) + 94);
+#else
+		return *(reinterpret_cast<float*>(this) + 91);
+#endif
 	}
 
 	////////////////////////////////////////////////////////////////////////////////

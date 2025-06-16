@@ -35,7 +35,7 @@ public:
 	virtual void Drop(float impulseScale, bool selectNext/* =true */, bool byDeath/* =false */);
 	virtual void ProcessEvent(SEntityEvent& event);
 
-	virtual void GetAttachmentsAtHelper(const char *helper, std::vector<string> &rAttachments);
+	virtual std::vector<std::string> GetAttachmentsAtHelper(const char *helper);
 
 	virtual bool CanPickUp(EntityId userId) const;
 

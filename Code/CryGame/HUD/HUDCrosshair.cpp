@@ -20,6 +20,7 @@ History:
 #include "CryCommon/CryGame/GameUtils.h"
 #include "HUD.h"
 #include "HUDVehicleInterface.h"
+#include "HUDScopes.h"
 #include "CryGame/Items/Item.h"
 #include "CryGame/Items/Weapons/Weapon.h"
 #include "CryGame/Items/Weapons/OffHand.h"
@@ -419,7 +420,7 @@ void CHUDCrosshair::UpdateUsabilityMessage(const EntityId objId, const char* mes
 					}
 					if (!lockedId && !reservedId)
 					{
-						if (pVehicle->GetStatus().passengerCount == pVehicle->GetSeatCount())
+						if (pVehicle->GetStatus().passengerCount == static_cast<int>(pVehicle->GetSeatCount()))
 						{
 							usable = 2;
 							textLabel = "@use_vehicle_full";
@@ -867,6 +868,9 @@ bool CHUD::ShouldRenderCrosshair() const
 	if (m_pHUDCrosshair->IsDamageIndicatorProcessing())
 		return true; //always render
 
+	if (m_pHUDScopes->GetCurrentScope() != CHUDScopes::ESCOPE_NONE)
+		return false;
+
 	if (m_bHideCrosshair)
 		return false;
 
@@ -920,16 +924,22 @@ void CHUD::UpdateCrosshairVisibility()
 	if (!m_pHUDCrosshair)
 		return;
 
-	const bool bShow = ShouldRenderCrosshair();
-	if (bShow != m_pHUDCrosshair->GetFlashAnim()->GetVisible())
+	const bool show = ShouldRenderCrosshair();
+	if (show != m_pHUDCrosshair->GetFlashAnim()->GetVisible())
 	{
-		m_pHUDCrosshair->GetFlashAnim()->SetVisible(bShow);
+		if (!show)
+		{
+			m_pHUDCrosshair->SetCrosshair(0);
+		}
+
+
+		m_pHUDCrosshair->GetFlashAnim()->SetVisible(show);
 
 		//turn off damage circle
 		m_pHUDCrosshair->GetFlashAnim()->Invoke("clearDamageDirection");
 		m_pHUDCrosshair->GetFlashAnim()->GetFlashPlayer()->Advance(0.1f);
 
-		if (!bShow)
+		if (!show)
 		{
 			m_pHUDCrosshair->ShowDamageIndicator(0.0f);
 		}

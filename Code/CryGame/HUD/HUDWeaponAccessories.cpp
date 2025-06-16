@@ -3,7 +3,7 @@
 // Copyright (C) Crytek GmbH, 2001-2008.
 // -------------------------------------------------------------------------
 #include "CryCommon/CrySystem/ISystem.h"
-
+#include "CryGame/Actors/Player/IPlayerInput.h"
 #include "HUD.h"
 #include "CryGame/Items/Weapons/Weapon.h"
 #include "CryGame/HUD/GameFlashLogic.h"
@@ -63,91 +63,231 @@ void CHUD::AdjustWeaponAccessory(const char* szWeapon, const char* szHelper, Vec
 
 //-----------------------------------------------------------------------------------------------------
 
+void CHUD::ClearWeaponAccessoriesScreen()
+{
+	m_animWeaponAccessories.Invoke("clearAllSlotButtons");
+	m_animWeaponAccessories.Invoke("hideWeaponAccessories");
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CHUD::WeaponAccessoriesInterface(bool visible, bool force)
+{
+	if (visible)
+	{
+		this->ShowMouseCursor(true);
+	}
+	else
+	{
+		ClearWeaponAccessoriesScreen();
+	}
+
+	m_acceptNextWeaponCommand = true;
+	if (visible)
+	{
+		m_bIgnoreMiddleClick = false;
+		if (WeaponHasAttachments())
+		{
+			m_animWeaponAccessories.Invoke("showWeaponAccessories");
+			m_animWeaponAccessories.SetVisible(true);
+		}
+	}
+	else
+	{
+		if (!force)
+		{
+			if (m_animWeaponAccessories.GetVisible())
+			{
+				m_bIgnoreMiddleClick = true;
+				m_animWeaponAccessories.Invoke("hideWeaponAccessories");
+				m_animWeaponAccessories.SetVisible(false);
+				PlaySound(ESound_SuitMenuDisappear);
+			}
+		}
+		else
+		{
+			if (&m_animWeaponAccessories == m_pModalHUD)
+				SwitchToModalHUD(NULL, false);
+
+			m_animWeaponAccessories.Invoke("hideWeaponAccessories");
+			m_animWeaponAccessories.SetVisible(false);
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+bool CHUD::ShowWeaponAccessories(bool enable)
+{
+	CWeapon* pWeapon = GetCurrentWeapon();
+	if (!pWeapon)
+		return false;
+
+	IPlayerInput* pPlayerInput = m_pClientActor->GetPlayerInput();
+
+	m_bWeaponModifyOpen = enable;
+
+	if (enable)
+	{
+		CItem* pOffhand = m_pClientActor->GetItemByClass(CItem::sOffHandClass);
+		if (pOffhand && pOffhand->IsSelected())
+		{
+			return false;
+		}
+
+		const bool busy = pWeapon->IsBusy();
+		const bool modify = pWeapon->IsModifying();
+		const bool zooming = pWeapon->IsZooming();
+		const bool switchFM = pWeapon->IsSwitchingFireMode();
+		const bool reloading = pWeapon->IsReloading();
+		const bool sprinting = m_pClientActor->IsSprinting();
+		const bool isTargeting = pWeapon->IsTargetOn();
+
+		if (!busy && !reloading && /*!modify &&*/ !zooming && !switchFM && !sprinting && !isTargeting)
+		{
+			if (!m_pClientActor->GetActorStats()->isFrozen.Value())
+			{
+				if (UpdateWeaponAccessoriesScreen())
+				{
+					//CryMP: Changed to false, showing mouse pointer only when menu available
+					SwitchToModalHUD(&m_animWeaponAccessories, false); 
+
+					if (g_pGameActions && g_pGameActions->FilterNoMouse())
+					{
+						//CryMP: Still need to call this to prevent changing weapons while opening weapon customization
+						g_pGameActions->FilterNoMouse()->Enable(true); 
+					}
+
+					if (pPlayerInput)
+					{
+						pPlayerInput->DisableXI(true);
+					}
+
+					m_acceptNextWeaponCommand = false;
+					pWeapon->OnAction(m_pClientActor->GetEntityId(), ActionId("modify"), 0, 1);
+				}
+			}
+		}
+	}
+	else
+	{
+		if (!m_pClientActor->GetPlayerStats()->bSprinting)
+		{
+			SwitchToModalHUD(NULL, false);
+			if (pPlayerInput)
+			{
+				pPlayerInput->DisableXI(false);
+			}
+			m_acceptNextWeaponCommand = false;
+			if (!gEnv->pSystem->IsSerializingFile())
+			{
+				pWeapon->OnAction(m_pClientActor->GetEntityId(), ActionId("modify"), 0, 1);
+			}
+			else
+			{
+				WeaponAccessoriesInterface(false, true);
+			}
+
+			if (g_pGameActions && g_pGameActions->FilterNoMouse() && g_pGameActions->FilterNoMouse()->Enabled())
+			{
+				g_pGameActions->FilterNoMouse()->Enable(false); //CryMP: Disable if necessary
+			}
+		}
+	}
+	return true;
+}
+
 bool CHUD::UpdateWeaponAccessoriesScreen()
 {
-	bool bWeaponHasAttachments = false;
+	bool hasAttachments = false;
 
-	m_animWeaponAccessories.Invoke("clearAllSlotButtons");
-
-	CWeapon* pCurrentWeapon = GetCurrentWeapon();
-	if (pCurrentWeapon)
+	if (CWeapon* pCurrentWeapon = GetCurrentWeapon())
 	{
-		const CItem::THelperVector& helpers = pCurrentWeapon->GetAttachmentHelpers();
-		for (int iHelper = 0; iHelper < helpers.size(); iHelper++)
+		const auto& helpers = pCurrentWeapon->GetAttachmentHelpers();
+		for (const auto& helper : helpers)
 		{
-			CItem::SAttachmentHelper helper = helpers[iHelper];
 			if (helper.slot != CItem::eIGS_FirstPerson)
 				continue;
 
-			if (pCurrentWeapon->HasAttachmentAtHelper(helper.name.c_str()))
-			{
-				// marcok: make sure the vars are correctly mapped
-				SFlashVarValue args[3] = { helper.name.c_str(), "", "" };
-				m_animWeaponAccessories.Invoke("addSlotButton", args, 3);
-				//should really do not use dynamic strings here
-				string strControl("Root.slot_");	strControl += helper.name.c_str();
-				string strToken("hud.WS");	strToken += helper.name.c_str();
-				string strTokenX = strToken + "X";
-				string strTokenY = strToken + "Y";
-				m_animWeaponAccessories.AddVariable(strControl.c_str(), "_x", strTokenX.c_str(), 1.0f, 0.0f);
-				m_animWeaponAccessories.AddVariable(strControl.c_str(), "_y", strTokenY.c_str(), 1.0f, 0.0f);
+			if (!pCurrentWeapon->HasAttachmentAtHelper(helper.name.c_str()))
+				continue;
 
-				string curAttach;
+			const std::vector<std::string> attachments = pCurrentWeapon->GetAttachmentsAtHelper(helper.name.c_str());
+			if (attachments.empty())
+				continue;
+
+			const bool isSpecial = helper.name == "magazine" ||
+				helper.name == "attachment_front" ||
+				helper.name == "energy_source_helper" ||
+				helper.name == "shell_grenade";
+
+			int potentialButtons = 0;
+
+			if (!isSpecial)
+			{
+				++potentialButtons; // NoAttachment
+			}
+
+			for (const auto& attachment : attachments)
+			{
+				if (attachment != "GrenadeShell")
 				{
-					const char* szCurAttach = pCurrentWeapon->CurrentAttachment(helper.name);
-					curAttach = (szCurAttach ? szCurAttach : "");
-				}
-				std::vector<string> attachments;
-				pCurrentWeapon->GetAttachmentsAtHelper(helper.name.c_str(), attachments);
-				int iSelectedIndex = 0;
-				int iCount = 0;
-				if (attachments.size() > 0)
-				{
-					if (strcmp(helper.name.c_str(), "magazine") && strcmp(helper.name.c_str(), "attachment_front") && strcmp(helper.name.c_str(), "energy_source_helper") && strcmp(helper.name.c_str(), "shell_grenade"))
-					{
-						if (!strcmp(helper.name.c_str(), "attachment_top"))
-						{
-							SFlashVarValue args[3] = { helper.name.c_str(), "@IronSight", "NoAttachment" };
-							m_animWeaponAccessories.Invoke("addSlotButton", args, 3);
-							++iCount;
-						}
-						else
-						{
-							SFlashVarValue args[3] = { helper.name.c_str(), "@NoAttachment", "NoAttachment" };
-							m_animWeaponAccessories.Invoke("addSlotButton", args, 3);
-							++iCount;
-						}
-					}
-					for (int iAttachment = 0; iAttachment < attachments.size(); iAttachment++)
-					{
-						// Ignore this item: it's a very special one!
-						if (attachments[iAttachment] != "GrenadeShell")
-						{
-							string sName("@");
-							sName.append(attachments[iAttachment]);
-							SFlashVarValue args[3] = { helper.name.c_str(), sName.c_str(), attachments[iAttachment].c_str() };
-							m_animWeaponAccessories.Invoke("addSlotButton", args, 3);
-							if (curAttach == attachments[iAttachment])
-							{
-								iSelectedIndex = iCount;
-							}
-							bWeaponHasAttachments = bWeaponHasAttachments || iCount > 0;
-							++iCount;
-						}
-					}
-				}
-				if (curAttach.c_str())
-				{
-					SFlashVarValue args[2] = { helper.name.c_str(), iSelectedIndex };
-					m_animWeaponAccessories.Invoke("selectSlotButton", args, 2);
+					++potentialButtons;
 				}
 			}
-			else; // no attachment found for this helper
+			
+			if (potentialButtons < 2)
+				continue;
+
+			SFlashVarValue args1[3] = { helper.name.c_str(), "", "" };
+			m_animWeaponAccessories.Invoke("addSlotButton", args1, 3);
+
+			std::string control = "Root.slot_" + std::string(helper.name.c_str());
+			std::string token = "hud.WS" + std::string(helper.name.c_str());
+			m_animWeaponAccessories.AddVariable(control.c_str(), "_x", (token + "X").c_str(), 1.0f, 0.0f);
+			m_animWeaponAccessories.AddVariable(control.c_str(), "_y", (token + "Y").c_str(), 1.0f, 0.0f);
+
+			std::string curAttach;
+			if (const char* szCurAttach = pCurrentWeapon->CurrentAttachment(helper.name))
+				curAttach = szCurAttach;
+
+			int selectedIndex = 0;
+			int count = 0;
+
+			if (!isSpecial)
+			{
+				bool isTop = (helper.name == "attachment_top");
+				SFlashVarValue args2[3] = {
+					helper.name.c_str(),
+					isTop ? "@IronSight" : "@NoAttachment",
+					"NoAttachment"
+				};
+				m_animWeaponAccessories.Invoke("addSlotButton", args2, 3);
+				++count;
+			}
+
+			for (const auto& attachment : attachments)
+			{
+				if (attachment == "GrenadeShell")
+					continue;
+
+				std::string displayName = "@" + attachment;
+				SFlashVarValue args3[3] = { helper.name.c_str(), displayName.c_str(), attachment.c_str() };
+				m_animWeaponAccessories.Invoke("addSlotButton", args3, 3);
+
+				if (curAttach == attachment)
+					selectedIndex = count;
+
+				hasAttachments = true;
+				++count;
+			}
+
+			SFlashVarValue selectArgs[2] = { helper.name.c_str(), selectedIndex };
+			m_animWeaponAccessories.Invoke("selectSlotButton", selectArgs, 2);
 		}
-		m_animWeaponAccessories.GetFlashPlayer()->Advance(0.25f);
 	}
 
-	return bWeaponHasAttachments;
+	return hasAttachments;
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -161,88 +301,57 @@ void CHUD::UpdateWeaponModify()
 		return;
 
 	IGameTokenSystem* pGameTokenSystem = gEnv->pGame->GetIGameFramework()->GetIGameTokenSystem();
-	char tempBuf[HUD_MAX_STRING_SIZE];
-	const bool bThirdPerson = m_pClientActor->IsThirdPerson();
-	const CItem::THelperVector& helpers = pCurrentWeapon->GetAttachmentHelpers();
+	if (!pGameTokenSystem)
+		return;
 
-	float c = 0.0f;
-	float fScaleX = 0.0f;
-	float fScaleY = 0.0f;
-	float fHalfUselessSize = 0.0f;
-	GetProjectionScale(&m_animWeaponAccessories, &fScaleX, &fScaleY, &fHalfUselessSize);
+	const bool thirdPerson = m_pClientActor->IsThirdPerson();
+	const auto& helpers = pCurrentWeapon->GetAttachmentHelpers();
 
-	if (bThirdPerson)
+	float scaleX = 0.0f, scaleY = 0.0f, halfUselessSize = 0.0f;
+	GetProjectionScale(&m_animWeaponAccessories, &scaleX, &scaleY, &halfUselessSize);
+
+	for (const auto& helper : helpers)
 	{
-		for (const auto &helper : helpers)
-		{
-			const auto mode = CItem::eIGS_FirstPerson;
-		    if (helper.slot != mode)
-				continue;
-	
-			Vec3 position = Vec3(ZERO);
-			{
-				SEntitySlotInfo info;
-				if (pCurrentWeapon->GetEntity()->GetSlotInfo(CItem::eIGS_ThirdPerson, info))
-				{
-					if (info.pStatObj)
-					{
-						IStatObj* pStatsObj = info.pStatObj;
-						position = pStatsObj->GetHelperPos(helper.name.c_str());
-						position = pCurrentWeapon->GetEntity()->GetSlotLocalTM(CItem::eIGS_ThirdPerson, false).TransformPoint(position);
-					}
+		if (helper.slot != CItem::eIGS_FirstPerson)
+			continue;
 
-					pCurrentWeapon->GetEntity()->GetWorldTM().TransformPoint(position);
+		Vec3 worldPos = Vec3(ZERO);
+
+		if (thirdPerson)
+		{
+			if (SEntitySlotInfo info; pCurrentWeapon->GetEntity()->GetSlotInfo(CItem::eIGS_ThirdPerson, info))
+			{
+				if (info.pStatObj)
+				{
+					worldPos = info.pStatObj->GetHelperPos(helper.name.c_str());
+					worldPos = pCurrentWeapon->GetEntity()->GetSlotLocalTM(CItem::eIGS_ThirdPerson, false).TransformPoint(worldPos);
 				}
+
+				worldPos = pCurrentWeapon->GetEntity()->GetWorldTM().TransformPoint(worldPos);
 			}
 
-			if (position.IsZero())
+			if (worldPos.IsZero())
 				continue;
-
-			Matrix34 localTM(Matrix34::CreateIdentity());
-			localTM.SetTranslation(position);
-
-			const auto &wTM = pCurrentWeapon->GetEntity()->GetWorldTM() * localTM;
-
-			Vec3 vWorldPos = wTM.GetTranslation();
-			
-			Vec3 vScreenSpace = Vec3(ZERO);
-			m_pRenderer->ProjectToScreen(vWorldPos.x, vWorldPos.y, vWorldPos.z, &vScreenSpace.x, &vScreenSpace.y, &vScreenSpace.z);
-
-			vScreenSpace.x = vScreenSpace.x * fScaleX + fHalfUselessSize;
-			vScreenSpace.y = vScreenSpace.y * fScaleY;
-
-			_snprintf(tempBuf, sizeof(tempBuf), "hud.WS%sX", helper.name.c_str());
-			tempBuf[sizeof(tempBuf) - 1] = '\0';
-			pGameTokenSystem->SetOrCreateToken(tempBuf, TFlowInputData(vScreenSpace.x, true));
-			_snprintf(tempBuf, sizeof(tempBuf), "hud.WS%sY", helper.name.c_str());
-			tempBuf[sizeof(tempBuf) - 1] = '\0';
-			pGameTokenSystem->SetOrCreateToken(tempBuf, TFlowInputData(vScreenSpace.y, true));
 		}
-	}
-	else
-	{
-		for (const auto& helper : helpers)
+		else
 		{
-			const auto mode = CItem::eIGS_FirstPerson;
-			if (helper.slot != mode)
-				continue;
-
-			Vec3 vWorldPos = pCurrentWeapon->GetSlotHelperPos(mode, helper.bone.c_str(), true);
-			
-			Vec3 vScreenSpace = Vec3(ZERO);
-			m_pRenderer->ProjectToScreen(vWorldPos.x, vWorldPos.y, vWorldPos.z, &vScreenSpace.x, &vScreenSpace.y, &vScreenSpace.z);
-
-			vScreenSpace.x = vScreenSpace.x * fScaleX + fHalfUselessSize;
-			vScreenSpace.y = vScreenSpace.y * fScaleY;
-
-			AdjustWeaponAccessory(pCurrentWeapon->GetEntity()->GetClass()->GetName(), helper.name.c_str(), &vScreenSpace);
-	
-			_snprintf(tempBuf, sizeof(tempBuf), "hud.WS%sX", helper.name.c_str());
-			tempBuf[sizeof(tempBuf) - 1] = '\0';
-			pGameTokenSystem->SetOrCreateToken(tempBuf, TFlowInputData(vScreenSpace.x, true));
-			_snprintf(tempBuf, sizeof(tempBuf), "hud.WS%sY", helper.name.c_str());
-			tempBuf[sizeof(tempBuf) - 1] = '\0';
-			pGameTokenSystem->SetOrCreateToken(tempBuf, TFlowInputData(vScreenSpace.y, true));
+			worldPos = pCurrentWeapon->GetSlotHelperPos(CItem::eIGS_FirstPerson, helper.bone.c_str(), true);
 		}
+
+		Vec3 screenSpace = Vec3(ZERO);
+		m_pRenderer->ProjectToScreen(worldPos.x, worldPos.y, worldPos.z, &screenSpace.x, &screenSpace.y, &screenSpace.z);
+
+		screenSpace.x = screenSpace.x * scaleX + halfUselessSize;
+		screenSpace.y = screenSpace.y * scaleY;
+
+		std::string tokenBase = "hud.WS" + std::string(helper.name.c_str());
+
+		if (!thirdPerson)
+		{
+			AdjustWeaponAccessory(pCurrentWeapon->GetEntity()->GetClass()->GetName(), helper.name.c_str(), &screenSpace);
+		}
+
+		pGameTokenSystem->SetOrCreateToken((tokenBase + "X").c_str(), TFlowInputData(screenSpace.x, true));
+		pGameTokenSystem->SetOrCreateToken((tokenBase + "Y").c_str(), TFlowInputData(screenSpace.y, true));
 	}
 }

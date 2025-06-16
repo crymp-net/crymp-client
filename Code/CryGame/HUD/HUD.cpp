@@ -3063,43 +3063,48 @@ void CHUD::GetProjectionScale(CGameFlashAnimation* pGameFlashAnimation, float* p
 
 bool CHUD::WeaponHasAttachments()
 {
-	bool bWeaponHasAttachments = false;
-
 	CWeapon* pCurrentWeapon = GetCurrentWeapon();
-	if (pCurrentWeapon)
-	{
-		const CItem::THelperVector& helpers = pCurrentWeapon->GetAttachmentHelpers();
-		for (int iHelper = 0; iHelper < helpers.size(); iHelper++)
-		{
-			CItem::SAttachmentHelper helper = helpers[iHelper];
-			if (helper.slot != CItem::eIGS_FirstPerson)
-				continue;
+	if (!pCurrentWeapon)
+		return false;
 
-			if (pCurrentWeapon->HasAttachmentAtHelper(helper.name.c_str()))
+	const auto& helpers = pCurrentWeapon->GetAttachmentHelpers();
+	for (const auto& helper : helpers)
+	{
+		if (helper.slot != CItem::eIGS_FirstPerson)
+			continue;
+
+		if (!pCurrentWeapon->HasAttachmentAtHelper(helper.name.c_str()))
+			continue;
+
+		const std::vector<std::string> attachments = pCurrentWeapon->GetAttachmentsAtHelper(helper.name.c_str());
+		if (attachments.empty())
+			continue;
+
+		const bool isSpecial = helper.name == "magazine" ||
+			helper.name == "attachment_front" ||
+			helper.name == "energy_source_helper" ||
+			helper.name == "shell_grenade";
+
+		int potentialButtons = 0;
+
+		if (!isSpecial)
+		{
+			++potentialButtons; // NoAttachment
+		}
+
+		for (const auto& attachment : attachments)
+		{
+			if (attachment != "GrenadeShell")
 			{
-				std::vector<string> attachments;
-				pCurrentWeapon->GetAttachmentsAtHelper(helper.name.c_str(), attachments);
-				int iCount = 0;
-				if (attachments.size() > 0)
-				{
-					if (helper.name != "magazine" &&
-					    helper.name != "attachment_front" &&
-					    helper.name != "energy_source_helper" &&
-					    helper.name != "shell_grenade")
-					{
-						++iCount;
-					}
-					for (int iAttachment = 0; iAttachment < attachments.size(); iAttachment++)
-					{
-						bWeaponHasAttachments = bWeaponHasAttachments || iCount > 0;
-						++iCount;
-					}
-				}
+				++potentialButtons;
 			}
 		}
+
+		if (potentialButtons >= 2)
+			return true;
 	}
 
-	return bWeaponHasAttachments;
+	return false;
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -4200,43 +4205,6 @@ void CHUD::HandleEvent(const SGameObjectEvent& rGameObjectEvent)
 	}
 }
 
-//-----------------------------------------------------------------------------------------------------
-
-void CHUD::WeaponAccessoriesInterface(bool visible, bool force)
-{
-	m_acceptNextWeaponCommand = true;
-	if (visible)
-	{
-		m_bIgnoreMiddleClick = false;
-		if (WeaponHasAttachments())
-		{
-			m_animWeaponAccessories.Invoke("showWeaponAccessories");
-			m_animWeaponAccessories.SetVisible(true);
-		}
-	}
-	else
-	{
-		if (!force)
-		{
-			if (m_animWeaponAccessories.GetVisible())
-			{
-				m_bIgnoreMiddleClick = true;
-				m_animWeaponAccessories.Invoke("hideWeaponAccessories");
-				m_animWeaponAccessories.SetVisible(false);
-				PlaySound(ESound_SuitMenuDisappear);
-			}
-		}
-		else
-		{
-			if (&m_animWeaponAccessories == m_pModalHUD)
-				SwitchToModalHUD(NULL, false);
-
-			m_animWeaponAccessories.Invoke("hideWeaponAccessories");
-			m_animWeaponAccessories.SetVisible(false);
-		}
-	}
-}
-
 //------------------------------------------------------------------------
 void CHUD::AddTrackedProjectile(EntityId id)
 {
@@ -4803,10 +4771,7 @@ void CHUD::StartPlayerFallAndPlay()
 
 bool CHUD::IsInputAssisted()
 {
-	if (gEnv->pInput)
-		return gEnv->pInput->HasInputDeviceOfType(eIDT_Gamepad) && gEnv->pTimer->GetCurrTime() - m_lastNonAssistedInput > g_pGameCVars->aim_assistRestrictionTimeout;
-	else
-		return false;
+	return false;
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -5270,68 +5235,6 @@ void CHUD::RequestRevive()
 {
 	if (m_pClientActor->GetHealth() <= 0)
 		m_pClientActor->GetPlayerInput()->OnAction(g_pGame->Actions().attack1, eAAM_OnPress, 1.0f);
-}
-
-//-----------------------------------------------------------------------------------------------------
-
-bool CHUD::ShowWeaponAccessories(bool enable)
-{
-	CWeapon* pWeapon = GetCurrentWeapon();
-	if (!pWeapon)
-		return false;
-
-	IPlayerInput* pPlayerInput = m_pClientActor->GetPlayerInput();
-
-	m_bWeaponModifyOpen = enable;
-
-	if (enable)
-	{
-		COffHand* pOffhand = static_cast<COffHand*>(m_pClientActor->GetItemByClass(CItem::sOffHandClass));
-		if (pOffhand && pOffhand->IsSelected())
-			return false;
-
-		bool busy = pWeapon->IsBusy();
-		bool modify = pWeapon->IsModifying();
-		bool zooming = pWeapon->IsZooming();
-		bool switchFM = pWeapon->IsSwitchingFireMode();
-		bool reloading = pWeapon->IsReloading();
-		bool sprinting = m_pClientActor->IsSprinting();
-		bool isTargeting = pWeapon->IsTargetOn();
-
-		if (m_acceptNextWeaponCommand && !busy && !reloading && !modify && !zooming && !switchFM && !sprinting && !isTargeting)
-		{
-			if (!m_pClientActor->GetActorStats()->isFrozen.Value())
-			{
-				if (UpdateWeaponAccessoriesScreen())
-				{
-					SwitchToModalHUD(&m_animWeaponAccessories, true);
-					if (pPlayerInput)
-						pPlayerInput->DisableXI(true);
-
-					m_acceptNextWeaponCommand = false;
-					pWeapon->OnAction(m_pClientActor->GetEntityId(), ActionId("modify"), 0, 1);
-				}
-			}
-		}
-	}
-	else
-	{
-		if (m_acceptNextWeaponCommand)
-		{
-			if (!m_pClientActor->GetPlayerStats()->bSprinting)
-			{
-				SwitchToModalHUD(NULL, false);
-				if (pPlayerInput)
-					pPlayerInput->DisableXI(false);
-				m_acceptNextWeaponCommand = false;
-				if (!gEnv->pSystem->IsSerializingFile())
-					pWeapon->OnAction(m_pClientActor->GetEntityId(), ActionId("modify"), 0, 1);
-				else
-					WeaponAccessoriesInterface(false, true);
-			}
-		}
-	}
-	return true;
 }
 
 //-----------------------------------------------------------------------------------------------------

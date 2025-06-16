@@ -1,5 +1,5 @@
 ################################################################################
-# Release workflow running on new tags
+# Create and publish a new release when a new tag is pushed
 ################################################################################
 
 name: Release
@@ -31,16 +31,11 @@ jobs:
     needs:
       - build_32
       - build_64
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Get changelog
-        run: |
-          changelog_file="${{ github.workspace }}/CHANGELOG.md"
-          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
-          sed -n "/^## \[${{ github.ref_name }}\] /,/^## /p" "$changelog_file" | sed '1d;$d' >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
 
       - name: Download 32-bit build artifact
         uses: actions/download-artifact@v4
@@ -56,37 +51,26 @@ jobs:
         run: chmod 755 CryMP-Client32.exe CryMP-Client64.exe
 
       - name: Create ZIP file
-        run: zip crymp-client-${{ github.ref_name }}-build.zip CryMP-Client32.exe CryMP-Client64.exe
+        run: zip "crymp-client-${{ github.ref_name }}-build.zip" CryMP-Client32.exe CryMP-Client64.exe
 
       - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref_name }}
-          body: ${{ env.CHANGELOG }}
-          draft: false
-          prerelease: false
+        run: |
+          gh release create "${{ github.ref_name }}" "crymp-client-${{ github.ref_name }}-build.zip" \
+            --repo="${{ github.repository }}" \
+            --title="${{ github.ref_name }}" \
+            --fail-on-no-commits \
+            --generate-notes \
+            --verify-tag
 
-      - name: Add the ZIP file to the release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: crymp-client-${{ github.ref_name }}-build.zip
-          asset_name: crymp-client-${{ github.ref_name }}-build.zip
-          asset_content_type: application/zip
-
-  upload:
+  publish:
     if: github.repository_owner == 'crymp-net'
     needs:
       - build_32
       - build_64
       - release
-    uses: ./.github/workflows/upload.yml
+    uses: ./.github/workflows/publish.yml
     secrets: inherit
     with:
       context: release

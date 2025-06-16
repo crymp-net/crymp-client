@@ -117,7 +117,7 @@ public:
 
 	// ~IItem
 	virtual bool HasAttachmentAtHelper(const char* helper);
-	virtual void GetAttachmentsAtHelper(const char* helper, std::vector<string>& rAttachments);
+	virtual std::vector<std::string> GetAttachmentsAtHelper(const char* helper);
 	// Events
 	virtual void OnShoot(EntityId shooterId, EntityId ammoId, IEntityClass* pAmmoType,
 		const Vec3& pos, const Vec3& dir, const Vec3& vel);
@@ -655,6 +655,7 @@ protected:
 	float	m_dofSpeed;
 	float m_focusValue;
 
+	unsigned int m_timerLayerEnterId = 0;
 
 	Vec3 m_destination;
 

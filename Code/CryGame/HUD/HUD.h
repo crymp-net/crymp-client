@@ -281,6 +281,7 @@ public:
 	void LoadWeaponAccessories(XmlNodeRef weaponAccessoriesXmlNode);
 	void LoadWeaponsAccessories();
 	void AdjustWeaponAccessory(const char *szWeapon,const char *szHelper,Vec3 *pvScreenSpace);
+	void ClearWeaponAccessoriesScreen();
 	bool UpdateWeaponAccessoriesScreen();
 	void UpdateWeaponModify();
 	void UpdateBuyMenuPages();

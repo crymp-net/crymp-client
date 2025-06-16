@@ -62,6 +62,7 @@ class CSPAnalyst;
 class CSoundMoods;
 class CWeatherSystem;
 class CAdManager;
+class CHealthManager;
 
 // when you add stuff here, also update in CGame::RegisterGameObjectEvents
 enum ECryGameEvent
@@ -162,6 +163,7 @@ public:
 
 	CWeatherSystem* GetWeatherSystem() const { return m_pWeatherSystem; }
 	CAdManager* GetAdManager() const { return m_pAdManager; }
+	CHealthManager* GetHealthManager() const { return m_pHealthManager;  }
 
 	CGameActions&	Actions() const {	return *m_pGameActions;	};
 
@@ -284,6 +286,7 @@ protected:
 
 	CWeatherSystem* m_pWeatherSystem;
 	CAdManager* m_pAdManager;
+	CHealthManager* m_pHealthManager;
 };
 
 extern CGame *g_pGame;

@@ -634,7 +634,7 @@ void CItem::FixResourceName(const ItemString& inName, TempResourceName& name, in
 }
 
 //------------------------------------------------------------------------
-tSoundID CItem::PlayAction(const ItemString& actionName, int layer, bool loop, unsigned int flags, float speedOverride)
+tSoundID CItem::PlayAction(const ItemString& actionName, int layer, bool loop, unsigned int flags, float speedOverride, float blendOverride)
 {
 	if (!m_enableAnimations)
 		return -1;
@@ -851,11 +851,23 @@ tSoundID CItem::PlayAction(const ItemString& actionName, int layer, bool loop, u
 			{
 				float blend = animation.blend;
 				if (flags & eIPAF_NoBlend)
+				{
 					blend = 0.0f;
+				}
+
+				if (blendOverride > 0.0f)
+				{
+					blend = blendOverride;
+				}
+
 				if (speedOverride > 0.0f)
+				{
 					PlayAnimationEx(name.c_str(), i, layer, loop, blend, speedOverride, flags);
+				}
 				else
+				{
 					PlayAnimationEx(name.c_str(), i, layer, loop, blend, animation.speed, flags);
+				}
 			}
 
 			if ((m_stats.fp || m_stats.viewmode & eIVM_FirstPerson) && i == eIGS_FirstPerson && !animation.camera_helper.empty())
@@ -1052,13 +1064,17 @@ void CItem::StopLayer(const ItemString& layerName, int flags, bool record)
 //------------------------------------------------------------------------
 void CItem::RestoreLayers()
 {
-	for (TActiveLayerMap::iterator it = m_activelayers.begin(); it != m_activelayers.end(); it++)
-		PlayLayer(it->first, it->second, false);
-
-	for (TLayerMap::iterator lit = m_sharedparams->layers.begin(); lit != m_sharedparams->layers.end(); lit++)
+	for (const auto& [layerName, flags] : m_activelayers)
 	{
-		if (lit->second.isstatic)
-			PlayLayer(lit->first, eIPAF_Default, false);
+		PlayLayer(layerName, flags, false);
+	}
+
+	for (const auto& [layerName, layerParams] : m_sharedparams->layers)
+	{
+		if (layerParams.isstatic)
+		{
+			PlayLayer(layerName, eIPAF_Default, false);
+		}
 	}
 }
 

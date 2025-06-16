@@ -348,6 +348,8 @@ public:
 		_pWeapon->PlayLayer(g_pItemStrings->modify_layer, eIPAF_Default|eIPAF_NoBlend, false);
 		_pWeapon->m_transitioning = false;
 
+		_pWeapon->m_timerLayerEnterId = 0;
+
 		gEnv->p3DEngine->SetPostEffectParam("Dof_BlurAmount", 1.0f);
 		_pWeapon->m_dofSpeed=0.0f;
 	}
@@ -373,13 +375,25 @@ bool CWeapon::OnActionModify(EntityId actorId, const ActionId& actionId, int act
 		if(m_weaponRaised)
 			RaiseWeapon(false,true);
 
-		if (m_modifying && !m_transitioning)
+		if (m_modifying)
 		{
+			//close interface
+
 			StopLayer(g_pItemStrings->modify_layer, eIPAF_Default, false);
-			PlayAction(g_pItemStrings->leave_modify, 0);
+			StopLayer(g_pItemStrings->enter_modify, eIPAF_Default, false); //CryMP
+
 			m_dofSpeed = -1.0f/((float)GetCurrentAnimationTime(eIGS_FirstPerson)/1000.0f);
 			m_dofValue = 1.0f;
 			m_focusValue = -1.0f;
+
+			const bool overrideBlend = m_timerLayerEnterId > 0;
+			if (m_timerLayerEnterId)
+			{
+				GetScheduler()->KillTimer(m_timerLayerEnterId);
+				m_timerLayerEnterId = 0;
+			}
+
+			PlayAction(g_pItemStrings->leave_modify, 0, false, eIPAF_Default, -1.0f, overrideBlend ? 0.3f : -1.0f);
 
 			GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson), CSchedulerAction<ScheduleLayer_Leave>::Create(this), false);
 			m_transitioning = true;
@@ -389,8 +403,10 @@ bool CWeapon::OnActionModify(EntityId actorId, const ActionId& actionId, int act
 
 			GetGameObject()->InvokeRMI(CItem::SvRequestLeaveModify(), CItem::EmptyParams(), eRMI_ToServer);
 		}
-		else if (!m_modifying && !m_transitioning)
+		else 
 		{
+			//open interface
+
 			gEnv->p3DEngine->SetPostEffectParam("Dof_Active", 1.0f);
 			gEnv->p3DEngine->SetPostEffectParam("Dof_FocusRange", -1.0f);
 			gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMin", 0.0f);
@@ -403,7 +419,7 @@ bool CWeapon::OnActionModify(EntityId actorId, const ActionId& actionId, int act
 			m_dofValue = 0.0f;
 			m_transitioning = true;
 
-			GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson), CSchedulerAction<ScheduleLayer_Enter>::Create(this), false);
+			m_timerLayerEnterId = GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson), CSchedulerAction<ScheduleLayer_Enter>::Create(this), false);
 			m_modifying = true;
 
 			GetGameObject()->InvokeRMI(CItem::SvRequestEnterModify(), CItem::EmptyParams(), eRMI_ToServer);

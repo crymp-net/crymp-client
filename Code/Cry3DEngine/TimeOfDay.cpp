@@ -486,9 +486,14 @@ void TimeOfDay::Update(bool interpolate, bool forceUpdate)
 		m_vars[NIGHT_SKY_MOON_OUTER_CORONA_SCALE].value[0]
 	);
 
-	p3DEngine->SetPostEffectParam("SunShafts_Active", m_vars[SUN_SHAFTS_VISIBILITY].value[0] > 0.05 ? 1 : 0);
-	p3DEngine->SetPostEffectParam("SunShafts_Amount", m_vars[SUN_SHAFTS_VISIBILITY].value[0]);
-	p3DEngine->SetPostEffectParam("SunShafts_RaysAmount", m_vars[SUN_RAYS_VISIBILITY].value[0]);
+	float sunShaftsVis = m_vars[SUN_SHAFTS_VISIBILITY].value[0];
+	sunShaftsVis = std::clamp<float>(sunShaftsVis, 0.0f, 0.3f);
+	float sunRaysVis = m_vars[SUN_RAYS_VISIBILITY].value[0];
+
+	p3DEngine->SetPostEffectParam("SunShafts_Active",
+		(sunShaftsVis > 0.05 || sunRaysVis > 0.05) ? 1 : 0);
+	p3DEngine->SetPostEffectParam("SunShafts_Amount", sunShaftsVis);
+	p3DEngine->SetPostEffectParam("SunShafts_RaysAmount", sunRaysVis);
 	p3DEngine->SetPostEffectParam("SunShafts_RaysAttenuation", m_vars[SUN_RAYS_ATTENUATION].value[0]);
 
 	p3DEngine->SetCloudShadingMultiplier(

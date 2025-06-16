@@ -641,8 +641,9 @@ void CRocketLauncher::UpdateTPLaser(float frameTime)
 }
 
 //===============================================
-void CRocketLauncher::GetAttachmentsAtHelper(const char* helper, std::vector<string>& rAttachments)
+std::vector<std::string> CRocketLauncher::GetAttachmentsAtHelper(const char* helper)
 {
 	//Do nothing...
 	//Rocket launcher has an special helper for the scope, but it must be skipped by the HUD
+	return {};
 }

@@ -1375,299 +1375,19 @@ bool CWeapon::IsReloading() const
 
 void CWeapon::AssistAiming(float magnification/*=1.0f*/, bool accurate/*=false*/)
 {
-	// Check for assistance switches
-	if (!accurate && !g_pGameCVars->aim_assistTriggerEnabled)
-		return;
-
-	if (accurate && !g_pGameCVars->aim_assistAimEnabled)
-		return;
-
-	// Check for assistance restriction
-	if (!SAFE_HUD_FUNC_RET(IsInputAssisted()))
-		return;
-
-	IEntity* res = NULL;
-
-	IActor* pSelfActor = g_pGame->GetIGameFramework()->GetClientActor();
-	if (!pSelfActor)
-		return;
-
-	IEntity* pSelf = pSelfActor->GetEntity();
-	if (GetOwner() != pSelf)
-		return;
-
-	// Do not use in case of vehicle mounted weaponry
-	if (pSelfActor->GetLinkedVehicle())
-		return;
-
-	IPhysicalEntity* pSelfPhysics = pSelf->GetPhysics();
-	IMovementController* pMC = pSelfActor->GetMovementController();
-	if (!pMC || !pSelfPhysics)
-		return;
-
-	SMovementState info;
-	pMC->GetMovementState(info);
-
-	// If already having a valid target, don't do anything
-	ray_hit hit;
-	if (gEnv->pPhysicalWorld->RayWorldIntersection(info.eyePosition, info.eyeDirection * 500.0f, ent_all, (13 & rwi_pierceability_mask), &hit, 1, &pSelfPhysics, 1))
-	{
-		if (!hit.bTerrain && hit.pCollider != pSelfPhysics)
-		{
-			if (IsValidAssistTarget(gEnv->pEntitySystem->GetEntityFromPhysics(hit.pCollider), pSelf))
-				return;
-		}
-	}
-
-	const CCamera& camera = GetISystem()->GetViewCamera();
-	Vec3 origo = camera.GetPosition();
-	// PARAMETER: Autotarget search radius
-	const float radius = g_pGameCVars->aim_assistSearchBox;
-	// Using radar's proximity check result for optimization
-	/*SEntityProximityQuery query;
-	query.box= AABB(Vec3(origo.x-radius,origo.y-radius,origo.z-radius),
-									Vec3(origo.x+radius,origo.y+radius,origo.z+radius));
-	query.nEntityFlags = ENTITY_FLAG_ON_RADAR;
-	gEnv->pEntitySystem->QueryProximity(query);*/
-
-	// Some other ray may be used too, like weapon aiming or firing ray 
-	Line aim = Line(info.eyePosition, info.eyeDirection);
-
-	int betsTarget = -1;
-	// PARAMETER: The largest deviance between aiming and target compensated by autoaim
-	//	Magnification is used for scopes, but greatly downscaled to avoid random snaps in viewfield
-	float maxSnapSqr = g_pGameCVars->aim_assistSnapDistance * sqrt(magnification);
-	maxSnapSqr *= maxSnapSqr;
-	float bestSnapSqr = maxSnapSqr;
-	// PARAMETER: maximum range at which autotargetting works
-	float maxDistanceSqr = g_pGameCVars->aim_assistMaxDistance;
-	maxDistanceSqr *= maxDistanceSqr;
-	Vec3 bestTarget;
-
-	const std::vector<EntityId>* entitiesInProximity = SAFE_HUD_FUNC_RET(GetRadar()->GetNearbyEntities());
-	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
-
-	for (int iEntity = 0; iEntity < entitiesInProximity->size(); ++iEntity)
-	{
-		IEntity* pEntity = pEntitySystem->GetEntity((*entitiesInProximity)[iEntity]);
-		if (!pEntity)
-			continue;
-
-		// Check for target validity
-		if (!IsValidAssistTarget(pEntity, pSelf))
-			continue;
-
-		IPhysicalEntity* pPhysics = pEntity->GetPhysics();
-
-		if (!pPhysics)
-			continue;
-
-		Vec3 target = pEntity->GetWorldPos();
-		pe_status_dynamics dyn;
-		if (pPhysics->GetStatus(&dyn))
-			target = dyn.centerOfMass;
-
-		if (target.GetSquaredDistance(origo) < maxDistanceSqr &&
-			camera.IsPointVisible(target))
-		{
-			float dst = LinePointDistanceSqr(aim, target, g_pGameCVars->aim_assistVerticalScale);
-
-			if (dst < bestSnapSqr)
-			{
-				// Check if can be hit directly after auto aim
-				ray_hit chkhit;
-				if (gEnv->pPhysicalWorld->RayWorldIntersection(info.eyePosition, (target - info.eyePosition) * 500.0f, ent_all, (13 & rwi_pierceability_mask), &chkhit, 1, &pSelfPhysics, 1))
-				{
-					IEntity* pFound = gEnv->pEntitySystem->GetEntityFromPhysics(chkhit.pCollider);
-					if (pFound != pEntity)
-						continue;
-				}
-				else
-				{
-					continue;
-				}
-
-				res = pEntity;
-				bestSnapSqr = dst;
-				bestTarget = target;
-			}
-		}
-	}
-
-	if (res)
-	{
-		CMovementRequest req;
-		Vec3 v0 = info.eyeDirection;
-		Vec3 v1 = bestTarget - info.eyePosition;
-		v0.Normalize();
-		v1.Normalize();
-
-		Matrix34 mInvWorld = pSelf->GetWorldTM();
-		mInvWorld.Invert();
-		//Matrix34 mInvWorld = pSelf->GetLocalTM();
-
-		v0 = mInvWorld.TransformVector(v0);
-		v1 = mInvWorld.TransformVector(v1);
-
-		Ang3 deltaR = Ang3(Quat::CreateRotationV0V1(v0, v1));
-		float scale = 1.0f;
-
-		if (!accurate)
-		{
-			IFireMode* pFireMode = GetFireMode(GetCurrentFireMode());
-			if (!pFireMode)
-				return;
-
-			string modetype(pFireMode->GetType());
-			if (modetype.empty())
-				return;
-
-			float assistMod = 1.0f;
-
-			if (!modetype.compareNoCase("Automatic") ||
-				!modetype.compareNoCase("Beam") ||
-				!modetype.compareNoCase("Burst") ||
-				!modetype.compareNoCase("Rapid"))
-				assistMod = g_pGameCVars->aim_assistAutoCoeff;
-			else
-				assistMod = g_pGameCVars->aim_assistSingleCoeff;
-
-			scale = sqr(1.0f - bestSnapSqr / maxSnapSqr) * assistMod;
-			//GetISystem()->GetILog()->Log("AutoAim mod: %f at mode %s", assistMod, modetype.c_str());
-		}
-
-		//GetISystem()->GetILog()->Log("AutoAim scale: %f", scale);
-		req.AddDeltaRotation(deltaR * scale);
-		pMC->RequestMovement(req);
-	}
+	
 }
 
 bool CWeapon::IsValidAssistTarget(IEntity* pEntity, IEntity* pSelf, bool includeVehicles/*=false*/)
 {
-	if (!pEntity)
-		return false;
-
-	IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pEntity->GetId());
-	IAIObject* pAI = pEntity->GetAI();
-
-	if (!pActor && includeVehicles && pAI)
-	{
-		IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
-		if (pVehicle && pVehicle->GetStatus().health > 0.f && pAI->IsHostile(pSelf->GetAI(), false))
-			return true;
-	}
-
-	// Check for target validity
-	if (!pActor)
-		return false;
-
-	if (!pAI)
-	{
-		if (pActor->IsPlayer() && pEntity != pSelf && !pEntity->IsHidden() &&
-			pActor->GetHealth() > 0)
-		{
-			int ownteam = g_pGame->GetGameRules()->GetTeam(pSelf->GetId());
-			int targetteam = g_pGame->GetGameRules()->GetTeam(pEntity->GetId());
-
-			// Assist aiming on non-allied players only
-			return (targetteam == 0 && ownteam == 0) || (targetteam != 0 && targetteam != ownteam);
-		}
-		else
-		{
-			return false;
-		}
-	}
-
-	return (pEntity != pSelf && !pEntity->IsHidden() &&
-		pActor->GetHealth() > 0 && pAI->GetAIType() != AIOBJECT_VEHICLE &&
-		pAI->IsHostile(pSelf->GetAI(), false));
+	return false;
 }
 
 //-----------------------------------------------------------------------
 //Slightly modified version on AssistAiming
 void CWeapon::AdvancedAssistAiming(float range, const Vec3& pos, Vec3& dir)
 {
-	IEntity* res = NULL;
-
-	IActor* pSelfActor = g_pGame->GetIGameFramework()->GetClientActor();
-	if (!pSelfActor)
-		return;
-
-	IEntity* pSelf = pSelfActor->GetEntity();
-	if (GetOwner() != pSelf)
-		return;
-
-	// If already having a valid target, don't do anything
-	ray_hit hit;
-	IPhysicalEntity* pSkipEnts[10];
-	int nSkip = CSingle::GetSkipEntities(this, pSkipEnts, 10);
-	if (gEnv->pPhysicalWorld->RayWorldIntersection(pos, dir * 500.0f, ent_all, (13 & rwi_pierceability_mask), &hit, 1, pSkipEnts, nSkip))
-	{
-		if (!hit.bTerrain)
-		{
-			if (IsValidAssistTarget(gEnv->pEntitySystem->GetEntityFromPhysics(hit.pCollider), pSelf, true))
-				return;
-		}
-	}
-
-	const CCamera& camera = GetISystem()->GetViewCamera();
-	Vec3 origo = camera.GetPosition();
-
-	// Some other ray may be used too, like weapon aiming or firing ray 
-	Line aim = Line(pos, dir);
-
-	float bestSnapSqr = range * range;
-	// PARAMETER: maximum range at which autotargetting works
-	float maxDistanceSqr = g_pGameCVars->aim_assistMaxDistance;
-	maxDistanceSqr *= maxDistanceSqr;
-	Vec3 bestTarget;
-
-	CHUDRadar* pHUDRadar = SAFE_HUD_FUNC_RET(GetRadar());
-	if (!pHUDRadar)
-		return;
-
-	const std::vector<EntityId>* entitiesInProximity = pHUDRadar->GetNearbyEntities();
-
-	for (int iEntity = 0; iEntity < entitiesInProximity->size(); ++iEntity)
-	{
-		IEntity* pEntity = m_pEntitySystem->GetEntity((*entitiesInProximity)[iEntity]);
-		if (!pEntity)
-			continue;
-
-		// Check for target validity
-		if (!IsValidAssistTarget(pEntity, pSelf, true))
-			continue;
-
-		IPhysicalEntity* pPhysics = pEntity->GetPhysics();
-
-		if (!pPhysics)
-			continue;
-
-		Vec3 target = pEntity->GetWorldPos();
-		pe_status_dynamics dyn;
-		if (pPhysics->GetStatus(&dyn))
-			target = dyn.centerOfMass;
-
-		if (target.GetSquaredDistance(origo) < maxDistanceSqr &&
-			camera.IsPointVisible(target))
-		{
-			float dst = LinePointDistanceSqr(aim, target, g_pGameCVars->aim_assistVerticalScale);
-
-			if (dst < bestSnapSqr)
-			{
-				res = pEntity;
-				bestSnapSqr = dst;
-				bestTarget = target;
-			}
-		}
-	}
-
-	//Correct direction to hit the target
-	if (res)
-	{
-		dir = bestTarget - pos;
-		dir.Normalize();
-	}
+	
 }
 
 //------------------------------------------------------------------------
@@ -2562,68 +2282,72 @@ void CWeapon::OnDestroyed()
 
 bool CWeapon::HasAttachmentAtHelper(const char* helper)
 {
-	CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
-	if (pPlayer)
+	if (CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor()))
 	{
-		IInventory* pInventory = pPlayer->GetInventory();
-		if (pInventory)
+		if (IInventory* pInventory = pPlayer->GetInventory())
 		{
-			for (TAccessoryMap::iterator it = m_accessories.begin(); it != m_accessories.end(); it++)
+			for (const auto& accessoryPair : m_accessories)
 			{
-				SAccessoryParams* params = GetAccessoryParams(it->first);
-				if (params && !strcmp(params->attach_helper.c_str(), helper))
+				if (SAccessoryParams* params = GetAccessoryParams(accessoryPair.first))
 				{
-					// found a child item that can be used
-					return true;
-				}
-			}
-			for (int i = 0; i < pInventory->GetCount(); i++)
-			{
-				EntityId id = pInventory->GetItem(i);
-				IItem* cur = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(id);
-
-				if (cur)
-				{
-					SAccessoryParams* invAccessory = GetAccessoryParams(ItemString(cur->GetEntity()->GetClass()->GetName()));
-					if (invAccessory && !strcmp(invAccessory->attach_helper.c_str(), helper))
+					if (strcmp(params->attach_helper.c_str(), helper) == 0)
 					{
-						// found an accessory in the inventory that can be used
+						// found a child item that can be used
 						return true;
 					}
 				}
 			}
 
-
-		}
-	}
-	return false;
-}
-
-void CWeapon::GetAttachmentsAtHelper(const char* helper, std::vector<string>& rAttachments)
-{
-	CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
-	if (pPlayer)
-	{
-		IInventory* pInventory = pPlayer->GetInventory();
-		if (pInventory)
-		{
-			rAttachments.clear();
-			for (int i = 0; i < pInventory->GetCount(); i++)
+			const int itemCount = pInventory->GetCount();
+			for (int i = 0; i < itemCount; ++i)
 			{
-				EntityId id = pInventory->GetItem(i);
-				IItem* cur = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(id);
-
-				if (cur)
+				const EntityId id = pInventory->GetItem(i);
+				if (IItem* cur = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(id))
 				{
-					SAccessoryParams* invAccessory = GetAccessoryParams(ItemString(cur->GetEntity()->GetClass()->GetName()));
-					if (invAccessory && !strcmp(invAccessory->attach_helper.c_str(), helper))
+					if (SAccessoryParams* invAccessory = GetAccessoryParams(ItemString(cur->GetEntity()->GetClass()->GetName())))
 					{
-						rAttachments.push_back(cur->GetEntity()->GetClass()->GetName());
+						if (strcmp(invAccessory->attach_helper.c_str(), helper) == 0)
+						{
+							// found an accessory in the inventory that can be used
+							return true;
+						}
 					}
 				}
 			}
 		}
 	}
+
+	return false;
+}
+
+
+std::vector<std::string> CWeapon::GetAttachmentsAtHelper(const char* helper)
+{
+	std::vector<std::string> attachments;
+	if (CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor()))
+	{
+		if (IInventory* pInventory = pPlayer->GetInventory())
+		{
+			const int itemCount = pInventory->GetCount();
+
+			for (int i = 0; i < itemCount; ++i)
+			{
+				const EntityId id = pInventory->GetItem(i);
+				if (IItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(id))
+				{
+					if (SAccessoryParams* accessoryParams = GetAccessoryParams(ItemString(pItem->GetEntity()->GetClass()->GetName())))
+					{
+						if (strcmp(accessoryParams->attach_helper.c_str(), helper) == 0)
+						{
+							attachments.emplace_back(pItem->GetEntity()->GetClass()->GetName());
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return attachments;
 }
 
 void CWeapon::IncrementViewmode()

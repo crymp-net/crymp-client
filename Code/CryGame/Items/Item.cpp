@@ -153,8 +153,39 @@ CItem::~CItem()
 
 	GetGameObject()->ReleaseProfileManager(this);
 
-	if (GetOwnerActor() && GetOwnerActor()->GetInventory())
-		GetOwnerActor()->GetInventory()->RemoveItem(GetEntityId());
+	CActor* pOwner = GetOwnerActor();
+	if (pOwner)
+	{
+		IInventory* pInventory = pOwner->GetInventory();
+		if (pInventory)
+		{
+			//CryMP: Start
+			//Prevent possible bugs like stuck inside modification menu, incase weapon gets deleted
+			if (pOwner->IsClient() && IsSelected())
+			{
+				Select(false);
+
+				const bool isDWSlave = IsDualWieldSlave();
+				if (pOwner->GetHealth() > 0 && !isDWSlave)
+				{
+					CItem* pLastItem = pInventory ? static_cast<CItem*>(m_pItemSystem->GetItem(pInventory->GetLastItem())) : NULL;
+					CBinocular* pBinoculars = static_cast<CBinocular*>(pOwner->GetItemByClass(CItem::sBinocularsClass));
+
+					if (pLastItem && pLastItem->CanSelect() && (!pBinoculars || pBinoculars->GetEntityId() != pLastItem->GetEntityId()))
+					{
+						pOwner->SelectLastItem(false);
+					}
+					else
+					{
+						pOwner->SelectNextItem(1, false);
+					}
+				}
+			}
+			//CryMP: End
+
+			pInventory->RemoveItem(GetEntityId());
+		}
+	}
 
 	if (!(GetISystem()->IsSerializingFile() && GetGameObject()->IsJustExchanging()))
 		for (TAccessoryMap::iterator it = m_accessories.begin(); it != m_accessories.end(); ++it)
@@ -1294,7 +1325,9 @@ void CItem::Drop(float impulseScale, bool selectNext, bool byDeath)
 			ResetDualWield();
 
 			if (!byDeath)
+			{
 				Select(true);
+			}
 
 			if (IsServer() && pOwner)
 			{
@@ -1315,7 +1348,9 @@ void CItem::Drop(float impulseScale, bool selectNext, bool byDeath)
 	if (pOwner)
 	{
 		if (pInventory && pInventory->GetCurrentItem() == GetEntity()->GetId())
+		{
 			pInventory->SetCurrentItem(0);
+		}
 
 		if (IsServer()) // don't send slave drops over network, the master is sent instead
 		{
@@ -1354,7 +1389,9 @@ void CItem::Drop(float impulseScale, bool selectNext, bool byDeath)
 	Physicalize(true, true);
 
 	if (gEnv->bServer)
+	{
 		IgnoreCollision(true);
+	}
 
 	EntityId ownerId = GetOwnerId();
 
@@ -1444,7 +1481,9 @@ void CItem::Drop(float impulseScale, bool selectNext, bool byDeath)
 	if (GetOwnerId())
 	{
 		if (pInventory)
+		{
 			pInventory->RemoveItem(GetEntity()->GetId());
+		}
 		SetOwnerId(0);
 	}
 
@@ -1457,7 +1496,9 @@ void CItem::Drop(float impulseScale, bool selectNext, bool byDeath)
 	if (pOwner && pOwner->IsClient())
 	{
 		if (!isDWSlave)
+		{
 			ResetAccessoriesScreen(pOwner);
+		}
 
 		if (CanSelect() && selectNext && pOwner->GetHealth() > 0 && !isDWSlave)
 		{
@@ -1465,14 +1506,22 @@ void CItem::Drop(float impulseScale, bool selectNext, bool byDeath)
 			CBinocular* pBinoculars = static_cast<CBinocular*>(pOwner->GetItemByClass(CItem::sBinocularsClass));
 
 			if (pLastItem && pLastItem->CanSelect() && (!pBinoculars || pBinoculars->GetEntityId() != pLastItem->GetEntityId()))
+			{
 				pOwner->SelectLastItem(false);
+			}
 			else
+			{
 				pOwner->SelectNextItem(1, false);
+			}
 		}
 		if (CanSelect())
+		{
 			m_pItemSystem->DropActorItem(pOwner, GetEntity()->GetId());
+		}
 		else
+		{
 			m_pItemSystem->DropActorAccessory(pOwner, GetEntity()->GetId());
+		}
 	}
 
 	Cloak(false);
