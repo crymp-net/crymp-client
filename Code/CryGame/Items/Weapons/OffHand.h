@@ -273,6 +273,42 @@ private:
 	bool OnActionXISwitchGrenade(EntityId actorId, const ActionId& actionId, int activationMode, float value);
 	bool OnActionSpecial(EntityId actorId, const ActionId& actionId, int activationMode, float value);
 	void RegisterActions();
+
+private:
+
+	enum class EntityFpViewMode
+	{
+		Default,
+		ForceActive,
+		ForceDisable,
+		ForceUpdate,
+	};
+
+	bool m_objectFpMode = false;
+
+	enum class ConstraintStatus
+	{
+		Inactive,
+		WaitForPhysicsUpdate,
+		Active,
+		Broken
+	};
+
+	ConstraintStatus m_constraintStatus = ConstraintStatus::Inactive;
+
+public:
+
+	bool IsTwoHandMode() const
+	{
+		return m_grabType == 1; //GRAB_TYPE_TWO_HANDED;
+	}
+	bool Request_PickUpObject_MP();
+	bool PickUpObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId);
+	bool ThrowObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId, bool stealingObject = false);
+	void AttachObjectToHand(bool attach, EntityId objectId, bool throwObject);
+	void UpdateEntityRenderFlags(const EntityId entityId, EntityFpViewMode mode = EntityFpViewMode::Default);
+	void EnableFootGroundAlignment(bool enable);
+	void SetHeldEntityId(const EntityId id);
 };
 
 #endif

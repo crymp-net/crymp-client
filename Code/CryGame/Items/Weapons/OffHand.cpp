@@ -2568,7 +2568,7 @@ void COffHand::SelectGrabType(IEntity* pEntity)
 					IAttachmentManager* pAM = slotInfo.pCharacter->GetIAttachmentManager();
 					if (pAM)
 					{
-						IAttachment* pAttachment = pAM->GetInterfaceByName((*i).helper.c_str());
+						IAttachment* pAttachment = pAM->GetInterfaceByName(grabType.helper.c_str());
 						if (pAttachment)
 						{
 							m_holdOffset = Matrix34(pAttachment->GetAttAbsoluteDefault().q);
@@ -3594,49 +3594,445 @@ void COffHand::AttachGrenadeToHand(int grenade, bool fp /*=true*/, bool attach /
 }
 
 //==============================================================
-void COffHand::AttachObjectToHand(bool attach /*=true*/)
-{
-	//CryMP Experimental 
-	//For Third Person
-	/*
-	ICharacterInstance* pOwnerCharacter = GetOwnerActor() ? GetOwnerActor()->GetEntity()->GetCharacter(0) : NULL;
-	if (!pOwnerCharacter)
-		return;
-
-	IAttachmentManager* pAttachmentManager = pOwnerCharacter->GetIAttachmentManager();
-	IAttachment* pAttachment = pAttachmentManager ? pAttachmentManager->GetInterfaceByName(m_params.attachment[eIH_Left].c_str()) : NULL;
-
-	if (pAttachment)
-	{
-		//If there's an attachment, clear it
-		if (!attach)
-		{
-			pAttachment->ClearBinding();
-		}
-		else
-		{
-			//If not it means we need to attach
-			int slot = eIGS_Aux0;
-			if ((grenade == 1) || (grenade == 2))
-				slot = eIGS_Aux1;
-
-			if (IStatObj* pStatObj = GetEntity()->GetStatObj(slot))
-			{
-				CCGFAttachment* pCGFAttachment = new CCGFAttachment();
-				pCGFAttachment->pObj = pStatObj;
-
-				pAttachment->AddBinding(pCGFAttachment);
-			}
-		}
-
-	}*/
-}
-
-//==============================================================
 EntityId	COffHand::GetHeldEntityId() const
 {
 	if (m_currentState & (eOHS_HOLDING_NPC | eOHS_HOLDING_OBJECT))
 		return m_heldEntityId;
 
 	return 0;
+}
+
+//==============================================================
+bool COffHand::Request_PickUpObject_MP()
+{
+	const EntityId objectId = m_crosshairId;
+	IEntity* pObject = m_pEntitySystem->GetEntity(objectId);
+	if (!pObject)
+		return false;
+
+	//CryMP notify server
+	CActor* pOwner = GetOwnerActor();
+	if (pOwner && pOwner->IsClient())
+	{
+		//Don't pick up in prone
+		if (pOwner->GetStance() == STANCE_PRONE)
+		{
+			return false;
+		}
+
+		//Check if someone else is carrying the object already
+		const int count = m_pActorSystem->GetActorCount();
+		if (count > 1)
+		{
+			IActorIteratorPtr pIter = m_pActorSystem->CreateActorIterator();
+			while (IActor* pActor = pIter->Next())
+			{
+				if (pActor == pOwner)
+					continue;
+
+				CPlayer* pOwnerPlayer = CPlayer::FromIActor(pActor);
+
+				if (pOwnerPlayer && pOwnerPlayer->GetHeldObjectId() == objectId)
+				{
+					COffHand* pOffHand = static_cast<COffHand*>(pOwnerPlayer->GetItemByClass(CItem::sOffHandClass));
+					if (pOffHand)
+					{
+						//stolen object event
+						pOffHand->ThrowObject_MP(pOwnerPlayer, objectId, true);
+					}
+					break;
+				}
+			}
+		}
+
+		const bool bClientEntity = (pObject->GetFlags() & ENTITY_FLAG_CLIENT_ONLY);
+		if (!bClientEntity)
+		{
+			//Start throw animation for all clients
+			/*if (m_fm)
+			{
+				m_fm->StartFire();
+			}
+			else
+			{
+				CryLogWarningAlways("COffHand: owner %s has no firemode", pOwner->GetEntity()->GetName());
+			}*/
+
+			IgnoreCollisions(true, objectId);
+
+			RequestFireMode(GetFireModeIdx(m_grabTypes[m_grabType].throwFM.c_str())); //CryMP: added this here, early enough 
+
+			//CryMP: Might need a small timer to guarantee firemode is accepted before pickupitem rmi
+			pOwner->GetGameObject()->InvokeRMI(CPlayer::SvRequestPickUpItem(), CPlayer::ItemIdParam(objectId), eRMI_ToServer);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool COffHand::PickUpObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId) //Called from CPlayer.cpp
+{
+	IEntity* pObject = m_pEntitySystem->GetEntity(synchedObjectId);
+	if (!pObject)
+		return false;
+
+	//CryMP: Remote player stole our object
+	CPlayer* pClientPlayer = static_cast<CPlayer*>(m_pGameFramework->GetClientActor());
+	if (pClientPlayer != pPlayer && pClientPlayer->GetHeldObjectId() == synchedObjectId)
+	{
+		COffHand* pClientOffHand = static_cast<COffHand*>(pClientPlayer->GetWeaponByClass(CItem::sOffHandClass));
+		if (pClientOffHand)
+		{
+			//Will take care of resets 
+			pClientOffHand->ThrowObject_MP(pClientPlayer, synchedObjectId, true);
+		}
+	}
+
+	SetHeldEntityId(synchedObjectId);
+
+	PickUpObject(synchedObjectId); //fixme , false);
+
+	if (pPlayer->IsRemote())
+	{
+		EnableUpdate(true, eIUS_General);
+	}
+
+	return true;
+}
+
+bool COffHand::ThrowObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId, bool stealingObject) //Called from CPlayer.cpp
+{
+	IEntity* pObject = m_pEntitySystem->GetEntity(synchedObjectId);
+	if (!pObject)
+		return false;
+
+	/*  //fixme
+	if (g_pGameCVars->mp_debug)
+		CryLogAlways("[RMI] $8%s throws object %s - mode: %s", pPlayer->GetEntity()->GetName(), pObject->GetName(),
+			stealingObject ? "$8stealing$7" : "$8throwing$7"
+		);
+		*/
+
+	SetHeldEntityId(0);
+
+	if (stealingObject)
+	{
+		FinishAction(eOHA_RESET);
+	}
+	else
+	{
+		pPlayer->PlayAnimation("combat_plantUB_c4_01", 1.0f, false, true, 1);
+	}
+
+	if (pPlayer->IsRemote())
+	{
+		EnableUpdate(false, eIUS_General);
+	}
+
+	return true;
+}
+
+//==============================================================
+void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObject)
+{
+	CActor* pOwner = GetOwnerActor();
+	if (!pOwner)
+		return;
+
+	IEntity* pObject = m_pEntitySystem->GetEntity(objectId);
+
+	const bool fpMode = !pOwner->IsThirdPerson() && !attach && !throwObject;
+
+	//CryLogAlways("AttachObjectToHand: m_stats.fp %d, throwObject %d, %s, objectId=%d", m_stats.fp, throwObject, attach ? "attached" : "de-tached", objectId);
+
+	ICharacterInstance* pOwnerCharacter = pOwner->GetEntity()->GetCharacter(0);
+	IAttachmentManager* pAttachmentManager = pOwnerCharacter ? pOwnerCharacter->GetIAttachmentManager() : nullptr;
+	if (!pAttachmentManager)
+	{
+		return;
+	}
+
+	const char* attachmentName = "held_object_attachment";
+	IAttachment* pAttachment = pAttachmentManager->GetInterfaceByName(attachmentName);
+
+	if (attach && pObject)
+	{
+		if (!pAttachment)
+		{
+			pAttachment = pAttachmentManager->CreateAttachment(attachmentName, CA_BONE, "Bip01 Head");
+		}
+
+		if (pAttachment)
+		{
+			// Attach the entity to the left hand
+			CEntityAttachment* pEntityAttachment = new CEntityAttachment();
+			pEntityAttachment->SetEntityId(objectId);
+
+			pAttachment->ClearBinding();
+			pAttachment->AddBinding(pEntityAttachment);
+
+			bool isTwoHand = IsTwoHandMode();
+
+			QuatT offset;
+			offset.t = Vec3(ZERO);
+			const bool isVehicle = g_pGame->GetIGameFramework()->GetIVehicleSystem()->IsVehicleClass(pObject->GetClass()->GetName());
+			const bool isActor = !isVehicle && g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(objectId) != nullptr;
+
+			if (isActor)
+			{
+				isTwoHand = false;
+			}
+
+			if (isTwoHand && !isVehicle && !isActor)
+			{
+				Vec3 vOffset = Vec3(ZERO);
+				AABB bbox;
+				pObject->GetLocalBounds(bbox);
+
+				const float lengthX = fabs(bbox.max.x - bbox.min.x);
+				const float lengthY = fabs(bbox.max.y - bbox.min.y);
+				const float lengthZ = fabs(bbox.max.z - bbox.min.z);
+
+				vOffset.y = 0.5f + (std::max(lengthY, lengthX) * 0.2f);
+				vOffset.x -= lengthZ * 0.25f;
+
+				offset.t = vOffset;  // Offset position
+			}
+			else if (!isTwoHand)
+			{
+				offset.t = Vec3(-0.4f, 0.7f, 0.0f);
+			}
+
+			Matrix34 holdMatrix = GetHoldOffset(pObject);
+
+			QuatT holdOffset;
+			holdOffset.q = Quat(Matrix33(holdMatrix));
+			holdOffset.t = offset.t;
+
+			Quat worldRotation = holdOffset.q;
+			Vec3 worldPosition = holdOffset.t;
+
+			ISkeletonPose* pSkeletonPose = pOwnerCharacter->GetISkeletonPose();
+			if (pSkeletonPose)
+			{
+				const int headJointId = pSkeletonPose->GetJointIDByName("eye_left_bone");
+				if (headJointId > -1)
+				{
+					Quat headRotation = pSkeletonPose->GetAbsJointByID(headJointId).q;
+					Vec3 eyeDirection = headRotation.GetColumn1().GetNormalized();
+					Quat rollQuaternion = Quat::CreateRotationAA(DEG2RAD(95), eyeDirection);
+
+					worldRotation = rollQuaternion * worldRotation;
+
+					if (isActor)
+					{
+						worldRotation = Quat::CreateRotationX(DEG2RAD(180)) * worldRotation;
+					}
+				}
+			}
+
+			Matrix34 worldMatrix = Matrix34(worldRotation);
+			worldMatrix.SetTranslation(worldPosition);
+
+			pAttachment->SetAttRelativeDefault(QuatT(worldRotation, worldPosition));
+
+			IAnimationGraphState* pGraphState = pOwner->GetAnimationGraphState();
+			if (pGraphState)
+			{
+				const auto inputId = pGraphState->GetInputId("PseudoSpeed");
+				pGraphState->SetInput(inputId, 0.0f);
+				pGraphState->Update();
+			}
+		}
+	}
+	else
+	{
+		if (pAttachment)
+		{
+			pAttachment->ClearBinding();
+			pAttachmentManager->RemoveAttachmentByName(attachmentName); //Need to remove always, or will be misaligned
+		}
+	}
+}
+
+//==============================================================
+void COffHand::UpdateEntityRenderFlags(const EntityId entityId, EntityFpViewMode mode)
+{
+	IEntity* pEntity = m_pEntitySystem->GetEntity(entityId);
+	if (!pEntity)
+		return;
+
+	CActor* pOwner = GetOwnerActor();
+
+	bool enable = pOwner && !pOwner->IsThirdPerson();
+
+	if (mode == EntityFpViewMode::ForceActive)
+		enable = true;
+	else if (mode == EntityFpViewMode::ForceDisable)
+		enable = false;
+
+	if (mode == EntityFpViewMode::Default && enable == m_objectFpMode)
+		return;
+
+	m_objectFpMode = enable;
+
+	ICharacterInstance* pCharacter = pEntity->GetCharacter(0);
+
+	if (enable)
+	{
+		//FP Mode
+		if (pCharacter)
+		{
+			pCharacter->SetFlags(pCharacter->GetFlags() | ENTITY_SLOT_RENDER_NEAREST);
+			if (IEntityRenderProxy* pProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+			{
+				if (IRenderNode* pRenderNode = pProxy->GetRenderNode())
+					pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS, true);
+			}
+		}
+		else
+		{
+			DrawNear(true, entityId);
+		}
+	}
+	else
+	{
+		if (pCharacter)
+		{
+			pCharacter->SetFlags(pCharacter->GetFlags() & (~ENTITY_SLOT_RENDER_NEAREST));
+			if (IEntityRenderProxy* pProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+			{
+				if (IRenderNode* pRenderNode = pProxy->GetRenderNode())
+					pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS, false);
+			}
+		}
+		else
+		{
+			DrawNear(false, entityId);
+		}
+	}
+}
+
+//==============================================================
+void COffHand::EnableFootGroundAlignment(bool enable)
+{
+	CActor* pActor = GetOwnerActor();
+	if (pActor && (enable || m_grabType == GRAB_TYPE_TWO_HANDED))
+	{
+		if (ICharacterInstance* pCharacter = pActor->GetEntity()->GetCharacter(0))
+		{
+			if (ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose())
+			{
+				pSkeletonPose->EnableFootGroundAlignment(enable);
+			}
+		}
+	}
+}
+
+//==============================================================
+void COffHand::SetHeldEntityId(const EntityId entityId)
+{
+	if (m_heldEntityId == entityId)
+		return;
+
+	const EntityId oldHeldEntityId = m_heldEntityId;
+
+	m_heldEntityId = entityId;
+
+	const bool isOldItem = m_pItemSystem->GetItem(oldHeldEntityId) != nullptr;
+	const bool isNewItem = m_pItemSystem->GetItem(entityId) != nullptr;
+
+	if (!isOldItem)
+	{
+		UpdateEntityRenderFlags(oldHeldEntityId, EntityFpViewMode::ForceDisable);
+
+		AttachObjectToHand(false, oldHeldEntityId, false);
+
+		EnableFootGroundAlignment(true);
+	}
+
+	CActor* pActor = GetOwnerActor();
+	if (!pActor)
+		return;
+
+	if (!isNewItem || !entityId)
+	{
+		pActor->SetHeldObjectId(entityId);
+	}
+
+	if (oldHeldEntityId && !isOldItem)
+	{
+		IEntity* pOldEntity = m_pEntitySystem->GetEntity(oldHeldEntityId);
+		if (pOldEntity)
+		{
+			IgnoreCollisions(false, oldHeldEntityId);
+
+			if (gEnv->bMultiplayer && pActor->IsRemote())
+			{
+				pOldEntity->SetFlags(pOldEntity->GetFlags() & ~ENTITY_FLAG_CLIENT_ONLY);
+
+				if (IPhysicalEntity* pObjectPhys = pOldEntity->GetPhysics())
+				{
+					pe_status_dynamics dyn;
+					pObjectPhys->GetStatus(&dyn);
+					const float originalMass = pActor->GetHeldObjectMass();
+					if (originalMass && dyn.mass != originalMass)
+					{
+						pe_simulation_params simParams;
+						simParams.mass = originalMass;
+						if (pObjectPhys->SetParams(&simParams))
+						{
+							pe_status_dynamics dyn;
+							pObjectPhys->GetStatus(&dyn);
+						}
+					}
+				}
+
+				pActor->SetHeldObjectMass(0.0f);
+			}
+		}
+	}
+
+	if (!entityId || isNewItem)
+		return;
+
+	IEntity* pEntity = m_pEntitySystem->GetEntity(entityId);
+	if (!pEntity)
+		return;
+
+	SelectGrabType(pEntity);
+
+	EnableFootGroundAlignment(false);
+
+	if (!pActor->IsThirdPerson())
+	{
+		UpdateEntityRenderFlags(entityId, EntityFpViewMode::ForceActive);
+	}
+
+	if (gEnv->bMultiplayer && pActor->IsRemote()) 
+	{
+		pEntity->SetFlags(pEntity->GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
+
+		if (IPhysicalEntity* pObjectPhys = pEntity->GetPhysics())
+		{
+			pe_status_dynamics dyn;
+			if (pObjectPhys->GetStatus(&dyn))
+			{
+				pe_simulation_params simParams;
+				simParams.mass = 0.0f;
+
+				if (pObjectPhys->SetParams(&simParams))
+				{
+					pActor->SetHeldObjectMass(dyn.mass);
+				}
+			}
+		}
+	}
+
+	IgnoreCollisions(true, entityId);
+
+	if (pActor->IsThirdPerson())
+	{
+		AttachObjectToHand(true, entityId, false);
+	}
 }
