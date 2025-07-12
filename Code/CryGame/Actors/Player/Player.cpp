@@ -1190,122 +1190,59 @@ void CPlayer::UpdateHeldObjectIK()
 {
 	const EntityId objectId = GetHeldObjectId();
 	IEntity* pObject = objectId ? gEnv->pEntitySystem->GetEntity(objectId) : nullptr;
-	if (pObject)
+	if (!pObject)
+		return;
+
+	COffHand* pOffHand = static_cast<COffHand*>(GetWeaponByClass(CItem::sOffHandClass));
+	if (!pOffHand)
+		return;
+
+	IPhysicalEntity* pent = pObject->GetPhysics();
+	if (!pent)
+		return;
+
+	// Get character orientation and position
+	QuatT rootBoneWorldRot = GetAnimatedCharacter()->GetAnimLocation();
+	Vec3 playerPos = rootBoneWorldRot.t;
+	Vec3 characterRight = rootBoneWorldRot.q.GetColumn0(); // player's right direction
+
+	// Get object center (center of mass if available)
+	Vec3 objectPos;
+	pe_status_dynamics dyn;
+	if (pent->GetStatus(&dyn))
+		objectPos = dyn.centerOfMass;
+	else
+		objectPos = pObject->GetWorldPos();
+
+	if (!pOffHand->IsTwoHandMode())
 	{
-		SMovementState info;
-		IMovementController* pMC = GetMovementController();
-		pMC->GetMovementState(info);
-
-		// Use the player's eye direction to adjust the object position
-		Vec3 eyePos = info.eyePosition;
-		Vec3 eyeDir = info.eyeDirection.GetNormalized(); // Eye direction in world space
-
-		QuatT rootBoneWorldRot = GetAnimatedCharacter()->GetAnimLocation();
-		Vec3 worldPos = rootBoneWorldRot.t; // Extracts the world position
-		Vec3 forwardDir = rootBoneWorldRot.q.GetColumn1();
-
-		// Calculate the object position based on eye direction
-		Vec3 objectPos = pObject->GetWorldPos(); //worldPos + forwardDir * 2.5f; // Place the object 1 unit in front of the eyes
-		//objectPos.z -= 0.2f;
-
-		// Adjust the hand positions around the object
-		Vec3 handOffset = eyeDir.Cross(Vec3(0, 0, 1)).GetNormalized() * 0.3f; // Offset for left and right
-		Vec3 leftHandTarget = objectPos - handOffset;
-		Vec3 rightHandTarget = objectPos + handOffset;
-
-		// Set inverse kinematics for the hands
-		SetIKPos("leftArm", leftHandTarget, 1);
-		SetIKPos("rightArm", rightHandTarget, 1);
+		SetIKPos("leftArm", objectPos, 1);
+		return;
 	}
-void CPlayer::UpdateHeldObjectIK()
-{
-	const EntityId objectId = GetHeldObjectId();
-	IEntity* pObject = objectId ? gEnv->pEntitySystem->GetEntity(objectId) : nullptr;
-	if (pObject)
-	{
-		SMovementState info;
-		IMovementController* pMC = GetMovementController();
-		pMC->GetMovementState(info);
 
-		Vec3 eyePos = info.eyePosition;
-		Vec3 eyeDir = info.eyeDirection.GetNormalized();
+	// Estimate object width
+	AABB bbox;
+	pObject->GetLocalBounds(bbox);
+	float halfWidth = (bbox.max.x - bbox.min.x) * 0.5f;
+	float extraOffset = 0.5f; // ensures rays start outside object bounds
 
-		QuatT rootBoneWorldRot = GetAnimatedCharacter()->GetAnimLocation();
-		Vec3 worldPos = rootBoneWorldRot.t;
-		Vec3 forwardDir = rootBoneWorldRot.q.GetColumn1();
+	// Ray origins: outside object on left/right, aiming toward center
+	Vec3 leftOrigin = objectPos - characterRight * (halfWidth + extraOffset);
+	Vec3 rightOrigin = objectPos + characterRight * (halfWidth + extraOffset);
 
-		// Get object position using center of mass
-		Vec3 objectPos;
-		IPhysicalEntity* pent = pObject->GetPhysics();
-		pe_status_dynamics sd;
-		if (pent && pent->GetStatus(&sd))
-		{
-			objectPos = sd.centerOfMass;
-		}
-		else
-		{
-			objectPos = pObject->GetPos(); // Fallback to entity position if no physics
-		}
+	Vec3 leftDir = (objectPos - leftOrigin).GetNormalized();
+	Vec3 rightDir = (objectPos - rightOrigin).GetNormalized();
+	float rayLength = (leftOrigin - objectPos).GetLength() + 0.1f;
 
-		// Get object orientation
-		Quat objectRot = pObject->GetRotation();
-		Vec3 objectRight = objectRot.GetColumn0(); // Right vector of the object
+	ray_hit leftHit, rightHit;
+	bool leftHitOk = gEnv->pPhysicalWorld->RayTraceEntity(pent, leftOrigin, leftDir * rayLength, &leftHit);
+	bool rightHitOk = gEnv->pPhysicalWorld->RayTraceEntity(pent, rightOrigin, rightDir * rayLength, &rightHit);
 
-		// Adjust rayOffset based on object size using entity bounds
-		float rayOffset = 0.4f;
-		AABB bbox;
-		pObject->GetLocalBounds(bbox);
-		float objectWidth = (bbox.max.x - bbox.min.x);
-		rayOffset = objectWidth * 0.6f; // Start ray wider for large objects
+	Vec3 leftTarget = leftHitOk ? leftHit.pt : leftOrigin;
+	Vec3 rightTarget = rightHitOk ? rightHit.pt : rightOrigin;
 
-		float rayLength = 0.5f;
-
-		Vec3 leftRayOrigin = objectPos - (objectRight * rayOffset);
-		Vec3 rightRayOrigin = objectPos + (objectRight * rayOffset);
-
-		// Perform raycasts directly to the held object
-		ray_hit leftHit, rightHit;
-		bool leftRayHit = false;
-		bool rightRayHit = false;
-
-		if (pent)
-		{
-			leftRayHit = gEnv->pPhysicalWorld->RayTraceEntity(
-				pent, leftRayOrigin, objectRight * rayLength, &leftHit);
-
-			rightRayHit = gEnv->pPhysicalWorld->RayTraceEntity(
-				pent, rightRayOrigin, -objectRight * rayLength, &rightHit);
-		}
-
-		// Update hand targets based on ray hits
-		Vec3 leftHandTarget = leftRayHit ? leftHit.pt : (objectPos - objectRight * rayOffset);
-		Vec3 rightHandTarget = rightRayHit ? rightHit.pt : (objectPos + objectRight * rayOffset);
-
-		// Set inverse kinematics for the hands
-		SetIKPos("leftArm", leftHandTarget, 1);
-		SetIKPos("rightArm", rightHandTarget, 1);
-
-		// Debug drawing
-		IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
-		if (pAuxGeom)
-		{
-			ColorB leftColor(255, 0, 0, 255);
-			ColorB rightColor(0, 0, 255, 255);
-			ColorB objectColor(0, 255, 0, 255);
-
-			float handSphereSize = 0.05f;
-			float objectSphereSize = 0.2f;
-
-			// Draw spheres for targets and object
-			pAuxGeom->DrawSphere(leftHandTarget, handSphereSize, leftColor);
-			pAuxGeom->DrawSphere(rightHandTarget, handSphereSize, rightColor);
-			pAuxGeom->DrawSphere(objectPos, objectSphereSize, objectColor);
-
-			// Draw raycast lines
-			pAuxGeom->DrawLine(leftRayOrigin, leftColor, leftRayOrigin + objectRight * rayLength, leftColor, 1.5f);
-			pAuxGeom->DrawLine(rightRayOrigin, rightColor, rightRayOrigin - objectRight * rayLength, rightColor, 1.5f);
-		}
-	}
+	SetIKPos("leftArm", leftTarget, 1);
+	SetIKPos("rightArm", rightTarget, 1);
 }
 
 void CPlayer::UpdateParachuteMorph(float frameTime)
@@ -5501,8 +5438,11 @@ void CPlayer::ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTi
 	}
 	else
 	{
-		UpdateParachuteIK();
-		UpdateHeldObjectIK();
+		if (gEnv->bClient)
+		{
+			UpdateParachuteIK();
+			UpdateHeldObjectIK();
+		}
 	}
 
 	CActor::ProcessBonesRotation(pCharacter, frameTime);
