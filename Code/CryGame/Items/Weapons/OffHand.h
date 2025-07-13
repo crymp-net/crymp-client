@@ -161,6 +161,7 @@ public:
 	void UpdateHeldObject();
 	void UpdateGrabbedNPCState();
 	void UpdateGrabbedNPCWorldPos(IEntity* pEntity, struct SViewParams* viewParams);
+	bool GetGrabbedActorNeckWorldPos(IEntity* pEntity, Vec3& outNeckPos) const;
 
 	void StartSwitchGrenade(bool xi_switch = false, bool fakeSwitch = false);
 	void EndSwitchGrenade();

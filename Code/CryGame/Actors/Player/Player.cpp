@@ -1216,6 +1216,14 @@ void CPlayer::UpdateHeldObjectIK()
 
 	if (!pOffHand->IsTwoHandMode())
 	{
+		if (IActor* pActor = m_pGameFramework->GetIActorSystem()->GetActor(objectId))
+		{
+			Vec3 neckPos;
+			if (pOffHand->GetGrabbedActorNeckWorldPos(pObject, neckPos))
+			{
+				objectPos = neckPos;
+			}
+		}
 		SetIKPos("leftArm", objectPos, 1);
 		return;
 	}

@@ -1216,6 +1216,48 @@ void COffHand::UpdateGrabbedNPCWorldPos(IEntity* pEntity, struct SViewParams* vi
 }
 
 //=============================================================
+bool COffHand::GetGrabbedActorNeckWorldPos(IEntity* pEntity, Vec3& outNeckPos) const
+{
+	if (!pEntity)
+		return false;
+
+	ICharacterInstance* pCharacter = pEntity->GetCharacter(0);
+	if (!pCharacter)
+		return false;
+
+	ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose();
+	if (!pSkeletonPose)
+		return false;
+
+	int neckId = 0;
+	Vec3 specialOffset(0.0f, -0.07f, -0.09f);
+
+	switch (m_grabbedNPCSpecies)
+	{
+	case eGCT_HUMAN:
+		neckId = pSkeletonPose->GetJointIDByName("Bip01 Neck");
+		specialOffset.Set(0.0f, 0.0f, 0.0f);
+		break;
+	case eGCT_ALIEN:
+		neckId = pSkeletonPose->GetJointIDByName("Bip01 Neck");
+		specialOffset.Set(0.0f, 0.0f, -0.09f);
+		break;
+	case eGCT_TROOPER:
+		neckId = pSkeletonPose->GetJointIDByName("Bip01 Head");
+		break;
+	default:
+		return false;
+	}
+
+	if (neckId < 0)
+		return false;
+
+	const QuatT neckJoint = pSkeletonPose->GetAbsJointByID(neckId);
+	outNeckPos = pEntity->GetWorldTM().TransformPoint(neckJoint.t + specialOffset);
+	return true;
+}
+
+//=============================================================
 void COffHand::OnAction(EntityId actorId, const ActionId& actionId, int activationMode, float value)
 {
 	s_actionHandler.Dispatch(this, actorId, actionId, activationMode, value);
