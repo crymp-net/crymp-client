@@ -262,8 +262,10 @@ void COffHand::Reset()
 	m_forceThrow = false;
 	m_restoreStateAfterLoading = false;
 
-	DrawSlot(eIGS_Aux0, false);
-	DrawSlot(eIGS_Aux1, false);
+	DrawSlot(eIGS_Aux0, false); //frag_grenade_tp.cgf	
+	DrawSlot(eIGS_Owner, false); //emp_grenade.cgf
+	DrawSlot(eIGS_OwnerLooped, false); //flashbang.cgf
+	DrawSlot(eIGS_Aux1, false); //smoke_grenade_tp.cgf
 
 	SetOffHandState(eOHS_INIT_STATE);
 
