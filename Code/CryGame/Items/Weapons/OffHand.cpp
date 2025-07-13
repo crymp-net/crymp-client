@@ -186,18 +186,7 @@ COffHand::~COffHand()
 {
 	if (m_heldEntityId)
 	{
-		DrawNear(false, m_heldEntityId);
-		if (IEntity* pEntity = m_pEntitySystem->GetEntity(m_heldEntityId))
-		{
-			if (ICharacterInstance* pChar = pEntity->GetCharacter(0))
-				pChar->SetFlags(pChar->GetFlags() & (~ENTITY_SLOT_RENDER_NEAREST));
-
-			if (IEntityRenderProxy* pProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
-			{
-				if (IRenderNode* pRenderNode = pProxy->GetRenderNode())
-					pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS, false);
-			}
-		}
+		SetHeldEntityId(0);
 	}
 }
 
@@ -241,10 +230,11 @@ void COffHand::Reset()
 		}
 	}
 
+	SetHeldEntityId(0);
+
 	m_nextGrenadeThrow = -1.0f;
 	m_lastFireModeId = 0;
 	m_pickingTimer = -1.0f;
-	m_heldEntityId = 0;
 	m_preHeldEntityId = 0;
 	m_constraintId = 0;
 	m_resetTimer = -1.0f;
@@ -256,8 +246,8 @@ void COffHand::Reset()
 	m_lastCHUpdate = 0.0f;
 	m_heldEntityMass = 0.0f;
 	m_prevMainHandId = 0;
-	m_checkForConstraintDelay = 2;
-	m_pRockRN = NULL;
+	m_constraintStatus = ConstraintStatus::Inactive;
+	m_pRockRN = nullptr;
 	m_bCutscenePlaying = false;
 	m_forceThrow = false;
 	m_restoreStateAfterLoading = false;
@@ -334,7 +324,8 @@ void COffHand::FullSerialize(TSerialize ser)
 	ser.Value("m_currentState", m_currentState);
 	ser.Value("m_preHeldEntityId", m_preHeldEntityId);
 	ser.Value("m_startPickUp", m_startPickUp);
-	ser.Value("m_heldEntityId", m_heldEntityId);
+	EntityId newHeldId = 0;
+	ser.Value("m_heldEntityId", newHeldId);
 	ser.Value("m_constraintId", m_constraintId);
 	ser.Value("m_grabType", m_grabType);
 	ser.Value("m_grabbedNPCSpecies", m_grabbedNPCSpecies);
@@ -354,21 +345,9 @@ void COffHand::FullSerialize(TSerialize ser)
 
 	//============================
 
-	if (ser.IsReading() && m_heldEntityId != oldHeldId)
+	if (ser.IsReading() && newHeldId != oldHeldId)
 	{
-		IActor* pActor = m_pActorSystem->GetActor(oldHeldId);
-		if (pActor)
-		{
-			if (pActor->GetEntity()->GetCharacter(0))
-				pActor->GetEntity()->GetCharacter(0)->SetFlags(pActor->GetEntity()->GetCharacter(0)->GetFlags() & (~ENTITY_SLOT_RENDER_NEAREST));
-			if (IEntityRenderProxy* pProxy = (IEntityRenderProxy*)pActor->GetEntity()->GetProxy(ENTITY_PROXY_RENDER))
-			{
-				if (IRenderNode* pRenderNode = pProxy->GetRenderNode())
-					pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS, false);
-			}
-		}
-		else
-			DrawNear(false, oldHeldId);
+		SetHeldEntityId(newHeldId, oldHeldId);
 	}
 }
 
@@ -408,7 +387,9 @@ void COffHand::PostPostSerialize()
 		if (m_heldEntityId || (m_preHeldEntityId && m_startPickUp))
 		{
 			if (!m_heldEntityId)
-				m_heldEntityId = m_preHeldEntityId;
+			{
+				SetHeldEntityId(m_preHeldEntityId);
+			}
 
 			SelectGrabType(m_pEntitySystem->GetEntity(m_heldEntityId));
 
@@ -427,7 +408,7 @@ void COffHand::PostPostSerialize()
 		if (m_preHeldEntityId && !m_heldEntityId && m_startPickUp)
 		{
 			m_currentState = eOHS_PICKING;
-			m_heldEntityId = m_preHeldEntityId;
+			SetHeldEntityId(m_preHeldEntityId);
 		}
 
 		if (m_heldEntityId)
@@ -446,7 +427,7 @@ void COffHand::PostPostSerialize()
 				if (m_currentState & (eOHS_HOLDING_OBJECT | eOHS_PICKING | eOHS_THROWING_OBJECT | eOHS_MELEE))
 				{
 					IgnoreCollisions(false, m_heldEntityId);
-					DrawNear(false);
+					UpdateEntityRenderFlags(m_heldEntityId, EntityFpViewMode::ForceDisable);
 
 					//Do grabbing again
 					m_currentState = eOHS_INIT_STATE;
@@ -475,10 +456,11 @@ void COffHand::PostPostSerialize()
 						m_preHeldEntityId = m_heldEntityId;
 						PreExecuteAction(eOHA_USE, eAAM_OnPress, true);
 
-						StartPickUpObject(m_preHeldEntityId, true);
-						
+						StartPickUpObject(m_heldEntityId, true);
 						if (pActor)
+						{
 							pActor->GetAnimatedCharacter()->ForceRefreshPhysicalColliderMode();
+						}
 					}
 				}
 			}
@@ -638,16 +620,13 @@ void COffHand::UpdateFPView(float frameTime)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
-	if (m_isClient)
-	{
-		CheckTimers(frameTime);
+	CheckTimers(frameTime);
 
-		//CryMP: Update held items in TP mode as well
-		if (!m_stats.fp && m_heldEntityId)
-		{
-			UpdateFPPosition(frameTime);
-			UpdateFPCharacter(frameTime);
-		}
+	//CryMP: Update held items in TP mode as well
+	if (!m_stats.fp && m_heldEntityId) //CryMP: Note: this check needs to be here, otherwise no grab anims in FP 
+	{
+		UpdateFPPosition(frameTime);
+		UpdateFPCharacter(frameTime);
 	}
 
 	if (m_stats.selected)
@@ -682,8 +661,8 @@ void COffHand::UpdateFPView(float frameTime)
 		if (m_stats.hand == 0)
 		{
 			SetHand(eIH_Left); //This will be only done once after loading
-			
-			Select(true);Select(false);
+
+			Select(true); Select(false);
 		}
 		//=========================================================
 	}
@@ -710,7 +689,6 @@ void COffHand::UpdateFPView(float frameTime)
 		}
 	}
 }
-
 //============================================================
 
 void COffHand::UpdateCrosshairUsabilitySP()
@@ -1554,7 +1532,7 @@ void COffHand::NetStartFire()
 
 	CWeapon::NetStartFire();
 
-	AttachGrenadeToHand(GetCurrentFireMode(), false, true);
+	AttachGrenadeToHand(GetCurrentFireMode(), m_stats.fp, true);
 
 	//Handle FP Spectator
 	if (m_stats.fp)
@@ -1581,6 +1559,7 @@ void COffHand::NetStartFire()
 	}
 }
 
+//=============================================================================
 void COffHand::NetStopFire()
 {
 	CWeapon::NetStopFire();
@@ -1607,33 +1586,34 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 {
 	switch (eOHA)
 	{
-	case eOHA_SWITCH_GRENADE: 
+	case eOHA_SWITCH_GRENADE:
 		EndSwitchGrenade();
 		break;
 
-	case eOHA_PICK_ITEM:			
+	case eOHA_PICK_ITEM:
 		EndPickUpItem();
 		break;
 
-	case eOHA_GRAB_NPC:				
+	case eOHA_GRAB_NPC:
 		m_currentState = eOHS_HOLDING_NPC;
 		break;
 
-	case eOHA_THROW_NPC:			
+	case eOHA_THROW_NPC:
 		GetScheduler()->TimerAction(300, CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_RESET, this)), true);
-		ThrowNPC();
+		ThrowNPC(m_heldEntityId);
 		m_currentState = eOHS_TRANSITIONING;
 		break;
 
-	case eOHA_PICK_OBJECT:		
+	case eOHA_PICK_OBJECT:
 		m_currentState = eOHS_HOLDING_OBJECT;
 		break;
 
-	case eOHA_THROW_OBJECT: 
+	case eOHA_THROW_OBJECT:
 	{
 		// after it's thrown, wait 500ms to enable collisions again
 		GetScheduler()->TimerAction(500, CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_RESET, this)), true);
-		DrawNear(false);
+
+		SetHeldEntityId(0);
 
 		IEntity* pEntity = m_pEntitySystem->GetEntity(m_heldEntityId);
 		if (pEntity)
@@ -1647,22 +1627,28 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 	}
 	break;
 
-	case eOHA_RESET:					
-	//Reset main weapon status and reset offhand
+	case eOHA_RESET:
+		//Reset main weapon status and reset offhand
 	{
-		if (m_prevMainHandId && !GetOwnerActor()->IsSwimming())
+		CActor* pActor = GetOwnerActor();
+		if (m_prevMainHandId && !pActor->IsSwimming())
 		{
-			GetOwnerActor()->SelectItem(m_prevMainHandId, false);
-			m_mainHand = static_cast<CItem*>(GetOwnerActor()->GetCurrentItem());
+			pActor->SelectItem(m_prevMainHandId, false);
+			m_mainHand = static_cast<CItem*>(pActor->GetCurrentItem());
 			m_mainHandWeapon = static_cast<CWeapon*>(m_mainHand ? m_mainHand->GetIWeapon() : NULL);
 		}
-		SetCurrentFireModeLocal(m_lastFireModeId);
+
+		if (pActor->IsClient())
+		{
+			RequestFireMode(m_lastFireModeId); //Works for MP as well
+		}
+
 		float timeDelay = 0.1f;
 		if (!m_mainHand)
 		{
-			SActorStats* pStats = GetOwnerActor()->GetActorStats();
-			if (!GetOwnerActor()->ShouldSwim() && !m_bCutscenePlaying && (pStats && !pStats->inFreefall.Value()))
-				GetOwnerActor()->HolsterItem(false);
+			SActorStats* pStats = pActor->GetActorStats();
+			if (!pActor->ShouldSwim() && !m_bCutscenePlaying && (pStats && !pStats->inFreefall.Value()))
+				pActor->HolsterItem(false);
 		}
 		else if (!m_mainHandIsDualWield && !m_prevMainHandId)
 		{
@@ -1679,8 +1665,10 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 		m_prevMainHandId = 0;
 
 		//turn off collision with thrown objects
-		if (m_heldEntityId)
-			IgnoreCollisions(false, m_heldEntityId);
+		//if (m_heldEntityId)
+		//	IgnoreCollisions(false, m_heldEntityId);
+
+		SetHeldEntityId(0);
 
 	}
 
@@ -1707,6 +1695,7 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 	}
 }
 
+//==============================================================================
 void COffHand::Freeze(bool freeze)
 {
 	CWeapon::Freeze(freeze);
@@ -1723,10 +1712,11 @@ void COffHand::SetOffHandState(EOffHandStates eOHS)
 {
 	m_currentState = eOHS;
 
-	if (eOHS == eOHS_INIT_STATE)
+	if (eOHS & eOHS_INIT_STATE)
 	{
-		m_mainHand = m_mainHandWeapon = NULL;
-		m_heldEntityId = m_preHeldEntityId = 0;
+		m_mainHand = m_mainHandWeapon = nullptr;
+		m_preHeldEntityId = 0;
+		SetHeldEntityId(0);
 		m_mainHandIsDualWield = false;
 		Select(false);
 	}
@@ -2546,8 +2536,8 @@ void COffHand::SelectGrabType(IEntity* pEntity)
 	{
 		// iterate over the grab types and see if this object supports one
 		m_grabType = GRAB_TYPE_ONE_HANDED;
-
-		for (const auto& grabType : m_grabTypes)
+		const TGrabTypes::const_iterator end = m_grabTypes.end();
+		for (TGrabTypes::const_iterator i = m_grabTypes.begin(); i != end; ++i, ++m_grabType)
 		{
 			SEntitySlotInfo slotInfo;
 			for (int n = 0; n < pEntity->GetSlotCount(); n++)
@@ -2559,11 +2549,16 @@ void COffHand::SelectGrabType(IEntity* pEntity)
 				if (ok && slotInfo.pStatObj)
 				{
 					//Iterate two times (normal helper name, and composed one)
-					for (int j = 0;j < 2;j++)
+					for (int j = 0; j < 2; j++)
 					{
-						std::string helper = (j == 0) ?
-							std::string(slotInfo.pStatObj->GetGeoName()) + "_" + std::string(grabType.helper.c_str()) :
-							std::string(grabType.helper.c_str());
+						string helper;
+						helper.clear();
+						if (j == 0)
+						{
+							helper.append(slotInfo.pStatObj->GetGeoName()); helper.append("_"); helper.append((*i).helper.c_str());
+						}
+						else
+							helper.append((*i).helper.c_str());
 
 						//It is already a subobject, we have to search in the parent
 						if (slotInfo.pStatObj->GetParentObject())
@@ -2597,7 +2592,7 @@ void COffHand::SelectGrabType(IEntity* pEntity)
 					IAttachmentManager* pAM = slotInfo.pCharacter->GetIAttachmentManager();
 					if (pAM)
 					{
-						IAttachment* pAttachment = pAM->GetInterfaceByName(grabType.helper.c_str());
+						IAttachment* pAttachment = pAM->GetInterfaceByName((*i).helper.c_str());
 						if (pAttachment)
 						{
 							m_holdOffset = Matrix34(pAttachment->GetAttAbsoluteDefault().q);
@@ -3967,12 +3962,12 @@ void COffHand::EnableFootGroundAlignment(bool enable)
 }
 
 //==============================================================
-void COffHand::SetHeldEntityId(const EntityId entityId)
+void COffHand::SetHeldEntityId(const EntityId entityId, const EntityId oldId /* = 0*/)
 {
 	if (m_heldEntityId == entityId)
 		return;
 
-	const EntityId oldHeldEntityId = m_heldEntityId;
+	const EntityId oldHeldEntityId = oldId ? oldId : m_heldEntityId;
 
 	m_heldEntityId = entityId;
 

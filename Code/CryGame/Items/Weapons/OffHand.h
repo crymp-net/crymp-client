@@ -306,7 +306,7 @@ public:
 	void AttachObjectToHand(bool attach, EntityId objectId, bool throwObject);
 	void UpdateEntityRenderFlags(const EntityId entityId, EntityFpViewMode mode = EntityFpViewMode::Default);
 	void EnableFootGroundAlignment(bool enable);
-	void SetHeldEntityId(const EntityId id);
+	void SetHeldEntityId(const EntityId id, const EntityId oldId = 0);
 };
 
 #endif
