@@ -1870,17 +1870,7 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 		m_forceThrow = false;
 
 		// enable leg IK again
-		CActor* pActor = GetOwnerActor();
-		if (pActor && pActor->IsClient() && m_grabType == GRAB_TYPE_TWO_HANDED)
-		{
-			if (ICharacterInstance* pCharacter = pActor->GetEntity()->GetCharacter(0))
-			{
-				if (ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose())
-				{
-					pSkeletonPose->EnableFootGroundAlignment(true);
-				}
-			}
-		}
+		EnableFootGroundAlignment(true);
 	}
 	//--------------------------
 
@@ -1889,7 +1879,7 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 		if (!m_fm->IsFiring() && m_nextGrenadeThrow < 0.0f)
 		{
 			if (m_currentState == eOHS_HOLDING_GRENADE)
-				AttachGrenadeToHand(GetCurrentFireMode());
+				AttachGrenadeToHand(GetCurrentFireMode(), m_stats.fp);
 
 			m_fm->StartFire();
 			SetBusy(false);
