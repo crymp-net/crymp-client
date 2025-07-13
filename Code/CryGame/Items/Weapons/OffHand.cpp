@@ -561,6 +561,16 @@ void COffHand::Update(SEntityUpdateContext& ctx, int slot)
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
 	CWeapon::Update(ctx, slot);
+
+	//CryMP
+	if (m_heldEntityId && !m_stats.fp)
+	{
+		CActor* pActor = GetOwnerActor();
+		if (pActor && pActor->IsRemote())
+		{
+			UpdateHeldObject();
+		}
+	}
 }
 
 //=============================================================
@@ -1351,14 +1361,14 @@ bool COffHand::EvaluateStateTransition(int requestedAction, int activationMode, 
 {
 	switch (requestedAction)
 	{
-		case eOHA_SWITCH_GRENADE: 
+	case eOHA_SWITCH_GRENADE:
 		if (activationMode == eAAM_OnPress && m_currentState == eOHS_INIT_STATE)
 		{
 			return true;
 		}
 		break;
 
-		case eOHA_THROW_GRENADE:	
+	case eOHA_THROW_GRENADE:
 		if (activationMode == eAAM_OnPress && m_currentState == eOHS_INIT_STATE)
 		{
 			//Don't allow throwing grenades under water.
@@ -1373,7 +1383,7 @@ bool COffHand::EvaluateStateTransition(int requestedAction, int activationMode, 
 			if (m_fm && !m_fm->OutOfAmmo() && m_nextGrenadeThrow <= 0.0f)
 				return true;
 		}
-	    else if (activationMode == eAAM_OnRelease && m_currentState == eOHS_HOLDING_GRENADE)
+		else if (activationMode == eAAM_OnRelease && m_currentState == eOHS_HOLDING_GRENADE)
 		{
 			return true;
 		}
@@ -1418,12 +1428,12 @@ bool COffHand::EvaluateStateTransition(int requestedAction, int activationMode, 
 		}
 		break;
 
-		case eOHA_MELEE_ATTACK:		
+	case eOHA_MELEE_ATTACK:
 		if (activationMode == eAAM_OnPress && m_currentState == eOHS_HOLDING_OBJECT && m_grabType == GRAB_TYPE_ONE_HANDED)
 		{
 			return true;
 		}
-		 break;
+		break;
 	}
 
 	return false;
@@ -1463,7 +1473,7 @@ bool COffHand::PreExecuteAction(int requestedAction, int activationMode, bool fo
 		if ((!gEnv->bMultiplayer || g_pGameCVars->mp_animationGrenadeSwitch) || (requestedAction != eOHA_SWITCH_GRENADE))
 		{
 			SetHand(eIH_Left);		//Here??
-			
+
 			if ((GetEntity()->IsHidden() || forceSelect) && activationMode == eAAM_OnPress)
 			{
 				m_stats.fp = !m_stats.fp;
@@ -1502,6 +1512,7 @@ bool COffHand::PreExecuteAction(int requestedAction, int activationMode, bool fo
 	return exec;
 }
 
+//==================================================================
 void COffHand::NetStartFire()
 {
 	if (GetEntity()->IsHidden()) // this is need for network triggered grenade throws to trigger updates and what not..
