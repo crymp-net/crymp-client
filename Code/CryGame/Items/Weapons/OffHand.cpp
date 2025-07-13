@@ -319,8 +319,7 @@ void COffHand::FullSerialize(TSerialize ser)
 	ser.Value("m_currentState", m_currentState);
 	ser.Value("m_preHeldEntityId", m_preHeldEntityId);
 	ser.Value("m_startPickUp", m_startPickUp);
-	EntityId newHeldId = 0;
-	ser.Value("m_heldEntityId", newHeldId);
+	ser.Value("m_heldEntityId", m_heldEntityId);
 	ser.Value("m_constraintId", m_constraintId);
 	ser.Value("m_grabType", m_grabType);
 	ser.Value("m_grabbedNPCSpecies", m_grabbedNPCSpecies);
@@ -340,9 +339,21 @@ void COffHand::FullSerialize(TSerialize ser)
 
 	//============================
 
-	if (ser.IsReading() && newHeldId != oldHeldId)
+	if (ser.IsReading() && m_heldEntityId != oldHeldId)
 	{
-		SetHeldEntityId(newHeldId, oldHeldId);
+		IActor* pActor = m_pActorSystem->GetActor(oldHeldId);
+		if (pActor)
+		{
+			if (pActor->GetEntity()->GetCharacter(0))
+				pActor->GetEntity()->GetCharacter(0)->SetFlags(pActor->GetEntity()->GetCharacter(0)->GetFlags() & (~ENTITY_SLOT_RENDER_NEAREST));
+			if (IEntityRenderProxy* pProxy = (IEntityRenderProxy*)pActor->GetEntity()->GetProxy(ENTITY_PROXY_RENDER))
+			{
+				if (IRenderNode* pRenderNode = pProxy->GetRenderNode())
+					pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS, false);
+			}
+		}
+		else
+			DrawNear(false, oldHeldId);
 	}
 }
 
@@ -421,9 +432,6 @@ void COffHand::PostPostSerialize()
 				//If holding an object or NPC
 				if (m_currentState & (eOHS_HOLDING_OBJECT | eOHS_PICKING | eOHS_THROWING_OBJECT | eOHS_MELEE))
 				{
-					SetIgnoreCollisionsWithOwner(false, m_heldEntityId);
-					UpdateEntityRenderFlags(m_heldEntityId, EntityFpViewMode::ForceDisable);
-
 					//Do grabbing again
 					m_currentState = eOHS_INIT_STATE;
 					m_preHeldEntityId = m_heldEntityId;
@@ -1596,6 +1604,9 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 	case eOHA_THROW_NPC:
 		GetScheduler()->TimerAction(300, CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_RESET, this)), true);
 		ThrowNPC(m_heldEntityId);
+
+		SetHeldEntityId(0);
+
 		m_currentState = eOHS_TRANSITIONING;
 		break;
 
@@ -2336,12 +2347,16 @@ int COffHand::CheckItemsInProximity(Vec3 pos, Vec3 dir, bool getEntityInfo)
 //==========================================================================================
 bool COffHand::PerformPickUp()
 {
+	bool setHeld = false;
+
 	//If we are here, we must have the entity ID
 	if (m_preHeldEntityId)
 	{
 		//CryMP: Remote players don't use m_preHeldEntityId
+		m_heldEntityId = 0; //forces SetHeldEntityId 
 		SetHeldEntityId(m_preHeldEntityId);
 		m_preHeldEntityId = 0;
+		setHeld = true;
 	}
 	m_startPickUp = false;
 	IEntity* pEntity = NULL;
@@ -2353,6 +2368,7 @@ bool COffHand::PerformPickUp()
 	else if (m_pRockRN)
 	{
 		SetHeldEntityId(SpawnRockProjectile(m_pRockRN));
+		setHeld = true;
 
 		m_pRockRN = NULL;
 		if (!m_heldEntityId)
@@ -2365,6 +2381,13 @@ bool COffHand::PerformPickUp()
 
 	if (pEntity)
 	{
+
+		if (!setHeld)
+		{
+			m_heldEntityId = 0;
+			SetHeldEntityId(pEntity->GetId());
+		}
+
 		CActor* pActor = GetOwnerActor();
 		// Send event to entity.
 		SEntityEvent entityEvent;
@@ -2521,100 +2544,107 @@ void COffHand::DrawNear(bool drawNear, EntityId entityId /*=0*/)
 //=========================================================================================
 void COffHand::SelectGrabType(IEntity* pEntity)
 {
-	CActor* pActor = GetOwnerActor();
+	if (!pEntity)
+		return;
 
-	assert(pActor && "COffHand::SelectGrabType: No OwnerActor, probably something bad happened");
+	CActor* pActor = GetOwnerActor();
 	if (!pActor)
 		return;
 
-	if (pEntity)
+	if (g_pGame->GetWeaponSystem()->GetProjectile(pEntity->GetId()))
 	{
-		// iterate over the grab types and see if this object supports one
+		//If it's a projectile, we can only grab it with one hand
 		m_grabType = GRAB_TYPE_ONE_HANDED;
-		const TGrabTypes::const_iterator end = m_grabTypes.end();
-		for (TGrabTypes::const_iterator i = m_grabTypes.begin(); i != end; ++i, ++m_grabType)
+		m_holdOffset.SetIdentity();
+		m_hasHelper = false;
+		return;
+	}
+
+	// iterate over the grab types and see if this object supports one
+	m_grabType = GRAB_TYPE_ONE_HANDED;
+	const TGrabTypes::const_iterator end = m_grabTypes.end();
+	for (TGrabTypes::const_iterator i = m_grabTypes.begin(); i != end; ++i, ++m_grabType)
+	{
+		SEntitySlotInfo slotInfo;
+		for (int n = 0; n < pEntity->GetSlotCount(); n++)
 		{
-			SEntitySlotInfo slotInfo;
-			for (int n = 0; n < pEntity->GetSlotCount(); n++)
+			if (!pEntity->IsSlotValid(n))
+				continue;
+
+			bool ok = pEntity->GetSlotInfo(n, slotInfo) && (pEntity->GetSlotFlags(n) & ENTITY_SLOT_RENDER);
+			if (ok && slotInfo.pStatObj)
 			{
-				if (!pEntity->IsSlotValid(n))
-					continue;
-
-				bool ok = pEntity->GetSlotInfo(n, slotInfo) && (pEntity->GetSlotFlags(n) & ENTITY_SLOT_RENDER);
-				if (ok && slotInfo.pStatObj)
+				//Iterate two times (normal helper name, and composed one)
+				for (int j = 0; j < 2; j++)
 				{
-					//Iterate two times (normal helper name, and composed one)
-					for (int j = 0; j < 2; j++)
+					string helper;
+					helper.clear();
+					if (j == 0)
 					{
-						string helper;
-						helper.clear();
-						if (j == 0)
-						{
-							helper.append(slotInfo.pStatObj->GetGeoName()); helper.append("_"); helper.append((*i).helper.c_str());
-						}
-						else
-							helper.append((*i).helper.c_str());
-
-						//It is already a subobject, we have to search in the parent
-						if (slotInfo.pStatObj->GetParentObject())
-						{
-							IStatObj::SSubObject* pSubObj = slotInfo.pStatObj->GetParentObject()->FindSubObject(helper.c_str());
-							if (pSubObj)
-							{
-								m_holdOffset = pSubObj->tm;
-								m_holdOffset.OrthonormalizeFast();
-								m_holdOffset.InvertFast();
-								m_hasHelper = true;
-								return;
-							}
-						}
-						else {
-							IStatObj::SSubObject* pSubObj = slotInfo.pStatObj->FindSubObject(helper.c_str());
-							if (pSubObj)
-							{
-								m_holdOffset = pSubObj->tm;
-								m_holdOffset.OrthonormalizeFast();
-								m_holdOffset.InvertFast();
-								m_hasHelper = true;
-								return;
-							}
-						}
+						helper.append(slotInfo.pStatObj->GetGeoName()); helper.append("_"); helper.append((*i).helper.c_str());
 					}
-				}
-				else if (ok && slotInfo.pCharacter)
-				{
-					//Grabbing helpers for boids/animals
-					IAttachmentManager* pAM = slotInfo.pCharacter->GetIAttachmentManager();
-					if (pAM)
+					else
+						helper.append((*i).helper.c_str());
+
+					//It is already a subobject, we have to search in the parent
+					if (slotInfo.pStatObj->GetParentObject())
 					{
-						IAttachment* pAttachment = pAM->GetInterfaceByName((*i).helper.c_str());
-						if (pAttachment)
+						IStatObj::SSubObject* pSubObj = slotInfo.pStatObj->GetParentObject()->FindSubObject(helper.c_str());
+						if (pSubObj)
 						{
-							m_holdOffset = Matrix34(pAttachment->GetAttAbsoluteDefault().q);
-							m_holdOffset.SetTranslation(pAttachment->GetAttAbsoluteDefault().t);
+							m_holdOffset = pSubObj->tm;
 							m_holdOffset.OrthonormalizeFast();
 							m_holdOffset.InvertFast();
-							if (m_grabType == GRAB_TYPE_TWO_HANDED)
-								m_holdOffset.AddTranslation(Vec3(0.1f, 0.0f, -0.12f));
+							m_hasHelper = true;
+							return;
+						}
+					}
+					else {
+						IStatObj::SSubObject* pSubObj = slotInfo.pStatObj->FindSubObject(helper.c_str());
+						if (pSubObj)
+						{
+							m_holdOffset = pSubObj->tm;
+							m_holdOffset.OrthonormalizeFast();
+							m_holdOffset.InvertFast();
 							m_hasHelper = true;
 							return;
 						}
 					}
 				}
 			}
+			else if (ok && slotInfo.pCharacter)
+			{
+				//Grabbing helpers for boids/animals
+				IAttachmentManager* pAM = slotInfo.pCharacter->GetIAttachmentManager();
+				if (pAM)
+				{
+					IAttachment* pAttachment = pAM->GetInterfaceByName((*i).helper.c_str());
+					if (pAttachment)
+					{
+						m_holdOffset = Matrix34(pAttachment->GetAttAbsoluteDefault().q);
+						m_holdOffset.SetTranslation(pAttachment->GetAttAbsoluteDefault().t);
+						m_holdOffset.OrthonormalizeFast();
+						m_holdOffset.InvertFast();
+						if (m_grabType == GRAB_TYPE_TWO_HANDED)
+							m_holdOffset.AddTranslation(Vec3(0.1f, 0.0f, -0.12f));
+						m_hasHelper = true;
+						return;
+					}
+				}
+			}
 		}
-
-		// when we come here, we haven't matched any of the predefined helpers ... so try to make a 
-		// smart decision based on how large the object is
-		//float volume(0),heavyness(0);
-		//pActor->CanPickUpObject(pEntity, heavyness, volume);
-
-		// grabtype 0 is onehanded and 1 is twohanded
-		//m_grabType = (volume>0.08f) ? 1 : 0;
-		m_holdOffset.SetIdentity();
-		m_hasHelper = false;
-		m_grabType = GRAB_TYPE_TWO_HANDED;
 	}
+
+	// when we come here, we haven't matched any of the predefined helpers ... so try to make a 
+	// smart decision based on how large the object is
+	//float volume(0),heavyness(0);
+	//pActor->CanPickUpObject(pEntity, heavyness, volume);
+
+	// grabtype 0 is onehanded and 1 is twohanded
+	//m_grabType = (volume>0.08f) ? 1 : 0;
+	m_holdOffset.SetIdentity();
+	m_hasHelper = false;
+	m_grabType = GRAB_TYPE_TWO_HANDED;
 }
 
 //=========================================================================================
@@ -3191,8 +3221,6 @@ void COffHand::ThrowNPC(const EntityId entityId, bool kill /*= true*/)
 					PlaySound(eOHSound_Kill_Human, true);
 				}
 			}
-
-			SetIgnoreCollisionsWithOwner(true, m_heldEntityId);
 		}
 	}
 	else
@@ -3213,9 +3241,6 @@ void COffHand::ThrowNPC(const EntityId entityId, bool kill /*= true*/)
 	m_killTimeOut = -1.0f;
 	m_killNPC = m_effectRunning = m_npcWasDead = false;
 	m_grabbedNPCInitialHealth = 0;
-
-	//Restore Enemy RenderFlags
-	UpdateEntityRenderFlags(m_heldEntityId, EntityFpViewMode::ForceDisable);
 
 	if (CPlayer* pHeldPlayer = CPlayer::FromActor(pHeldActor))
 	{
@@ -3673,8 +3698,6 @@ bool COffHand::Request_PickUpObject_MP()
 			{
 				CryLogWarningAlways("COffHand: owner %s has no firemode", pOwner->GetEntity()->GetName());
 			}*/
-
-			SetIgnoreCollisionsWithOwner(true, objectId);
 
 			RequestFireMode(GetFireModeIdx(m_grabTypes[m_grabType].throwFM.c_str())); //CryMP: added this here, early enough 
 
