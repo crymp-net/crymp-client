@@ -515,45 +515,32 @@ void COffHand::PostPostSerialize()
 //=======================================
 void COffHand::OnEnterFirstPerson()
 {
-	//CryLogAlways("$6%s OnEnterFirstPerson", GetEntity()->GetName());
-
 	//CryMP: Check 1st/3rd person transition
-	CActor* pActor = GetOwnerActor();
-	if (pActor && pActor->IsClient())
-	{
-		const EntityId heldEntityId = m_heldEntityId;
-		m_isClient = true;
-
-		EnableUpdate(true, eIUS_General);
-		DrawNear(true, heldEntityId);
-
-		if (m_wasThirdPerson && heldEntityId)
-		{
-			//unsatisfactory fix for wrong object pos if switching from TP to FP, release object
-			m_forceThrow = false;
-			StartThrowObject(heldEntityId, eAAM_OnPress, false);
-			StartThrowObject(heldEntityId, eAAM_OnRelease, false);
-		}
-		
-		m_wasThirdPerson = false;
-	}
-
 	CWeapon::OnEnterFirstPerson();
+
+	if (m_heldEntityId)
+	{
+		AttachObjectToHand(false, m_heldEntityId, false);
+		UpdateEntityRenderFlags(m_heldEntityId, EntityFpViewMode::ForceActive);
+
+		if (m_currentState == eOHS_HOLDING_OBJECT)
+		{
+			GetOwnerActor()->HolsterItem(true);
+		}
+	}
 }
 
 //=======================================
 void COffHand::OnEnterThirdPerson()
 {
-	const EntityId heldEntityId = m_heldEntityId;
-	if (heldEntityId)
-	{
-		DrawNear(false, heldEntityId);
-
-		m_wasThirdPerson = true;
-	}
-
 	//CryMP: Check 1st/3rd person transition
 	CWeapon::OnEnterThirdPerson();
+
+	if (m_heldEntityId)
+	{
+		AttachObjectToHand(true, m_heldEntityId, false);
+		UpdateEntityRenderFlags(m_heldEntityId, EntityFpViewMode::ForceDisable);
+	}
 }
 
 //=============================================================
