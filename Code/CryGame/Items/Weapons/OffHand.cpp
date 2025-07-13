@@ -221,12 +221,7 @@ void COffHand::Reset()
 		//Prevent editor-reset issues
 		if (m_currentState & (eOHS_GRABBING_NPC | eOHS_HOLDING_NPC | eOHS_THROWING_NPC))
 		{
-			ThrowNPC(false);
-		}
-		else if (m_currentState & (eOHS_PICKING | eOHS_HOLDING_OBJECT | eOHS_THROWING_OBJECT | eOHS_MELEE))
-		{
-			SetIgnoreCollisionsWithOwner(false, m_heldEntityId);
-			DrawNear(false, m_heldEntityId);
+			ThrowNPC(m_heldEntityId, false);
 		}
 	}
 
@@ -3019,48 +3014,44 @@ void COffHand::StartThrowObject(const EntityId entityId, int activationMode, boo
 //==========================================================================================
 bool COffHand::GrabNPC()
 {
-	CActor* pPlayer = GetOwnerActor();
+	CActor* pActor = GetOwnerActor();
 
-	assert(pPlayer && "COffHand::GrabNPC --> Offhand has no owner actor (player)!");
-	if (!pPlayer)
-		return false;
-
-	//Do not grab in prone
-	if (pPlayer->GetStance() == STANCE_PRONE)
-		return false;
-
-	//Get actor
-	CActor* pActor = static_cast<CActor*>(m_pActorSystem->GetActor(m_preHeldEntityId));
-
-	assert(pActor && "COffHand::GrabNPC -> No actor found!");
 	if (!pActor)
 		return false;
 
-	IEntity* pEntity = pActor->GetEntity();
-	assert(pEntity && "COffHand::GrabNPC -> Actor has no Entity");
-	if (!pEntity || !pEntity->GetCharacter(0))
+	//Do not grab in prone
+	if (pActor->GetStance() == STANCE_PRONE)
+		return false;
+
+	//Get actor
+	CActor* pHeldActor = static_cast<CActor*>(m_pActorSystem->GetActor(m_preHeldEntityId));
+
+	if (!pHeldActor)
+		return false;
+
+	IEntity* pEntity = pHeldActor->GetEntity();
+	if (!pEntity->GetCharacter(0))
 		return false;
 
 	//The NPC holster his weapon
 	bool mounted = false;
-	CItem* currentItem = static_cast<CItem*>(pActor->GetCurrentItem());
+	CItem* currentItem = static_cast<CItem*>(pHeldActor->GetCurrentItem());
 	if (currentItem)
 	{
 		if (currentItem->IsMounted() && currentItem->IsUsed())
 		{
-			currentItem->StopUse(pActor->GetEntityId());
+			currentItem->StopUse(pHeldActor->GetEntityId());
 			mounted = true;
 		}
 	}
 
 	if (!mounted)
 	{
-		pActor->HolsterItem(false); //AI sometimes has holstered a weapon and selected a different one...
-		pActor->HolsterItem(true);
+		pHeldActor->HolsterItem(false); //AI sometimes has holstered a weapon and selected a different one...
+		pHeldActor->HolsterItem(true);
 	}
 
-
-	if (IAnimationGraphState* pAGState = pActor->GetAnimationGraphState())
+	if (IAnimationGraphState* pAGState = pHeldActor->GetAnimationGraphState())
 	{
 		char value[256];
 		IAnimationGraphState::InputID actionInputID = pAGState->GetInputId("Action");
@@ -3077,12 +3068,12 @@ bool COffHand::GrabNPC()
 		pAGState->SetInput("Signal", "none");
 		pAGState->SetInput(actionInputID, "grabStruggleFP");
 	}
-	if (SActorStats* pStats = pPlayer->GetActorStats())
+	if (SActorStats* pStats = pActor->GetActorStats())
 		pStats->grabbedTimer = 0.0f;
 
 	// this needs to be done before sending signal "OnFallAndPlay" to make sure
 	// in case AG state was FallAndPlay we leave it before AI is disabled
-	if (IAnimationGraphState* pAGState = pActor->GetAnimationGraphState())
+	if (IAnimationGraphState* pAGState = pHeldActor->GetAnimationGraphState())
 	{
 		pAGState->ForceTeleportToQueriedState();
 		pAGState->Update();
@@ -3099,40 +3090,37 @@ bool COffHand::GrabNPC()
 		}
 	}
 
-	//Modify Enemy Render Flags
-	pEntity->GetCharacter(0)->SetFlags(pEntity->GetCharacter(0)->GetFlags() | ENTITY_SLOT_RENDER_NEAREST);
-	if (IEntityRenderProxy* pProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
-	{
-		if (IRenderNode* pRenderNode = pProxy->GetRenderNode())
-			pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS, true);
-	}
-
 	//Disable IK
-	SActorStats* stats = pActor->GetActorStats();
-	if (stats)
+	SActorStats* pStats = pHeldActor->GetActorStats();
+	if (pStats)
 	{
-		stats->isGrabbed = true;
+		pStats->isGrabbed = true;
 	}
 
-	m_heldEntityId = m_preHeldEntityId;
+	SetHeldEntityId(pHeldActor->GetEntityId());
+
 	m_preHeldEntityId = 0;
-	m_grabbedNPCSpecies = pActor->GetActorSpecies();
+	m_grabbedNPCSpecies = pHeldActor->GetActorSpecies();
 	m_grabType = GRAB_TYPE_NPC;
 	m_killTimeOut = KILL_NPC_TIMEOUT;
 	m_killNPC = m_effectRunning = m_npcWasDead = false;
-	m_grabbedNPCInitialHealth = pActor->GetHealth();
+	m_grabbedNPCInitialHealth = pHeldActor->GetHealth();
 
-	if (CPlayer* pPlayer = CPlayer::FromActor(pActor))
+	if (CPlayer* pHeldPlayer = CPlayer::FromActor(pHeldActor))
 	{
-		pPlayer->NotifyObjectGrabbed(true, m_heldEntityId, true);
+		pHeldPlayer->NotifyObjectGrabbed(true, m_heldEntityId, true);
 	}
 
 	//Hide attachments on the back
-	if (CWeaponAttachmentManager* pWAM = pActor->GetWeaponAttachmentManager())
+	if (CWeaponAttachmentManager* pWAM = pHeldActor->GetWeaponAttachmentManager())
+	{
 		pWAM->HideAllAttachments(true);
+	}
 
 	if (m_grabbedNPCSpecies == eGCT_HUMAN)
+	{
 		PlaySound(eOHSound_Choking_Human, true);
+	}
 
 	RequireUpdate(eIUS_General);
 	GetGameObject()->EnablePostUpdates(this); //needed, if I pause the game before throwing the NPC
@@ -3141,66 +3129,65 @@ bool COffHand::GrabNPC()
 }
 
 //=============================================================================================
-void COffHand::ThrowNPC(bool kill /*= true*/)
+void COffHand::ThrowNPC(const EntityId entityId, bool kill /*= true*/)
 {
 	//Get actor
-	CActor* pActor = static_cast<CActor*>(m_pActorSystem->GetActor(m_heldEntityId));
-
-	assert(pActor && "COffHand::Throw -> No actor found!");
-	if (!pActor)
+	CActor* pHeldActor = static_cast<CActor*>(m_pActorSystem->GetActor(entityId));
+	if (!pHeldActor)
 		return;
 
-	IEntity* pEntity = pActor->GetEntity();
-	assert(pEntity && "COffHand::Throw -> Actor has no Entity");
-	if (!pEntity)
-		return;
+	IEntity* pEntity = pHeldActor->GetEntity();
 
-	SActorStats* stats = pActor->GetActorStats();
-	if (stats)
+	SActorStats* pStats = pHeldActor->GetActorStats();
+	if (pStats)
 	{
-		stats->isGrabbed = false;
+		pStats->isGrabbed = false;
 	}
 
 	//Un-Hide attachments on the back
-	if (CWeaponAttachmentManager* pWAM = pActor->GetWeaponAttachmentManager())
+	if (CWeaponAttachmentManager* pWAM = pHeldActor->GetWeaponAttachmentManager())
+	{
 		pWAM->HideAllAttachments(false);
+	}
 
 	CPlayer* pPlayer = static_cast<CPlayer*>(GetOwnerActor());
 
 	if (kill)
 	{
 		UpdateGrabbedNPCWorldPos(pEntity, NULL);
-		pActor->HolsterItem(false);
-		IItem* currentItem = pActor->GetCurrentItem();
+		pHeldActor->HolsterItem(false);
+		IItem* currentItem = pHeldActor->GetCurrentItem();
 
 		{
-			int prevHealth = pActor->GetHealth();
+			int prevHealth = pHeldActor->GetHealth();
 			int health = prevHealth - 100;
 
 			//In strenght mode, always kill
 			if (pPlayer && pPlayer->GetNanoSuit() && pPlayer->GetNanoSuit()->GetMode() == NANOMODE_STRENGTH)
+			{
 				health = 0;
+			}
 			if (health <= 0 || (m_grabbedNPCSpecies != eGCT_HUMAN) || m_bCutscenePlaying)
 			{
-				pActor->SetHealth(0);
+				pHeldActor->SetHealth(0);
 				if (currentItem && m_grabbedNPCSpecies == eGCT_HUMAN)
-					pActor->DropItem(currentItem->GetEntityId(), 0.5f, false, true);
+					pHeldActor->DropItem(currentItem->GetEntityId(), 0.5f, false, true);
 
 				//Don't kill if it was already dead
-				if (!stats->isRagDoll || prevHealth > 0 || m_grabbedNPCSpecies == eGCT_HUMAN)
+				if ((pStats && !pStats->isRagDoll) || prevHealth > 0 || m_grabbedNPCSpecies == eGCT_HUMAN)
 				{
-					pActor->SetAnimationInput("Action", "idle");
-					pActor->CreateScriptEvent("kill", 0);
+					pHeldActor->SetAnimationInput("Action", "idle");
+					pHeldActor->CreateScriptEvent("kill", 0);
 				}
 			}
 			else
 			{
 				if (pEntity->GetAI())
 				{
-					pActor->SetHealth(health);
-					pActor->SetAnimationInput("Action", "idle");
+					pHeldActor->SetHealth(health);
+					pHeldActor->SetAnimationInput("Action", "idle");
 					//pEntity->GetAI()->Event(AIEVENT_ENABLE,0);
-					pActor->Fall();
+					pHeldActor->Fall();
 					PlaySound(eOHSound_Kill_Human, true);
 				}
 			}
@@ -3210,7 +3197,7 @@ void COffHand::ThrowNPC(bool kill /*= true*/)
 	}
 	else
 	{
-		pActor->SetAnimationInput("Action", "idle");
+		pHeldActor->SetAnimationInput("Action", "idle");
 	}
 
 	/*if(m_grabbedNPCSpecies==eGCT_TROOPER)
@@ -3228,27 +3215,20 @@ void COffHand::ThrowNPC(bool kill /*= true*/)
 	m_grabbedNPCInitialHealth = 0;
 
 	//Restore Enemy RenderFlags
-	if (pEntity->GetCharacter(0))
-		pEntity->GetCharacter(0)->SetFlags(pEntity->GetCharacter(0)->GetFlags() & (~ENTITY_SLOT_RENDER_NEAREST));
-	if (IEntityRenderProxy* pProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
-	{
-		if (IRenderNode* pRenderNode = pProxy->GetRenderNode())
-			pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS, false);
-	}
+	UpdateEntityRenderFlags(m_heldEntityId, EntityFpViewMode::ForceDisable);
 
-	if (CPlayer* pPlayer = CPlayer::FromActor(pActor))
+	if (CPlayer* pHeldPlayer = CPlayer::FromActor(pHeldActor))
 	{
-		pPlayer->NotifyObjectGrabbed(false, pEntity->GetId(), true);
+		pHeldPlayer->NotifyObjectGrabbed(false, pEntity->GetId(), true);
 	}
 
 	GetGameObject()->DisablePostUpdates(this); //Disable again
-
 }
+
 
 //==============================================================================
 void COffHand::RunEffectOnGrabbedNPC(CActor* pNPC)
 {
-
 	//Under certain conditions, different things could happen to the grabbed NPC (die, auto-destruct...)
 	if (m_grabbedNPCSpecies == eGCT_TROOPER)
 	{
@@ -3275,7 +3255,6 @@ void COffHand::RunEffectOnGrabbedNPC(CActor* pNPC)
 			pNPC->SetHealth(0);
 		}
 	}
-
 }
 
 //========================================================================================

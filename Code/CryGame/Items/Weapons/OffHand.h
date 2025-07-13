@@ -178,7 +178,7 @@ public:
 	void NetStopFire();
 
 	bool GrabNPC();
-	void ThrowNPC(bool kill = true);
+	void ThrowNPC(const EntityId entityId, bool kill = true/*= true*/);
 
 	//Special stuff for grabbed NPCs
 	void RunEffectOnGrabbedNPC(CActor* pNPC);
