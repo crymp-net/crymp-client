@@ -2322,20 +2322,28 @@ int COffHand::CheckItemsInProximity(Vec3 pos, Vec3 dir, bool getEntityInfo)
 
 	return OH_NO_GRAB;
 }
+
 //==========================================================================================
 bool COffHand::PerformPickUp()
 {
 	//If we are here, we must have the entity ID
-	m_heldEntityId = m_preHeldEntityId;
-	m_preHeldEntityId = 0;
+	if (m_preHeldEntityId)
+	{
+		//CryMP: Remote players don't use m_preHeldEntityId
+		SetHeldEntityId(m_preHeldEntityId);
+		m_preHeldEntityId = 0;
+	}
 	m_startPickUp = false;
 	IEntity* pEntity = NULL;
 
 	if (m_heldEntityId)
+	{
 		pEntity = m_pEntitySystem->GetEntity(m_heldEntityId);
+	}
 	else if (m_pRockRN)
 	{
-		m_heldEntityId = SpawnRockProjectile(m_pRockRN);
+		SetHeldEntityId(SpawnRockProjectile(m_pRockRN));
+
 		m_pRockRN = NULL;
 		if (!m_heldEntityId)
 			return false;
@@ -2363,10 +2371,6 @@ bool COffHand::PerformPickUp()
 		//	m_holdScale *= 0.3f;
 		//}
 
-		IgnoreCollisions(true, m_heldEntityId);
-		
-		DrawNear(true);
-
 		if (pActor && pActor->IsPlayer())
 		{
 			m_heldEntityMass = 1.0f;
@@ -2387,22 +2391,19 @@ bool COffHand::PerformPickUp()
 				}
 			}
 
-			// disable leg IK if we are grabbing something with two hands
-			if (pActor->IsClient() && m_grabType == GRAB_TYPE_TWO_HANDED)
+			//CryMP
+			if (pActor && pActor->IsRemote())
 			{
-				if (ICharacterInstance* pCharacter = pActor->GetEntity()->GetCharacter(0))
+				if (!IsSelected())
 				{
-					if (ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose())
-					{
-						pSkeletonPose->EnableFootGroundAlignment(false);
-					}
+					Select(true);
 				}
 			}
 		}
 
 		SetDefaultIdleAnimation(eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
 
-		m_checkForConstraintDelay = 2; //Wait 2 frames for checking the constraint (issue with sys_physics_cpu 1)
+		m_constraintStatus = ConstraintStatus::WaitForPhysicsUpdate;
 
 		return true;
 	}
