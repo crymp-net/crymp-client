@@ -225,7 +225,7 @@ void COffHand::Reset()
 		}
 		else if (m_currentState & (eOHS_PICKING | eOHS_HOLDING_OBJECT | eOHS_THROWING_OBJECT | eOHS_MELEE))
 		{
-			IgnoreCollisions(false, m_heldEntityId);
+			SetIgnoreCollisionsWithOwner(false, m_heldEntityId);
 			DrawNear(false, m_heldEntityId);
 		}
 	}
@@ -398,7 +398,7 @@ void COffHand::PostPostSerialize()
 			{
 				m_currentState = eOHS_PICKING_ITEM2;
 				pPlayer->PickUpItem(m_heldEntityId, true);
-				IgnoreCollisions(false, m_heldEntityId);
+				SetIgnoreCollisionsWithOwner(false, m_heldEntityId);
 			}
 		}
 		SetOffHandState(eOHS_INIT_STATE);
@@ -426,7 +426,7 @@ void COffHand::PostPostSerialize()
 				//If holding an object or NPC
 				if (m_currentState & (eOHS_HOLDING_OBJECT | eOHS_PICKING | eOHS_THROWING_OBJECT | eOHS_MELEE))
 				{
-					IgnoreCollisions(false, m_heldEntityId);
+					SetIgnoreCollisionsWithOwner(false, m_heldEntityId);
 					UpdateEntityRenderFlags(m_heldEntityId, EntityFpViewMode::ForceDisable);
 
 					//Do grabbing again
@@ -1666,7 +1666,7 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 
 		//turn off collision with thrown objects
 		//if (m_heldEntityId)
-		//	IgnoreCollisions(false, m_heldEntityId);
+		//	SetIgnoreCollisionsWithOwner(false, m_heldEntityId);
 
 		SetHeldEntityId(0);
 
@@ -2427,7 +2427,7 @@ bool COffHand::PerformPickUp()
 }
 
 //===========================================================================================
-void COffHand::IgnoreCollisions(bool ignore, EntityId entityId /*=0*/)
+void COffHand::SetIgnoreCollisionsWithOwner(bool activate, EntityId entityId /*=0*/)
 {
 	if (!m_heldEntityId && !entityId)
 		return;
@@ -2446,7 +2446,7 @@ void COffHand::IgnoreCollisions(bool ignore, EntityId entityId /*=0*/)
 		return;
 	}
 
-	if (ignore)
+	if (activate)
 	{
 		if (pEntity->IsHidden())
 			return;
@@ -2846,7 +2846,7 @@ void COffHand::EndPickUpItem()
 	m_currentState = eOHS_PICKING_ITEM2;
 
 	GetOwnerActor()->PickUpItem(m_heldEntityId, true);
-	IgnoreCollisions(false, m_heldEntityId);
+	SetIgnoreCollisionsWithOwner(false, m_heldEntityId);
 
 	SetOffHandState(eOHS_INIT_STATE);
 
@@ -3205,7 +3205,7 @@ void COffHand::ThrowNPC(bool kill /*= true*/)
 				}
 			}
 
-			IgnoreCollisions(true, m_heldEntityId);
+			SetIgnoreCollisionsWithOwner(true, m_heldEntityId);
 		}
 	}
 	else
@@ -3695,7 +3695,7 @@ bool COffHand::Request_PickUpObject_MP()
 				CryLogWarningAlways("COffHand: owner %s has no firemode", pOwner->GetEntity()->GetName());
 			}*/
 
-			IgnoreCollisions(true, objectId);
+			SetIgnoreCollisionsWithOwner(true, objectId);
 
 			RequestFireMode(GetFireModeIdx(m_grabTypes[m_grabType].throwFM.c_str())); //CryMP: added this here, early enough 
 
@@ -4000,7 +4000,7 @@ void COffHand::SetHeldEntityId(const EntityId entityId, const EntityId oldId /* 
 		IEntity* pOldEntity = m_pEntitySystem->GetEntity(oldHeldEntityId);
 		if (pOldEntity)
 		{
-			IgnoreCollisions(false, oldHeldEntityId);
+			SetIgnoreCollisionsWithOwner(false, oldHeldEntityId);
 
 			if (gEnv->bMultiplayer && pActor->IsRemote())
 			{
@@ -4064,7 +4064,7 @@ void COffHand::SetHeldEntityId(const EntityId entityId, const EntityId oldId /* 
 		}
 	}
 
-	IgnoreCollisions(true, entityId);
+	SetIgnoreCollisionsWithOwner(true, entityId);
 
 	if (pActor->IsThirdPerson())
 	{

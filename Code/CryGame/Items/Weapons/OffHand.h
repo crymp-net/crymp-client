@@ -149,7 +149,7 @@ public:
 	bool PreExecuteAction(int requestedAction, int activationMode, bool forceSelect = false);
 	void CancelAction();
 
-	void IgnoreCollisions(bool ignore, EntityId entityId = 0);
+	void SetIgnoreCollisionsWithOwner(bool activate, EntityId entityId = 0);
 	void DrawNear(bool drawNear, EntityId entityId = 0);
 	bool PerformPickUp();
 	int  CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity = NULL, bool getEntityInfo = false);
