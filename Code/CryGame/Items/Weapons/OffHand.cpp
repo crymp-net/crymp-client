@@ -452,7 +452,8 @@ void COffHand::PostPostSerialize()
 					m_currentState = eOHS_INIT_STATE;
 					m_preHeldEntityId = m_heldEntityId;
 					PreExecuteAction(eOHA_USE, eAAM_OnPress, true);
-					PickUpObject();
+
+					StartPickUpObject(m_heldEntityId, false);
 				}
 				else if (m_currentState & (eOHS_HOLDING_NPC | eOHS_GRABBING_NPC | eOHS_THROWING_NPC))
 				{
@@ -473,7 +474,9 @@ void COffHand::PostPostSerialize()
 					{
 						m_preHeldEntityId = m_heldEntityId;
 						PreExecuteAction(eOHA_USE, eAAM_OnPress, true);
-						PickUpObject(true);
+
+						StartPickUpObject(m_preHeldEntityId, true);
+						
 						if (pActor)
 							pActor->GetAnimatedCharacter()->ForceRefreshPhysicalColliderMode();
 					}
@@ -528,8 +531,8 @@ void COffHand::OnEnterFirstPerson()
 		{
 			//unsatisfactory fix for wrong object pos if switching from TP to FP, release object
 			m_forceThrow = false;
-			ThrowObject(eAAM_OnPress, false);
-			ThrowObject(eAAM_OnRelease, false);
+			StartThrowObject(heldEntityId, eAAM_OnPress, false);
+			StartThrowObject(heldEntityId, eAAM_OnRelease, false);
 		}
 		
 		m_wasThirdPerson = false;
@@ -1314,18 +1317,26 @@ bool COffHand::ProcessOffHandActions(EOffHandActions eOHA, int input, int activa
 	{
 		if (m_currentState & eOHS_INIT_STATE)
 		{
-			int typ = CanPerformPickUp(GetOwnerActor(), NULL, true);
+			const int typ = CanPerformPickUp(GetOwnerActor(), nullptr, true);
 			if (typ == OH_GRAB_ITEM)
 			{
 				StartPickUpItem();
 			}
 			else if (typ == OH_GRAB_OBJECT)
 			{
-				PickUpObject();
+				if (gEnv->bMultiplayer && g_pGameCVars->mp_pickupObjects && m_pGameFramework->IsImmersiveMPEnabled())
+				{
+					if (Request_PickUpObject_MP())
+					{
+						return true;
+					}
+				}
+
+				StartPickUpObject(m_preHeldEntityId, false);
 			}
 			else if (typ == OH_GRAB_NPC)
 			{
-				PickUpObject(true);
+				StartPickUpObject(m_preHeldEntityId, true);
 			}
 			else if (typ == OH_NO_GRAB)
 			{
@@ -1337,11 +1348,11 @@ bool COffHand::ProcessOffHandActions(EOffHandActions eOHA, int input, int activa
 		else if (m_currentState & (eOHS_HOLDING_OBJECT | eOHS_THROWING_OBJECT))
 		{
 			//CryMP throwing object called here
-			ThrowObject(activationMode);
+			StartThrowObject(m_heldEntityId, activationMode, false);
 		}
 		else if (m_currentState & (eOHS_HOLDING_NPC | eOHS_THROWING_NPC))
 		{
-			ThrowObject(activationMode, true);
+			StartThrowObject(m_heldEntityId, activationMode, true);
 		}
 	}
 
@@ -1465,7 +1476,7 @@ bool COffHand::PreExecuteAction(int requestedAction, int activationMode, bool fo
 		if ((!gEnv->bMultiplayer || g_pGameCVars->mp_animationGrenadeSwitch) || (requestedAction != eOHA_SWITCH_GRENADE))
 		{
 			SetHand(eIH_Left);		//Here??
-
+			
 			if ((GetEntity()->IsHidden() || forceSelect) && activationMode == eAAM_OnPress)
 			{
 				m_stats.fp = !m_stats.fp;
@@ -2845,20 +2856,32 @@ void COffHand::EndPickUpItem()
 }
 
 //=======================================================================================
-void COffHand::PickUpObject(bool isLivingEnt /* = false */)
+void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = false */)
 {
 	//Grab NPCs-----------------
 	if (isLivingEnt)
+	{
 		if (!GrabNPC())
+		{
 			CancelAction();
+		}
+	}
 	//-----------------------
 
 	//Don't pick up in prone
 	CPlayer* pPlayer = static_cast<CPlayer*>(GetOwnerActor());
-	if (pPlayer && pPlayer->GetStance() == STANCE_PRONE)
-	{
-		CancelAction();
+	if (!pPlayer)
 		return;
+
+	if (!gEnv->bMultiplayer)
+	{
+		if (pPlayer->IsClient() && pPlayer->GetStance() == STANCE_PRONE)
+		{
+			CancelAction();
+			return;
+		}
+
+		pPlayer->SetHeldObjectId(entityId); //For ik arms
 	}
 
 	//Unzoom weapon if neccesary
@@ -2907,7 +2930,7 @@ void COffHand::PickUpObject(bool isLivingEnt /* = false */)
 		}
 
 
-		if (m_mainHandWeapon)
+		if (m_mainHandWeapon && pPlayer->IsClient())
 		{
 			IFireMode* pFireMode = m_mainHandWeapon->GetFireMode(m_mainHandWeapon->GetCurrentFireMode());
 			if (pFireMode)
@@ -2920,9 +2943,15 @@ void COffHand::PickUpObject(bool isLivingEnt /* = false */)
 	{
 		m_currentState = eOHS_PICKING;
 		m_pickingTimer = 0.3f;
+
+		//PerformPickUp();
+
 		SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
 		PlayAction(m_grabTypes[m_grabType].pickup);
-		GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson), CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_PICK_OBJECT, this)), false);
+
+		GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson),
+			CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_PICK_OBJECT, this)), false);
+
 		m_startPickUp = true;
 	}
 	else
@@ -2931,45 +2960,40 @@ void COffHand::PickUpObject(bool isLivingEnt /* = false */)
 		m_grabType = GRAB_TYPE_NPC;
 		SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
 		PlayAction(m_grabTypes[m_grabType].pickup);
-		GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson), CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_GRAB_NPC, this)), false);
+		GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson),
+			CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_GRAB_NPC, this)), false);
 	}
 	RequireUpdate(eIUS_General);
-
-	//CryMP notify server
-	if (!isLivingEnt && gEnv->bMultiplayer && g_pGameCVars->mp_pickupObjects && m_pGameFramework->IsImmersiveMPEnabled())
-	{
-		CActor* pOwner = GetOwnerActor();
-		if (pOwner && pOwner->IsClient())
-		{
-			IEntity* pObject = m_pEntitySystem->GetEntity(m_crosshairId);
-			if (pObject)
-			{
-				//Start throw animation for all clients
-				m_fm->StartFire();
-
-				const bool bClientEntity = (pObject->GetFlags() & ENTITY_FLAG_CLIENT_ONLY);
-				if (!bClientEntity)
-					pOwner->GetGameObject()->InvokeRMI(CPlayer::SvRequestPickUpItem(), CPlayer::ItemIdParam(m_crosshairId), eRMI_ToServer);
-			}
-		}
-	}
 }
 
 //=========================================================================================
-void COffHand::ThrowObject(int activationMode, bool isLivingEnt /*= false*/)
+void COffHand::StartThrowObject(const EntityId entityId, int activationMode, bool isLivingEnt /*= false*/)
 {
-	//CryMP:
-	if (!m_heldEntityId)
+	if (!entityId)
 		return;
 
-	if (activationMode == eAAM_OnPress)
+	CActor* pActor = GetOwnerActor();
+	if (!pActor)
+		return;
+
+	if (!gEnv->bMultiplayer)
 	{
-		m_lastFireModeId = GetCurrentFireMode();
-		if (m_heldEntityId)
-			SetCurrentFireMode(GetFireModeIdx(m_grabTypes[m_grabType].throwFM.c_str()));
+		pActor->SetHeldObjectId(0); //Disable ik arms
 	}
 
-	PerformThrow(activationMode, m_heldEntityId, m_lastFireModeId, isLivingEnt);
+	if (!gEnv->bMultiplayer && activationMode == eAAM_OnPress) //CryMP: moved this to request pickup action for MultiPlayer
+	{
+		if (GetCurrentFireMode() < MAX_GRENADE_TYPES)
+		{
+			m_lastFireModeId = GetCurrentFireMode();
+		}
+		if (entityId)
+		{
+			RequestFireMode(GetFireModeIdx(m_grabTypes[m_grabType].throwFM.c_str()));
+		}
+	}
+
+	PerformThrow(activationMode, entityId, m_lastFireModeId, isLivingEnt);
 
 	if (m_mainHandWeapon)
 	{
@@ -3672,6 +3696,7 @@ bool COffHand::Request_PickUpObject_MP()
 	return false;
 }
 
+//==============================================================
 bool COffHand::PickUpObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId) //Called from CPlayer.cpp
 {
 	IEntity* pObject = m_pEntitySystem->GetEntity(synchedObjectId);
@@ -3692,7 +3717,7 @@ bool COffHand::PickUpObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId)
 
 	SetHeldEntityId(synchedObjectId);
 
-	PickUpObject(synchedObjectId); //fixme , false);
+	StartPickUpObject(synchedObjectId, false); //fixme , false);
 
 	if (pPlayer->IsRemote())
 	{
@@ -3702,18 +3727,12 @@ bool COffHand::PickUpObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId)
 	return true;
 }
 
+//==============================================================
 bool COffHand::ThrowObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId, bool stealingObject) //Called from CPlayer.cpp
 {
 	IEntity* pObject = m_pEntitySystem->GetEntity(synchedObjectId);
 	if (!pObject)
 		return false;
-
-	/*  //fixme
-	if (g_pGameCVars->mp_debug)
-		CryLogAlways("[RMI] $8%s throws object %s - mode: %s", pPlayer->GetEntity()->GetName(), pObject->GetName(),
-			stealingObject ? "$8stealing$7" : "$8throwing$7"
-		);
-		*/
 
 	SetHeldEntityId(0);
 
@@ -3946,9 +3965,12 @@ void COffHand::SetHeldEntityId(const EntityId entityId)
 
 	if (!isOldItem)
 	{
-		UpdateEntityRenderFlags(oldHeldEntityId, EntityFpViewMode::ForceDisable);
+		if (oldHeldEntityId)
+		{
+			UpdateEntityRenderFlags(oldHeldEntityId, EntityFpViewMode::ForceDisable);
 
-		AttachObjectToHand(false, oldHeldEntityId, false);
+			AttachObjectToHand(false, oldHeldEntityId, false);
+		}
 
 		EnableFootGroundAlignment(true);
 	}

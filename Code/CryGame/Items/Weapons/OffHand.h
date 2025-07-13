@@ -171,8 +171,8 @@ public:
 	void StartPickUpItem();
 	void EndPickUpItem();
 
-	void PickUpObject(bool isLivingEnt = false);
-	void ThrowObject(int activationMode, bool isLivingEnt = false);
+	void StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = false */);
+	void StartThrowObject(const EntityId entityId, int activationMode, bool isLivingEnt /*= false*/);
 
 	void NetStartFire();
 	void NetStopFire();
@@ -187,8 +187,6 @@ public:
 	EntityId	GetHeldEntityId() const;
 
 	void AttachGrenadeToHand(int grenade, bool fp = true, bool attach = true);
-
-	void AttachObjectToHand(bool attach);
 
 	virtual void ForcePendingActions() {}
 
