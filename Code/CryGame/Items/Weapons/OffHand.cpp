@@ -920,70 +920,97 @@ void COffHand::UpdateCrosshairUsabilityMP()
 void COffHand::UpdateHeldObject()
 {
 	CActor* pPlayer = GetOwnerActor();
-	if (!pPlayer || !pPlayer->IsClient())
+	if (!pPlayer)
 		return;
-	
-	IEntity* pEntity = m_pEntitySystem->GetEntity(m_heldEntityId);
-	if (pEntity)
-	{
-		if (m_checkForConstraintDelay >= 0)
-			m_checkForConstraintDelay--;
 
+	IEntity* pEntity = m_pEntitySystem->GetEntity(m_heldEntityId);
+	if (!pEntity)
+	{
+		SetHeldEntityId(0);
+
+		FinishAction(eOHA_RESET);
+
+		return;
+	}
+
+	if (m_constraintStatus == ConstraintStatus::WaitForPhysicsUpdate || m_constraintStatus == ConstraintStatus::Active)
+	{
 		IPhysicalEntity* pPE = pEntity->GetPhysics();
-		if ((pPE && m_constraintId && m_checkForConstraintDelay < 0) ||
+		if ((pPE && m_constraintId) ||
 			(pPE && !m_constraintId && pPE->GetType() == PE_ARTICULATED))
 		{
 			pe_status_constraint state;
 			state.id = m_constraintId;
-
-			//The constraint was removed (the object was broken/destroyed)
-			//m_constraintId == 0 means a boid that died in player hands (and now it's a ragdoll,which could cause collision issues)
-			if (!m_constraintId || !pPE->GetStatus(&state))
+			if (m_constraintStatus == ConstraintStatus::WaitForPhysicsUpdate)
 			{
-				if (m_mainHand && m_mainHand->IsBusy())
-					m_mainHand->SetBusy(false);
-
-				if (m_currentState != eOHS_THROWING_OBJECT)
+				if (pPE->GetStatus(&state))
 				{
-					if (m_currentState == eOHS_MELEE)
-						GetScheduler()->Reset();
-					m_currentState = eOHS_HOLDING_OBJECT;
-					OnAction(GetOwnerId(), ActionId("use"), eAAM_OnPress, 0.0f);
-					OnAction(GetOwnerId(), ActionId("use"), eAAM_OnRelease, 0.0f);
+					m_constraintStatus = ConstraintStatus::Active;
 				}
 				else
-				{
-					OnAction(GetOwnerId(), ActionId("use"), eAAM_OnRelease, 0.0f);
-				}
-				m_constraintId = 0;
-				return;
+					return;
 			}
+			else if (m_constraintStatus == ConstraintStatus::Active)
+			{
+				//The constraint was removed (the object was broken/destroyed)
+				//means a boid that died in player hands (and now it's a ragdoll,which could cause collision issues)
+				if (!pPE->GetStatus(&state))
+				{
+					if (m_currentState & (eOHS_HOLDING_OBJECT | eOHS_THROWING_OBJECT | eOHS_HOLDING_NPC | eOHS_THROWING_NPC)) //CryMP: don't release untill we're actually holding it
+					{
+						if (pPlayer->IsClient())
+						{
+							if (m_mainHand && m_mainHand->IsBusy())
+							{
+								m_mainHand->SetBusy(false);
+							}
 
+							if (m_currentState != eOHS_THROWING_OBJECT)
+							{
+								if (m_currentState == eOHS_MELEE)
+								{
+									GetScheduler()->Reset();
+								}
+								m_currentState = eOHS_HOLDING_OBJECT;
+								OnAction(GetOwnerId(), ActionId("use"), eAAM_OnPress, 0.0f);
+								OnAction(GetOwnerId(), ActionId("use"), eAAM_OnRelease, 0.0f);
+							}
+							else
+							{
+								OnAction(GetOwnerId(), ActionId("use"), eAAM_OnRelease, 0.0f);
+							}
+							m_constraintId = 0;
+							m_constraintStatus = ConstraintStatus::Broken;
+						}
+						return;
+					}
+				}
+			}
 		}
+	}
 
-		//Update entity WorldTM 
-		const int id = m_stats.fp ? eIGS_FirstPerson : eIGS_ThirdPerson;
+	if (!m_stats.fp)
+	{
+		return;
+	}
 
-		Matrix34 finalMatrix(Matrix34(GetSlotHelperRotation(id, "item_attachment", true)));
-		finalMatrix.Scale(m_holdScale);
+	//Update entity WorldTM 
+	int id = eIGS_FirstPerson;
 
-		Vec3 pos = Vec3(ZERO);
+	Matrix34 finalMatrix(Matrix34(GetSlotHelperRotation(id, "item_attachment", true)));
 
-		//CryMP: Handle 3rd person 
-		if (!m_stats.fp)
-		{
-			pos = pPlayer->GetEntity()->GetWorldPos() + pPlayer->GetLocalEyePos();
-		}
-		else
-		{
-			pos = GetSlotHelperPos(id, "item_attachment", true);
-		}
+	finalMatrix.Scale(m_holdScale);
 
-		finalMatrix.SetTranslation(pos);
-		finalMatrix = finalMatrix * m_holdOffset;
-		
-		//This is need it for breakable/joint-constraints stuff
-		if (IPhysicalEntity* pPhys = pEntity->GetPhysics())
+	Vec3 pos = GetSlotHelperPos(id, "item_attachment", true);
+
+	finalMatrix.SetTranslation(pos);
+
+	finalMatrix = finalMatrix * m_holdOffset;
+
+	//This is need it for breakable/joint-constraints stuff
+	if (IPhysicalEntity* pPhys = pEntity->GetPhysics())
+	{
+		if (!pPlayer->IsRemote())
 		{
 			pe_action_set_velocity v;
 			v.v = Vec3(0.01f, 0.01f, 0.01f);
@@ -994,36 +1021,36 @@ void COffHand::UpdateHeldObject()
 			{
 				pEntity->SetSlotLocalTM(0, IDENTITY);
 			}
+		}
+	}
+	//====================================
+	bool hasAuthority(gEnv->bServer);
+	if (gEnv->bMultiplayer && !gEnv->bServer)
+	{
+		/*INetChannel* pClientChannel = m_pGameFramework->GetClientChannel();
+		if (pClientChannel && m_pGameFramework->GetNetContext()->RemoteContextHasAuthority(pClientChannel, m_heldEntityId))
+		{
+			hasAuthority = true;
+		}*/
+		if (pPlayer->GetHeldObjectId() == m_heldEntityId)
+		{
+			hasAuthority = true;
+		}
 
-		}
-		//====================================
-		bool hasAuthority(gEnv->bServer);
-		if (gEnv->bMultiplayer && !gEnv->bServer)
+		//We haven't received authorization from server, check if it's a client entity e.g. chickens etc
+		if (!hasAuthority)
 		{
-			/*INetChannel* pClientChannel = m_pGameFramework->GetClientChannel();
-			if (pClientChannel && m_pGameFramework->GetNetContext()->RemoteContextHasAuthority(pClientChannel, m_heldEntityId))
-			{
-				hasAuthority = true;
-			}*/
-			if (pPlayer->GetHeldObjectId() == m_heldEntityId)
+			//CryMP: Let us have fun with chickens in MP...
+			const bool bClientEntity = (pEntity->GetFlags() & ENTITY_FLAG_CLIENT_ONLY);
+			if (bClientEntity)
 			{
 				hasAuthority = true;
 			}
-			//We haven't received authorization from server, check if it's a client entity e.g. chickens etc
-			if (!hasAuthority)
-			{
-				//CryMP: Let us have fun with chickens in MP...
-				const bool bClientEntity = (pEntity->GetFlags() & ENTITY_FLAG_CLIENT_ONLY);
-				if (bClientEntity)
-				{
-					hasAuthority = true;
-				}
-			}
 		}
-		if (hasAuthority)
-		{
-			pEntity->SetWorldTM(finalMatrix, ENTITY_XFORM_USER);
-		}
+	}
+	if (hasAuthority || pPlayer->IsRemote())
+	{
+		pEntity->SetWorldTM(finalMatrix);
 	}
 }
 
