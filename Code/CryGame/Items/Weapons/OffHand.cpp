@@ -1110,31 +1110,76 @@ void COffHand::PostUpdate(float frameTime)
 //============================================================
 void COffHand::UpdateGrabbedNPCWorldPos(IEntity* pEntity, struct SViewParams* viewParams)
 {
-	if (pEntity)
+	if (!pEntity || !m_stats.fp)
+		return;
+
+	Matrix34 neckFinal = Matrix34::CreateIdentity();
+
+	if (viewParams)
 	{
-		Matrix34 neckFinal = Matrix34::CreateIdentity();
+		CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor());
+		if (!pPlayer)
+			return;
 
-		if (viewParams)
+		const SPlayerStats* stats = pPlayer->GetPlayerStats();
+		Quat wQuat = (viewParams->rotation * Quat::CreateRotationXYZ(stats->FPWeaponAnglesOffset * gf_PI / 180.0f));
+		wQuat *= Quat::CreateSlerp(viewParams->currentShakeQuat, IDENTITY, 0.5f);
+		wQuat.Normalize();
+
+		Vec3 itemAttachmentPos = GetSlotHelperPos(0, "item_attachment", false);
+		itemAttachmentPos = stats->FPWeaponPos + wQuat * itemAttachmentPos;
+
+		neckFinal.SetRotation33(Matrix33(viewParams->rotation * Quat::CreateRotationZ(gf_PI)));
+		neckFinal.SetTranslation(itemAttachmentPos);
+
+		ICharacterInstance* pCharacter = pEntity->GetCharacter(0);
+		if (!pCharacter)
+			return;
+
+		ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose();
+		if (!pSkeletonPose)
+			return;
+
+		int neckId = 0;
+		Vec3 specialOffset(0.0f, -0.07f, -0.09f);
+
+		switch (m_grabbedNPCSpecies)
 		{
-			CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor());
-			if (!pPlayer)
-				return;
+		case eGCT_HUMAN:  neckId = pSkeletonPose->GetJointIDByName("Bip01 Neck");
+			specialOffset.Set(0.0f, 0.0f, 0.0f);
+			break;
 
-			const SPlayerStats* stats = pPlayer->GetPlayerStats();
-			Quat wQuat = (viewParams->rotation * Quat::CreateRotationXYZ(stats->FPWeaponAnglesOffset * gf_PI / 180.0f));
-			wQuat *= Quat::CreateSlerp(viewParams->currentShakeQuat, IDENTITY, 0.5f);
-			wQuat.Normalize();
+		case eGCT_ALIEN:  neckId = pSkeletonPose->GetJointIDByName("Bip01 Neck");
+			specialOffset.Set(0.0f, 0.0f, -0.09f);
+			break;
 
-			Vec3 itemAttachmentPos = GetSlotHelperPos(0, "item_attachment", false);
-			itemAttachmentPos = stats->FPWeaponPos + wQuat * itemAttachmentPos;
+		case eGCT_TROOPER: neckId = pSkeletonPose->GetJointIDByName("Bip01 Head");
+			break;
+		}
 
-			neckFinal.SetRotation33(Matrix33(viewParams->rotation * Quat::CreateRotationZ(gf_PI)));
-			neckFinal.SetTranslation(itemAttachmentPos);
+		Vec3 neckLOffset(pSkeletonPose->GetAbsJointByID(neckId).t);
+		//Vec3 charOffset(pEntity->GetSlotLocalTM(0,false).GetTranslation());
+		//if(m_grabbedNPCSpecies==eGCT_TROOPER)
+		//charOffset.Set(0.0f,0.0f,0.0f);
+		//Vec3 charOffset(0.0f,0.0f,0.0f);		//For some reason the above line didn't work with the trooper...
 
-			ICharacterInstance* pCharacter = pEntity->GetCharacter(0);
-			assert(pCharacter && "COffHand::UpdateGrabbedNPCWorldPos --> Actor entity has no character!!");
-			if (!pCharacter)
-				return;
+		//float white[4] = {1,1,1,1};
+		//gEnv->pRenderer->Draw2dLabel( 100, 50, 2, white, false, "neck: %f %f %f", neckLOffset.x,neckLOffset.y,neckLOffset.z );
+		//gEnv->pRenderer->Draw2dLabel( 100, 70, 2, white, false, "char: %f %f %f", charOffset.x,charOffset.y,charOffset.z );
+
+		//gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere(neckFinal.GetTranslation(),0.08f,ColorB(255,0,0));
+
+		neckFinal.AddTranslation(Quat(neckFinal) * -(neckLOffset + specialOffset));
+		m_lastNPCMatrix = neckFinal;
+	}
+	else
+	{
+		Vec3 itemAttachmentPos = GetSlotHelperPos(0, "item_attachment", true);
+		neckFinal = m_lastNPCMatrix;
+		neckFinal.SetTranslation(itemAttachmentPos);
+
+		if (ICharacterInstance* pCharacter = pEntity->GetCharacter(0))
+		{
 			ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose();
 			assert(pSkeletonPose && "COffHand::UpdateGrabbedNPCWorldPos --> Actor entity has no skeleton!!");
 			if (!pSkeletonPose)
@@ -1158,62 +1203,16 @@ void COffHand::UpdateGrabbedNPCWorldPos(IEntity* pEntity, struct SViewParams* vi
 			}
 
 			Vec3 neckLOffset(pSkeletonPose->GetAbsJointByID(neckId).t);
-			//Vec3 charOffset(pEntity->GetSlotLocalTM(0,false).GetTranslation());
-			//if(m_grabbedNPCSpecies==eGCT_TROOPER)
-			//charOffset.Set(0.0f,0.0f,0.0f);
-			//Vec3 charOffset(0.0f,0.0f,0.0f);		//For some reason the above line didn't work with the trooper...
-
-			//float white[4] = {1,1,1,1};
-			//gEnv->pRenderer->Draw2dLabel( 100, 50, 2, white, false, "neck: %f %f %f", neckLOffset.x,neckLOffset.y,neckLOffset.z );
-			//gEnv->pRenderer->Draw2dLabel( 100, 70, 2, white, false, "char: %f %f %f", charOffset.x,charOffset.y,charOffset.z );
-
-			//gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere(neckFinal.GetTranslation(),0.08f,ColorB(255,0,0));
-
 			neckFinal.AddTranslation(Quat(neckFinal) * -(neckLOffset + specialOffset));
-			m_lastNPCMatrix = neckFinal;
-		}
-		else
-		{
-			Vec3 itemAttachmentPos = GetSlotHelperPos(0, "item_attachment", true);
-			neckFinal = m_lastNPCMatrix;
-			neckFinal.SetTranslation(itemAttachmentPos);
-
-			if (ICharacterInstance* pCharacter = pEntity->GetCharacter(0))
-			{
-				ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose();
-				assert(pSkeletonPose && "COffHand::UpdateGrabbedNPCWorldPos --> Actor entity has no skeleton!!");
-				if (!pSkeletonPose)
-					return;
-
-				int neckId = 0;
-				Vec3 specialOffset(0.0f, -0.07f, -0.09f);
-
-				switch (m_grabbedNPCSpecies)
-				{
-				case eGCT_HUMAN:  neckId = pSkeletonPose->GetJointIDByName("Bip01 Neck");
-					specialOffset.Set(0.0f, 0.0f, 0.0f);
-					break;
-
-				case eGCT_ALIEN:  neckId = pSkeletonPose->GetJointIDByName("Bip01 Neck");
-					specialOffset.Set(0.0f, 0.0f, -0.09f);
-					break;
-
-				case eGCT_TROOPER: neckId = pSkeletonPose->GetJointIDByName("Bip01 Head");
-					break;
-				}
-
-				Vec3 neckLOffset(pSkeletonPose->GetAbsJointByID(neckId).t);
-				neckFinal.AddTranslation(Quat(neckFinal) * -(neckLOffset + specialOffset));
-			}
-
 		}
 
-		float EntRotZ = RAD2DEG(Quat(neckFinal).GetRotZ());
-
-		pEntity->SetWorldTM(neckFinal);
-
-		//gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere(neckFinal.GetTranslation(),0.08f,ColorB(0,255,0));
 	}
+
+	float EntRotZ = RAD2DEG(Quat(neckFinal).GetRotZ());
+
+	pEntity->SetWorldTM(neckFinal);
+
+	//gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere(neckFinal.GetTranslation(),0.08f,ColorB(0,255,0));
 }
 
 //=============================================================
