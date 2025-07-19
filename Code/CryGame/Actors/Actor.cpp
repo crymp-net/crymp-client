@@ -887,13 +887,18 @@ void CActor::SetActorModel()
 		CreateBoneAttachment(EntitySlot::CHARACTER, "alt_weapon_bone01", "left_item_attachment");
 		CreateBoneAttachment(EntitySlot::CHARACTER, "weapon_bone", "laser_attachment");
 
-		//CryMP specific:
-		if (gEnv->bMultiplayer && GetActorClass() == ActorType::CPlayer)
+		//CryMP
+		if (GetActorClass() == ActorType::CPlayer)
 		{
-			Vec3 positionOffset(0.007f, -0.065f, 0.025f);
-			Quat rotationOffset = Quat(IDENTITY); 
+			if (gEnv->bMultiplayer)
+			{
+				Vec3 positionOffset(0.007f, -0.065f, 0.025f);
+				Quat rotationOffset = Quat(IDENTITY);
 
-			CreateBoneAttachment(EntitySlot::CHARACTER, "alt_weapon_bone01", "left_hand_grenade_attachment", positionOffset, rotationOffset);
+				CreateBoneAttachment(EntitySlot::CHARACTER, "alt_weapon_bone01", "left_hand_grenade_attachment", positionOffset, rotationOffset);
+			}
+			
+			CreateBoneAttachment(EntitySlot::CHARACTER, "Bip01 Head", "held_object_attachment");
 		}
 
 		// Additional attachments if defined
