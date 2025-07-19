@@ -3759,7 +3759,7 @@ bool COffHand::PickUpObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId)
 
 	//CryMP: Remote player stole our object
 	CPlayer* pClientPlayer = static_cast<CPlayer*>(m_pGameFramework->GetClientActor());
-	if (pClientPlayer != pPlayer && pClientPlayer->GetHeldObjectId() == synchedObjectId)
+	if (pClientPlayer && pClientPlayer != pPlayer && pClientPlayer->GetHeldObjectId() == synchedObjectId)
 	{
 		COffHand* pClientOffHand = static_cast<COffHand*>(pClientPlayer->GetWeaponByClass(CItem::sOffHandClass));
 		if (pClientOffHand)
