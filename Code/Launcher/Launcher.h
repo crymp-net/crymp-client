@@ -11,6 +11,7 @@ class Launcher
 		void* pCryAction = nullptr;
 		void* pCryAISystem = nullptr;
 		void* pCryNetwork = nullptr;
+		void* pCryPhysics = nullptr;
 		void* pCrySystem = nullptr;
 		void* pCryRenderD3D9 = nullptr;
 		void* pCryRenderD3D10 = nullptr;

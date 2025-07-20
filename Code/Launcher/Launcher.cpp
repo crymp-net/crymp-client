@@ -973,6 +973,12 @@ void Launcher::LoadEngine()
 		throw StringTools::SysErrorFormat("Failed to load the CryNetwork DLL!");
 	}
 
+	m_dlls.pCryPhysics = WinAPI::DLL::Load("CryPhysics.dll");
+	if (!m_dlls.pCryPhysics)
+	{
+		throw StringTools::SysErrorFormat("Failed to load the CryPhysics DLL!");
+	}
+
 	m_dlls.pCry3DEngine = WinAPI::DLL::Load("Cry3DEngine.dll");
 	if (!m_dlls.pCry3DEngine)
 	{
@@ -1050,6 +1056,14 @@ void Launcher::PatchEngine()
 		MemoryPatch::CryNetwork::HookCryWarning(m_dlls.pCryNetwork, &OnCryWarning);
 
 		HookNetworkGetService(m_dlls.pCryNetwork);
+	}
+
+	if (m_dlls.pCryPhysics)
+	{
+#ifdef BUILD_64BIT
+		// hack for FAPP
+		WinAPI::FillNOP(WinAPI::RVA(m_dlls.pCryPhysics, 0xC4B02), 0x15);
+#endif
 	}
 
 	if (m_dlls.pCrySystem)
