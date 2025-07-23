@@ -28,28 +28,6 @@ History:
 #include "Projectile.h"
 #include "CryGame/GameCVars.h"
 
-#define KILL_NPC_TIMEOUT	7.25f
-#define TIME_TO_UPDATE_CH 0.25f
-
-#define MAX_CHOKE_SOUNDS	5
-
-#define MAX_GRENADE_TYPES 4
-
-#define INPUT_DEF     0
-#define INPUT_USE			1
-#define INPUT_LBM     2
-#define INPUT_RBM			3
-
-#define GRAB_TYPE_ONE_HANDED	0
-#define GRAB_TYPE_TWO_HANDED  1
-#define GRAB_TYPE_NPC					2
-
-#define ITEM_NO_EXCHANGE			0
-#define ITEM_CAN_PICKUP				1
-#define ITEM_CAN_EXCHANGE			2
-
-#define OFFHAND_RANGE					2.5f
-
 //Sounds tables
 namespace
 {
@@ -145,38 +123,17 @@ namespace
 
 TActionHandler<COffHand> COffHand::s_actionHandler;
 
-COffHand::COffHand() :
-	m_currentState(eOHS_INIT_STATE),
-	m_mainHand(NULL),
-	m_mainHandWeapon(NULL),
-	m_nextGrenadeThrow(-1.0f),
-	m_lastFireModeId(0),
-	m_range(OFFHAND_RANGE),
-	m_usable(false),
-	m_heldEntityId(0),
-	m_pickingTimer(-1.0f),
-	m_resetTimer(-1.0f),
-	m_preHeldEntityId(0),
-	m_grabbedNPCSpecies(eGCT_UNKNOWN),
-	m_killTimeOut(-1.0f),
-	m_killNPC(false),
-	m_effectRunning(false),
-	m_grabbedNPCInitialHealth(0),
-	m_npcWasDead(false),
-	m_lastCHUpdate(0.0f),
-	m_heldEntityMass(0.0f),
-	m_prevMainHandId(0),
-	m_checkForConstraintDelay(2),
-	m_startPickUp(false),
-	m_pRockRN(NULL),
-	m_bCutscenePlaying(false),
-	m_restoreStateAfterLoading(false)
+COffHand::COffHand()
 {
-	m_useFPCamSpacePP = false; //Offhand doesn't need it
-	m_forceThrow = false;
-	m_fGrenadeToggleTimer = -1.0f;
-	m_fGrenadeThrowTimer = -1.0f;
-	m_holdScale.Set(1.0f, 1.0f, 1.0f);
+	m_useFPCamSpacePP = false;
+
+	m_holdOffset = Matrix34::CreateIdentity();
+	m_lastNPCMatrix = Matrix34::CreateIdentity();
+	m_intialBoidLocalMatrix = Matrix34::CreateIdentity();
+
+	// Sound array
+	for (int i = 0; i < eOHSound_LastSound; ++i)
+		m_sounds[i] = INVALID_SOUNDID;
 
 	RegisterActions();
 }

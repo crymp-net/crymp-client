@@ -24,10 +24,34 @@ History:
 #include "CryGame/Actors/Player/Player.h"
 #include "CryCommon/CryAction/IViewSystem.h"
 
-#define OH_NO_GRAB					0
-#define OH_GRAB_OBJECT			1
-#define OH_GRAB_ITEM				2
-#define OH_GRAB_NPC					3
+//================ Grab States ================
+#define OH_NO_GRAB           0
+#define OH_GRAB_OBJECT       1
+#define OH_GRAB_ITEM         2
+#define OH_GRAB_NPC          3
+
+//================ Grab Types ================
+#define GRAB_TYPE_ONE_HANDED   0
+#define GRAB_TYPE_TWO_HANDED   1
+#define GRAB_TYPE_NPC          2
+
+//================ Item Exchange =============
+#define ITEM_NO_EXCHANGE     0
+#define ITEM_CAN_PICKUP      1
+#define ITEM_CAN_EXCHANGE    2
+
+//================ Inputs ====================
+#define INPUT_DEF            0
+#define INPUT_USE            1
+#define INPUT_LBM            2
+#define INPUT_RBM            3
+
+//================ Timers & Limits ===========
+#define KILL_NPC_TIMEOUT     7.25f
+#define TIME_TO_UPDATE_CH    0.25f
+#define MAX_CHOKE_SOUNDS     5
+#define MAX_GRENADE_TYPES    4
+#define OFFHAND_RANGE        2.5f
 
 enum EOffHandActions
 {
@@ -203,61 +227,62 @@ private:
 
 	void	PostPostSerialize();
 
-	//Grenade info
-	int					m_lastFireModeId;
-	bool				m_isClient = false;
-	bool				m_wasThirdPerson = false;
-	float				m_nextGrenadeThrow;
+	// Grenade info
+	int m_lastFireModeId = 0;
+	float m_nextGrenadeThrow = -1.0f;
 
-	float				m_lastCHUpdate;
+	float m_lastCHUpdate = 0.0f;
 
-	//All what we need for grabbing
-	TGrabTypes		m_grabTypes;
-	uint32				m_grabType;
-	EntityId			m_heldEntityId, m_preHeldEntityId, m_crosshairId;
-	EntityId            m_lastLookAtEntityId = 0;
-	Matrix34			m_holdOffset;
-	Vec3          m_holdScale;
-	int						m_constraintId;
-	bool					m_hasHelper;
-	int						m_grabbedNPCSpecies;
-	float					m_heldEntityMass;
+	// Grabbing system
+	TGrabTypes m_grabTypes;
+	uint32 m_grabType = GRAB_TYPE_TWO_HANDED;
+	EntityId m_heldEntityId = 0;
+	EntityId m_preHeldEntityId = 0;
+	EntityId m_crosshairId = 0;
+	EntityId m_lastLookAtEntityId = 0;
+	Matrix34 m_holdOffset;
+	Vec3 m_holdScale = Vec3(1.0f, 1.0f, 1.0f);
+	int m_constraintId = 0;
+	bool m_hasHelper = false;
+	int m_grabbedNPCSpecies = eGCT_UNKNOWN;
+	float m_heldEntityMass = 0.0f;
 
-	float					m_killTimeOut;
-	bool					m_killNPC;
-	bool					m_effectRunning;
-	bool					m_npcWasDead;
-	bool					m_startPickUp;
-	int						m_grabbedNPCInitialHealth;
-	bool          m_forceThrow;
+	float m_killTimeOut = -1.0f;
+	bool m_killNPC = false;
+	bool m_effectRunning = false;
+	bool m_npcWasDead = false;
+	bool m_startPickUp = false;
+	int m_grabbedNPCInitialHealth = 0;
+	bool m_forceThrow = false;
 
-	tSoundID			m_sounds[eOHSound_LastSound];
+	// Sound
+	tSoundID m_sounds[eOHSound_LastSound]; 
 
-	float					m_range;
-	float					m_pickingTimer;
-	float					m_resetTimer;
+	// Usage state
+	float m_range = OFFHAND_RANGE;
+	float m_pickingTimer = -1.0f;
+	float m_resetTimer = -1.0f;
+	int m_usable = false;
 
-	int						m_usable;
+	bool m_bCutscenePlaying = false;
 
-	int           m_checkForConstraintDelay;
-	bool          m_bCutscenePlaying;
+	float m_fGrenadeToggleTimer = -1.0f;
+	float m_fGrenadeThrowTimer = -1.0f;
 
-	float					m_fGrenadeToggleTimer;
-	float					m_fGrenadeThrowTimer;
+	// Weapon/main hand state
+	int m_currentState = eOHS_INIT_STATE;
+	CItem* m_mainHand = nullptr;
+	CWeapon* m_mainHandWeapon = nullptr;
+	EntityId m_prevMainHandId = 0;
+	bool m_mainHandIsDualWield = false;
+	bool m_restoreStateAfterLoading = false;
 
-	//Current state and pointers to actor main item(weapon) while offHand is selected
-	int						m_currentState;
-	CItem* m_mainHand;
-	CWeapon* m_mainHandWeapon;
-	EntityId			m_prevMainHandId;
+	IRenderNode* m_pRockRN = nullptr;
 
-	IRenderNode* m_pRockRN;
+	Matrix34 m_lastNPCMatrix; 
+	Matrix34 m_intialBoidLocalMatrix;
 
-	Matrix34      m_lastNPCMatrix;
-	Matrix34			m_intialBoidLocalMatrix;
-
-	bool					m_mainHandIsDualWield;
-	bool					m_restoreStateAfterLoading;
+	bool m_useFPCamSpacePP = false;
 
 	//Input actions
 	static TActionHandler<COffHand> s_actionHandler;
