@@ -1,0 +1,664 @@
+Current SSM SafeWriting version: 2.9.1
+First version (4.9.2012):
+	Created core of mod, basic commands(ban,kick,permaban,admin,moderator,premium,say,etc...)
+	Created DLL which can handle chat messages
+	Created ChatLog to console of every player
+	Created damage handler(!admin=immortal,!moderator=400hp,!premium=200hp)
+	Created player info loader(HOST,PROFILEID,PORT...)
+	Fixed name bug(%) in name,it's fixed in DLL(replaces % with _)
+1.0.0 to 1.1.0 update:
+	Since this version, you can create any command inside another command(have a look to code of !mapvote)
+	It looks like this:
+		SSMCMDS.mynewcommand={DotFunc=true;}
+		function SSMCMDS.mynewcommand.func(player,msg)
+	You must write "." instead of ":" before "func"
+	Also you must write DotFunc=true to command initializer to make it work.
+	- Added anticheat (anti teleport hack and anti hit hack)
+1.1.0 to 1.2.0 update:
+	Added name handler (in InstantAction.lua), you can now handle renaming,when player tries to do it through console
+	Uses: renames per second detection(rename script detection), also for crews, you can change player name when he is in crew
+	Don't forget, this requires DLL loaded
+1.2.0 to 1.2.1 update:
+	Fixed anticheat(hit hack detection)
+1.2.1 to 1.3.0 update:
+	Added time of day handler, since now, you can change time of day with change_time (time) or with !settime [time] command
+1.3.0 to 1.3.1 update:
+	Added some anticheat parts (rename script hack + ghost glitch)
+1.3.1 to 1.4.0 update:
+	Added g_gameRules.game:FSetCVar(cvar,value) - it is able to set any CVar you wish
+1.4.0 to 1.4.1 update:
+	Added !addadmin,moderator,premium + !deladmin,moderator premium
+1.4.1 to 1.4.2 update:
+	Fixed Next map on line 510 in InstantAction.lua
+1.4.2 to 1.4.3 update:
+	Added LoadScript function - loads script, if ReloadFlag is set, then reloads it
+	Added !setcvar [cvar] [value]
+1.4.3 to 1.4.4 update:
+	Fixed SpawnVehicleForPlayer - added timer to it, this timer fixes Malformed packet bug ;)
+1.4.4 to 1.5.0 update:
+	Added time handler in Settings, now you can set your own time of level or you can use default time, when you set UseRealTime and UseCustomTime to false
+1.5.0 to 1.5.1 update:
+	Added custom weapons at spawn
+1.5.1 to 1.5.2 update:
+	Fixed CheckStatusLines + added tonum(...) function
+		Unfixed CheckStatusLines failed in getting player information, when player's ID was less than 0 - returned nil
+1.5.2 to 1.6.0 update:
+	Fixed AntiTeleportHack + added GetPlayerScore(player) and SetPlayerScore(player,kills,deaths) functions
+1.6.0 to 1.7.0 update:
+	Added DLL info loader, when you want to use it, please note that old admin/moderator/premium ID's will be different from those,which this loader gets from C++, it's still in fixing progress
+		-maybe in 1.7.1 those IDs will be same;)
+1.7.0 to 1.7.1 update:
+	Fixed bug which is described above - server does not require to load Server.log for reading since this version.
+1.7.1 to 1.7.2 update:
+	Fixed anticheat(HitCheck and TeleportCheck)
+1.7.2 to 1.7.3 update:
+	Added ExtraCommands.lua - it contains now 1 event, but by time it will contain them more ;)
+1.7.2 to 1.7.4 update:
+	Fixed AttachAttachments - it did not give player attacment to inventory, only attached it on weapon
+	+ added !teleport command for admins, use:
+		!teleport up <height>
+		!teleport fwd <height>
+		!teleport <x> <y> <z>
+1.7.4. to 1.8.0 update:
+	Fixed lot of bugs in anti-cheat
+1.8.0 to 1.8.1 update:
+	Added !reset + added feedbacks for !fallout event commands
+1.8.1 to 1.8.2 update:
+	Added CustomSettingsAtLoad + Sfw_ReloadScripts
+1.8.2 to 1.8.3 update:
+	Fixed Spawn functions - reference to variable where object will be stored added, because SetTimer + return = return nil!!!
+1.8.3 to 1.8.4 update:
+	Fixed CrewLogics.lua (action==nil error) and SafeWritingMain.lua (cmdname==nil error)
+	+Fixed some wrong tranlates ;)
+	+Added PlayerNames for Nomads, but it can still be bugged
+1.8.4 to 1.8.5 update:
+	Created sfwstrfind - string.find with no patterns in substring.
+	+added !version
+1.8.5 to 1.8.6 update:
+	Added !snow command
+	+ fixed ResetScoreOnSpectatorSwitch
+1.8.6 to 1.8.7 update:
+	Fixed !crew command - XML database
+1.8.7 to 1.9.0 update:
+	Fixed bug in SafeWritingMain.lua -> CheckPlayer - it did not check for crew etc, when UsePermaBans was disabled
+	+added PlayerInfo.lua (player stats)
+	Changed Spawn:Spawn... to only Spawn:... (it's realy useless to write Spawn:SpawnEntity())
+	+added my custom hostname to IP converter in C++ scripts (DLL). Let's hope it works without any bugs otherwise contact me on forum ;) .
+	+added option to disable ForbiddenArea
+	+added !top10
+1.9.0 to 1.9.1 update:
+	Updated DLL, so now we can handle OnShoot (anti rapid-fire, c4 overclock etc. hacks), just let's hope, it wont slow down server
+1.9.1 to 1.9.2 update:
+	Fixed crews - now it's able to save crews containing <,>,|,*,:,\,/... in name
+	Changed spawn functions - no referers, but callback functions. 
+	Example:
+		Spawn:Entity(player,"US_ltv",10,function(vehicle)
+			vehicle.owner=player.id;
+		end)
+	Callback function must pass one param - vehicle/entity
+	+made EquipPlayed with custom equipment work on Instant Action
+1.9.2 to 1.9.3 update:
+	Fixed minor bug - chat entity taking -> error in Chat:To...()
+	+fixed Dll's SpawnAmmo function - prevention for possible server crashing/exploiting it
+	+added ProfileSpoof detection
+	+fixed AntiCheat's Rapid-fire hack detection (MOAR) + FlyHackCheck, but it's not recommended to use it ;) I'm not 100% sure if it works properely.
+	+added !getsnipe
+	+added StatisticsAutoSave
+	+added GiveItem(player,item,attachments) and AwardPlayer(player,pp,cp)
+1.9.3 to 1.9.4 update:
+	Fixed permabans, added 2 new functions: xmlfixstring(str), and xmlgetstring(str)
+	+deleted "Connection:", all funcs like Connection:BanPlayer -> BanPlayer
+1.9.4 to 1.9.5 update:
+	Fixed OnClientDisconnect - Statistics function (rOffsetTime was nil)
+	Fixed FSetCvar - Crashed when CVar was unexisting command
+	Added kicking for high ping option in settings
+	Added g_gameRules.game:ConnectWebsite(hostname,file,port); in DLL
+	Added GiveAmmo(player,weaponname,amount) function
+	Added Persistant scores
+	Added optional function, which can be defined anywhere and it will get defaultly called: SafeWriting:OnTimerTickCustom(), if not defined, it won't get called
+	Example: 
+		g_gameRules.game:ConnectWebsite("example.com","/folder/setonlinestate.php?count=2",80);
+1.9.5 to 1.9.6 update:
+	Created list of mod's functions
+	Added Queue:Create(), :Push(val); :Pop(val);, arr2str(array,...);
+	Created !lock,!unlock
+	Fixed the Dll
+	Created anticheat's details log
+1.9.6 to 1.9.7 update:
+	Mod is able to run without Dll, but some cool stuff won't work (FSetCVar,ConnectWebsite,muting player,hiding chat commands...)
+	Added loadable plugins possibility (description "how to?" is in Callbacks.txt)
+	Added Enable,DisableChatCommand(cmdname)
+	Added reasons for bans,kicks,permabans and mutes
+1.9.7 to 1.9.8 update:
+	Added g_gameRules:OnCheatDetected as a way for C++ to activate Anticheat:DealWithPlayer
+	Added cloak hack detection + command !supercloak
+	Added short form of private messages : @player text...
+	Fixed anti rapid fire hack
+1.9.8 to 1.9.9 update:
+	Fixed damage hack and cloak hack detection (C4 exception)
+	Removed main.lua from .pak, it was not important file
+	Added Protect.xml, which should help to detect cheats, but you have to enable cheat protection: sv_cheatprotection 1
+	Added chat commands to console commands converter, it can be disabled in settings.
+	Usage: sfw_CommandName Params, if. Chat command might not require any params, but console command still does, so use 0 as default parameter or whatever
+	Fixed small, but major bug in SafeWritingMain.lua, sometimes it forgot to load whole mod.
+1.9.9 to 1.9.10 update:
+	Added vote system + item block system. 
+	Added changable sv_maxplayers to any value even over 32
+1.9.10 to 2.0.0 update:
+	Added SafeWritingUpdater.lua, which will later serve to update files such as Permabans.txt from older version to newer
+	Fixed vehicle team kill damage bug
+	Added new callbacks
+	Fixed rapid-fire hack detection + added fireRate of weapon in this detection + class name and weaponId automatically passes from C++ to Lua
+	Added chat spoof and hit spoof detection
+2.0.0 to 2.0.1 update:
+	Added Translator into mod, add translations to AdditionalScripts/Translations.lua by following how other default translations are done
+	To add your translation to chat message or console or simple message, add [[Index in table of translations]] to message, example: "Hi, you know what PM does? [[pm_info]]"
+	Translations work only in SendToTarget functions.
+	Improved translation algorithm, it took 27.375 seconds to old one to translate message for 100 000 times, new algorithm does it in 0.3 seconds
+	Translates are available only on 1.2.1 now
+	Fixed Nomad names bug
+	Cleaned core scripts,AdditionalScripts.lua and AntiCheat.lua
+	Translator now contains 6 lanugages: slovak,english,german,turkish,portuguese and dutch
+	Added PlayerInfo.xml optimalizer and function printf (works just like in C)
+2.0.1 to 2.0.2 update:
+	Added commands sessions, their use is easy, when enabled, player can use commands only in time of session, when session expire, player is not able to use commands.
+	It can be used to prevent chat spoofers on 1.0.0 :) Just look to new settings and see.
+	And it can be only used on PowerStruggle.
+	Fixed minor bug in message "You are jailed", it was sent to nil player, this is fixed now.
+	Improved the way of getting IP from host of player + added ^ character to VerifyName as valid character.
+2.0.2 to 2.1.0 update:
+	This update brings SSMSafeWriting.exe, which you must put into folder, where startupSFW.bat is (ServerFolder/) and you must enable mod to use this .exe in settings with EnableSafeWritingExe=true; field
+	SSMSafeWriting.exe is external application of mod written in C++, which is used to get IPs from host by using nslookup etc. (it can do all stuff, that Lua cannot)
+	It will soon be able to connect websites etc.
+	Also improved way of getting IP, I noticed, that ips like dec012123045078-provider.tld, were solved as hexadecimal ips instead of being solved as decimal ips to 12.123.45.78, this bug was fixed
+	IP getter from host also uses SSMSafeWriting.exe since now on non-SafeWriting.dll versions.
+2.1.0 to 2.1.1 update:
+	2.1.1 update updates format of Permabans.txt and allows tempbans for x hours (set this in ChatCommands.lua, default is 50)
+	It also brings possibility of connecting websites with SSMSafeWriting.exe, see SSMSafeWriting_exe_desc.txt
+	Fixed teleportation bug when player was in vehicle. It kicks player from vehicle and after 750ms teleports him to place.
+	Added new callback: OnKill(hit)
+	Added new functions to SSMSafeWriting.exe, see SSMSafeWriting_exe_desc.txt
+	Fixed PlayerInfo.lua, there was bug with double scores in .xml file, now it merges it to one score and assigns new .statsidx to player in-game :)
+2.1.1 to 2.1.2 update:
+	Improved sessions by adding hashing of sessions and salt :)
+	Added JL1 hash algorithm, which was developed by me maybe half year ago in C++, to change seed of algorithm, see new Settings (4th line or 3rd)
+	With this session salt and hash, no moderator/admin will have same code for session activation, it depends on his profile ID and seed of hash.
+	Removed writeprocmemory32 from .exe, because it could be realy dangerous.
+	Hotfix:
+		Fixes permabans bug + rapid-fire detection bug on 1.2.1
+		Permabans bug was caused by tempban, if someone was permabanned after someone who was tempbanned before, parser stopped searching for ban at tempban's position.
+		Rapid-fire bug: when someone changed firemode on same weapon, he could get kicked
+	Hotfix 2:
+		Adds error message, when having problems with .exe to prevent next huge errors + disables use of .exe automatically in settings when error.
+2.1.2 to 2.1.3  update:
+	Added new generation of plugins - by using MergeFunctions to void functions, see new Callbacks.txt
+	Fixed anticheat spam, when it spammed several times to chat even after player was kicked
+	Improved hit-hack detection, now it is able to detect damage changes like when client changes FY71 damage from 32 to 50 (atleast it should be able :-) )
+	Fixed !reward and !transfer command chat output, when player was not found
+	Fixed !crew invite - got bugged when player was not found and it checked whether he is not in crew (nil.CrewName => ERROR)
+	Added reverse table of nanosuit modes to SafeWriting.NanosuitModes.
+	Fixed updater's bug, when temp version did not exist in updater's version packages
+2.1.3 to 2.1.4 update:
+	Added infinite ammo detector, but it is still kinda buggy with laggers, so it is dissabled (commented) in AntiCheat, but you can uncomment it.
+	Added new function AddChatCommand(name,function(self,sender,msg,...),[params,rights,desc]), read updated readme.txt
+	Added drop spoof and pick-up spoof detection on 1.2.1
+	Added connecthttp11 for SSMSafeWriting.exe + fixed old connecthttp10 , it kept getting 302 Found message or 400 Bad request message.
+	Optimalized 1.2.1 with 1.0.0, so you do not have to differ functions like g_gameRules.game:ConnectWebsite with SafeWritingCall on 1.0.0, there are universal functions: ConnectHTTP,GetIP and ForceSet, see Functions.txt
+2.1.4 to 2.1.5 update:
+	This update merges 1.2.1 and 1.0.0 scripts :) So there is no longer extra separated 1.0.0 version from 1.2.1.
+	Also, please read: 2.1.5 IMPORTANT.txt for other informations.
+	Added new callbacks: CheckPlayer (player), g_gameRules:OnEnterBuy/ServiceZone(player) and g_gameRules:SvBuy
+	Added ordered sending of console messages.
+	Added safe calls to functions in func. container and chat commands.
+	Fixed pick-up spoof detection, mostly crashed server on 1.2.1
+	Added buy flooding protection - no more server crashers I think :)
+	Also you should add these lines to settings:
+		HomeCountry=".."; --for example sk,ua,...
+		OptimizeSpeed=true; --recommended for non-stop servers :)
+	Fixed bug of version detection.
+	Fixed anticheat bug of atom hack detection, it is detected well now, when weapon is unknown :)
+	Fixed anticheat bug of hit spoof detection on 1.2.1 by updating .dll, could crash server.
+	Improved anticheat in detecting atom hack in Lua
+	Added chat flood protection
+2.1.5 to 2.1.6 update:
+	Fixed one game crasher bug in g_gameRules.Server:OnHit
+	Added connecting users handler, which checks whether same user is connected more than 1 time. If yes => kick
+	Added !killme command
+	Added several server crasher detections.
+	Added spectator,radio spoof detection
+	Fixed one timer bug (you could not see score table when game ended)
+	All commands added through AddChatCommand already contain these 2 autobuilt method: self:GetName() - returns command name and self:IsUsable(player,timeout,warn_player=false) which returns true or false and time that lefts to use of command, only when command is unusable.
+	Added PosSystem.lua to mod as example of AddChatCommand usage, otherwise see ReadMe!.htm, which explains it's parameters.
+2.1.6 to 2.1.7 update:
+	Added new version tagging + new methods to stack and queue: Stack:Top(),Stack:Front(),Queue:Top(),Queue:Front()
+	Added new way of adding plugins
+	Changed several plugin callbacks and their params, see ReadMe!.html for more info.
+2.1.7 to 2.1.8 update:
+	Updated DLL, since now you can enable sfw_seechatofall 1 , so all can see chat of dead, spectators on 1.2.1.
+	Removed several useless functions from core.
+	Added OnBuy callback - it is useful for plugins which can be controlled by binded keys.
+	Added new flag to every player on connect, player.isHost - determines whether player is hoster - his ip is 192.168.*.*
+	Added timeout to ConnectWebsite function, works also on 1.0.0, so update your SSMSafeWriting.exe or SafeWriting.dll on 1.2.1
+	Speeded up sending of console messages.
+	Improved anticheat, added working infinite ammo detection and also, finally sorted out anticheat scripts, so they will correctly work.
+	Added Romanian translation - special thanks to UNU
+	Added several new functions, just like torad,todeg,GetDistance,print,_pairs,arr2str_fast,arr2str
+2.1.8 to 2.1.9 update:
+	Added *nk,*us as possible option in GetPlayersByName, example !givepp *nk 800
+	Optimalized Msg:SendTo[Target,All] and added error type as kind of message.
+	Improved Protect.xml, deleted VehicleBase.lua
+2.1.9 to 2.2.0 update:
+	Upgraded bans format, since now it is saved in .lua file called Bans.lua, it is much more easier for script to read and edit.
+		Fields are:
+		[1]	name of player (his sanitized name already)
+		[2]	ip of player
+		[3]	host of player
+		[4]	profile id of player
+		[5]	ban reason
+		[6]	ban time
+		[7]	person that banned player
+		[8]	expiry timestamp , 0 = permanent ban
+	Fixed one bug in anticheat (inf. ammo detection)
+	Fixed one bug in AdditionalScripts.lua
+2.2.0 to 2.2.0.1 update:
+	Added "Did you mean feature", see Settings.lua
+	OnActorHit now gets called even when actor is in vehicle. It was moved from SafeWritingGameRules.lua to AdditionalScripts.lua
+	Added new callback OnHit which gets called when anything gets hit. Not just vehicle or player.
+	Fixed minor bug in rapid-fire detection.
+2.2.0.1 to 2.2.1 update:
+	Added plugin templates support, now, one plugin template is available, AdvancedPlugin
+	Plugin templates are used for making coding shorter, it is something like class derivation in C++ ( class NewPlugin : public PluginBase )
+	AdvancedPlugin contains few methods:
+		self:GetName()		-returns name of derived plugin
+		self:GetPath(file)	-returns full path for some file for later output usage
+		self:LoadData()		-loads data from plugin's lua data file
+		self:SaveData()		-saves all data of plugin to it's lua data file
+		self:New()		-returns plugin
+		self:Load()		-loads up plugin to func container
+		self:Init()		-initializes plugin, must be called right after creating plugin with :New()
+	Example:
+		MyPlugin=AdvancedPlugin:New()
+		MyPlugin:Init()
+		function MyPlugin:PrepareAll()
+			for i,v in _pairs(self.Data) do
+				print(i,v);
+			end
+			self.Data[#self.Data+1]=math.random(1,100);
+			self:Save();
+		end
+		MyPlugin:Load();
+	Creates plugin which will generate one random number on it's load and it prints them all when map loads. It saves those numbers permanently to plugin's data file.
+	Next, added streams: ChatStream,ConsoleStream,MessageStream. Each one of stream contains 2 methods: SendToTarget(target,fmt,...) and SendToAll(fmt,...)
+	Streams can be used just like in C++. For example you can pass stream to function and use it.
+	Example:
+		function UseStream(stream)
+			stream:SendToAll("This stream works!");
+		end
+		UseStream(ConsoleStream);	--makes console output
+		UseStream(ChatStream);		--makes chat output
+		UseStream(MessageStream);	--make message output
+	Fixed not working connecthttp11 request in SSMSafeWriting.exe
+2.2.1 to 2.2.2 update:
+	Added possibility of seeing spectators/dead chat inside normal game, just add 	CanAllSeeChat=true; to settings.lua
+	Added OnChatMessage(type,source,target,msg) callback
+2.2.2 to 2.3.0 update:
+	Fixed MessageStream:SendToTarget/All - removed "kind" parameter, to set kind of message use :SetType("center") for example
+	Added bin64/SafeWriting.dll, since now you can run 64 bit server on 1.2.1 using this mod :)
+	Updated startupSFW.bat, so it recognizes 64-bit OS and it will automaticaly run 64-bit server on that OS.
+	Also, please correct the paths in startupSFW.bat because you might have ServerFolder elsewhere and same with folder of Crysis.
+	To change path to ServerFolder in .bat file, just change third line
+	Setting SfwDir through sfw.cfg is no longer needed when root is same as server folder dir.
+2.3.0 to 2.3.1 update:
+	Hopefully fixed 'Client actor entity spawned was not an actor' bug.
+	Added Schedule (SafeWriting.Schedule)
+	Through the Schedule you can easily create stuff that will be executed for example in 2 seconds, or it will repeat every 2 seconds and so on.
+	To add event to Schedule, use one of following calls:
+		SafeWriting.Schedule:AddEvent( timeout_ms , function_event , parameters_table , repeat(true/false/nil) )
+		SafeWriting.Schedule:AddEvent( timeout_ms , function_event , parameters_table , count_of_repeats )
+		SafeWriting.Schedule:AddEvent( timeout_ms , function_event , repeat(true/false/nil) )
+		SafeWriting.Schedule:AddEvent( timeout_ms , function_event , count_of_repeats )
+	For example:
+		Party={};	--extension
+		function Party:PrepareAll()
+			SafeWriting.Schedule:AddEvent(60000, function(self)
+				self.StartTimeout=0;
+				SafeWriting.Schedule:AddEvent(1000, function(_self)
+					MessageStream:SendToAll("Party starting in %d",5 - _self.StartTimeout);
+					_self.StartTimeout=_self.StartTimeout+1;
+				end, { self } , 5);	--repeat 5 times every 1000 ms (1 second) and pass "self" parameter inside callback
+				SafeWriting.Schedule:AddEvent(6000, function(_self)
+					printf("Party started!");
+					--... do party stuff
+				end, { self });		--this will be executed just once and "self" is passed into calback function
+			end, { self }, true);		--keep repeating this for infinite times - till round ends, pass { self }  inside callback
+		end
+		SafeWriting.FuncContainer:LoadPlugin(Party);
+2.3.1 to 2.3.1.1 update:
+	Fixed detecting version of game, which always returned "1.0.0", so 1.2.1 balance never worked and it might was reason of crashes on 1.2.1.
+2.3.1 to 2.3.2 update:
+	Updated SafeWriting.dll - g_gameRules.game:GetMapName() works since now
+	Added GetPlayerPP() - returns 0 on IA, otherwise returns player's PP scaled to g_pp_scale_income, so if g_pp_scale_income is 0.5 and player has sees that he has 10pp ( he realy has 20 ), this func returns 20
+	Added GetPlayerCP() - returns 0 on IA, so it avoids errors, otherwsie returns player's CP
+	Added GetMapName() - which uses DLL accurate function on 1.2.1 or it uses inaccurate sv_map without DLL.
+2.3.2 to 2.3.3 update:
+	Fixed crash issue when game was ended with nuke from vehicle, finally ;)
+2.3.3 to 2.3.4 update:
+	Fixed spoof detection when pretended-source was not an actor or it did not even exist.
+2.3.4 to 2.3.5 update:
+	Added CommandsExtension inside settings, with this thing, you can set what will commands begin with.
+	It can be string or table, for example:
+		CommandsExtension="!"; --means that commands will begin with !   - !name,!teleport...
+		but CommandsExtension="/"; --means that commands will already begin with /      - /name, /teleport
+		and when you set it to array, like CommandsExtension={"!","/"}, it means, that both - ! also / are valid, so !name is valid, but /name is too.
+		when it is not set, default value = "!"
+	Rewritten most of chat commands for support with new commands extension and new commands syntax (2.1.7 syntax).
+2.3.5 to 2.3.6 update:
+	All messages are now sent in correct order (using one queue - Out=Queue:Create() queue). Limit size of this queue can be set in settings (OutQueueLimit = ... or ConsoleQueueLimit = ...), default = 100 or infinite if nil.
+	Message sending speed is 5 per frame
+	Player info loader (hostname,profile,...) does not longer spam "status" when sv_restart or on new round.
+	Added working map detection for non-dll version mod, so sv_map finally gets updated after g_nextlevel.
+	Fixed temp-entity for non-dll version of mod.
+	Added RenamePlayer(player,newName,ignore) function, if ignore = true, all OnRename plugin events are skipped.
+	Implemented !veh, so it autorecognized whether to spawn land or water vehicle when no parameter is set.
+	Implementd !admin,!moderator,!premium so on 1.0.0 it wont collide with crews.
+2.3.6 to 2.3.7 updte:
+	Fixed team-shoot issue, when other player got 0 energy when team-mate shot him while being in armor mode.
+	Fixed issue, that cars did not explode after being shot to fuel tank
+	Since now you can configure these new  things in settings:
+		1. InfantriesBlockLAWC4 = false   when enabled, bazooka and C4s make no damage on infantries
+		2. ReduceVehicleDamage  = false   when enabled, doing stunts with vehicles makes 8 times less damage to vehicle, but also, this WAS ISSUE OF NOT EXPLODING VEHICLES AFTER BEING SHOT TO FUEL TANK
+		3. DetectInfiniteAmmo   = true    detects infinite ammo
+		4. DetectDamageHack     = true    detects modified damage (atom and hit hack)
+		5. DetectTeleportHack   = true    also detects speed hack partially
+		6. DetectFlyHack        = false   uses too much CPU and is not very accurate
+		7. DetectGhostGlitch    = true    detects ghost glitch
+		8. TempEntityName	= ">>"    name of entity that is used to send spectator messages, non-dll version of mod only!
+	Fixed !moderators and !premium
+	Fixed infinite ammo hack detection.
+	Updated !veh, so player gets automaticaly inside vehicle after he spawns it.
+2.3.7 to 2.3.7.1 update:
+	Fixed player info loader on 1.0.0, it overloaded ChannelInfo table even when record already existed. So it caused slow down at GetIP, which could go up to 20 seconds sometimes.
+2.3.7.1 to 2.3.8 update:
+	Added several new functions:
+		in_range(num1,num2,range)
+		canSee(player,target,bone="Bip01 head",threshold=2)
+		looksAt(pos1,pos2,angles,threshold)
+		calcViewAngles(pos1,pos2)
+		CalcDistance3D(pos1,pos2)
+		CalcDistance2D_XY(pos1,pos2)
+		CalcDistance2D_XZ(pos1,pos2)
+		CalcDistance2D_YZ(pos1,pos2)
+	See updated readMe.html to see their usage
+	Fixed kickid,banid,permabanid,tempbanid,tempban.
+	Tempban's syntax now: !tempban player hours reason, default hours = 48, default reason: no reason
+	Example: !tempban Nomad 90 was cheating - bans Nomad for 90 hours
+	Expired bans are automaticaly removed from banlist now.
+	Removing bans is less buggy now, just select the ban in Bans.lua and remove it. 
+2.3.8 to 2.4.0 update:
+	Added :OnShoot(hit) event for DLL-using version of mod. You can make flareguns using this event etc.
+	Structure of hit:
+		shooter,
+		shooterId,
+		dir,
+		pos,
+		velocity,
+		fireRate,
+		weapon,
+		weaponId,
+		weaponClass,
+		ammoId,
+	Added little support of custom entity classes, for now, use CreateClass(name,derivedFrom) function. Which automatically also sets is{ClassName} to true.
+	See FlareGun.lua for example of how to use it.
+	Merry Christmas! ;)
+2.4.0 to 2.4.1 update:
+	Added mod stylization possibility, see updated Settings.lua
+	Fixed RenamePlayer bug when player wasn't renamed.
+	If you want to make custom stylization output just use ${t:ITEMNAME|DEFAULTVALUE} instead of $4 or other color. Works just for console messages.
+	Example:
+		SafeWriting.Settings.Style.MyMsg=8;
+		Console:SendToAll("${t:MyMsg|7} HELLO WORLD!"); --prints $8HELLO WORLD, if you set MyMsg to  nil, it prints $7HELLO WORLD, because 7 is default value.
+	Happy New Year 2014 ;)
+2.4.1 to 2.4.2 update:
+	This update is only about 1.2.1 version of mod.
+	Fixed revive bug (player's info wasn't known at revive after sv_restart)
+	Fixed ConnectHTTP through DLL timeout bug, now works properly.
+2.4.2 to 2.4.3 update:
+	Fixed ChannelInfo after sv_restart as on 1.2.1, as o 1.0.0
+	Added Extensions on 1.2.1, see SafeWritingAPI - with this API you can get your own C++ stuff to Lua (mod). For example you want GetIP(char* host) in Lua, you create a func for it in this API and Register it to Lua.
+2.4.3 to 2.4.4 update:
+	Fixed several API functions:
+		BeginFuncCall(char *name);
+		GetLuaGlobal(char *name,char *&dest);
+		GetArg(int idx,char *&dest);
+	IF YOU HAVE GOT OLD SAFEWRITINGAPI.H REPLACE IT WITH  NEW!
+	Fixed 90% of memory leaks caused by reloading scripts. Reloading scripts now reloads only those which have been changed and settings.
+2.4.4 to 2.4.5 update:
+	Added PingSpoofRatio in settings, the higher, the pings are "better".
+	Added possibility of different character to censor chat, see Settings.lua - CensoreCharacter
+	Now you can even replace words in chat by adding it to BadWords array as array type, example: {"noob","master"}, replaces every occurence of word noob with word master.
+	Fixed DLL's malformed rmi (2) often kicking
+	Fixed all spoof detections
+	TeleportPlayer now supports angle as third param - TeleportPlayer(player,pos,angles)
+2.4.5 to 2.5.0 update:
+	This update is mainly about 1.0.0.
+	The own mod 32-bit DLL was added for 1.0.0 which provides:
+		-accurate map info GetMapName()
+		-muting players
+		-hiding chat commands from chat
+		-less laggy response of chat commands (40ms till response no more!)
+		-blocking renaming (rename flood)
+		-censoring chat
+		-changing time, gravity, almost everything, btw. do happy hour with ForceSet("g_pp_scale_price","0") - this realy works even on 1.0.0...
+		-faster loading of player info (ip,host,profileid...)
+		-no more Server.log reading = no more slowing down server with this thing.
+		-changing players limit over 32 without cracking original CryGame.dll, just write sv_maxplayers 80 to server.cfg and you get 80 pl. limit. - easy, isn't it? :)
+		-DLL will also soon provide support for spoof detections, so, please, now use sv_cheatprotection 1 to get avoid of it!
+	1.2.1 DLL has been changed too, so it fits new Lua scripts, which are optimized for 1.0.0 DLL. No more function recursion - direct return from Lua to DLL on 1.2.1.
+	Fixed ReloadScripts bug - already loaded scripts didn't reload = FIXED.
+	1.0.0 DLL will soon also support C++API, which is already supported by 1.2.1 DLL.
+
+	WARNING! TO GET 1.0.0 DLL WORKING ON YOUR SERVER, START UP 32-BIT SERVER, NOT 64-BIT!!!
+2.5.0 to 2.5.1 update:
+	Added several spoof detections on 1.0.0 in DLL:
+		-chat spoof
+		-rename spoof
+		-hit spoof
+		-team change spoof
+		-spectator mode spoof
+2.5.1 to 2.5.1.1 fix:
+	Fixed hit spoof detection.
+2.5.1.1 to 2.5.2 update:
+	6156 and 5767 mod DLL now share same functions, so SafeWriting.exe is not needed now!
+	SafeWritingAPI is now also available for 5767, so, C++ coder, let's begin!
+	Fixed freezing team-mates and admins.
+	Fixed white light when shooting to team-mate.
+	Fixed !transfer
+2.5.2 to 2.5.3 update:
+	Fixed several bugs in DLL interface with Lua.
+	Several On... Plugins can now return value and change for example message etc.
+	Those are:
+		OnChatMessage		return: msg,canShow
+		OnRename		return: name,canRename
+		OnFreeze		return: canFreeze
+	You can now fix overpowered AACannon by putting FixOverpoweredAA=true; to Settings.lua and updating AdditionalScripts.lua
+	Fixed rename script detection. So update your !veh and !lock commands (ChatCommands.lua) :)
+	Fixed vehicle locking system:
+		players now can't control locked spawntruck, they are automatically spawned near it
+		players can now enter their locked vehicle after they reconnect.
+	Fixed spawning function for LevelDesigner plugin.
+2.5.3 to 2.5.4 update:
+	Mod's DLL now supports connecting websites with method (GET or POST)
+	Added event OnBought(player,itemName,ok) and OnBuy(player,itemName) event now can return true/false. False = blocking buy.
+	Added async function AsyncConnectHTTP, which takes same params just like ConnectHTTP + one additional = callback function.
+	Example:
+		function Async(site)
+			AsyncConnectHTTP(site,"/index.php","GET",80,true,15,function(text)
+				local content,header,err=ParseHTTP(text);
+				if err then printf("%s",text); else
+					local f,err=io.open("website.htm","w");
+					if f then f:write(content); f:close(); end
+				end
+			end);
+		end
+		System.AddCCommand("async","Async(%line)","Connect website asynchronously");
+	This function doesn´t make lags, because it runs on other thread.
+	Using ChangeTeam(player,team) already doesn´t affect score of player.
+2.5.4 to 2.5.5 update:
+	:IsUsable(player,timeo,tell,health) now supports limiting commands for player's health. So if you want to make command usable only outside combat, use it like this self:IsUsable(player,120,true,30) - will work only if player has > 30hp
+	Mod now supports client connected without gamespy, but they must have SafeWritingClient running. That can be downloaded at website too.
+	Profile IDs of players connected thru SafeWritingClient are different a little bit. Smaller.
+	And also because of connection with masterserver, you can now look-up who is at your server etc. at http://forum.tvare.sk/master.php
+	To allow master-server support, add AllowMasterServer=true; to your Settings.lua
+	Since it still isn't 100% finished, sometimes it might cause crash, if this happened too often, please disable AllowMasterServer in settings by putting it to false.
+2.5.5 to 2.5.6 update:
+	Fixed Async functions, so connecting to master-server should not already crash server sometimes / server can keep up longer time with persistant conn. to master :)
+	Fixed Validation.lua, when player connected with same UID on new round and got kicked.
+	Fixed SafeWritingClient + sfwcl, so launching game in Prog. Files is possible.
+	Fixed melee hack detection.
+	Fixed InfiniteAmmo hack detection.
+2.5.6 to 2.5.7 update:
+	Fixed damage hack detection for InstantAction games.
+	Speeded up arguments loading in AddChatCommand function.
+	Fixed Statistics.lua for servers, which are 24/7 online.
+2.5.7 to 2.6.0 update:
+	Fixed bugs on 1.2.1 - spect/dead chat - so these people can use chat commands and pms.
+	Playing without GameSpy is now available on 1.2.1 too with SafeWritingClient :)
+2.6.0 to 2.6.1 update:
+	Improved hooking technique on 5767 DLL = 20 less operations per each hook.
+	AllowMasterServer now takes Yes, No, Maybe as arguments, Maybe causes that on date 1.6.2014, master-server usage gets automaticaly activated without reloading scripts.
+	Implemented GarbageCollector directly to core, this means that server can run for 3 weeks without restart and it will use ~300-400MB RAM
+	ConnectHTTP,AsyncConnectHTTP now fully support POST method and use User-Agent, so communication to master will now go thru POST method, no longer GET.
+	Added support for SafeWritingClient-v4 = support for map-downloader.
+	To make your maps available, upload them somewhere and provide link in Settings.lua in "Maps"
+	Example:
+		Maps={
+			["multiplayer/ps/aimmap"]="http://freeupload.tld/getfile.php?f=aimmap.zip";
+		};
+	ZIP file containing map must have this structure:
+		├───Levels
+		│   └───Multiplayer
+		│       ├───IA/PS
+		│       │   ├───map name
+2.6.1 to 2.6.2 update:
+	5767 DLL update - now it is possible to detect rapid-fire hack - enable it by setting DetectRapidFire=true; in Settings.lua
+			+ OnShoot event now works => FlareGun works too
+2.6.2 to 2.6.3 update:
+	Fixed mute bug on 5767 when player was spectating/dead
+	Added error handling for ConnectWebsite function in C++
+	Connection to master shouldn´t crash.
+	Fixed spectators chat for 1.2.1
+2.6.3 to 2.6.4 update:
+	Fixed 5767 DLL - drop spoof detection
+	Speeded up mod a little bit, by not writing loaded scripts to console, only error scripts + loaded count.
+	The error is now written to console at loading scripts containing syntax errors.
+	Added !vote command, usage !vote kick/map player/mapname. !vote map only works when you change allowMapVote from false to true inside the script ServerFolder\ChatCommands\Votes.lua
+	Fixed player info recognition after round restart, when sometimes happened that player got message in english instead in his language.
+	Account spam detection is no longer on 6156, due to GameSpy shutdown.
+	Fixed Translations.lua, please update it!
+2.6.4 to 2.6.5 update:
+	Server now tells master version of game - 5767 or 6156
+	Added new functions: AddFunc(func,name), LoadPlugin(pluginTable), to make work with plugin shorter.
+2.6.5 to 2.7.0 update:
+	Chat:SendToTarget and Chat:SendToAll now accept also form of :SendToTarget(to,msg,...) and :SendToAll(msg,...) where you don't need to specify sender as first parameter
+	Temporary accounts can't be banned on profile ID since now.
+2.7.0 to 2.7.1 update:	
+	Created custom Random function, usage: Random() or Random(min,max), because original Lua function at CryEngine wasn't really random, randomseed did nothing.
+	Fixed data collisions between derivates of AdvancedPlugin class.
+	SafeWritingAPI now supports void* GetIGameFramework(); function, you can use this to use also Crysis SDK in your code.
+	Added possibility for map versioning, write version of map to [...] at beginning of downloadlink, like: 
+		["multiplayer/ia/pure"]="[2.1]http://ge.tt/api/1/files/5YUWcOr1/0/blob?download";
+2.7.1 to 2.7.2 update:
+	Added "OnPreRevive(player)" event, called before player revives , returns nothing or new position,angles of new revive point.
+	Servers are now trusted & ranked. To become a trusted server, you need to request it - ask Zi; or anybody else, which would tell him and prove that you are trustyworthy enough.
+	Trusted servers can be also ranked, which means, that they will update data in statistics, to do this, server needs to have set "sv_ranked" to 1. It's voluntary.
+	Fixed crashing at updating status at master after some time (multi-threading bug).
+	Mod is switched to the new master by default. Please mind changing "MasterHost" in your settings to "crymp.net" if you have some other there.
+	Patched ParseHTTP against UTF-8 content.
+	SSM now uses libCURL for HTTP connect functions.
+2.7.2 to 2.7.3 update:
+	Fixed connection to master, mainly server registration, it used to fail before, so players list was impossible to send.
+	SSM DLLs should now work even without Visual C++, so do client DLLs!!!
+2.7.3 to 2.8.0 update:
+	1.0.0 and 1.2.1 now both merge into only one DLL file for 32bit!
+	64bit is deprecated if you want to use OpenSpy as your server list (alternate)
+	To get your server listed at other masters, use sv_master DOMAIN NAME, like: sv_master openspy.org
+	Players who didn't get validated ( tmp accounts ) can no longer have statistics and bank.
+	Added example file for PortalGun, use !giveitem *all PortalGun
+	LevelDesigner is now officialy part of SSM SafeWriting
+	LevelDesigner now supports premium builders, premium builds do not save on !ldsave
+	You can now set up server description in Settings.lua using "ServerDescription=..."
+	Added following methods for each command:
+		self:NeedPP(player,pp)
+		self:NotEnoughPP(player)
+		self:EnterValidPlayer(player)
+		self:EnterValidPP(player)
+		self:EnterValidClass(player)
+		self:EnterValidDistance(player)
+		self:EnterText(player)
+		self:EnterValidCommand(player)
+		self:EnterValidValue(player)
+		self:PlayerNotFound(player,name)
+		self:MustBeInVehicle(player)
+		self:MustBeGreaterThan0(player)
+	Where player is sender - one who called command, these methods do auto-translate and send chat message back to player.
+	Added russian localisation, thanks to Globder
+	Improved Translations.lua, please add your own Translations to Storage\CustomTranslations.lua!
+	Fixed bug with null kills on 6156
+	LevelDesigner can now scale objects, use !ldscale size or !scale size for premium builders... like !ldscale 0.3
+	Added few more commands: !givepp players value reason, !giveitem players value reason, !save, !load, !addtime minutes
+	Due to new DLL, it is no longer possible to keep fully working ingame -> spectators chat and shooting in cloak mode.
+2.8.0 to 2.8.1 update:
+	Added new function GetPlayers(), please prefer this over classic way of g_gameRules.game:GetPlayers()
+		as some of you might noticed, classic way sometimes returns redundant players, thus even if there are 2 players
+		on the server, it returns array of 3 for example
+	Fixed rename spoof detection
+	Fixed stability issues on connection to master ( i.e. "master unreachable" 40x row -> disappear from serverlist, that's now fixed )
+	Fixed when jailed player revived and wasn't teleported back to jail
+	Fixed bug when majority of players was kicked from server on new round
+2.8.1 to 2.8.2 update:
+	Removed immediate restart feature (apparently didn't work anyway)
+	You can now easily disable TAC weapons damage on infantries on settings by setting following to true: DisableTACOnInfantry
+	You can also disable frag grenades on server by setting DisableNades to true
+		or to disable all nades (including smoke, flash, emp, scar),set DisableAllNades to true
+	You can now set explosive removal time (for claymores and stuff) in settings, by adding/modifying:
+		ExplosiveRemovalTime=30000; --in milliseconds, default is 30000 ( = 30s )
+	To make clays last forever, just set it to some very high value like 86400000 ( = 1 day )
+2.8.2 to 2.9.0 update:
+	New sfwcl support, enables memory injector checks client side and sfwcl file integrity checks, to enable this, change IntegrityChecks to true in Settings
+	Added future support of communication channel between sfwcl and SSM SafeWriting using IntegrityService
+	IntegrityServiceEntity is now forbidden name, for sake of being used by ISE.
+	You can now enable/disable kicking players using old client profile IDs <800 000, 999 999>, by setting StrictProfilePolicy to true in Settings
+	Revamped Translations script, no more Slovak names! You can now use english names like [[ITEM_LOCKED]] (instead of old [[Polozka zablokovana]])
+	Fixed PlayerInfo, players with ID in range 800 000 - 999 999 can no longer have stats, neither bank.
+	You can now make HTTP requets from AsyncConnectHTTP by specifying port as 443.
+	Revamped HTTP/HTTPS api, just HTTPS("GET", "crymp.net", "/whatever.php", function(content, err)
+		if not err then printf("%s", content); end
+	end);
+	Real IP recognition, no more failed IP detections when hostname is like "DESKTOP-55AT09VC" and so on.
+	You can now protect names of players, by listing their profile IDs in Settings file and setting ProtectNames to true
+	Name protection script compares names in lowercase and without special symbols, so even if there is "Zi;" and someone tries "$0Zi;", it gets blocked.
+	You can now mute players for certain amount of time or permanently by using !muteex Playername Time, if Time is not filled or is 0, it results in permanent mute.
+	You can now easily assign properties to players for certain amount of time by using new functions:
+		SetPlayerProperty(player,giver,"FunctionToUseOnPlayer", "FunctionToUseWhenRemovingProperty", expire=0, reason="property set")
+	For example if we want to mute player for 30 seconds and then unmute:
+		SetPlayerProperty(player,"MutePlayer","UnmutePlayer",30)
+	Note that giver is one who executes command on player, so in case of !muteex Someone, giver is admin/mod who does this
+	You can now easily pass time into chat commands, by specifying TIME as type in arguments, format is as follows:
+		1y2mo3d20h30min40s - this would be 1 year, 2 months, 3 days, 20 hours, 30 minutes, 40 seconds
+		You don't need to use whole expression, but just fraction like 1h30min or alternative 1h30m
+		Units are: y - year, mo - month, d - day, h - hours, m/min - minutes, s - seconds
+	You can now encrypt your scripts using EncryptFile(file, outputFile) function, for example EncryptFile(SafeWriting.AdditionalScriptsFolder.."Whatever.lua")
+		if outputFile is not passed, outputFile is assigned same name as file, but with .bin extension
+	Level designer can now spawn entities with given teams using "us:" or "nk:" prefix, for example !ld 10 nk::US_ltv, spawns car for North Korean team
+	In order to use latest level designer, please remove old LevelDesigner.sfwc from your ServerFolder\AdditionalScripts folder
+	You can now spawn turrets using LevelDesigner, just like this: !ld 10 us::AlienTurret
+	You can now partially import CryFire scripts, basic things required for import are supported, like CryFire's syntax of AddCommand, SendMessage, teamNames, teamIDs
+2.9.0 to 2.9.1 update:
+	Fixed bug where server kicked innocent players who were logged using GameSpy and CryMP at same time
+2.9.1 to 3.0.0 update:
+	SafeWriting is now integrated into CryMP Server executable
+	Major changes require updating SafeWritingMain.lua and SafeWritingGameRules.lua
+	Integrity service and old TCP-RPC (!sync) are deprecated
+	Script encryption functionality was removed, please remove LevelDesigner.bin and replace it with latest LevelDesigner.lua
+
+SSM SafeWriting 2025 - Zi;

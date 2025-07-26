@@ -2,11 +2,36 @@
 
 #include <cstdarg>
 #include <cstddef>
-#include <stdexcept>
+#include <exception>
 #include <string>
 #include <string_view>
-#include <system_error>
+#include <system_error>  // std::error_code
 #include <type_traits>
+
+class CryMP_Error : public std::exception
+{
+	std::string m_what;
+	std::string m_message;
+	std::error_code m_code;
+
+public:
+	explicit CryMP_Error(const std::string& message, std::error_code code = {});
+
+	const char* what() const noexcept override
+	{
+		return m_what.c_str();
+	}
+
+	const std::string& message() const noexcept
+	{
+		return m_message;
+	}
+
+	const std::error_code& code() const noexcept
+	{
+		return m_code;
+	}
+};
 
 extern "C" __declspec(dllimport) int __stdcall MultiByteToWideChar(
 	unsigned int codepage,
@@ -348,12 +373,12 @@ namespace StringTools
 	std::size_t FormatTo(char* buffer, std::size_t bufferSize, const char* format, ...);
 	std::size_t FormatToV(char* buffer, std::size_t bufferSize, const char* format, va_list args);
 
-	std::runtime_error ErrorFormat(const char* format, ...);
-	std::runtime_error ErrorFormatV(const char* format, va_list args);
+	CryMP_Error ErrorFormat(const char* format, ...);
+	CryMP_Error ErrorFormatV(const char* format, va_list args);
 
-	std::system_error SysErrorFormat(const char* format, ...);
-	std::system_error SysErrorFormatV(const char* format, va_list args);
+	CryMP_Error SysErrorFormat(const char* format, ...);
+	CryMP_Error SysErrorFormatV(const char* format, va_list args);
 
-	std::system_error SysErrorErrnoFormat(const char* format, ...);
-	std::system_error SysErrorErrnoFormatV(const char* format, va_list args);
+	CryMP_Error SysErrorErrnoFormat(const char* format, ...);
+	CryMP_Error SysErrorErrnoFormatV(const char* format, va_list args);
 }

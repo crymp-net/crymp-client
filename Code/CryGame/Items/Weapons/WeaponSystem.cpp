@@ -53,6 +53,7 @@ History:
 
 #include "ZoomModes/IronSight.h"
 #include "ZoomModes/Scope.h"
+#include "CryGame/GameCVars.h"
 
 template <typename T, typename R> R *CreateIt() { return new T(); };
 
@@ -123,6 +124,19 @@ CWeaponSystem::CWeaponSystem(CGame *pGame, ISystem *pSystem)
 	CBullet::SetWaterMaterialId();
 
 	m_pGame->GetIGameFramework()->GetILevelSystem()->AddListener(this);
+
+	gEnv->pConsole->AddCommand(
+		"ws_dumpAmmoPools",
+		[](IConsoleCmdArgs* pArgs)
+		{
+			if (g_pGame && g_pGame->GetWeaponSystem())
+			{
+				g_pGame->GetWeaponSystem()->DumpPoolSizes();
+			}
+		},
+		0,
+		"Dump current ammo pool sizes for debugging"
+	);
 }
 
 //------------------------------------------------------------------------
@@ -150,7 +164,10 @@ CWeaponSystem::~CWeaponSystem()
 //------------------------------------------------------------------------
 void CWeaponSystem::Update(float frameTime)
 {
-	m_tracerManager.Update(frameTime);
+	if (gEnv->bClient)
+	{
+		m_tracerManager.Update(frameTime);
+	}
 	CheckEnvironmentChanges();
 }
 
@@ -299,6 +316,24 @@ CProjectile *CWeaponSystem::SpawnAmmo(IEntityClass* pAmmoType, bool isRemote, En
 			pAmmoParams=it->second.params;
 	}
 
+	m_lastHostId = hostId;
+
+	const bool reusable = pAmmoParams->flags & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY);
+	if (reusable && g_pGameCVars->mp_recycleProjectiles)
+	{
+		if (isRemote || (!pAmmoParams->serverSpawn && reusable))
+		{
+			return UseFromPool(pAmmoType, pAmmoParams);
+		}
+	}
+
+	return DoSpawnAmmo(pAmmoType, isRemote, pAmmoParams);
+}
+
+
+//------------------------------------------------------------------------
+CProjectile *CWeaponSystem::DoSpawnAmmo(IEntityClass* pAmmoType, bool isRemote, const SAmmoParams *pAmmoParams)
+{
 	bool isServer=gEnv->bServer;
 	bool isClient=gEnv->bClient;
 
@@ -307,8 +342,6 @@ CProjectile *CWeaponSystem::SpawnAmmo(IEntityClass* pAmmoType, bool isRemote, En
 		if (!pAmmoParams->predictSpawn || isRemote)
 			return 0;
 	}
-
-	m_lastHostId = hostId;
 
 	SEntitySpawnParams spawnParams;
 	spawnParams.pClass = pAmmoType;
@@ -378,6 +411,8 @@ void CWeaponSystem::AddProjectile(IEntity *pEntity, CProjectile *pProjectile)
 void CWeaponSystem::RemoveProjectile(CProjectile *pProjectile)
 {
 	m_projectiles.erase(pProjectile->GetEntity()->GetId());
+
+	RemoveFromPool(pProjectile);
 }
 
 //------------------------------------------------------------------------
@@ -620,6 +655,83 @@ void CWeaponSystem::CheckEnvironmentChanges()
 
 }
 
+//------------------------------------------------------------------------
+CProjectile* CWeaponSystem::UseFromPool(IEntityClass* pClass, const SAmmoParams* pAmmoParams)
+{
+	ProjectilePool& pool = m_projectilePools[pClass];
+	if (pool.freeProjectiles.empty())
+	{
+		CProjectile* pProjectile = DoSpawnAmmo(pClass, false, pAmmoParams);
+		pool.totalCount++;
+
+		return pProjectile;
+	}
+
+	// use hot projectiles (last inserted) first to potentially reduce CPU cache misses
+	CProjectile* pProjectile = pool.freeProjectiles.back().release();
+	pool.freeProjectiles.pop_back();
+
+	pProjectile->GetEntity()->Hide(false);
+	pProjectile->ReInitFromPool();
+
+	m_projectilesRecycled++;
+
+	return pProjectile;
+}
+
+//------------------------------------------------------------------------
+bool CWeaponSystem::ReturnToPool(CProjectile* pProjectile)
+{
+	IEntityClass* pClass = pProjectile->GetEntity()->GetClass();
+
+	const auto it = m_projectilePools.find(pClass);
+	if (it == m_projectilePools.end())
+	{
+		const char* name = pClass ? pClass->GetName() : "NULL";
+		CryLogWarningAlways("%s: Missing pool for projectile class %s", __FUNCTION__, name);
+		return false;
+	}
+
+	it->second.freeProjectiles.emplace_back(SmartProjectile(pProjectile));
+
+	pProjectile->GetEntity()->Hide(true);
+	pProjectile->GetEntity()->SetWorldTM(IDENTITY);
+
+	return true;
+}
+
+//------------------------------------------------------------------------
+void CWeaponSystem::RemoveFromPool(CProjectile* pProjectile)
+{
+	IEntityClass* pClass = pProjectile->GetEntity()->GetClass();
+
+	const auto it = m_projectilePools.find(pClass);
+	if (it == m_projectilePools.end())
+	{
+		return;
+	}
+
+	std::erase_if(it->second.freeProjectiles, [&](const SmartProjectile& x) { return x.get() == pProjectile; });
+	it->second.totalCount--;
+}
+
+//------------------------------------------------------------------------
+void CWeaponSystem::DumpPoolSizes()
+{
+	CryLogAlways("------------------------ Projectile Recycler Statistics ------------------------");
+
+	CryLogAlways("Recycling %s", g_pGameCVars->mp_recycleProjectiles ? "enabled" : "disabled");
+	CryLogAlways("Projectiles recycled: %zu", m_projectilesRecycled);
+
+	for (const auto& [pClass, pool] : m_projectilePools)
+	{
+		const char* name = pClass ? pClass->GetName() : "NULL";
+		CryLogAlways("%s: totalCount=%zu, freeCount=%zu", name, pool.totalCount, pool.freeProjectiles.size());
+	}
+
+	CryLogAlways("--------------------------------------------------------------------------------");
+}
+
 //----------------------------------------
 void CWeaponSystem::Serialize(TSerialize ser)
 {
@@ -672,4 +784,9 @@ void CWeaponSystem::GetMemoryStatistics(ICrySizer * s)
 		}
 		s->AddObject(&m_projectiles,nSize);
 	}
+}
+
+void CWeaponSystem::ProjectileDeleter::operator()(CProjectile* pProjectile) const
+{
+	gEnv->pEntitySystem->RemoveEntity(pProjectile->GetEntityId(), true);
 }

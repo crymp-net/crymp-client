@@ -78,4 +78,11 @@ public:
 	int IsActionFilterEnabled(IFunctionHandler* pH, const char* name);
 	int IsActionFilterAvailable(IFunctionHandler* pH, const char* name);
 	int CreateActionFilter(IFunctionHandler* pH, const char* name, SmartScriptTable keys);
+
+	////////////////////////////////////////////////////////////////////////////////
+	// SSM Poly fills
+	////////////////////////////////////////////////////////////////////////////////
+	int GetLocalIP(IFunctionHandler* pH);
+	int GetIP(IFunctionHandler* pH, const char* host);
+	int GetTime(IFunctionHandler *pH, int future=0);
 };

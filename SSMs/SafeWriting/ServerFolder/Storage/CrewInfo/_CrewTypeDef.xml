@@ -1,0 +1,7 @@
+<Definition root="Crews">
+	<Table name="Crew">
+		<Property name="name" type="string"/>
+		<Property name="leader" type="string"/>
+		<Array name="Members" type="string" elementName="Member" />
+	</Table>
+</Definition>

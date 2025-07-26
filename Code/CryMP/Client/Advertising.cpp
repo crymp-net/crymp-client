@@ -20,7 +20,7 @@
 
 #include "Client.h"
 #include "FileCache.h"
-#include "ScriptBind_CPPAPI.h"
+#include "CryMP/Common/ScriptBind_CPPAPI.h"
 
 #include "Library/StringTools.h"
 #include "nlohmann/json.hpp"

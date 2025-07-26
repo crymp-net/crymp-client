@@ -77,6 +77,18 @@ static std::error_code GetSysErrorCodeWithCategory(DWORD code)
 	return std::error_code(static_cast<int>(code), GetSysErrorCategory(code));
 }
 
+CryMP_Error::CryMP_Error(const std::string& message, std::error_code code)
+: m_what(message), m_message(message), m_code(code)
+{
+	if (code)
+	{
+		m_what += "\n\nError ";
+		m_what += std::to_string(code.value());
+		m_what += ": ";
+		m_what += code.message();
+	}
+}
+
 std::string StringTools::Format(const char* format, ...)
 {
 	va_list args;
@@ -202,63 +214,51 @@ std::size_t StringTools::FormatToV(char* buffer, std::size_t bufferSize, const c
 	return length;
 }
 
-std::runtime_error StringTools::ErrorFormat(const char* format, ...)
+CryMP_Error StringTools::ErrorFormat(const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	std::runtime_error error = ErrorFormatV(format, args);
+	CryMP_Error error = ErrorFormatV(format, args);
 	va_end(args);
 
 	return error;
 }
 
-std::runtime_error StringTools::ErrorFormatV(const char* format, va_list args)
+CryMP_Error StringTools::ErrorFormatV(const char* format, va_list args)
 {
-	const std::string message = FormatV(format, args);
-
-	return std::runtime_error(message);
+	return CryMP_Error(FormatV(format, args));
 }
 
-std::system_error StringTools::SysErrorFormat(const char* format, ...)
+CryMP_Error StringTools::SysErrorFormat(const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	std::system_error error = SysErrorFormatV(format, args);
+	CryMP_Error error = SysErrorFormatV(format, args);
 	va_end(args);
 
 	return error;
 }
 
-std::system_error StringTools::SysErrorFormatV(const char* format, va_list args)
+CryMP_Error StringTools::SysErrorFormatV(const char* format, va_list args)
 {
 	const DWORD code = ::GetLastError();
 
-	std::string message = FormatV(format, args);
-
-	message += ": Error code ";
-	message += std::to_string(code);
-
-	return std::system_error(GetSysErrorCodeWithCategory(code), message);
+	return CryMP_Error(FormatV(format, args), GetSysErrorCodeWithCategory(code));
 }
 
-std::system_error StringTools::SysErrorErrnoFormat(const char* format, ...)
+CryMP_Error StringTools::SysErrorErrnoFormat(const char* format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	std::system_error error = SysErrorErrnoFormatV(format, args);
+	CryMP_Error error = SysErrorErrnoFormatV(format, args);
 	va_end(args);
 
 	return error;
 }
 
-std::system_error StringTools::SysErrorErrnoFormatV(const char* format, va_list args)
+CryMP_Error StringTools::SysErrorErrnoFormatV(const char* format, va_list args)
 {
 	const int code = errno;
 
-	std::string message = FormatV(format, args);
-
-	message += ": Error code ";
-	message += std::to_string(code);
-
-	return std::system_error(code, std::generic_category(), message);
+	return CryMP_Error(FormatV(format, args), std::error_code(code, std::generic_category()));
 }

@@ -627,14 +627,15 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_animationModelMult", &mp_animationModelMult, 1.0f, VF_NOT_NET_SYNCED);
 	pConsole->Register("mp_animationModelMultSpeed", &mp_animationModelMultSpeed, 1.0f, VF_NOT_NET_SYNCED);
 	pConsole->Register("mp_menuSpeed", &mp_menuSpeed, 3.0f, VF_NOT_NET_SYNCED);
-	pConsole->Register("mp_hitIndicator", &mp_hitIndicator, 1, VF_NOT_NET_SYNCED, "Enables hit indicator");
+	pConsole->Register("mp_hitIndicator", &mp_hitIndicator, 1, VF_NOT_NET_SYNCED, "Enable hit indicator");
 	pConsole->Register("mp_chatHighResolution", &mp_chatHighResolution, 0, VF_NOT_NET_SYNCED);
 	pConsole->Register("mp_spectatorSlowMult", &mp_spectatorSlowMult, 0.15f, VF_NOT_NET_SYNCED, "Speed mult for spectating while holding Ctrl");
 	pConsole->Register("mp_buyPageKeepTime", &mp_buyPageKeepTime, 30, VF_NOT_NET_SYNCED, "The time in sec it will remember your last buy page");
 	pConsole->Register("mp_attachBoughtEquipment", &mp_attachBoughtEquipment, 0, VF_NOT_NET_SYNCED, "Automatically attach bought weapon attachments");
-	pConsole->Register("mp_netAimLerpFactor", &mp_netAimLerpFactor, 20.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "set aim smoothing for other clients (1-50, 0:off)");
-	pConsole->Register("mp_netAimLerpFactorCrymp", &mp_netAimLerpFactorCrymp, 42.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "set aim smoothing for other clients when mp_crymp 1 (1-50, 0:off)");
-	pConsole->Register("mp_explosiveSilhouettes", &mp_explosiveSilhouettes, 0, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "enables new indicators for explosives");
+	pConsole->Register("mp_netAimLerpFactor", &mp_netAimLerpFactor, 20.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Set aim smoothing for other clients (1-50, 0:off)");
+	pConsole->Register("mp_netAimLerpFactorCrymp", &mp_netAimLerpFactorCrymp, 42.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Set aim smoothing for other clients when mp_crymp 1 (1-50, 0:off)");
+	pConsole->Register("mp_explosiveSilhouettes", &mp_explosiveSilhouettes, 0, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Enable new indicators for explosives");
+	pConsole->Register("mp_recycleProjectiles", &mp_recycleProjectiles, 1, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Recycle projectiles");
 }
 
 //------------------------------------------------------------------------

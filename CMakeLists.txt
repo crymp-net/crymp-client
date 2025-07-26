@@ -524,8 +524,6 @@ add_library(Base OBJECT
 	Code/CryMP/Client/MapExtractor.h
 	Code/CryMP/Client/ParticleManager.cpp
 	Code/CryMP/Client/ParticleManager.h
-	Code/CryMP/Client/ScriptBind_CPPAPI.cpp
-	Code/CryMP/Client/ScriptBind_CPPAPI.h
 	Code/CryMP/Client/ScriptCallbacks.cpp
 	Code/CryMP/Client/ScriptCallbacks.h
 	Code/CryMP/Client/ScriptCommands.cpp
@@ -550,8 +548,16 @@ add_library(Base OBJECT
 	Code/CryMP/Common/HTTP.h
 	Code/CryMP/Common/HTTPClient.cpp
 	Code/CryMP/Common/HTTPClient.h
+	Code/CryMP/Common/ScriptBind_CPPAPI.cpp
+	Code/CryMP/Common/ScriptBind_CPPAPI.h
 	Code/CryMP/Server/Server.cpp
 	Code/CryMP/Server/Server.h
+	Code/CryMP/Server/SSM.h
+	Code/CryMP/Server/SafeWriting/API.h
+	Code/CryMP/Server/SafeWriting/APIImpl.h
+	Code/CryMP/Server/SafeWriting/APIImpl.cpp
+	Code/CryMP/Server/SafeWriting/SafeWriting.h
+	Code/CryMP/Server/SafeWriting/SafeWriting.cpp
 	Code/CryScriptSystem/LuaLibs/bitlib.c
 	Code/CryScriptSystem/ScriptBindings/ScriptBindings.cpp
 	Code/CryScriptSystem/ScriptBindings/ScriptBindings.h
@@ -579,6 +585,8 @@ add_library(Base OBJECT
 	Code/CryScriptSystem/ScriptUtil.h
 	Code/CrySystem/CPUInfo.cpp
 	Code/CrySystem/CPUInfo.h
+	Code/CrySystem/CrashTest.cpp
+	Code/CrySystem/CrashTest.h
 	Code/CrySystem/CryLog.cpp
 	Code/CrySystem/CryLog.h
 	Code/CrySystem/CryMemoryManager.cpp
@@ -618,6 +626,8 @@ add_library(Base OBJECT
 	Code/Library/PathTools.h
 	Code/Library/PathTree.h
 	Code/Library/SlotVector.h
+	Code/Library/StdFile.cpp
+	Code/Library/StdFile.h
 	Code/Library/StlportMap.h
 	Code/Library/StlportSet.h
 	Code/Library/StlportVector.h
@@ -686,7 +696,8 @@ add_library(Base OBJECT
 	ThirdParty/picosha2.h
 	ThirdParty/tracy/public/TracyClient.cpp
 	${PROJECT_BINARY_DIR}/config.h
-	${PROJECT_BINARY_DIR}/version.h)
+	${PROJECT_BINARY_DIR}/version.h
+)
 
 if(BUILD_BITS EQUAL 64)
 	target_compile_definitions(Base PUBLIC BUILD_64BIT)
@@ -1085,7 +1096,8 @@ add_library(CryGame OBJECT
 	Code/CryGame/Vehicles/VehicleClient.cpp
 	Code/CryGame/Vehicles/VehicleClient.h
 	Code/CryGame/Voting.cpp
-	Code/CryGame/Voting.h)
+	Code/CryGame/Voting.h
+)
 
 target_link_libraries(CryGame PUBLIC Base)
 
@@ -1107,7 +1119,8 @@ add_executable(${CRYMP_CLIENT_EXE} WIN32
 	Code/Launcher/StartupTime.cpp
 	Code/Launcher/StartupTime.h
 	Resources/ClientLauncher.rc
-	Resources/Launcher.manifest)
+	Resources/Launcher.manifest
+)
 
 add_executable(${CRYMP_SERVER_EXE} WIN32
 	Code/Launcher/Launcher.cpp
@@ -1119,7 +1132,8 @@ add_executable(${CRYMP_SERVER_EXE} WIN32
 	Code/Launcher/StartupTime.cpp
 	Code/Launcher/StartupTime.h
 	Resources/ServerLauncher.rc
-	Resources/Launcher.manifest)
+	Resources/Launcher.manifest
+)
 
 target_link_libraries(${CRYMP_CLIENT_EXE} PRIVATE Base CryGame)
 target_link_libraries(${CRYMP_SERVER_EXE} PRIVATE Base CryGame)

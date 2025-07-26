@@ -38,6 +38,8 @@ History:
 #include "CryCommon/CryCore/StlUtils.h"
 #include "Library/Util.h"
 
+#include "CryMP/Server/SSM.h"
+
 
 //------------------------------------------------------------------------
 void CGameRules::ValidateShot(EntityId playerId, EntityId weaponId, uint16 seq, uint8 seqr)
@@ -769,6 +771,10 @@ void CGameRules::ProcessExplosionMaterialFX(const ExplosionInfo& explosionInfo)
 //------------------------------------------------------------------------
 IMPLEMENT_RMI(CGameRules, SvRequestRename)
 {
+	if (ISSM* pSSM = g_pGame->GetSSM(); pSSM && !pSSM->IsRMILegitimate(pNetChannel, params.entityId)) {
+		return true;
+	}
+
 	CActor* pActor = GetActorByEntityId(params.entityId);
 	if (!pActor)
 		return true;
@@ -814,6 +820,9 @@ IMPLEMENT_RMI(CGameRules, ClRenameEntity)
 //------------------------------------------------------------------------
 IMPLEMENT_RMI(CGameRules, SvRequestChatMessage)
 {
+	if (ISSM* pSSM = g_pGame->GetSSM(); pSSM && !pSSM->IsRMILegitimate(pNetChannel, params.sourceId)) {
+		return true;
+	}
 	SendChatMessage((EChatMessageType)params.type, params.sourceId, params.targetId, params.msg.c_str());
 
 	return true;
@@ -859,6 +868,10 @@ IMPLEMENT_RMI(CGameRules, ClRadioMessage)
 //------------------------------------------------------------------------
 IMPLEMENT_RMI(CGameRules, SvRequestChangeTeam)
 {
+	if (ISSM* pSSM = g_pGame->GetSSM(); pSSM && !pSSM->IsRMILegitimate(pNetChannel, params.entityId)) {
+		return true;
+	}
+
 	CActor* pActor = GetActorByEntityId(params.entityId);
 	if (!pActor)
 		return true;
@@ -871,6 +884,10 @@ IMPLEMENT_RMI(CGameRules, SvRequestChangeTeam)
 //------------------------------------------------------------------------
 IMPLEMENT_RMI(CGameRules, SvRequestSpectatorMode)
 {
+	if (ISSM* pSSM = g_pGame->GetSSM(); pSSM && !pSSM->IsRMILegitimate(pNetChannel, params.entityId)) {
+		return true;
+	}
+
 	CActor* pActor = GetActorByEntityId(params.entityId);
 	if (!pActor)
 		return true;
@@ -954,6 +971,10 @@ IMPLEMENT_RMI(CGameRules, SvRequestHit)
 {
 	HitInfo info(params);
 	info.remote = true;
+
+	if (ISSM* pSSM = g_pGame->GetSSM(); pSSM && !pSSM->IsHitRMILegitimate(pNetChannel, info.shooterId, info.weaponId)) {
+		return true;
+	}
 
 	ServerHit(info);
 

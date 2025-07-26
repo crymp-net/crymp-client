@@ -1,0 +1,175 @@
+See !ldlist to see list of shorten names of entities.
+To add new shorten name for entity, open ServerFolder/Storage/LevelDesignerModels.lua and add new with
+	LevelDesigner:AddShorten(name,path_to_model)
+for example
+	LevelDesigner:AddShorten("box","objects/box.cgf")
+Since now, box will represent objects/box.cgf, so if you write !ld 10 box, you will spawn it
+Also, if you want to create shorten name for spawning multiple entities on same place, pass it to :AddShorten as array of paths, for example
+	LevelDesigner:AddShorten("cafe",{
+		"library/architecture/hillside_cafe/cafe_house",
+		"library/architecture/hillside_cafe/terrace",
+		"library/architecture/hillside_cafe/glass_01",
+		"library/architecture/hillside_cafe/glass_02",
+		"library/architecture/hillside_cafe/glass_03",
+		"library/architecture/hillside_cafe/glass_04",
+		"library/architecture/hillside_cafe/glass_05",
+		"library/architecture/hillside_cafe/glass_06",
+		"library/architecture/hillside_cafe/glass_07",
+		"library/architecture/hillside_cafe/glass_08",
+		"library/architecture/hillside_cafe/glass_09",
+		"library/architecture/hillside_cafe/glass_10",
+		"library/architecture/hillside_cafe/glass_11",
+		"library/architecture/hillside_cafe/glass_12",
+		"library/architecture/hillside_cafe/glass_13",
+		"library/architecture/hillside_cafe/glass_14",
+		"library/architecture/hillside_cafe/glass_15",
+	});	--this spawns these 17 entities on same place just by writing !ld 10 cafe
+If you want to spawn just let's say 3rd model - "library/architecture/hillside_cafe/glass_01", you can use index field [index], example: !ld 10 cafe[3]
+To spawn vehicle or any other known class just like GravitySphere, add : before name of class.
+Example:
+	!ld 10 :US_tank			spawns tank
+	!ld 0  :GravitySphere		spawns zero gravity sphere
+	!ldf 10 :US_ltv			spawns a car
+If you want to set modification of entity of known class, use index field [index] and put inside modification.
+Example:
+	!ld 10 :US_tank[TACCannon]	spawns a tank with tac cannon
+	!ld 11 :US_tank[GaussCannon]	spawns a gausstank
+Sometimes, you need to write another parameter to spawn some entity just like palm.
+To write that parameter, put : behind shorten name and parameter.
+For example, palm:a,palm:b,palm:c  or  house:1,house:2,house:3 or floe:a,floe:b or ship:_noroof.
+Here is list of commands and what they do:
+	!ld <distance> <name>		spawns object in set distance right at ground
+	!ldf <distance> <name>		spawns object in set distance in same height as you are
+	!ldfz <distance> <z> <name>	spawns object in set distance and in height as you are and to this height is added height Z, for example !ldfz 10 20 ship spawns ship 10 meters front of you and 20 meters above you.
+	!ldundo				removes last spawned object in-game
+	!ldsave				permanently saves the world
+	!ldlist				shows you list of entities and their shorten names
+	!lddebug			shows total count of entities in-game
+	!ldlift <z>			lifts up/down last spawned entity, for example !ldlift 5 lifts entity 5 meters up, but !ldlift -5 moves it 5 meters lower
+	!ldmovex <x>			moves entity on x axis
+	!ldmovey <y>			moves entity on y axis
+	!ldrotx <x>			rotates entity on x axis
+	!ldroty <y>			rotates entity on y axis
+	!ldrotz <z>			rotates entity on z axis
+	!ldcopy				creates copy of last spawned entity on same place
+	!ldrset <model name>		sets name of model for following use of !ldrange
+	!ldrange sizeX sizeY sizeZ countX countY countZ[ angleX angleY angleZ] - angles are optional, spawns more entities in range, for example !ldrange 2 2 2 10 10 10 spawns 10x10x10 (1000) entities, those have 2x2x2 size !! entities spawn at ground's level !!
+	!ldrangef ...			same as !ldrange - !! entities do not spawn at ground level, they spawn at your level !!
+	!ldfwd <distance>		moves entity forward by player's direction (to move backward, use negative value)
+	!ldside <distance>		moves entity to left side by player's direction (to move to other side, use negative value)
+	!ldgun				spawns level designing gun
+	!ldgset <model>			sets model that will spawn after shooting from ldgun
+Here is list of possible parameters for shorten names:
+palm:				a ... h				, example: !ld 10 palm:f
+iceberg:			0 ... 4				, example: !ld 10 iceberg:2
+floe:				0 ... 8				, example: !ld 10 floe:3
+crack_plate:			a ... f				, example: !ld 10 crack_plate:d
+bush:				big/small_a...c			, example: !ld 10 bush:big_a
+small_house:			a ... b				, example: !ld 10 small_house:a
+tower:				asian,concrete			, example: !ld 10 tower:asian
+ship:				_noroof,_trailer		, example: !ld 10 ship	, !ld 10 ship:_noroof
+container:			red,green,blue			, example: !ld 10 container:blue
+
+Now you must be disappointed that this is not for 1.0.0 :'( It could, but it is not! Come to 1.2.1 if you want to have it :o) Otherwise stay at buggy 1.0.0 without this ;)
+
+You can easily bind your keys by creating autoexec.cfg in Game\ and writing there:
+bind up buy ldfwd__1
+bind down buy ldfwd__-1
+bind left buy ldside__1
+bind right buy ldside__-1
+bind insert buy ldlift__1
+bind delete buy ldlift__-1
+bind f9 buy ldrotx__15
+bind f10 buy ldroty__15
+bind f11 buy ldrotz__15
+bind f2 buy ldrotx__-15
+bind f3 buy ldroty__-15
+bind f4 buy ldrotz__-15
+
+Press "up arrow" to move entity forward 1 metre.
+Press "down arrow" to move entity backward 1 metre.
+
+Press "right arrow" to move entity to right side 1 metre.
+Press "left arrow" to move entity to left side 1 metre.
+
+Press "insert key" to lift up entity in 1 metre.
+Press "delete key" to move entity below in 1 metre.
+
+Press "f2" to rotate entity on X axis in -15 angles.
+Press "f3" to rotate entity on Y axis in -15 angles.
+Press "f4" to rotate entity on Z axis in -15 angles.
+
+Press "f9" to rotate entity on X axis in +15 angles.
+Press "f10" to rotate entity on Y axis in +15 angles.
+Press "f11" to rotate entity on Z axis in +15 angles.
+
+Added in ver. 2:
+ - collections
+	Since now you can record your collection of entities and save them all under one name and then spawn whole collection by using any level designer command and shorten name of collection.
+	To start recording collection, you use !ldcollstart, to stop it !ldcollstop and to save it !ldcollsave, which also removes your collection from collection stack and adds it between shorten names.
+	For example, let's say you want to create a "rest place" and later spawn more of them. So you start recording: !ldcollstart
+	Now you add all your entities needed for "rest place", like !ldf 10 cafe, you move 4 metres forward and write !ldf 10 palm:g and now you want to save it so you use !ldcollsave restplace
+	Since you saved it, you can anytime use !ld restplace to spawn your collection of those entities.
+	And what is different between simple multi entity in shorten name and collection? In collection, you can set exact position and angle of entity, in multi-shorten name, just like cafe, all spawns with same angles and at same place.
+	Warning! You can't add already existing collection/multi entity to your following collection.
+ - added indexer field and modification field
+	Syntax:	name[index/modification]
+	Since now you can also choose any entity from any multi-entity. For example, lets say you want just terrace from "cafe", so you know that terrace is spawned as second entity, so you use !ld 10 cafe[2]
+	In cafe of vehicles, you can use this indexer field to set modification of entity, for example :US_tank[TACCannon] spawns TAC tank or :US_tank[GaussCannon] spawns gauss tank.
+ List of new commands:
+	!ldcollstart			starts recording a collection
+	!ldcollstop			stops recording a collection
+	!ldcollsave <name>		saves collection
+
+Changes in ver. 3:
+	Little entities are no longer pickable, nor big entities are no longer pickable (but it still shows interaction message)
+	
+Version 4:
+	Characters are spawnable since now, they have .cdf extension
+	LevelDesignerModels.lua is now automaticaly reloaded also with sfw_reloadscripts
+Version 4.1:
+	Works only with 2.3.2 version of mod, so it can use accurate GetMapName() function to get exact map name even after g_nextlevel
+Version 4.2:
+	Multiple channels can now spawn entities without changing the build of each other.
+	Added !ldgun - to spawn leveldesigning gun, which spawns entity at place where you hit another already spawned entity (not brushes ! prototypes etc.)
+	To set model that will spawn after shot, use !ldgset <model name>
+	Added !ldfwd, !ldside, which makes moving entities easier, please, also reconfigure your bindings (autoexec.cfg) - keys up,down,left,right:
+		bind up buy ldfwd__1
+		bind down buy ldfwd__-1
+		bind left buy ldside__1
+		bind right buy ldside__-1
+Version 4.3:
+	Fixed possible "Malformed packet" message at moving vehicles with binded keys.
+	Added support of 2.4.0's custom entity classes
+	Merry Christmas ;)
+Version 5:
+	Added premium builder commands, but to allow premium builders, go to settings and add line
+		EnablePremiumBuilders=true;
+	The different is, that that what premiums build never saves ;)
+	Premiums also have different commands: !build,!buildf,!buildfz,!fwd,!side,!buildgun,!gset,!rotx,!roty,!rotz,!lift,!undo,!copy
+	Fixed !ldcopy and !copy - before it "thanks" to Lua's table reference assigning didn't properly save the map.
+Version 6:
+	Now you can spawn weapons with attachments, by writing them to {...}, example !ld 10 :DSG1{SniperScope,LAMRifle}
+	LevelDesigner is now also for 1.0.0
+Version 7:
+	Now you can make spawnpoints those are capturable by teams by spawning :SpawnGroup ... !ldf 0 :SpawnGroup
+	To add buy zones to them, spawn :BuyZone ... !ldf 0 :BuyZone
+	+ needs mod update to 2.5.3
+version 8:
+	Works on 64bit
+	Can freeze entities,cloak,... by writing "frozen:", "dynfrozen:", "cloak:", "wet:" before their name, like !ldf 0 frozen:cafe or !ldf 0 frozen::US_vtol
+	To freeze... all entities, simply use "all" as name of object, like !ldf 0 frozen:all
+version 9:
+	Can shoot terrain and all non-entities with LDGun
+	You can use different class for LDGun not only pistol, using !ldgun classname, like !ldgun SCAR
+	If you want to use object from any other than Objects.pak, put $ in beginning of path, like: $MyOwnPak\library\object.cgf
+	You can now scale entities by using !ldscale x [y z] or !scale x [y z] for premiums.
+	Also you can set object to be automatically scaled by putting scale sizes before it's name before semicolon like this: 3;cafe
+	Example:
+		!ldf 4 3;cafe		spawns cafe scaled 3x3x3
+		!ldf 1 2,2,1;cafe	spawns cafe scaled 2x2x1 (x y z)
+	This scaling parameter goes before anything, so:
+		!ldf 4 3;:US_ltv
+		!ldf 3 3;frozen:house:1
+	You can also spawn LDGun as class and BuildGun as class now, but always only as a pistol
+

@@ -1,0 +1,525 @@
+<!DOCTYPE html5>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>SSM SafeWriting</title>
+		<style>
+			h1{
+				font-family:'Trebuchet MS','Tahoma','Sans-Serif','Arial';
+				color:#004050;
+				margin: 0;
+			}
+			h2,h3{
+				font-family:'Trebuchet MS','Tahoma','Sans-Serif','Arial';
+				color:#40a0f0;
+				margin: 0;
+				padding: 7px;
+				border-left: 5px solid gray;
+			}
+			.hl_sub{
+				background:#f0f0f0;
+			}
+			.hl{
+				background:#efefef;
+				color:#104070;
+				padding: 5px;
+				border-left: 4px solid #205080;
+			}
+			.hl_title{
+				background:#205080;
+				padding: 20px;
+				color: white;
+				
+			}
+			.desc{
+				font-family:'Lucida Grande','Lucida Sans Unicode','Trebuchet MS','Tahoma','Sans-Serif','Arial'; 
+				background:#f7f7f7;
+				color:#001030;
+				font-size:14px;
+				border-left:4px solid #40a0f0;
+				padding: 15px;
+			}
+			.center{
+				text-align: center;
+			}
+			.content{
+				margin:0 auto;
+				width:960px;
+			}
+			a:visited,a:active,a{
+				color:#004050;
+			}
+			.code{
+				background:#f7f7ff;
+				color:#000080;
+				margin: 0;
+				overflow:auto;
+				padding: 10px;
+				border-left: 6px solid #80d0ff;
+			}
+			.red{
+				color: #e00000;
+			}
+			.blue{
+				color: #0000e0;
+			}
+			.green{
+				color: #008000;
+			}
+			.violet{
+				color: #800080;
+			}
+			.gray{
+				color: #909090;
+			}
+			table tr th{
+				min-width:100px;
+				text-align:left;
+			}
+			table{
+				border-collapse: collapse;
+			}
+			.functable td:nth-child(2){
+				max-width:250px;
+				background: #f0f0f0;
+				overflow: auto;
+			}
+			.functable td:nth-child(4){
+				max-width:250px;
+				background: #f0f0f0;
+				overflow: auto;
+			}
+			.functable td{
+				padding: 5px;
+				overflow: auto;
+				background: white;
+			}
+			.functable th{
+				background: #e0e0e0;
+			}
+		</style>
+	<style type="text/css"></style></head>
+	<body>
+		<h1 class="hl_title"><div class="center">SSM SafeWriting documentation</div></h1>
+		<div class="content">
+			<h1 class="hl">Introduction</h1>
+			<div class="desc">
+				Thank you for downloading this mod. This mod was created on 4th of september 2012 and it worked only on 1.2.1<br />
+				Already at beginning, it contained cool stuff, like TOD changer on 1.2.1 (since 1.3.0 version)
+				By time I started rewriting it to 1.0.0 too (since version 1.9.7) and it had a pretty big success :-)<br />
+				1.9.7 update also brought plugins for mod, which is realy cool thing. You can easily append your own functions to SSM functions with it. There are some examples in this public version, just like NightLights or GunGame...<br />
+				Since 1.7.1 update, mod on 1.2.1 doesn't need to read Server.log anymore, this way it avoids lags ;-)<br />
+				Since 2.1.0, there is .exe as external application for non-DLL servers, which helps server to do similar things like with DLL.<br />
+				It can, for example, connect websites and return their content, get ip of player from host and it will be able to do a lot more. <br />
+				Mod also contains it's own statistics system, which saves kills,deaths,played time,... of player<br />
+				And since 2.1.5 update, you can use same mod as for 1.0.0, as for 1.2.1, all you have to do is just to delete SafeWriting.dll in Mods/SafeWriting/ when you want to run it on 1.0.0</br>
+				To reload all the loaded external scripts, you can use chat command "!reloadscripts" in-game or console command "sfw_reloadscripts" in server console<br />
+			</div>
+			<h1 class="hl">Advanced Installation</h1>
+			<div class="desc">
+				1. Extract .zip file to your Crysis folder<br />
+				2. <b><span class="red">If you want this mod for 1.0.0, make sure, that you remove SafeWriting.dll in Bin64/ folder, not Bin32/!</span></b><br />
+				3. Please move your ServerFolder outside of Program Files, for example to C:\ServerFolder,<span class="red"><b> folder MUST NOT be READ-ONLY - especially for 1.0.0.</b></span><br />
+				4. Modify sfw.cfg and startupSFW.cfg, in sfw.cfg change the path to ServerFolder, here, please, replace backslashes with normal slashes<br/>
+				&nbsp;&nbsp;And in startupSFW.cfg change the third line - set correct path to ServerFolder, here you MUST use backslashes<br/>
+				5. "-mod SafeWriting" (without quotes) must be always at end of .bat file!<br />
+				6. If you have "Mods" folder there should be new folder: "SafeWriting", if you dont, there should be also<br />
+					"Mods" folder containing "SafeWriting" folder<br />
+				7. Change server.cfg as you wish also same with Settings.lua<br />
+				8. Make sure you've done steps above, so you can run server now, by running startupSFW.bat<br />
+				9. If there weren't errors from MOD files, everything is OK :)<br />
+				10. Happy gaming on modded server!<br />
+			</div>
+			<h1 class="hl">Quick Installation</h1>
+			<div class="desc">
+				1. Extract .zip file to your Crysis folder<br />
+				2. <b><span class="red">If you want this mod for 1.0.0, make sure, that you remove SafeWriting.dll in Mods/SafeWriting/Bin64/ folder, not Bin32/!</span></b><br />
+				3. Launch "quick32.bat" in ServerFolder<br />
+				4. Change server.cfg as you wish also same with Settings.lua<br />
+				5. If there weren't errors from MOD files, everything is OK :)<br />
+				6. Happy gaming on modded server!<br />
+			</div>
+			<h1 class="hl">Important</h1>
+			<div class="desc">
+				<h3>Alternate server list</h3>
+				By newest, SSM supports both Crymp.net and OpenSpy protocol for serverlist.<br />
+				If you want your server listed at other than crymp.net server list, please, use <b class="red">sv_master <i>hostname or ip</i></b> in server.cfg.<br />
+				By doing this you also enable CD key verification, but one more warning, having server listed at OpenSpy serverlist, doesn't allow players to use map downloader!<br />
+				
+				<h3>Deprecated:</h3>
+				<b><span class="red">Please, when using SSMSafeWriting.exe ( SafeWriting version under 2.5.0 ), move your server out of program files or any other folder that is "read-only"!</span></b> Why? Because it blocks access for writing to tmpfile for this app, because it does not get rights for writing!<br />
+				For example, now you have it in C:\Program Files\..., so move your ServerFolder outside, for example to C:\ServerFolder\ and open sfw.cfg and write there new path (ofc. replace backslashes with normal slashes - \ => /)<br />
+				Now open startupSFW.bat and follow the instructions inside, so you will be able to change paths of game and also of server.<br />
+			</div>
+			<h1 class="hl">Programming scripts for mod</h1>
+			<div class="desc">
+				<h2 class="hl_sub">Chat commands</h2>
+					There are 3 ways of creating chat commands.<br />
+					Syntax is pretty easy, but that 3rd way is advanced, but it is automated.<br />
+					First two ways (easy syntax): <br />
+<pre class="code">
+<span class="violet"><b>SSMCMDS</b></span>.<b>commandname</b>={<b>info</b>=<span class="gray">"SomeText"</span>};
+<span class="green">-- optional: AdminOnly=true, AdminModOnly=true, ModOnly=true, PremiumOnly=true</span>
+<span class="blue"><b>function </b></span><span class="violet"><b>SSMCMDS</b></span>.<b>commandname:<span class="violet">func</span></b>(player,msg)
+	<span class="green">--script...</span>
+<span class="blue"><b>end</b></span></pre>
+					Second way:
+<pre class="code">
+<span class="violet"><b>SSMCMDS</b></span><b>[<span class="gray">"commandname"</span>]</b>={<b>info</b>=<span class="gray">"SomeText"</span>};
+<span class="green">-- optional: AdminOnly=true, AdminModOnly=true, ModOnly=true, PremiumOnly=true</span>
+<span class="violet"><b>SSMCMDS</b></span><b>[<span class="gray">"commandname"</span>].<span class="violet">func</span></b>=<span class="blue"><b>function</b></span>(<span class="violet"><b>self</b></span>,player,msg)
+	<span class="green">--script...</span>
+<span class="blue"><b>end</b></span></pre>
+					Now third way is advanced, so let's explain it.<a name='addcc'>&nbsp;</a>
+Since 2.1.4 you can use function <span class="red"><b>AddChatCommand</b></span>(<b>name</b>,<span class="blue"><b>function</b></span>(<span class="violet"><b>self</b></span>,sender,msg,...),[params,rights,desc,usage_gen]), which works like this.<br />
+First let's explain input parameters.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<b><i>name</i></b> - name of chat command,  for example "flare"<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<i><span class="blue"><b>function</b></span>(self,sender,msg...)</i> - this function will be called, when chat command is called, <b>SELF IS NEEDED HERE!</b> and those ...<br />
+&nbsp;&nbsp;&nbsp;&nbsp;get replaced with parameters passed to function, for example, if you would like to have !giveme 500, then it would be:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="blue"><b>function</b></span>(self,sender,msg,number)&nbsp;&nbsp;&nbsp;&nbsp;and number will automaticaly be entered number in chat by player<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<b><i>params</i></b> - this is an array, which tells the func, that executes command, that what params will be passed to func, possible params are:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>PLAYER</b> - stands for one player, which is gotten by partial name<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>PLAYERS</b> - stands for more players or one, those are gotten by partial name and if partial name is *all, it returns all players<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>NUMBER or DOUBLE</b> - stands for real number<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>INT</b> - stands for integer (number without decimals)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>WORD</b> - stands for one word<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>TEXT</b> - stands for one or more words<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>TIME</b> - stands for formatted time converted to seconds (ex. 1h30 min is 3630)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<b><i>rights</i></b> - array which tells, whether command is admin only etc.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<b><i>desc</i></b> - this is not needed, you can add field info into rights and pass it through it ;)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<b><i>usage_gen</i></b> - when true, usage of command is automaticaly generated and appended to description<br />
+Enough of description, let's try to do something :)<br />
+Let's say, that we need command !givepp &lt;players&gt; &lt;amount&gt; &lt;reason&gt;<br />
+So, params those will be passed to func are <b><i>PLAYERS</i></b> (&lt;players&gt;), <b><i>INT</i></b> (&lt;amount&gt;), <b><i>TEXT</i></b> (&lt;reason&gt;), so params will be: <b><i>{PLAYERS,INT,TEXT}</i></b> and function will be: <span class="blue"><b><i>function</i></b></span>(self,sender,msg,players,amount,reason)<br />
+And here is full chat command:<br /><pre class="code">
+AddChatCommand("givepp",<span class="blue"><b><i>function</i></b></span>(self,sender,msg,players,amount,reason)
+	<span class="blue"><b><i>if</i></b></span>(<b><i>#</i></b>players==<span class="violet">0</span>)<span class="blue"><b><i>then</i></b></span> Chat:SendToTarget(nil,sender,<span class="gray">"No players found!"</span>); return; end
+	<span class="blue"><b><i>if</i></b></span>(<span class="blue"><b><i>not</i></b></span> amount)<span class="blue"><b><i>then</i></b></span> Chat:SendToTarget(nil,sender,<span class="gray">"Please, enter valid amount!"</span>); return; end
+	<span class="blue"><b><i>for</i></b></span> i,v <span class="blue"><b><i>in</i></b></span> <span class="green"><b><i>pairs</i></b></span>(players)do
+		GivePoints(v,amount);
+	<span class="blue"><b><i>end</i></b></span>
+	<span class="blue"><b><i>if</i></b></span>(reason)<span class="blue"><b><i>then</i></b></span>
+		Chat:SendToAll(nil,<span class="gray">"Player %s gave %d PP to all, reason: %s"</span>,sender:GetName(),amount,reason);
+	<span class="blue"><b><i>end</i></b></span>
+<span class="blue"><b><i>end</i></b></span>,{<b><i>PLAYERS,INT,TEXT</i></b>},{AdminOnly=<span class="blue"><b><i>true</i></b></span>;},<span class="gray">"Gives X pp to all players"</span>);<br /></pre>
+See, just learn Lua better, and you will get how it works, this is pretty advanced code, but by time, you will find out, that it saves lot of coding.<br />
+And by the way, params and func are exchangable inside AddChatCommand, so it can also be: AddChatCommand(name,params,function(self,sender,msg),[rights,info]);
+				<h2 class="hl_sub">Plugins</h2>
+					Plugins are used to execute your code when some function which is known for plugins is called.<br />
+					For example, let's say you want to send message to chat when someone connects, normally you would need to edit SafeWritingGameRules.lua and change :OnClientConnect, but you can also use plugins :)<br />
+					Plugins' syntax is pretty easy, you create function and add it to function container with: <b><i>SafeWriting.FuncContainer:AddFunc(<u>func</u>,<u>callback_name</u>)</i></b><br />
+					Callback name tells function container, that your function will be called, only when ... gets called (... = callback name)<br />
+					So let's make our first plugin, which tells when player connects/disconnects.<br />
+					First we need the functions, so make new two functions:
+	<pre class="code">
+<span class="blue">function</span> MyPlugin_OnClientConnect(player,name,reset,channelId) <span class="green">--see callbacks list below to see what params are passed to func</span>
+	Chat:SendToAll(<span class="blue">nil</span>,<span class="violet">string.format</span>(<span class="gray">"Player '%s' has joined the game"</span>,player:GetName()))
+end
+<span class="blue">function</span> MyPlugin_OnClientDisconnect(player,channelId)
+	<span class="blue">if</span>(player)<span class="blue">then</span>
+		Chat:SendToAll(<span class="blue">nil</span>,<span class="violet">string.format</span>(<span class="gray">"Player '%s' has left the game"</span>,player:GetName()))
+	<span class="blue">end
+end</span>
+<span class="green">--now we need to add it to func container, so callbacks names are OnClientConnect and OnClientDisconnect</span>
+SafeWriting.FuncContainer:AddFunc(MyPlugin_OnClientConnect,<span class="gray">"OnClientConnect"</span>);
+SafeWriting.FuncContainer:AddFunc(MyPlugin_OnClientConnect,<span class="gray">"OnClientDisconnect"</span>);</pre>
+					It is pretty easy, is not it? :) To see all callbacks and function parameters passed to them <a href="#callbacks">see list below</a>
+				<h2 class="hl_sub">Plugins on 2.1.7</h2>
+					There is new way of adding plugins on 2.1.7 version. This version allows you to create object with methods and then you add this object to functions container using SafeWriting.FuncContainer:LoadPlugin(my_object);<br />
+					Your object will contain methods with same names as categories of plugins. Here is example:<br />
+	<pre class="code">
+MyPlugin={};
+<span class="blue">function</span> MyPlugin:OnClientConnect(player,name,reset,channelId) <span class="green">--see callbacks list below to see what params are passed to func</span>
+	Chat:SendToAll(<span class="blue">nil</span>,<span class="violet">string.format</span>(<span class="gray">"Player '%s' has joined the game"</span>,player:GetName()))
+<span class="blue">end</span>
+<span class="blue">function</span> MyPlugin:OnClientDisconnect(player,channelId)	<span class="green">--name of this method is OnClientDisconnect</span>
+	<span class="blue">if</span>(player)<span class="blue">then</span>
+		Chat:SendToAll(<span class="blue">nil</span>,<span class="violet">string.format</span>(<span class="gray">"Player '%s' has left the game"</span>,player:GetName()))
+	<span class="blue">end
+end</span>
+<span class="green">--now, add our object to functions container</span>
+SafeWriting.FuncContainer:LoadPlugin(MyPlugin);	<span class="green">--automatically adds all methods of this object to functions container</span></pre><br/>
+	<b>You can also derive your plugin from another plugin, just like from template (2.2.1+ only) by using Derive(template) function<br/>
+	There is one available template for now - AdvancedPlugin. This template contains several methods like :GetName(), :SaveData(), :LoadData(), just see version.txt - 2.2.1 update<br />
+	If you still aren't sure about creating plugin (how to do it), see this youtube tutorial <a href="http://youtu.be/TB-eCzx6dZI">http://youtu.be/TB-eCzx6dZI</a>, it explains how to create derived plugin and how to save data permanently and how to create chat commands.</b>
+				<h2 class="hl_sub"><a name="functions"></a>SSM's functions list</h2>
+	This is table of all functions available in mod, when parameters are in [...] it means, that they are optional.<br/>
+<table border="1" class="functable">
+	<tr>	<th>function name</th>	<th style="width:380px;">parameters</th>	<th>description</th>	</tr>
+	<tr><td>AddChatCommand</td><td><span class='violet'>name,func,params,rights,desc,usage_gen</span></td><td><span class='red'><a href='#addcc'>here</a></span></td></tr>
+	<tr><td>AdvancedPlugin:GetName</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>AdvancedPlugin:GetPath</td><td><span class='violet'>path</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>AdvancedPlugin:Init</td><td><span class='violet'>outfile,outf</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>AdvancedPlugin:Load</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>AdvancedPlugin:LoadData</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>AdvancedPlugin:New</td><td><span class='violet'>...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>AdvancedPlugin:SaveData</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>AsyncConnectHTTP</td><td><span class='violet'>host,url,[method,port,http1.1,timeout],callback(content)</span></td><td><span class='green'>connects http website, default method is GET, default port is 80,default timeout is 15 seconds and calls your callback with content</span></td></tr>
+	<tr><td>AttachAttachments</td><td><span class='violet'>weaponId,attachments,player</span></td><td><span class='green'>attaches attachments on weapon</span></td></tr>
+	<tr><td>AwardPlayer</td><td><span class='violet'>player,pp,cp</span></td><td><span class='green'>gives points to player</span></td></tr>
+	<tr><td>BanPlayer</td><td><span class='violet'>player,reason,duration</span></td><td><span class='green'>bans player</span></td></tr>
+	<tr><td>CTableToLuaTable</td><td><span class='violet'>table</span></td><td><span class='green'>rewrites C array to Lua array, C array = starts with 0 index, Lua array = starts with 1 index</span></td></tr>
+	<tr><td>CalcDistance2D_XY</td><td><span class='violet'>a,b</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>CalcDistance2D_XZ</td><td><span class='violet'>a,b</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>CalcDistance2D_YZ</td><td><span class='violet'>a,b</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>CalcDistance3D</td><td><span class='violet'>a,b</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ChangeTeam</td><td><span class='violet'>player,newTeam</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Chat:SendToAll</td><td><span class='violet'>from,message</span></td><td><span class='green'>sends chat message from "from" or chat entity to all</span></td></tr>
+	<tr><td>Chat:SendToTarget</td><td><span class='violet'>from,target,message</span></td><td><span class='green'>sends message to player from target, if nil, then from chat entity</span></td></tr>
+	<tr><td>ChatEntityExists</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ChatStream:SendToAll</td><td><span class='violet'>fmt,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ChatStream:SendToTarget</td><td><span class='violet'>target,fmt,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ChatStream:SetType</td><td><span class='violet'>t</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>CheckPlayer</td><td>&nbsp;</td><td><span class='green'>checks player whether is permabanned or uses spoofed profile id or is in crew, loads his statistics etc.</span></td></tr>
+	<tr><td>CheckStatusLines</td><td>&nbsp;</td><td><span class='green'>loads players info, when DLL is not used</span></td></tr>
+	<tr><td>ClearString</td><td><span class='violet'>str</span></td><td><span class='green'>clears string from ˇ´¨˝´˙`˛°˘^ˇ and ł, Ł, đ, Đ, €</span></td></tr>
+	<tr><td>CmdGetNameAndText</td><td><span class='violet'>line</span></td><td><span class='green'>returns name of player and following text is availible</span></td></tr>
+	<tr><td>CompileFile</td><td><span class='violet'>file,folder</span></td><td><span class='green'>Compiles lua file in some folder and outputs compiled file to outfile in same folder</span></td></tr>
+	<tr><td>ConnectHTTP</td><td><span class='violet'>host,url,[method,port,http1.1,timeout]</span></td><td><span class='green'>connects http website, default method is GET, default port is 80,default timeout is 15 seconds</span></td></tr>
+	<tr><td>Console:SendToAll</td><td><span class='violet'>msg</span></td><td><span class='green'>sends message to all</span></td></tr>
+	<tr><td>Console:SendToTarget</td><td><span class='violet'>player,msg</span></td><td><span class='green'>sends message to target</span></td></tr>
+	<tr><td>ConsoleStream:SendToAll</td><td><span class='violet'>fmt,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ConsoleStream:SendToTarget</td><td><span class='violet'>target,fmt,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ConsoleStream:SetType</td><td><span class='violet'>t</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>CreateAppCall</td><td><span class='violet'>folder,app,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>CreateChatEntity</td><td>&nbsp;</td><td><span class='green'>creates the chat entity</span></td></tr>
+	<tr><td>CreateClass</td><td><span class='violet'>name,derivatedFrom</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>CreateJail</td><td><span class='violet'>bPos,bheight,part</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Derive</td><td><span class='violet'>a</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>DetectGameVer</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>DisableChatCommand</td><td><span class='violet'>cmdname</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>EnableChatCommand</td><td><span class='violet'>cmdname</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>EncryptFile</td><td><span class='violet'>file, outputFile</span></td><td><span class='red'>encrypts script</span></td></tr>
+	<tr><td>ExecuteCCommandAsChat</td><td><span class='violet'>command,text</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ExecuteCommand</td><td><span class='violet'>cmdname,player,msg</span></td><td><span class='green'>executes the command (checks whether it is "DotFunc" command)</span></td></tr>
+	<tr><td>FloodCheck</td><td><span class='violet'>player,flood,_max</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ForceSet</td><td><span class='violet'>cvar,value</span></td><td><span class='green'>forcely sets the cvar</span></td></tr>
+	<tr><td>FuncQueue,Stack:Create</td><td>&nbsp;</td><td><span class='green'>creates the Queue or Stack</span></td></tr>
+	<tr><td>FuncQueue,Stack:IsEmpty</td><td>&nbsp;</td><td><span class='green'>determines whether stack or queue is empty</span></td></tr>
+	<tr><td>FuncQueue:Create</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>FuncQueue:IsEmpty</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>FuncQueue:Pop</td><td>&nbsp;</td><td><span class='green'>pops and returns function as first value and parameters as table as second value</span></td></tr>
+	<tr><td>FuncQueue:Push</td><td><span class='violet'>func,params...</span></td><td><span class='green'>pushes function and its parameters as table to table</span></td></tr>
+	<tr><td>FunctionsContainer:AddCategs</td><td><span class='violet'>tbl</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>FunctionsContainer:AddFunc</td><td><span class='violet'>function,name</span></td><td><span class='green'>adds function to container to array called "name"</span></td></tr>
+	<tr><td>FunctionsContainer:Create</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>FunctionsContainer:GetFuncs</td><td><span class='violet'>name</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>FunctionsContainer:LoadPlugin</td><td><span class='violet'>pl</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>GetCrewTag</td><td><span class='violet'>dir</span></td><td><span class='green'>gets left or right side of crew tags</span></td></tr>
+	<tr><td>GetDistance</td><td><span class='violet'>point1,point2</span></td><td><span class='green'>Calculates distance between 2 points (point = Vec3 type - example: GetDistance({x=0,y=0,z=0},{x=1,y=1,z=0}) = 1.41</span></td></tr>
+	<tr><td>GetIP</td><td><span class='violet'>host</span></td><td><span class='green'>gets ip from host</span></td></tr>
+	<tr><td>GetLastError</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>GetMapName</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>GetPlayers</td><td><span class='violet'></span></td><td><span class='green'>gets all players, fixes reduntant ones</span></td></tr>
+	<tr><td>GetPlayerByName</td><td><span class='violet'>name</span></td><td><span class='green'>gets player by name</span></td></tr>
+	<tr><td>GetPlayerByProfile</td><td><span class='violet'>profileId</span></td><td><span class='green'>gets player by profile id</span></td></tr>
+	<tr><td>GetPlayerCP</td><td><span class='violet'>player</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>GetPlayerPP</td><td><span class='violet'>player</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>GetPlayerRealScore</td><td><span class='violet'>player</span></td><td><span class='green'>returns player's real kills since he connected and real deaths</span></td></tr>
+	<tr><td>GetPlayerScore</td><td><span class='violet'>player</span></td><td><span class='green'>returns player's kills,player's deaths</span></td></tr>
+	<tr><td>GetPlayersByName</td><td><span class='violet'>name</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>GetRandomName</td><td><span class='violet'>[tries]</span></td><td><span class='green'>gets random name from array of names</span></td></tr>
+	<tr><td>GetRealPlayerScore</td><td><span class='violet'>player</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>GetSpecialFormat</td><td><span class='violet'>fmt,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>GetTargetPos</td><td><span class='violet'>player</span></td><td><span class='green'>returns point where player is looking at</span></td></tr>
+	<tr><td>GiveAmmo</td><td><span class='violet'>player[,weaponName,count]</span></td><td><span class='green'>not working properly, but it should give ammo to player</span></td></tr>
+	<tr><td>GiveItem</td><td><span class='violet'>player,itemName[,attachments]</span></td><td><span class='green'>gives item to player, if possible also with attachments</span></td></tr>
+	<tr><td>GivePoints</td><td><span class='violet'>player,pp,cp</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>HavePrivileges</td><td><span class='violet'>player,commandname</span></td><td><span class='green'>determines, whether player can use the command</span></td></tr>
+	<tr><td>HasEnoughPP</td><td><span class='violet'>player,value</span></td><td><span class='green'>returns true or false whether player has enough pp, on IA it is always true</span></td></tr>
+	<tr><td>HookVehicles</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ImportFunc</td><td><span class='violet'>name</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>InitializeAllScripts</td><td>&nbsp;</td><td><span class='green'>loads all scripts - anticheat,chat commands,additional scripts + settings.lua</span></td></tr>
+	<tr><td>InitializeFolders</td><td>&nbsp;</td><td><span class='green'>initializes folders of mod (ChatCommands/,AntiCheat/,AdditionalScripts/,Storage/...)</span></td></tr>
+	<tr><td>IsAdmin</td><td><span class='violet'>player</span></td><td><span class='green'>determines whether player is admin</span></td></tr>
+	<tr><td>IsAdminOrMod</td><td><span class='violet'>player</span></td><td><span class='green'>determines whether player is admin or moderator</span></td></tr>
+	<tr><td>IsCommandUsableForPlayer</td><td><span class='violet'>cmdname, player, timeout, sendwarning</span></td><td><span class='green'>determines whether player can use command or has to wait next x seconds to use it</span></td></tr>
+	<tr><td>IsDllLoaded</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>IsDllLoaded100</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>IsModerator</td><td><span class='violet'>player</span></td><td><span class='green'>determines whether player is moderator</span></td></tr>
+	<tr><td>IsPermabanned</td><td><span class='violet'>player</span></td><td><span class='green'>determines whether player is permabanned</span></td></tr>
+	<tr><td>IsPremium</td><td><span class='violet'>player</span></td><td><span class='green'>determines whether player is premium</span></td></tr>
+	<tr><td>IsRealIP</td><td><span class='violet'>ip</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>JL1Hash:Create</td><td><span class='violet'>seed</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>JL1Hash:Hash</td><td><span class='violet'>text</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>JL1Hash:SetSeed</td><td><span class='violet'>seed</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>JL1Hash:band</td><td><span class='violet'>num,p</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>JL1Hash:bleft</td><td><span class='violet'>num,p</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>JL1Hash:bright</td><td><span class='violet'>num,p</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>KickPlayer</td><td><span class='violet'>player,reason[,duration]</span></td><td><span class='green'>kicks player, if duration = nil, then 0.001</span></td></tr>
+	<tr><td>LinkToRules</td><td><span class='violet'>name</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>LoadAdditionalScripts</td><td>&nbsp;</td><td><span class='green'>loads additional scripts</span></td></tr>
+	<tr><td>LoadAntiCheatScripts</td><td>&nbsp;</td><td><span class='green'>loads anticheat</span></td></tr>
+	<tr><td>LoadChatCommands</td><td>&nbsp;</td><td><span class='green'>loads chat commands</span></td></tr>
+	<tr><td>LoadExtension</td><td><span class='violet'>name</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>LoadExtensions</td><td><span class='violet'>hf</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>LoadScript</td><td><span class='violet'>location</span></td><td><span class='green'>loads script (location = file location)</span></td></tr>
+	<tr><td>MakePluginEvent</td><td><span class='violet'>eventName,params</span></td><td><span class='green'>creates plugin event for eventName</span></td></tr>
+	<tr><td>MakeSimpleVote</td><td><span class='violet'>timeout,callback1,callback2,callback3</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>MergeFunctions</td><td><span class='violet'>f1,f2,p1</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>MergeTables</td><td><span class='violet'>table1,table2</span></td><td><span class='green'>merges table2 to table1 (output is the table1), example local tbl={[1]="Latin"}; MergeTables(tbl,{[2]="Azbuka"}) outputs {[1]="Latin"; [2]="Azbuka"; }</span></td></tr>
+	<tr><td>MessageStream:SendToAll</td><td><span class='violet'>fmt,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>MessageStream:SendToTarget</td><td><span class='violet'>target,fmt,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>MessageStream:SetType</td><td><span class='violet'>t</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Msg:SendToAll</td><td><span class='violet'>message,type</span></td><td><span class='green'>sends message to all, types: info,center,big,console</span></td></tr>
+	<tr><td>Msg:SendToTarget</td><td><span class='violet'>player,message,type</span></td><td><span class='green'>sends message to player, types: info,center,big,console</span></td></tr>
+	<tr><td>ParseDecIP</td><td><span class='violet'>ip</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>PermaBanPlayer</td><td><span class='violet'>player,reason,bannedBy_name, isCheater, expire</span></td><td><span class='green'>permabans player, if expire is set, it is tempban, expire is in minutes</span></td></tr>
+	<tr><td>PluginSafeCall</td><td><span class='violet'>tbl,...</span></td><td><span class='green'>usable since 2.1.7, safely calls plugin function</span></td></tr>
+	<tr><td>PrepareAll</td><td>&nbsp;</td><td><span class='green'>prepares the map, loads your settings (gravitation,time,custom cvars which get executed...)</span></td></tr>
+	<tr><td>ProcChatMsg</td><td><span class='violet'>sender,target,line</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ProcSvLogMsg</td><td><span class='violet'>line</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Queue,Stack:Create</td><td>&nbsp;</td><td><span class='green'>creates the Queue or Stack</span></td></tr>
+	<tr><td>Queue,Stack:Front</td><td>&nbsp;</td><td><span class='green'>returns first value in stack/queue</span></td></tr>
+	<tr><td>Queue,Stack:Pop</td><td>&nbsp;</td><td><span class='green'>pops and returns first value in the queue or stack</span></td></tr>
+	<tr><td>Queue,Stack:Push</td><td><span class='violet'>...</span></td><td><span class='green'>pushes value into the queue or stack</span></td></tr>
+	<tr><td>Queue,Stack:Top</td><td>&nbsp;</td><td><span class='green'>returns last value in stack/queue</span></td></tr>
+	<tr><td>Queue:Create</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Queue:Front</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Queue:IsEmpty</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Queue:Limit</td><td><span class='violet'>l</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Queue:Pop</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Queue:Push</td><td><span class='violet'>...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Queue:Top</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Random</td><td><span class='gray'>[min,max]</span></td><td><span class='green'>generates random number, if min & max set, in range</td></tr>
+	<tr><td>ReadServerLog</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ReloadAllScripts</td><td>&nbsp;</td><td><span class='green'>reloads all scripts</span></td></tr>
+	<tr><td>RenamePlayer</td><td><span class='violet'>player,newName,ignore=false</span></td><td><span class='green'>renames player, if ignore flag is set to true, all events like OnRename are ignored</span></td></tr>
+	<tr><td>SafeWriting:OnTimerTick</td><td>&nbsp;</td><td><span class='green'>it makes everything what needs timer work - spammy messages,mapvoting,chat entity creation if it gets deleted,statistics saving,and executes custom timer if defined</span></td></tr>
+	<tr><td>SafeWritingCall</td><td><span class='violet'>method,...</span></td><td><span class='green'>calls ssmsafewriting.exe and returns result</span></td></tr>
+	<tr><td>SanitizeName</td><td><span class='violet'>player</span></td><td><span class='green'>sanitizes name for permabanlist - if name contains $,then permaban on name</span></td></tr>
+	<tr><td>SavePersistantScore</td><td><span class='violet'>player</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>SavePlayerPersistantScore</td><td><span class='violet'>player</span></td><td><span class='green'>when UsePersistantScores is enabled, this temporary saves player's score</span></td></tr>
+	<tr><td>ScanForChatCommand</td><td><span class='violet'>player,msg</span></td><td><span class='green'>looks up the message and if finds the command, it makes it execute</span></td></tr>
+	<tr><td>ScheduleBase:AddEvent</td><td><span class='violet'>timeout,event,params,_repeat</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ScheduleBase:Create</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ScheduleBase:IsEmpty</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ScheduleBase:New</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>ScheduleBase:Update</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>SetError</td><td><span class='violet'>player, msgType, msg, callback(player, msgType, response), timeout=5</span></td><td><span class='red'>sends message to client and expects response back, possible message types now: locale, uuid</span></td></tr>
+	<tr><td>SetError</td><td><span class='violet'>err,quit</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>SetGameVersion</td><td><span class='violet'>...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>SetPlayerProperty</td><td><span class='violet'>player,giver,function1,undo_function,expire,reason</span></td><td><span class='green'>sets timely property for player, for example MutePlayer, UnmutePlayer</span></td></tr>
+	<tr><td>SetPlayerScore</td><td><span class='violet'>player,kills,deaths</span></td><td><span class='green'>sets player's score</span></td></tr>
+	<tr><td>SetReloadFlag</td><td>&nbsp;</td><td><span class='green'>sets flag for reloading script instead of loading it when exec sfw.cfg</span></td></tr>
+	<tr><td>SetupPlayerScore</td><td><span class='violet'>player</span></td><td><span class='green'>when UsePersistantScores is enabled, this setups player's score after reconnect back to original state</span></td></tr>
+	<tr><td>SfwLog</td><td><span class='violet'>text</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>SfwSetTempVersion</td><td><span class='violet'>ver</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Spawn:CalculatePosition</td><td><span class='violet'>player,distance</span></td><td><span class='green'>calculates spawn position in distance from player</span></td></tr>
+	<tr><td>Spawn:Entity</td><td><span class='violet'>player,class_name,distance [,callback (enitity), customparams]</span></td><td><span class='green'>spawns entity in distance from player, if you want to work with entity, you have to pass 4th param - callback(entity)</span></td></tr>
+	<tr><td>Spawn:Vehicle</td><td><span class='violet'>player,class,distance [, callback(vehicle), modification, custmparams]</span></td><td><span class='green'>almost same as above, but spawns vehicle with modification and team paint of player's team</span></td></tr>
+	<tr><td>Spawn:VehicleForPlayer</td><td><span class='violet'>player,class,distance,autolock</span></td><td><span class='green'>spawns locked vehicle for player</span></td></tr>
+	<tr><td>SpecialFormat</td><td><span class='violet'>fmt,...</span></td><td><span class='green'>replaces % with %% in every parameter</span></td></tr>
+	<tr><td>Stack:Create</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Stack:Front</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Stack:IsEmpty</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Stack:Limit</td><td><span class='violet'>l</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Stack:Pop</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Stack:Push</td><td><span class='violet'>...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>Stack:Top</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>TeleportPlayer</td><td><span class='violet'>player,position</span></td><td><span class='green'>teleports player to position (position = array{x=???;y=???;z=???}) and makes exception for anticheat</span></td></tr>
+	<tr><td>TeleportPlayerToXYZ</td><td><span class='violet'>player,x,y,z</span></td><td><span class='green'>same as above, but no need for using vector3 array</span></td></tr>
+	<tr><td>Time</td><td><span class='violet'>future</span></td><td><span class='green'>receives time as string (with added future seconds) in YYYYMMDDHHIISS format</span></td></tr>
+	<tr><td>Translator:AddLanguage</td><td><span class='violet'>language,table</span></td><td><span class='green'>adds language to translator, second param must be table with string indexes</span></td></tr>
+	<tr><td>Translator:Create</td><td>&nbsp;</td><td><span class='green'>initializes translator</span></td></tr>
+	<tr><td>Translator:Translate</td><td><span class='violet'>lang,text</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>UnloadAllScripts</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>UnsetReloadFlag</td><td>&nbsp;</td><td><span class='green'>unsets the flag described above</span></td></tr>
+	<tr><td>VehHookFunc</td><td><span class='violet'>self,hit</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>VerifyName</td><td><span class='violet'>meno</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>_GetIP</td><td><span class='violet'>host</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>__qt</td><td><span class='violet'>lang,text</span></td><td><span class='green'>quickly translates text to language</span></td></tr>
+	<tr><td>_pairs</td><td><span class='violet'>arr/table</span></td><td><span class='green'>Intelligent pairs for "foreach" loops, if you are not sure whether to use ipairs or pairs, use _pairs</span></td></tr>
+	<tr><td>_pcall</td><td><span class='violet'>func,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>arr2str</td><td><span class='violet'>array,starting_point_name,offset</span></td><td><span class='green'>converts array to string, uses _pairs to make nicer output</span></td></tr>
+	<tr><td>arr2str_fast</td><td><span class='violet'>array,starting_point_name,offset</span></td><td><span class='green'>converts array to string, does not use _pairs, so output is unordered</span></td></tr>
+	<tr><td>average</td><td><span class='violet'>...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>calcViewAngles</td><td><span class='violet'>pos1,pos2</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>canSee</td><td><span class='violet'>player,target,bone,thr</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>count</td><td><span class='violet'>array</span></td><td><span class='green'>counts all items in array/table</span></td></tr>
+	<tr><td>in_array</td><td><span class='violet'>array,value</span></td><td><span class='green'>returns true if array contains the value</span></td></tr>
+	<tr><td>in_range</td><td><span class='violet'>num1,num2,c</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>include</td><td><span class='violet'>file</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>itype</td><td><span class='violet'>a</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>loaddll</td><td><span class='violet'>path</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>looksAt</td><td><span class='violet'>pos1,pos2,angle1,thrDeg</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>pmcall</td><td><span class='violet'>name,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>pmcreate</td><td><span class='violet'>name,body,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>print</td><td><span class='violet'>...</span></td><td><span class='green'>Prints text to server console, just like print of classic Lua, example: print(1,2,3)</span></td></tr>
+	<tr><td>printf</td><td><span class='violet'>fmt,...</span></td><td><span class='green'>Prints formatted text to server console, example: printf("This is Lua %s",tostring(_VERSION))</span></td></tr>
+	<tr><td>readjson</td><td><span class='violet'>data</span></td><td><span class='green'>converts json table into lua table</span></td></tr>
+	<tr><td>requestencode</td><td><span class='violet'>str</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>self:GetName</td><td>&nbsp;</td><td><span class='green'>Autobuilt method for commands added via AddChatCommand, returns name of chat command</span></td></tr>
+	<tr><td>self:IsUsable</td><td><span class='violet'>player,timeout,auto_warn=false</span></td><td><span class='green'>Autobuilt method for commands added via AddChatCommand, determines whether command is usable, if no, returns false, time that lefts, if yes, returns true, if auto_warn is true, it automatically sends message to player</span></td></tr>
+	<tr><td>sfwstrfind</td><td><span class='violet'>str,_substr,offset</span></td><td><span class='green'>returns offsetposition of {offset(th)} substring in string, if substring is not located in string, it returns -1</span></td></tr>
+	<tr><td>similartext</td><td><span class='violet'>a,b</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>spam</td><td><span class='violet'>fmt,...</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>spamBegin</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>spamEnd</td><td><span class='violet'></span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>split</td><td><span class='violet'>string,separator</span></td><td><span class='green'>splits string into array example: split("Hi this is me"," ") returns {"Hi","this","is","me"}</span></td></tr>
+	<tr><td>strcontains</td><td><span class='violet'>str,substr</span></td><td><span class='green'>returns true or false, true is string contains substring</span></td></tr>
+	<tr><td>todeg</td><td><span class='violet'>angle</span></td><td><span class='green'>Converts angle in radians to degrees</span></td></tr>
+	<tr><td>tonum</td><td><span class='violet'>...</span></td><td><span class='green'>returns all params inputted converted to number or nil - example: local num1,num2=tonum("12","21") -output num1=12,num2=21</span></td></tr>
+	<tr><td>torad</td><td><span class='violet'>angle</span></td><td><span class='green'>Converts angle in degrees to radians</span></td></tr>
+	<tr><td>trim</td><td><span class='violet'>string</span></td><td><span class='green'>returns string cleared from \n,\r,\t, and spaces</span></td></tr>
+	<tr><td>trim_from</td><td><span class='violet'>string,array_of_strings</span></td><td><span class='green'>returns string cleared from strings in second parameter</span></td></tr>
+	<tr><td>verifyip</td><td><span class='violet'>ip</span></td><td><span class='red'>no description</span></td></tr>
+	<tr><td>xmlfixstring</td><td><span class='violet'>string</span></td><td><span class='green'>replaces quote(") with &quot; and "&" with &amp;</span></td></tr>
+	<tr><td>xmlgetstring</td><td><span class='violet'>string</span></td><td><span class='green'>reversed operation of xmlfixstring(string)</span></td></tr>
+</table>
+				<h2 class="hl_sub"><a name="callbacks"></a>Callbacks list</h2>
+	This is table of all functions available in mod, when parameters are in [...] it means, that they are optional.<br/>
+	Since 2.1.7, g_gameRules: in name of plugin is not needed, and this allows also new way of loading plugin :LoadPlugin(plugin_table)<br />
+	<b><span class="red">Also, several callback functions were changed in 2.1.7, those are: <ul><li>OnPlayerRevive(player,channelId,keepEquip)</li><li>OnRename(player,newName,oldName)</li><li>OnClientConnect(player,name,reset,channelId)</li><li>OnClientDisconnect(player,channelId)</li></ul>So if you are running your old plugins on 2.1.7, please fix them!</span></b>
+<table border="1" class="functable">
+	<tr>	<th>Callback name</th>	<th>Parameters</th>	<th>Description</th>	<th>Return type</th>	</tr>
+	<tr>	<td>CanEnterVehicle</td> 	<td>vehicle,player,userId</td>	<td>gets called before actor gets in vehicle (disables or enables getting in)</td>	<td>return : true/false</td>	</tr>
+	<tr>	<td>EquipPlayer</td> 	<td>actor, additionalEquip</td>	<td>gets called when equipping actor </td>	<td>half return</td>	</tr>
+	<tr>	<td>CheckPlayer</td> 	<td>player</td>	<td>gets called every time, when player's ip,host... get known	</td>	<td>no return</td>	</tr>
+	<tr>	<td>PrepareAll</td>	<td>&nbsp;</td>	<td>this gets called after map gets loaded and g_gameRules object already exists</td>	<td>no return</td>	</tr>
+	<tr>	<td>ProcessBulletDamage</td> 	<td>hit</td>	<td>gets called when processing damage of bullet</td>	<td>return: final damage is average of all these callbacks of this kind</td>	</tr>
+	<tr>	<td>UpdatePlayer</td> 	<td>player</td>	<td>gets called on every time when player is updated in UpdatePings	<td>no return</td>	</tr>
+	<tr>	<td>OnActorHit</td> 	<td>hit</td>	<td>gets called when bullet hits target (if you want ProcessActorDamage to change damage of bullet, then change hit.damage in this function)	</td>	<td>no return</td>	</tr>
+	<tr>	<td>OnBought</td>	<td>player,itemName,ok</td>	<td>gets called when player already bought something or when buying failed, then ok=false</td>	<td>no return</td>
+	<tr>	<td>OnBuy</td>	<td>player,itemName</td>	<td>gets called when player tries to buys something</td>	<td>true,false or nil</td>
+	<tr>	<td>OnClientConnect</td> 	<td>player,name,reset,channelId</td>	<td>this gets called at end of ... function	</td>	<td>no return</td>	</tr>
+	<tr>	<td>OnClientDisconnect</td> 	<td>player, channelId</td>	<td>this gets called on client's disconnect</td>	<td>no return</td>	</tr>
+	<tr>	<td>OnEnterBuyZone</td> 	<td>zone,player</td>	<td>gets called when player enters buy zone</td>	<td>no return</td>	</tr>
+	<tr>	<td>OnEnterServiceZone</td> 	<td>zone,player</td>	<td>gets called when player enters service zone</td>	<td>no return</td>	</tr>
+	<tr>	<td>OnFreeze</td> <td>shooter,target,wpn,value</td> <td>gets called when entity is being frozen</td> <td>canFreeze or nil</td> </tr>
+	<tr>	<td>OnHit</td>	<td>hit</td>	<td>gets called when any entity gets hit</td>	<td>no return</td> </tr>
+	<tr>	<td>OnChangeSpectatorMode</td> 	<td>playerId, mode, targetId, resetAll, norevive</td>	<td>this gets called when player switches to spectator mode or back to game</td>	<td>no return</td>	</tr>
+	<tr>	<td>OnChatMessage</td>	<td>type,source,target,message</td>	<td>gets called when some chat message is received</td> <td>(msg,canShow) or nil</td>	</tr>
+	<tr>	<td>OnItemDropped</td> 	<td>itemId,actorId</td>	<td>gets called after actor drops weapon</td>	<td>no return</td>	</tr>
+	<tr>	<td>OnItemPickedUp</td> 	<td>itemId,actorId</td>	<td>gets called after actor picks up weapon</td>	<td>no return</td>	</tr>
+	<tr>	<td>OnKill</td> 	<td>hit</td>	<td>gets called when someone kills someone or someone dies (use: KillStreaks...)</td>	<td>no return</td>	</tr>
+	<tr>	<td>OnLeaveVehicleSeat</td> 	<td>vehicle,seat,entityId,exiting</td>	<td>gets called when player leaves vehicle</td>	<td>no return</td>	</tr>
+	<tr>	<td>OnPlayerRevive</td> 	<td>player, channelId, keepEquip</td>	<td>this gets called when player spawns in game</td>	<td>no return</td>	</tr>
+	<tr>	<td>OnPreRevive</td>	<td>player</td>	<td>player before player revives</td>	<td>nothing or pos,angles of new revive point</td>	</tr>
+	<tr>	<td>OnRename</td> 	<td>player,newName,oldName</td>	<td>gets called when player renames him/herself</td>	<td>(name,canRename) or nil</td>	</tr>
+	<tr>	<td>OnTimerTick</td>	<td>&nbsp;</td>	<td>this gets called on every tick (second)</td>	<td>no return</td>	</tr>
+</table><pre class="code">
+Explainations:
+	no return = mod calls plugin function and continues normal function
+	return = mod calls plugin function and returns it as return of normal function or uses return
+	half return = mod calls plugin function, but after this, it stops normal function</pre>
+	<hr />
+	<h2 class="h1_sub">Pre-programmed methods</h2>
+		Each chat command created with AddChatCommand comes with preprogrammed methods which do auto-translations or other things, here is list of them:<br />
+		<pre>
+	self:OpenConsole(player)
+	self:IsUsable(player,timeout,tell=true?,min_health=nil?) -returns true or false whether command is usable
+	self:NeedPP(player,pp -warns player that he needs {pp} points
+	self:NotEnoughPP(player) -warns player that he doesnt have enough pp
+	self:EnterValidPlayer(player)
+	self:EnterValidPP(player)
+	self:EnterValidClass(player)
+	self:EnterValidDistance(player)
+	self:EnterText(player)
+	self:EnterValidCommand(player)
+	self:EnterValidValue(player)
+	self:PlayerNotFound(player,name) -warns player that player with name {name} was not found
+	self:MustBeInVehicle(player)
+	self:MustBeGreaterThan0(player)
+	self:GetName() -returns command name
+		</pre>
+		</div>
+</body></html>

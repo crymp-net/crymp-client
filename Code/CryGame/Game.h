@@ -63,6 +63,7 @@ class CSoundMoods;
 class CWeatherSystem;
 class CAdManager;
 class CHealthManager;
+struct ISSM;
 
 // when you add stuff here, also update in CGame::RegisterGameObjectEvents
 enum ECryGameEvent
@@ -164,6 +165,8 @@ public:
 	CWeatherSystem* GetWeatherSystem() const { return m_pWeatherSystem; }
 	CAdManager* GetAdManager() const { return m_pAdManager; }
 	CHealthManager* GetHealthManager() const { return m_pHealthManager;  }
+	ISSM* GetSSM() const { if (!gEnv->bServer) return NULL; else return m_ssm; }
+	void SetSSM(ISSM* pSSM) { m_ssm = pSSM; }
 
 	CGameActions&	Actions() const {	return *m_pGameActions;	};
 
@@ -287,6 +290,7 @@ protected:
 	CWeatherSystem* m_pWeatherSystem;
 	CAdManager* m_pAdManager;
 	CHealthManager* m_pHealthManager;
+	ISSM* m_ssm = nullptr;
 };
 
 extern CGame *g_pGame;

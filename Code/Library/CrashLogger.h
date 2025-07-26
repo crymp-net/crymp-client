@@ -9,5 +9,5 @@ namespace CrashLogger
 
 	void OnEngineError(const char* format, va_list args);
 
-	void Enable(LogFileProvider logFileProvider, HeapInfoProvider heapInfoProvider);
+	void Enable(LogFileProvider logFileProvider, HeapInfoProvider heapInfoProvider, const char* banner);
 }

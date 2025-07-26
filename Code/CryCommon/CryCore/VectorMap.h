@@ -118,7 +118,7 @@ public:
 	const_iterator find(const key_type& key) const;
 	allocator_type get_allocator() const;
 	std::pair<iterator, bool> insert(const value_type& val);
-	iterator insert(iterator where, const value_type& val);
+	std::pair<iterator, bool> insert(value_type&& val);
 	template <class InputIterator> void insert(InputIterator first, InputIterator last);
 	key_compare key_comp() const;
 	iterator lower_bound(const key_type& key);
@@ -167,8 +167,7 @@ VectorMap<K, V, T, A>::VectorMap(const VectorMap& right)
 template <typename K, typename V, typename T, typename A>
 template <class InputIterator> VectorMap<K, V, T, A>::VectorMap(InputIterator first, InputIterator last)
 {
-	for (; first != last; ++first)
-		m_entries.push_back(*first);
+	m_entries.insert(m_entries.end(), first, last);
 	std::sort(m_entries.begin(), m_entries.end(), FirstLess(static_cast<key_compare>(*this)));
 }
 
@@ -176,8 +175,7 @@ template <typename K, typename V, typename T, typename A>
 template <class InputIterator> VectorMap<K, V, T, A>::VectorMap(InputIterator first, InputIterator last, const key_compare& comp)
 :	key_compare(comp)
 {
-	for (; first != last; ++first)
-		m_entries.push_back(*first);
+	m_entries.insert(m_entries.end(), first, last);
 	std::sort(m_entries.begin(), m_entries.end(), FirstLess(static_cast<key_compare>(*this)));
 }
 
@@ -186,8 +184,7 @@ template <class InputIterator> VectorMap<K, V, T, A>::VectorMap(InputIterator fi
 :	key_compare(comp),
 	m_entries(alloc)
 {
-	for (; first != last; ++first)
-		m_entries.push_back(*first);
+	m_entries.insert(m_entries.end(), first, last);
 	std::sort(m_entries.begin(), m_entries.end(), FirstLess(static_cast<key_compare>(*this)));
 }
 
@@ -295,7 +292,7 @@ template <typename K, typename V, typename T, typename A>
 typename VectorMap<K, V, T, A>::iterator VectorMap<K, V, T, A>::find(const key_type& key)
 {
 	iterator it = lower_bound(key);
-	if (it != m_entries.end() && key_compare::operator()(key, (*it).first))
+	if (it != m_entries.end() && key_compare::operator()(key, it->first))
 		it = m_entries.end();
 	return it;
 }
@@ -304,7 +301,7 @@ template <typename K, typename V, typename T, typename A>
 typename VectorMap<K, V, T, A>::const_iterator VectorMap<K, V, T, A>::find(const key_type& key) const
 {
 	const_iterator it = lower_bound(key);
-	if (it != m_entries.end() && key_compare::operator()(key, (*it).first))
+	if (it != m_entries.end() && key_compare::operator()(key, it->first))
 		it = m_entries.end();
 	return it;
 }
@@ -320,22 +317,31 @@ std::pair<typename VectorMap<K, V, T, A>::iterator, bool> VectorMap<K, V, T, A>:
 {
 	iterator it = lower_bound(val.first);
 	bool insertionMade = false;
-	if (it == m_entries.end() || key_compare::operator()(val.first, (*it).first))
-		it = m_entries.insert(it, val), insertionMade = true;
+	if (it == m_entries.end() || key_compare::operator()(val.first, it->first))
+	{
+		it = m_entries.insert(it, val);
+		insertionMade = true;
+	}
 	return std::make_pair(it, insertionMade);
 }
 
 template <typename K, typename V, typename T, typename A>
-typename VectorMap<K, V, T, A>::iterator VectorMap<K, V, T, A>::insert(iterator where, const value_type& val)
+std::pair<typename VectorMap<K, V, T, A>::iterator, bool> VectorMap<K, V, T, A>::insert(value_type&& val)
 {
-	return insert(val);
+	iterator it = lower_bound(val.first);
+	bool insertionMade = false;
+	if (it == m_entries.end() || key_compare::operator()(val.first, it->first))
+	{
+		it = m_entries.insert(it, std::move(val));
+		insertionMade = true;
+	}
+	return std::make_pair(it, insertionMade);
 }
 
 template <typename K, typename V, typename T, typename A>
 template <class InputIterator> void VectorMap<K, V, T, A>::insert(InputIterator first, InputIterator last)
 {
-	for (; first != last; ++first)
-		m_entries.push_back(*first);
+	m_entries.insert(m_entries.end(), first, last);
 	std::sort(m_entries.begin(), m_entries.end(), FirstLess(static_cast<key_compare>(*this)));
 }
 
@@ -348,13 +354,13 @@ typename VectorMap<K, V, T, A>::key_compare VectorMap<K, V, T, A>::key_comp() co
 template <typename K, typename V, typename T, typename A>
 typename VectorMap<K, V, T, A>::iterator VectorMap<K, V, T, A>::lower_bound(const key_type& key)
 {
-	int count = 0;
+	size_type count = 0;
 	count = m_entries.size();
 	iterator first = m_entries.begin();
 	iterator last = m_entries.end();
-	for (; 0 < count; )
+	while (count > 0)
 	{	// divide and conquer, find half that contains answer
-		int count2 = count / 2;
+		size_type count2 = count / 2;
 		iterator mid = first + count2;
 
 		if (key_compare::operator()(mid->first, key))
@@ -368,13 +374,13 @@ typename VectorMap<K, V, T, A>::iterator VectorMap<K, V, T, A>::lower_bound(cons
 template <typename K, typename V, typename T, typename A>
 typename VectorMap<K, V, T, A>::const_iterator VectorMap<K, V, T, A>::lower_bound(const key_type& key) const
 {
-	int count = 0;
+	size_type count = 0;
 	count = m_entries.size();
 	const_iterator first = m_entries.begin();
 	const_iterator last = m_entries.end();
-	for (; 0 < count; )
+	while (count > 0)
 	{	// divide and conquer, find half that contains answer
-		int count2 = count / 2;
+		size_type count2 = count / 2;
 		const_iterator mid = first + count2;
 
 		if (key_compare::operator()(mid->first, key))
@@ -458,7 +464,7 @@ typename VectorMap<K, V, T, A>::mapped_type& VectorMap<K, V, T, A>::operator[](c
 	iterator it = find(key);
 	if (it == m_entries.end())
 		it = insert(value_type(key, mapped_type())).first;
-	return (*it).second;
+	return it->second;
 }
 
 #endif //__SORTEDVECTOR_H__

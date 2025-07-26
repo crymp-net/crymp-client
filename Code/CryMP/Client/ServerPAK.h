@@ -13,7 +13,6 @@ public:
 	ServerPAK();
 	~ServerPAK();
 
-	bool IsZipFile(const std::string & path);
 	bool Load(const std::string & path);
 	bool Unload();
 	void OnLoadingStart(ILevelInfo* pLevel);

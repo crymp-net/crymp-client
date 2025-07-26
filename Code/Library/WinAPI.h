@@ -2,10 +2,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <filesystem>
 #include <functional>
 #include <map>
@@ -56,6 +54,8 @@ namespace WinAPI
 
 	void SetWorkingDirectory(const std::filesystem::path& path);
 
+	uint64_t GetLastWriteTime(const std::filesystem::path& path);
+
 	/////////////
 	// Modules //
 	/////////////
@@ -80,9 +80,17 @@ namespace WinAPI
 	// Resources //
 	///////////////
 
-	std::string_view GetDataResource(void *pDLL, int resourceID);
+	struct VersionResource
+	{
+		unsigned short major = 0;
+		unsigned short minor = 0;
+		unsigned short patch = 0;
+		unsigned short tweak = 0;
+	};
 
-	int GetCrysisGameBuild(void *pDLL);
+	bool GetVersionResource(void* pDLL, VersionResource& result);
+
+	std::string_view GetDataResource(void *pDLL, int resourceID);
 
 	///////////
 	// Hacks //
@@ -95,121 +103,6 @@ namespace WinAPI
 
 	bool HookIATByAddress(void *pDLL, void *pFunc, void *pNewFunc);
 	bool HookIATByName(void *pDLL, const char *dllName, const char *funcName, void *pNewFunc);
-
-	///////////
-	// Files //
-	///////////
-
-	enum class FileAccess
-	{
-		READ_ONLY,
-		WRITE_ONLY,
-		WRITE_ONLY_CREATE,
-		READ_WRITE,
-		READ_WRITE_CREATE
-	};
-
-	enum class FileSeekBase
-	{
-		BEGIN, CURRENT, END
-	};
-
-	void *FileOpen(const std::filesystem::path & path, FileAccess access, bool *pCreated = nullptr);
-
-	std::string FileRead(void *handle, size_t maxLength = 0);
-	void FileWrite(void *handle, const std::string_view & text);
-
-	uint64_t FileSeek(void *handle, FileSeekBase base, int64_t offset = 0);
-	void FileResize(void *handle, uint64_t size);
-
-	void FileClose(void *handle);
-
-	class File
-	{
-		void *m_handle = nullptr;
-
-	public:
-		File() = default;
-
-		explicit File(const std::filesystem::path & path, FileAccess access, bool *pCreated = nullptr)
-		{
-			m_handle = FileOpen(path, access, pCreated);
-		}
-
-		File(const File &) = delete;
-
-		File(File && other)
-		{
-			std::swap(m_handle, other.m_handle);
-		}
-
-		File & operator=(const File &) = delete;
-
-		File & operator=(File && other)
-		{
-			if (this != &other)
-			{
-				Close();
-
-				std::swap(m_handle, other.m_handle);
-			}
-
-			return *this;
-		}
-
-		~File()
-		{
-			Close();
-		}
-
-		bool Open(const std::filesystem::path & path, FileAccess access, bool *pCreated = nullptr)
-		{
-			Close();
-
-			m_handle = FileOpen(path, access, pCreated);
-
-			return IsOpen();
-		}
-
-		bool IsOpen() const
-		{
-			return m_handle != nullptr;
-		}
-
-		explicit operator bool() const
-		{
-			return IsOpen();
-		}
-
-		std::string Read(size_t maxLength = 0)
-		{
-			return FileRead(m_handle, maxLength);
-		}
-
-		void Write(const std::string_view & text)
-		{
-			FileWrite(m_handle, text);
-		}
-
-		uint64_t Seek(FileSeekBase base, int64_t offset = 0)
-		{
-			return FileSeek(m_handle, base, offset);
-		}
-
-		void Resize(uint64_t size)
-		{
-			FileResize(m_handle, size);
-		}
-
-		void Close()
-		{
-			if (m_handle)
-			{
-				FileClose(m_handle);
-				m_handle = nullptr;
-			}
-		}
-	};
 
 	//////////
 	// Time //
@@ -250,12 +143,18 @@ namespace WinAPI
 
 	std::string GetMachineGUID();
 	std::string GetLocale();
+	std::string GetLocalIP();
 
 	bool IsVistaOrLater();
 
 	unsigned int GetLogicalProcessorCount();
 
 	std::size_t GetSystemLanguageCode(char* buffer, std::size_t bufferSize);
+
+	/////////////
+	// Network //
+	////////////
+	std::string GetIP(const std::string& hostName);
 
 	//////////
 	// HTTP //
@@ -264,7 +163,7 @@ namespace WinAPI
 	using HTTPRequestReader = std::function<size_t(void*,size_t)>;  // buffer, buffer size, returns data length
 	using HTTPRequestCallback = std::function<void(uint64_t,const HTTPRequestReader&)>;  // content length, reader
 
-	// blocking, returns HTTP status code, throws std::system_error
+	// blocking, returns HTTP status code, throws CryMP_Error
 	int HTTPRequest(
 		const std::string_view & method,
 		const std::string_view & url,

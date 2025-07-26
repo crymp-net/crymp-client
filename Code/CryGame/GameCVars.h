@@ -471,6 +471,7 @@ struct SCVars
 	int         mp_explosiveSilhouettes;
 	int         mp_radioTagging;
 	int         mp_healthBars;
+	int         mp_recycleProjectiles;
 
 	SCVars();
 	~SCVars();

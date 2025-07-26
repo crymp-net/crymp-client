@@ -74,6 +74,8 @@ public:
 	virtual uint8 GetDefaultProfile( EEntityAspects aspect );
 	// ~IGameObjectProfileManager
 
+	void ReInitFromPool();
+
 	virtual void LoadGeometry();
 	virtual void Physicalize();
 	virtual void SetVelocity(const Vec3 &pos, const Vec3 &dir, const Vec3 &velocity, float speedScale=1.0f);
@@ -160,42 +162,43 @@ protected:
 		return v;
 	}
 	
-	const SAmmoParams			*m_pAmmoParams;
+	const SAmmoParams* m_pAmmoParams = nullptr;
 
-	IPhysicalEntity *m_pPhysicalEntity;
+	IPhysicalEntity* m_pPhysicalEntity = nullptr;
 
-	int				m_whizSoundId;
-	int				m_trailSoundId;
-	int				m_trailEffectId;
-	int				m_trailUnderWaterId;
-	Vec3			m_last;
+	int m_whizSoundId = INVALID_SOUNDID;
+	int m_trailSoundId = INVALID_SOUNDID;
+	int m_trailEffectId = -1;
+	int m_trailUnderWaterId = -1;
+	Vec3 m_last = ZERO;
 
-	EntityId	m_ownerId;
-	EntityId	m_hostId;
-	EntityId	m_weaponId;
-	int				m_fmId;
-	int				m_damage;
-  int       m_hitTypeId;
-	bool			m_destroying;
-	bool			m_tracked;
-  
-	bool      m_firstDropApplied;
-	Vec3			m_initial_pos;
-	Vec3			m_initial_dir;	
-	Vec3			m_initial_vel;
+	EntityId m_ownerId = 0;
+	EntityId m_hostId = 0;
+	EntityId m_weaponId = 0;
+	int m_fmId = 0;
+	int m_damage = 0;
+	int m_hitTypeId = 0;
 
-	bool			m_remote;
-	uint16		m_seq;
+	bool m_destroying = false;
+	bool m_tracked = false;
 
-	float			m_totalLifetime;
-	float			m_scaledEffectval;
-	bool			m_scaledEffectSignaled;
+	bool m_firstDropApplied = false;
+	Vec3 m_initial_pos = ZERO;
+	Vec3 m_initial_dir = ZERO;
+	Vec3 m_initial_vel = ZERO;
 
-	int				m_hitPoints;
-	bool      m_noBulletHits;
-	bool			m_hitListener;
+	bool m_remote = false;
+	uint16 m_seq = 0;
 
-	IPhysicalEntity *m_obstructObject;
+	float m_totalLifetime = 0.0f;
+	float m_scaledEffectval = 0.0f;
+	bool m_scaledEffectSignaled = false;
+
+	int m_hitPoints = -1;
+	bool m_noBulletHits = false;
+	bool m_hitListener = false;
+
+	IPhysicalEntity* m_obstructObject = nullptr;
 
 	float m_spawnTime = 0.0f;
 	float m_lastUpdate = 0.0f;

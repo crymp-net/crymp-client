@@ -1,0 +1,12 @@
+<Definition root="PlayerInfo">
+	<Array name="Players" elementName="Player">
+		<Property name="id" type="string"/>
+		<Property name="pltime" type="string"/>
+		<Property name="kills" type="int" />
+		<Property name="deaths" type="int" />
+		<Property name="distance_kill" type="string" />
+		<Property name="in_bank" type="string" />
+		<Property name="lo" type="int" />
+		<Property name="usual_name" type="string" />
+	</Array>
+</Definition>

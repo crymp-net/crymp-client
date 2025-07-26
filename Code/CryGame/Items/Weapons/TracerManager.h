@@ -19,67 +19,64 @@ History:
 #endif
 
 #include "CryCommon/CryEntitySystem/EntityId.h"
+#include <memory>
 
 class CTracer
 {
-	friend class CTracerManager;
-public:
-	CTracer(const Vec3 &pos);
-	virtual ~CTracer();
+    friend class CTracerManager;
 
-	void Reset(const Vec3 &pos);
-	void CreateEntity();
-	void SetGeometry(const char *name, float scale);
-	void SetEffect(const char *name, float scale);
-	void SetLifeTime(float lifeTime);
-	bool Update(float frameTime, const Vec3 &campos);
-	void UpdateVisual(const Vec3 &pos, const Vec3 &dir, float scale, float length);
-	float GetAge() const;
-	void GetMemoryStatistics(ICrySizer * s) const;
+public:
+    explicit CTracer(const Vec3& pos);
+    virtual ~CTracer();
+
+    void Reset(const Vec3& pos);
+    void CreateEntity();
+    void SetGeometry(const char* name, float scale);
+    void SetEffect(const char* name, float scale);
+    void SetLifeTime(float lifeTime) { m_lifeTime = lifeTime; }
+    bool Update(float frameTime, const Vec3& camPos);
+    void UpdateVisual(const Vec3& pos, const Vec3& dir, float scale, float length);
+    float GetAge() const { return m_age; }
+    void GetMemoryStatistics(ICrySizer* s) const;
 
 private:
-	float				m_speed;
-	Vec3				m_pos;
-	Vec3				m_dest;
-	Vec3				m_startingpos;
-	float				m_age;
-	float				m_lifeTime;
-	bool        m_useGeometry;
-	int         m_geometrySlot;
-
-	EntityId		m_entityId;
+    float     m_speed = 0.0f;
+    Vec3      m_pos = Vec3(ZERO);
+    Vec3      m_dest = Vec3(ZERO);
+    Vec3      m_startingpos = Vec3(ZERO);
+    float     m_age = 0.0f;
+    float     m_lifeTime = 1.5f;
+    bool      m_useGeometry = false;
+    int       m_geometrySlot = 0;
+    EntityId  m_entityId = 0;
 };
-
 
 class CTracerManager
 {
-	typedef std::vector<CTracer *>	TTracerPool;
-	typedef std::vector<int>				TTracerIdVector;
 public:
-	CTracerManager();
-	virtual ~CTracerManager();
+    CTracerManager() = default;
+    virtual ~CTracerManager();
 
-	struct STracerParams
-	{
-		const char *geometry;
-		const char *effect;
-		Vec3				position;
-		Vec3				destination;
-		float				speed;
-		float				lifetime;
-	};
+    struct STracerParams
+    {
+        const char* geometry = nullptr;
+        const char* effect = nullptr;
+        Vec3        position = Vec3(ZERO);
+        Vec3        destination = Vec3(ZERO);
+        float       speed = 0.0f;
+        float       lifetime = 1.5f;
+    };
 
-	void EmitTracer(const STracerParams &params);
-	void Update(float frameTime);
-	void Reset();
-	void GetMemoryStatistics(ICrySizer *);
+    void EmitTracer(const STracerParams& params);
+    void Update(float frameTime);
+    void Reset();
+    void GetMemoryStatistics(ICrySizer*);
 
 private:
-	TTracerPool			m_pool;
-	TTracerIdVector m_updating;
-	TTracerIdVector	m_actives;
-	int							m_lastFree;
+    std::vector<std::unique_ptr<CTracer>> m_pool;
+    std::vector<int>                      m_updating;
+    std::vector<int>                      m_actives;
+    int                                   m_lastFree = 0;
 };
-
 
 #endif //__TRACERMANAGER_H__

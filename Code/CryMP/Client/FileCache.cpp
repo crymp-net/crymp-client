@@ -2,9 +2,8 @@
 
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryCommon/CrySystem/ICryPak.h"
-#include "Library/StringTools.h"
+#include "Library/StdFile.h"
 #include "Library/Util.h"
-#include "Library/WinAPI.h"
 
 #include "FileCache.h"
 #include "Client.h"
@@ -14,58 +13,43 @@ json FileCache::LoadIndex()
 {
 	json index;
 
-	try
+	if (StdFile file((m_cacheDir / "index").string().c_str(), "r"); file.IsOpen())
 	{
-		WinAPI::File indexFile(m_cacheDir / "index", WinAPI::FileAccess::READ_ONLY);
-		if (!indexFile)
-		{
-			throw StringTools::SysErrorFormat("Failed to open the index file for reading");
-		}
-
-		const std::string content = indexFile.Read();
-
-		if (!content.empty())
-		{
-			index = json::parse(content);
-		}
-	}
-	catch (const std::exception & ex)
-	{
-		CryLogAlways("$4[CryMP] [FileCache] Index load error: %s", ex.what());
+		index = json::parse(file.GetHandle(), nullptr, false);  // no exceptions
 	}
 
 	if (!index.contains("files") || !index["files"].is_object())
+	{
 		index["files"] = json::object();
+	}
 
 	if (!index.contains("lru") || !index["lru"].is_array())
+	{
 		index["lru"] = json::array();
+	}
 
 	return index;
 }
 
 void FileCache::SaveIndex(const json & index)
 {
-	try
-	{
-		WinAPI::File indexFile(m_cacheDir / "index", WinAPI::FileAccess::WRITE_ONLY);
-		if (!indexFile)
-		{
-			throw StringTools::SysErrorFormat("Failed to open the index file for writing");
-		}
+	std::string content = index.dump(-1, ' ', false, json::error_handler_t::replace);  // no exceptions
 
-		indexFile.Write(index.dump());
-	}
-	catch (const std::exception & ex)
+	StdFile file((m_cacheDir / "index").string().c_str(), "w");
+	if (!file.IsOpen())
 	{
-		CryLogAlways("$4[CryMP] [FileCache] Index save error: %s", ex.what());
+		CryLogAlways("$4[CryMP] [FileCache] Failed to open index file for writing");
+		return;
 	}
+
+	file.Write(content.c_str(), content.length());
 }
 
 void FileCache::DownloadFile(FileCacheRequest && request, const std::filesystem::path & filePath)
 {
 	FileDownloaderRequest download;
 	download.url = request.fileURL;
-	download.filePath = filePath;
+	download.filePath = FileDownloaderRequest::MakeFileNameUnique(filePath); // temporary file during download
 
 	CryLogAlways("$3[CryMP] [FileCache] Downloading from $6%s$3", download.url.c_str());
 
@@ -77,7 +61,7 @@ void FileCache::DownloadFile(FileCacheRequest && request, const std::filesystem:
 			return true;
 	};
 
-	download.onComplete = [request = std::move(request), this](FileDownloaderResult & result)
+	download.onComplete = [request = std::move(request), finalPath = filePath, this](FileDownloaderResult & result)
 	{
 		bool success = false;
 
@@ -111,12 +95,27 @@ void FileCache::DownloadFile(FileCacheRequest && request, const std::filesystem:
 			success = true;
 		}
 
+		if (success)
+		{
+			// rename the temporary file
+			// no exceptions
+			std::error_code error;
+			std::filesystem::rename(result.filePath, finalPath, error);
+			if (error)
+			{
+				CryLogAlways("$4[CryMP] [FileCache] Renaming temporary file failed: Error %d (%s)",
+					error.value(), error.message().c_str());
+
+				success = false;
+			}
+		}
+
 		if (!success)
 		{
 			RemoveFile(result.filePath);
 		}
 
-		CompleteRequest(request, success, result.filePath);
+		CompleteRequest(request, success, finalPath);
 	};
 
 	gClient->GetFileDownloader()->Request(std::move(download));
@@ -149,9 +148,6 @@ FileCache::FileCache()
 
 	// make sure the cache directory exists
 	std::filesystem::create_directories(m_cacheDir);
-
-	// make sure the index file exists
-	WinAPI::File(m_cacheDir / "index", WinAPI::FileAccess::READ_WRITE_CREATE);
 }
 
 FileCache::~FileCache()

@@ -50,6 +50,10 @@
 #include "CryMP/Client/Advertising.h"
 #include "CryMP/Client/HealthManager.h"
 
+#include "CryMP/Server/Server.h"
+#include "CryMP/Server/SSM.h"
+#include "CryMP/Server/SafeWriting/SafeWriting.h"
+
 int CGameRules::s_invulnID = 0;
 int CGameRules::s_barbWireID = 0;
 
@@ -82,6 +86,7 @@ CGameRules::CGameRules()
 	m_explosionScreenFX(true),
 	m_pShotValidator(0)
 {
+	
 }
 
 //------------------------------------------------------------------------
@@ -221,6 +226,10 @@ void CGameRules::PostInit(IGameObject* pGameObject)
 	{
 		gClient->GetScriptCallbacks()->OnGameRulesCreated(GetEntityId());
 	}
+
+	if (ISSM* pSSM = g_pGame->GetSSM()) {
+		pSSM->OnGameRulesLoad(this);
+	}
 }
 
 //------------------------------------------------------------------------
@@ -270,6 +279,9 @@ void CGameRules::PostInitClient(int channelId)
 void CGameRules::Release()
 {
 	UnregisterConsoleCommands(gEnv->pConsole);
+	if (ISSM* pSSM = g_pGame->GetSSM()) {
+		pSSM->OnGameRulesUnload(this);
+	}
 	delete this;
 }
 
@@ -602,6 +614,10 @@ bool CGameRules::OnClientConnect(int channelId, bool isReset)
 		{
 			SetTeam(GetChannelTeam(channelId), pActor->GetEntityId());
 		}
+	}
+
+	if(ISSM* pSSM = g_pGame->GetSSM()) {
+		pSSM->OnClientConnect(this, channelId, isReset);
 	}
 
 	return pActor != 0;
@@ -1091,7 +1107,17 @@ void CGameRules::RevivePlayerInVehicle(CActor* pActor, EntityId vehicleId, int s
 //------------------------------------------------------------------------
 void CGameRules::RenamePlayer(CActor* pActor, const char* name)
 {
-	string fixed = VerifyName(name, pActor->GetEntity());
+	std::string strName { name };
+	if(ISSM* pSSM = g_pGame->GetSSM()) {
+		auto newName = pSSM->OnPlayerRename(this, pActor, strName);
+		if(newName) {
+			strName = std::move(*newName);
+		} else {
+			return;
+		}
+	}
+
+	string fixed = VerifyName(strName.c_str(), pActor->GetEntity());
 	RenameEntityParams params(pActor->GetEntityId(), fixed.c_str());
 	if (!_stricmp(fixed.c_str(), pActor->GetEntity()->GetName()))
 		return;
@@ -3128,7 +3154,8 @@ void CGameRules::SendTextMessage(ETextMessageType type, const char* msg, unsigne
 //------------------------------------------------------------------------
 bool CGameRules::CanReceiveChatMessage(EChatMessageType type, EntityId sourceId, EntityId targetId) const
 {
-	/*if (sourceId == targetId)
+	/*
+	if (sourceId == targetId)
 		return true;
 
 	bool sspec = !IsPlayerActivelyPlaying(sourceId);
@@ -3147,13 +3174,10 @@ bool CGameRules::CanReceiveChatMessage(EChatMessageType type, EntityId sourceId,
 	{
 		//CryLog("Disallowing msg (spec): source %d, target %d, sspec %d, sdead %d, tspec %d, tdead %d", sourceId, targetId, sspec, sdead, tspec, tdead);
 		return false;
-	}
+	}*/
 
 	//CryLog("Allowing msg: source %d, target %d, sspec %d, sdead %d, tspec %d, tdead %d", sourceId, targetId, sspec, sdead, tspec, tdead);
 	return true;
-	*/
-
-	return true; //CryMP: Always true
 }
 
 //------------------------------------------------------------------------
@@ -3197,11 +3221,22 @@ void CGameRules::SendChatMessage(EChatMessageType type, EntityId sourceId, Entit
 
 	if (gEnv->bServer)
 	{
+		// SSM: OnChatMessage
+		ISSM* pSSM = g_pGame->GetSSM();
+		if(pSSM) {
+			auto newMsg = pSSM->OnChatMessage(this, type, sourceId, targetId, msg);
+			if(newMsg) {
+				params.msg = newMsg->c_str();
+			} else {
+				return;
+			}
+		}
+
 		switch (type)
 		{
 		case eChatToTarget:
 		{
-			if (CanReceiveChatMessage(type, sourceId, targetId))
+			if (pSSM ? pSSM->CanReceiveChatMessage(type, sourceId, targetId) : CanReceiveChatMessage(type, sourceId, targetId))
 				GetGameObject()->InvokeRMIWithDependentObject(ClChatMessage(), params, eRMI_ToClientChannel, targetId, GetChannelId(targetId));
 		}
 		break;
@@ -3214,7 +3249,7 @@ void CGameRules::SendChatMessage(EChatMessageType type, EntityId sourceId, Entit
 			{
 				if (CActor* pActor = GetActorByChannelId(*it))
 				{
-					if (CanReceiveChatMessage(type, sourceId, pActor->GetEntityId()) && IsPlayerInGame(pActor->GetEntityId()))
+					if ((pSSM ? pSSM->CanReceiveChatMessage(type, sourceId, pActor->GetEntityId()) : CanReceiveChatMessage(type, sourceId, pActor->GetEntityId())) && IsPlayerInGame(pActor->GetEntityId()))
 						GetGameObject()->InvokeRMIWithDependentObject(ClChatMessage(), params, eRMI_ToClientChannel, pActor->GetEntityId(), *it);
 				}
 			}
@@ -3233,7 +3268,7 @@ void CGameRules::SendChatMessage(EChatMessageType type, EntityId sourceId, Entit
 
 					for (TPlayers::const_iterator it = begin; it != end; ++it)
 					{
-						if (CanReceiveChatMessage(type, sourceId, *it))
+						if (pSSM ? pSSM->CanReceiveChatMessage(type, sourceId, *it) : CanReceiveChatMessage(type, sourceId, *it))
 							GetGameObject()->InvokeRMIWithDependentObject(ClChatMessage(), params, eRMI_ToClientChannel, *it, GetChannelId(*it));
 					}
 				}

@@ -90,7 +90,6 @@ public:
 	void HttpRequest(HTTPClientRequest&& request);
 
 	std::string GetMasterServerAPI(const std::string & master);
-	std::string GetHWID(const std::string_view & salt);
 
 	void AddKeyBind(const std::string_view& key, const std::string_view& command);
 	void AddKeyBind(const std::string_view& key, HSCRIPTFUNCTION function);

@@ -46,6 +46,9 @@
 #include "CryCommon/CrySystem/CryFile.h"
 #include "CryCommon/CrySystem/CryPath.h"
 
+#include "CryMP/Server/SSM.h"
+
+
 IItemSystem* CActor::m_pItemSystem = 0;
 IGameFramework* CActor::m_pGameFramework = 0;
 IGameplayRecorder* CActor::m_pGameplayRecorder = 0;
@@ -3549,6 +3552,10 @@ IMPLEMENT_RMI(CActor, SvRequestDropItem)
 	{
 		CryLogWarning("[gamenet] Failed to drop item. Item not found!");
 		return false;
+	}
+
+	if (ISSM* pSSM = g_pGame->GetSSM(); pSSM && !pSSM->IsRMILegitimate(pNetChannel, pItem->GetOwnerId())) {
+		return true;
 	}
 
 	//CryLogAlways("%s::SvRequestDropItem(%s)", GetEntity()->GetName(), pItem->GetEntity()->GetName());

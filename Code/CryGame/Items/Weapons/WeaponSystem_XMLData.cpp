@@ -961,6 +961,11 @@ void CWeaponSystem::RegisterXMLData()
 			}
 			{
 				IItemParamsNode* node_params_param = node_params->InsertChild("param");
+				node_params_param->SetAttribute("name", "hitPoints");
+				node_params_param->SetAttribute("value", static_cast<int>(300));
+			}
+			{
+				IItemParamsNode* node_params_param = node_params->InsertChild("param");
 				node_params_param->SetAttribute("name", "quietRemoval");
 				node_params_param->SetAttribute("value", static_cast<int>(1));
 			}

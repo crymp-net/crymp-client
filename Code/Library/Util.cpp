@@ -8,6 +8,7 @@
 
 #include "Util.h"
 #include "StringTools.h"
+#include "WinAPI.h"
 
 bool Util::LessNoCase(const std::string_view & stringA, const std::string_view & stringB)
 {
@@ -245,4 +246,14 @@ std::string Util::SHA256(const std::string_view & text)
 	std::transform(result.begin(), result.end(), result.begin(), toupper);
 
 	return result;
+}
+
+std::string Util::GetHWID(const std::string_view & salt)
+{
+	std::string hwid = Util::SHA256(WinAPI::GetMachineGUID());
+
+	if (!hwid.empty())
+		hwid += ':' + Util::SHA256(hwid + std::string(salt));
+
+	return hwid;
 }

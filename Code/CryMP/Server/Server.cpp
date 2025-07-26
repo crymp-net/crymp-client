@@ -12,6 +12,11 @@
 
 #include "Server.h"
 
+#include "CryMP/Common/ScriptBind_CPPAPI.h"
+
+#include "CryMP/Server/SSM.h"
+#include "CryMP/Server/SafeWriting/SafeWriting.h"
+
 Server::Server()
 {
 }
@@ -28,6 +33,8 @@ void Server::Init(IGameFramework* pGameFramework)
 	this->pHttpClient = std::make_unique<HTTPClient>(*this->pExecutor);
 
 	pGameFramework->RegisterListener(this, "crymp-server", FRAMEWORKLISTENERPRIORITY_DEFAULT);
+
+	CGame* cGame = NULL;
 
 	if (WinAPI::CmdLine::HasArg("-oldgame"))
 	{
@@ -47,12 +54,25 @@ void Server::Init(IGameFramework* pGameFramework)
 	}
 	else
 	{
-		this->pGame = new CGame();
+		cGame = new CGame();
+		this->pGame = cGame;
 	}
 
 	// initialize the game
 	// mods are not supported
 	this->pGame->Init(pGameFramework);
+
+	if (cGame) {
+		if (WinAPI::CmdLine::HasArg("-ssm")) {
+			std::string ssm{ WinAPI::CmdLine::GetArgValue("-ssm") };
+			CryLogAlways("$6[CryMP] Detected SSM: %s", ssm.c_str());
+			if (ssm == "SafeWriting") {
+				cGame->SetSSM(new CSafeWriting(pGameFramework, pGameFramework->GetISystem()));
+			}
+		}
+	}
+
+	m_pScriptBind_CPPAPI = std::make_unique<ScriptBind_CPPAPI>();
 }
 
 void Server::UpdateLoop()
@@ -75,6 +95,9 @@ void Server::OnPostUpdate(float deltaTime)
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_GAME);
 
 	this->pExecutor->OnUpdate();
+	if (g_pGame && g_pGame->GetSSM()) {
+		g_pGame->GetSSM()->Update(deltaTime);
+	}
 }
 
 void Server::OnSaveGame(ISaveGame* saveGame)
@@ -114,4 +137,9 @@ void Server::OnActionEvent(const SActionEvent& event)
 			break;
 		}
 	}
+}
+
+void Server::HttpRequest(HTTPClientRequest&& request)
+{
+	pHttpClient->Request(std::move(request));
 }

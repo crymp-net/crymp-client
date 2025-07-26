@@ -12,10 +12,11 @@
 #include "Library/WinAPI.h"
 
 #include "ScriptBind_CPPAPI.h"
-#include "Client.h"
-#include "ScriptCommands.h"
-#include "ScriptCallbacks.h"
-#include "DrawTools.h"
+#include "CryMP/Client/Client.h"
+#include "CryMP/Client/ScriptCommands.h"
+#include "CryMP/Client/ScriptCallbacks.h"
+#include "CryMP/Client/DrawTools.h"
+#include "CryMP/Server/Server.h"
 #include "CryGame/GameActions.h"
 #include "CryGame/Actors/Actor.h"
 
@@ -92,6 +93,11 @@ ScriptBind_CPPAPI::ScriptBind_CPPAPI()
 	SCRIPT_REG_TEMPLFUNC(IsActionFilterEnabled, "filterName");
 	SCRIPT_REG_TEMPLFUNC(IsActionFilterAvailable, "filterName");
 	SCRIPT_REG_TEMPLFUNC(CreateActionFilter, "filterName, actions");
+
+	//SSM support
+	SCRIPT_REG_TEMPLFUNC(GetIP, "host");
+	SCRIPT_REG_TEMPLFUNC(GetLocalIP, "");
+	SCRIPT_REG_TEMPLFUNC(GetTime, "future");
 }
 
 ScriptBind_CPPAPI::~ScriptBind_CPPAPI()
@@ -100,6 +106,10 @@ ScriptBind_CPPAPI::~ScriptBind_CPPAPI()
 
 int ScriptBind_CPPAPI::AddCCommand(IFunctionHandler *pH, const char *name, HSCRIPTFUNCTION handler)
 {
+	if(!gClient) {
+		return pH->EndFunction(false);
+	}
+	
 	bool success = gClient->GetScriptCommands()->AddCommand(name, handler);
 
 	if (!success)
@@ -139,7 +149,7 @@ int ScriptBind_CPPAPI::ApplyMaskAll(IFunctionHandler* pH, int applyMask, bool ap
 			IEntity* pEntity = it->This();
 			int targetMask = applyMask;
 			if (targetMask == MTL_LAYER_FROZEN && apply) {
-				IVehicleSystem* pVS = gClient->GetGameFramework()->GetIVehicleSystem();
+				IVehicleSystem* pVS = g_pGame->GetIGameFramework()->GetIVehicleSystem();
 				if (pVS->GetVehicle(pEntity->GetId()))
 					targetMask = MTL_LAYER_DYNAMICFROZEN;
 			}
@@ -168,9 +178,9 @@ int ScriptBind_CPPAPI::FSetCVar(IFunctionHandler *pH, const char *cvar, const ch
 	}
 
 	const std::string previousVal = pCVar->GetString();
-
-	if (previousVal != std::string_view(value))
-	{
+	if (gEnv->bServer) {
+		pCVar->ForceSet(value);
+	} else if (previousVal != std::string_view(value)) {
 		pCVar->ForceSet(value);
 
 		// CVar still the same, is it synced?
@@ -190,7 +200,7 @@ int ScriptBind_CPPAPI::FSetCVar(IFunctionHandler *pH, const char *cvar, const ch
 
 			if (std::string_view(value) != std::string_view(pCVar->GetString()))
 			{
-				CryLogAlways("$4[CryMP] Failed to change CVar %s - value still %s", cvar, pCVar->GetString());
+				CryLogWarning("$4[CryMP] Failed to change CVar %s - value still %s", cvar, pCVar->GetString());
 				return pH->EndFunction(false);
 			}
 		}
@@ -207,12 +217,12 @@ int ScriptBind_CPPAPI::GetLocaleInformation(IFunctionHandler *pH)
 
 int ScriptBind_CPPAPI::GetMapName(IFunctionHandler *pH)
 {
-	return pH->EndFunction(gClient->GetGameFramework()->GetLevelName());
+	return pH->EndFunction(g_pGame->GetIGameFramework()->GetLevelName());
 }
 
 int ScriptBind_CPPAPI::MakeUUID(IFunctionHandler *pH, const char *salt)
 {
-	return pH->EndFunction(gClient->GetHWID(salt).c_str());
+	return pH->EndFunction(Util::GetHWID(salt).c_str());
 }
 
 int ScriptBind_CPPAPI::Random(IFunctionHandler *pH)
@@ -282,7 +292,11 @@ int ScriptBind_CPPAPI::Request(IFunctionHandler *pH, SmartScriptTable params, HS
 		pSS->ReleaseFunc(callback);
 	};
 
-	gClient->HttpRequest(std::move(request));
+	if(gClient) {
+		gClient->HttpRequest(std::move(request));
+	} else if(gServer) {
+		gServer->HttpRequest(std::move(request));
+	}
 
 	return pH->EndFunction(true);
 }
@@ -311,9 +325,11 @@ int ScriptBind_CPPAPI::GetMasters(IFunctionHandler *pH)
 {
 	SmartScriptTable masters(m_pSS);
 
-	for (const std::string & master : gClient->GetMasters())
-	{
-		masters->PushBack(master.c_str());
+	if(gClient) {
+		for (const std::string & master : gClient->GetMasters())
+		{
+			masters->PushBack(master.c_str());
+		}
 	}
 
 	return pH->EndFunction(masters);
@@ -362,21 +378,29 @@ int ScriptBind_CPPAPI::IsKeyUsed(IFunctionHandler* pH, const char* key)
 
 int ScriptBind_CPPAPI::CreateKeyBind(IFunctionHandler* pH, const char* key, const char* action)
 {
-	gClient->AddKeyBind(key, action);
-
-	return pH->EndFunction(true);
+	if(gClient) {
+		gClient->AddKeyBind(key, action);
+		return pH->EndFunction(true);
+	} else {
+		return pH->EndFunction(false);
+	}
 }
 
 int ScriptBind_CPPAPI::CreateKeyFunction(IFunctionHandler* pH, const char* key, HSCRIPTFUNCTION function)
 {
-	gClient->AddKeyBind(key, function);
-
-	return pH->EndFunction(true);
+	if(gClient) {
+		gClient->AddKeyBind(key, function);
+		return pH->EndFunction(true);
+	} else {
+		return pH->EndFunction(false);
+	}
 }
 
 int ScriptBind_CPPAPI::ClearKeyBinds(IFunctionHandler* pH)
 {
-	gClient->ClearKeyBinds();
+	if(gClient) {
+		gClient->ClearKeyBinds();
+	}
 
 	return pH->EndFunction();
 }
@@ -615,6 +639,10 @@ int ScriptBind_CPPAPI::AddLocalizedLabel(IFunctionHandler* pH, const char* name,
 ////////////////////////////////////////////////////////////////////////////////
 int ScriptBind_CPPAPI::DrawText(IFunctionHandler* pH, float posX, float posY, float xscale, float yscale, float color1, float color2, float color3, float color4, const char* text)
 {
+	if(!gClient) {
+		return pH->EndFunction();
+	}
+	
 	int replace = 0;
 	if (pH->GetParamType(10) == svtNumber)
 	{
@@ -644,6 +672,10 @@ int ScriptBind_CPPAPI::DrawText(IFunctionHandler* pH, float posX, float posY, fl
 
 int ScriptBind_CPPAPI::DrawImage(IFunctionHandler* pH, float posX, float posY, float width, float height, const char* texturePath)
 {
+	if(!gClient) {
+		return pH->EndFunction();
+	}
+	
 	ITexture* pTexture = gEnv->pRenderer->EF_LoadTexture(texturePath, FT_FROMIMAGE, eTT_2D);
 	if (!pTexture)
 	{
@@ -671,6 +703,10 @@ int ScriptBind_CPPAPI::DrawImage(IFunctionHandler* pH, float posX, float posY, f
 
 int ScriptBind_CPPAPI::DrawColorBox(IFunctionHandler* pH, float posX, float posY, float width, float height, float color1, float color2, float color3, float opacity)
 {
+	if(!gClient) {
+		return pH->EndFunction();
+	}
+	
 	DrawTools::Image m;
 	m.posX = posX;
 	m.posY = posY;
@@ -689,19 +725,27 @@ int ScriptBind_CPPAPI::DrawColorBox(IFunctionHandler* pH, float posX, float posY
 
 int ScriptBind_CPPAPI::RemoveTextOrImageById(IFunctionHandler* pH, int id)
 {
+	if(!gClient) {
+		return pH->EndFunction();
+	}
+	
 	gClient->GetDrawTools()->RemoveTextOrImageById(id);
 	return pH->EndFunction();
 }
 
 int ScriptBind_CPPAPI::RemoveTextOrImageAll(IFunctionHandler* pH)
 {
+	if(!gClient) {
+		return pH->EndFunction();
+	}
+
 	gClient->GetDrawTools()->ClearScreen();
 	return pH->EndFunction();
 }
 
 int ScriptBind_CPPAPI::GetLoadingScreenMapPicturePath(IFunctionHandler* pH, const char* level)
 {
-	ILevelInfo* pLI = gClient->GetGameFramework()->GetILevelSystem()->GetLevelInfo(level);
+	ILevelInfo* pLI = g_pGame->GetIGameFramework()->GetILevelSystem()->GetLevelInfo(level);
 	if (!pLI)
 	{
 		return pH->EndFunction();
@@ -767,7 +811,7 @@ int ScriptBind_CPPAPI::GetLoadingScreenMapPicturePath(IFunctionHandler* pH, cons
 
 int ScriptBind_CPPAPI::FOVEffect(IFunctionHandler* pH, float goalFOV, float speed)
 {
-	CActor* pClientActor = static_cast<CActor*>(gClient->GetGameFramework()->GetClientActor());
+	CActor* pClientActor = static_cast<CActor*>(g_pGame->GetIGameFramework()->GetClientActor());
 	if (pClientActor)
 	{
 		CScreenEffects* pScreenEffects = pClientActor->GetScreenEffects();
@@ -1099,4 +1143,20 @@ int ScriptBind_CPPAPI::CreateActionFilter(IFunctionHandler* pH, const char* name
 
 	CryLogWarningAlways("CPPAPI.CreateActionFilter: no valid actions found in the table");
 	return pH->EndFunction(false);
+}
+
+int ScriptBind_CPPAPI::GetIP(IFunctionHandler* pH, const char* host) {
+	return pH->EndFunction(WinAPI::GetIP(host).c_str());
+}
+
+int ScriptBind_CPPAPI::GetLocalIP(IFunctionHandler* pH) {
+	return pH->EndFunction(WinAPI::GetLocalIP().c_str());
+}
+
+int ScriptBind_CPPAPI::GetTime(IFunctionHandler* pH, int future) {
+	time_t t = time(0) + future;
+	tm *info = localtime(&t);
+	static char bf[64];
+	sprintf(bf, "%04d%02d%02d%02d%02d%02d", info->tm_year + 1900, info->tm_mon + 1, info->tm_mday, info->tm_hour, info->tm_min, info->tm_sec);
+	return pH->EndFunction(bf);
 }

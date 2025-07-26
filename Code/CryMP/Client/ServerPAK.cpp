@@ -9,7 +9,6 @@
 #include "CryGame/Game.h"
 #include "CryGame/Items/ItemSharedParams.h"
 #include "CryGame/Items/Weapons/WeaponSystem.h"
-#include "Library/WinAPI.h"
 
 #include "ServerPAK.h"
 
@@ -21,30 +20,9 @@ ServerPAK::~ServerPAK()
 {
 }
 
-bool ServerPAK::IsZipFile(const std::string & path)
-{
-	try
-	{
-		WinAPI::File file(path, WinAPI::FileAccess::READ_ONLY);
-
-		return file.IsOpen() && file.Read(2) == "PK";
-	}
-	catch (...)
-	{
-		return false;
-	}
-}
-
 bool ServerPAK::Load(const std::string & path)
 {
 	Unload();
-
-	// Crytek's CryPak crashes when it tries to load something that's not a zip file
-	if (!IsZipFile(path))
-	{
-		CryLogAlways("$4[CryMP] [ServerPAK] Invalid file $8%s", path.c_str());
-		return false;
-	}
 
 	const bool opened = gEnv->pCryPak->OpenPack("game\\", path.c_str());
 	if (opened)
