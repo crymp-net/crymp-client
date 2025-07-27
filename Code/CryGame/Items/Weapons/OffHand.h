@@ -229,8 +229,8 @@ private:
 
 	// Grenade info
 	int m_lastFireModeId = 0;
-	float m_nextGrenadeThrow = -1.0f;
 
+	float m_nextThrowTimer = -1.0f;
 	float m_lastCHUpdate = 0.0f;
 
 	// Grabbing system

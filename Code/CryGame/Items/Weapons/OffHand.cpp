@@ -184,7 +184,7 @@ void COffHand::Reset()
 
 	SetHeldEntityId(0);
 
-	m_nextGrenadeThrow = -1.0f;
+	m_nextThrowTimer = -1.0f;
 	m_lastFireModeId = 0;
 	m_pickingTimer = -1.0f;
 	m_preHeldEntityId = 0;
@@ -527,10 +527,10 @@ void COffHand::CheckTimers(float frameTime)
 			m_resetTimer = -1.0f;
 		}
 	}
-	if (m_nextGrenadeThrow >= 0.0f)
+	if (m_nextThrowTimer >= 0.0f)
 	{
-		//Grenade throw fire rate
-		m_nextGrenadeThrow -= frameTime;
+		//Throw fire rate (grenade, object, NPC)
+		m_nextThrowTimer -= frameTime;
 	}
 	if (m_fGrenadeToggleTimer >= 0.0f)
 	{
@@ -1386,7 +1386,7 @@ bool COffHand::EvaluateStateTransition(int requestedAction, int activationMode, 
 			}
 
 			//Don't throw if there's no ammo (or not fm)
-			if (m_fm && !m_fm->OutOfAmmo() && m_nextGrenadeThrow <= 0.0f)
+			if (m_fm && !m_fm->OutOfAmmo() && m_nextThrowTimer <= 0.0f)
 				return true;
 		}
 		else if (activationMode == eAAM_OnRelease && m_currentState == eOHS_HOLDING_GRENADE)
@@ -1895,13 +1895,17 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 
 	if (activationMode == eAAM_OnPress)
 	{
-		if (!m_fm->IsFiring() && m_nextGrenadeThrow < 0.0f)
+		if (!m_fm->IsFiring() && m_nextThrowTimer < 0.0f)
 		{
 			if (m_currentState == eOHS_HOLDING_GRENADE)
+			{
 				AttachGrenadeToHand(GetCurrentFireMode(), m_stats.fp);
+			}
 
 			m_fm->StartFire();
+
 			SetBusy(false);
+
 			if (m_mainHand && m_fm->IsFiring())
 			{
 				if (!(m_currentState & (eOHS_THROWING_NPC | eOHS_THROWING_OBJECT)))
@@ -1927,7 +1931,7 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 		}
 
 	}
-	else if (activationMode == eAAM_OnRelease && m_nextGrenadeThrow <= 0.0f)
+	else if (activationMode == eAAM_OnRelease && m_nextThrowTimer <= 0.0f)
 	{
 		CThrow* pThrow = static_cast<CThrow*>(m_fm);
 		if (m_currentState != eOHS_HOLDING_GRENADE)
@@ -1944,7 +1948,8 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 			return;
 		}
 
-		m_nextGrenadeThrow = 60.0f / m_fm->GetFireRate();
+		m_nextThrowTimer = 60.0f / m_fm->GetFireRate();
+
 		m_fm->StopFire();
 		pThrow->ThrowingGrenade(true);
 
