@@ -599,16 +599,35 @@ void CThrow::ThrowLivingEntity(IEntity* pEntity, IPhysicalEntity* pPE)
 //----------------------------------------------------
 bool CThrow::CheckForIntersections(IPhysicalEntity* heldEntity, Vec3& dir)
 {
+	Vec3 checkPos = m_pWeapon->GetEntity()->GetWorldPos();
 
-	Vec3 pos = m_pWeapon->GetSlotHelperPos(CItem::eIGS_FirstPerson, "item_attachment", true);
+	if (CActor* pActor = m_pWeapon->GetOwnerActor())
+	{
+		if (IMovementController* pMC = pActor->GetMovementController())
+		{
+			SMovementState movementState;
+			pMC->GetMovementState(movementState);
+			checkPos = movementState.eyePosition;
+		}
+	}
+
+	if (m_pWeapon->GetStats().fp)
+	{
+		Vec3 fpPos = m_pWeapon->GetSlotHelperPos(CItem::eIGS_FirstPerson, "item_attachment", true);
+		checkPos = fpPos - dir * 0.4f;
+	}
+
 	ray_hit hit;
-
-	if(gEnv->pPhysicalWorld->RayWorldIntersection(pos-dir*0.4f, dir*0.8f, ent_static|ent_terrain|ent_rigid|ent_sleeping_rigid,
-		rwi_stop_at_pierceable|14,&hit, 1, heldEntity))
+	if (gEnv->pPhysicalWorld->RayWorldIntersection(
+		checkPos, dir,
+		ent_static | ent_terrain | ent_rigid | ent_sleeping_rigid,
+		rwi_stop_at_pierceable | 14,
+		&hit, 1, heldEntity))
+	{
 		return true;
+	}
 
 	return false;
-
 }
 
 //-----------------------------------------------------
