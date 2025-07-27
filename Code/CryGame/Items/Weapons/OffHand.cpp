@@ -4028,6 +4028,12 @@ void COffHand::SetHeldEntityId(const EntityId entityId, const EntityId oldId /* 
 					}
 				}
 
+				if (IVehicle* pVehicle = m_pGameFramework->GetIVehicleSystem()->GetVehicle(pOldEntity->GetId()))
+				{
+					//CryMP: Triggers a rephysicalization to avoid bugs caused by 0 mass
+					reinterpret_cast<IGameObjectProfileManager*>(pVehicle + 1)->SetAspectProfile(eEA_Physics, 1);
+				}
+
 				pActor->SetHeldObjectMass(0.0f);
 			}
 		}
