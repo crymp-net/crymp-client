@@ -2832,7 +2832,7 @@ void ItemSystem::RegisterXMLData()
 				{
 					IItemParamsNode* node_actions_action_animation = node_actions_action->InsertChild("animation");
 					node_actions_action_animation->SetAttribute("target", "ownerloop");
-					node_actions_action_animation->SetAttribute("name", "hold_grenade");
+					node_actions_action_animation->SetAttribute("name", "idle"); //CryMP: was hold_grenade 
 				}
 			}
 			{
@@ -2903,7 +2903,7 @@ void ItemSystem::RegisterXMLData()
 				{
 					IItemParamsNode* node_actions_action_animation = node_actions_action->InsertChild("animation");
 					node_actions_action_animation->SetAttribute("target", "ownerloop");
-					node_actions_action_animation->SetAttribute("name", "hold_grenade");
+					node_actions_action_animation->SetAttribute("name", "idle"); //CryMP: was hold_grenade
 				}
 			}
 			{
@@ -3025,7 +3025,7 @@ void ItemSystem::RegisterXMLData()
 				{
 					IItemParamsNode* node_actions_action_animation = node_actions_action->InsertChild("animation");
 					node_actions_action_animation->SetAttribute("target", "ownerloop");
-					node_actions_action_animation->SetAttribute("name", "hold_grenade");
+					node_actions_action_animation->SetAttribute("name", "idle"); //CryMP: was hold_grenade
 				}
 			}
 			{
