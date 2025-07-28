@@ -182,31 +182,7 @@ void CTracerManager::EmitTracer(const STracerParams& params)
     if (!g_pGameCVars->g_enableTracers || !gEnv->bClient)
         return;
 
-    int idx = -1;
-    const int poolSize = static_cast<int>(m_pool.size());
-    int i = m_lastFree + 1;
-
-    while (true)
-    {
-        if (i >= poolSize) i = 0;
-        if (i == m_lastFree)
-        {
-            m_pool.emplace_back(std::make_unique<CTracer>(params.position));
-            idx = static_cast<int>(m_pool.size() - 1);
-            break;
-        }
-
-        IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_pool[i]->m_entityId);
-        if (pEntity && pEntity->IsHidden())
-        {
-            m_pool[i]->Reset(params.position);
-            idx = i;
-            break;
-        }
-        ++i;
-    }
-
-    m_lastFree = idx;
+    const size_t idx = CreateTracer(params);
     CTracer* tracer = m_pool[idx].get();
 
     if (params.geometry && params.geometry[0])
@@ -229,7 +205,29 @@ void CTracerManager::EmitTracer(const STracerParams& params)
         pEntity->Hide(false);
     }
 
-    m_actives.push_back(idx);
+    m_actives.push_back(static_cast<int>(idx));
+}
+
+size_t CTracerManager::CreateTracer(const STracerParams& params)
+{
+    IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
+
+    // try to reuse an existing one
+    for (size_t i = 0; i < m_pool.size(); i++)
+    {
+        IEntity* pEntity = pEntitySystem->GetEntity(m_pool[i]->m_entityId);
+        if (pEntity && pEntity->IsHidden())
+        {
+            m_pool[i]->Reset(params.position);
+            ++m_numReused;
+            return i;
+        }
+    }
+
+    // create a new one
+    m_pool.emplace_back(std::make_unique<CTracer>(params.position));
+    ++m_numAllocated;
+    return m_pool.size() - 1;
 }
 
 void CTracerManager::Update(float frameTime)

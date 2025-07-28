@@ -1119,7 +1119,11 @@ void Launcher::PatchEngine()
 
 void Launcher::StartEngine()
 {
+	#ifdef SERVER_LAUNCHER
+	const bool oldAction = true;
+	#else
 	const bool oldAction = WinAPI::CmdLine::HasArg("-oldaction");
+	#endif
 
 	IGameFramework* pGameFramework = nullptr;
 
@@ -1195,6 +1199,13 @@ void Launcher::StartEngine()
 
 	StartupTime::Finish();
 	CryLogAlways("Startup finished in %.3f seconds", StartupTime::GetSeconds());
+#ifdef SERVER_LAUNCHER
+	if (oldAction) {
+		CryLogAlways("[CryMP] Using old CryAction");
+	} else {
+		CryLogAlways("[CryMP] Using new CryAction");
+	}
+#endif
 
 	gEnv->pSystem->ExecuteCommandLine();
 }
@@ -1308,10 +1319,12 @@ void Launcher::Run()
 		throw StringTools::ErrorFormat("Invalid name of the executable!");
 	}
 
+#ifdef CLIENT_LAUNCHER
 	if (WinAPI::CmdLine::HasArg("-mod"))
 	{
 		throw StringTools::ErrorFormat("Mods are not supported!");
 	}
+#endif
 
 	this->InitWorkingDirectory();
 

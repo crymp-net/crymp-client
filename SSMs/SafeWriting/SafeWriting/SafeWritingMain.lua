@@ -250,7 +250,7 @@ function PluginSafeCall(tbl, ...)
 end
 function SetGameVersion(...)
     local ver = table.concat({...}, " ")
-    --SafeWriting.GameVersion=ver;	--do not use anymore!
+    --SafeWriting.GameVersion=ver;      --do not use anymore!
 end
 function SetReloadFlag()
     SafeWriting.GlobalData.Reload = true
@@ -484,9 +484,9 @@ end
 function PrepareAll()
     SafeWriting.Schedule.Events = {}
     local se = SafeWriting.Settings
-    printf("Starting migrations...")
+    --printf("Starting migrations...")
     BeginUpdates(GetTempVer())
-    printf("Migrations complete")
+    --printf("Migrations complete")
     if not SafeWriting.ScriptsLoaded then
         printf("Loading sfw.cfg")
         System.ExecuteCommand("exec sfw.cfg")
@@ -500,13 +500,13 @@ function PrepareAll()
         System.Quit()
     end
     if se.OptimizeSpeed then
-        printf("Enabling optimizations")
-    --System.SetCVar("log_verbosity",0);
-    --System.SetCVar("log_fileverbosity",0);
+        --printf("Enabling optimizations")
+        System.SetCVar("log_verbosity",0);
+        System.SetCVar("log_fileverbosity",0);
     end
     Out:Limit(0x7FFFFFFF) --Out:Limit(se.ConsoleQueueLimit or (se.OutQueueLimit or 0xFFFFFFFFFFFFFFFF));
     if not ChatEntityExists() then
-        printf("Spawning chat entity")
+        --printf("Spawning chat entity")
         CreateChatEntity(nil, nil, true)
     end
     CreateChatEntity("TempEntity", (se.TempEntityName or ">>"), true)
@@ -593,7 +593,7 @@ function PrepareAll()
         assert(bans)()
         printf("Successfuly loaded %d bans", #SafeWriting.Bans)
     end
-    printf("Detected game version: %s", SafeWriting.GameVersion)
+    --printf("Detected game version: %s", SafeWriting.GameVersion)
     if IsDllLoaded100() then
         System.ExecuteCommand("dohooks")
     end
@@ -2047,20 +2047,20 @@ function CheckPlayer(player, noevent)
         local newProfile = _G["ChannelInfo"][player.channelId].profile
         if newProfile ~= "0" and (player.profile == nil or player.profile == "0") then
             player.profile = newProfile
-            printf("Re-using cached profile %s for player %s (channel %d)", player.profile, player:GetName(), channelId)
+            --printf("Re-using cached profile %s for player %s (channel %d)", player.profile, player:GetName(), channelId)
         elseif player.profile ~= nil and player.profile ~= "0" then
             _G["ChannelInfo"][player.channelId].profile = player.profile
-            printf("Caching profile ID %s for player %s (channel %d)", player.profile, player:GetName(), channelId)
+            --printf("Caching profile ID %s for player %s (channel %d)", player.profile, player:GetName(), channelId)
         end
     end
     if se.AllowMasterServer and (tostring(player.profile) == "0" or (not player.isSfwCl)) then
         player.waitingForAuth = _time
-        printf(
+        --[[printf(
             "Skipped player check yet (%s, profile is %s, this is %d. time)",
             player:GetName(),
             tostring(player.gsprofile or 0),
             (player.checkSkips or 1)
-        )
+        )--]]
         player.checkSkips = (player.checkSkips or 1) + 1
         return
     end
@@ -2122,12 +2122,12 @@ function CheckPlayer(player, noevent)
             player.waitingForAuth = _time
         end
         local pid = tonumber(player.profile)
-        printf(
+        --[[printf(
             "CheckPlayer: player client: %s, profile: %s, gsprofile: %s",
             player.isSfwCl and "sfwcl" or "else",
             tostring(player.profile),
             tostring(player.gsprofile)
-        )
+        )--]]
 
         if player.isSfwCl and (SafeWriting.Settings.StrictProfilePolicy and pid >= 800000 and pid <= 1000000) then
             KickPlayer(player, "please, update your client")

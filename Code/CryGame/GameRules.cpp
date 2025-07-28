@@ -3217,8 +3217,6 @@ void CGameRules::SendChatMessage(EChatMessageType type, EntityId sourceId, Entit
 	bool sdead = IsDead(sourceId);
 	bool sspec = IsSpectator(sourceId);
 
-	//ChatLog(type, sourceId, targetId, msg);
-
 	if (gEnv->bServer)
 	{
 		// SSM: OnChatMessage
@@ -3231,6 +3229,8 @@ void CGameRules::SendChatMessage(EChatMessageType type, EntityId sourceId, Entit
 				return;
 			}
 		}
+
+		ChatLog(type, sourceId, targetId, params.msg.c_str());
 
 		switch (type)
 		{

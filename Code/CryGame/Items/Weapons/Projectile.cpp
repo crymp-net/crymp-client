@@ -719,7 +719,7 @@ void CProjectile::Destroy()
 
 	bool returnToPoolOK = true;
 
-	const bool reusable = m_pAmmoParams->flags & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY);
+	const bool reusable = g_pGameCVars->mp_recycleProjectiles && m_pAmmoParams->flags & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY);
 	if (reusable)
 	{
 		returnToPoolOK = g_pGame->GetWeaponSystem()->ReturnToPool(this);

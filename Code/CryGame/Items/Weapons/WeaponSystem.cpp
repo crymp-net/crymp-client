@@ -208,7 +208,14 @@ void CWeaponSystem::Reload()
 
 	m_tracerManager.Reset();
 
-	this->RegisterXMLData();
+	if (!gEnv->bClient) {
+		CryLogAlways("[CryMP] Reloading XML weapon definitions");
+		for (TFolderList::iterator it = m_folders.begin(); it != m_folders.end(); ++it)
+			Scan(it->c_str());
+	} else {
+		CryLogAlways("[CryMP] Reloading pre-compiled weapon definitions");
+		this->RegisterXMLData();
+	}
 
 	m_reloading = false;
 }
@@ -455,6 +462,133 @@ int  CWeaponSystem::QueryProjectiles(SProjectileQuery& q)
         q.pResults = &m_queryResults[0];
     return q.nCount;
 }
+
+//------------------------------------------------------------------------
+void CWeaponSystem::Scan(const char* folderName)
+{
+	string folder = folderName;
+	string search = folder;
+	search += "/*.*";
+
+	if (!m_recursing)
+		CryLog("Loading ammo XML definitions from '%s'!", folderName);
+
+	for (auto& entry : CryFind(search.c_str()))
+	{
+		if (entry.IsDirectory())
+		{
+			string subName = folder + "/" + entry.name;
+			if (m_recursing)
+			{
+				Scan(subName.c_str());
+			}
+			else
+			{
+				m_recursing=true;
+				Scan(subName.c_str());
+				m_recursing=false;
+			}
+			continue;
+		}
+
+		if (_stricmp(CryPath::GetExt(entry.name), "xml"))
+		{
+			continue;
+		}
+
+		string xmlFile = folder + string("/") + string(entry.name);
+		XmlNodeRef rootNode = m_pSystem->LoadXmlFile(xmlFile.c_str());
+
+		if (!rootNode)
+		{
+			CryLogWarning("Invalid XML file '%s'! Skipping...", xmlFile.c_str());
+			continue;
+		}
+
+		ScanXML(rootNode, xmlFile.c_str());
+	}
+
+	if (!m_recursing)
+		CryLog("Finished loading ammo XML definitions from '%s'!", folderName);
+
+	if (!m_reloading && !m_recursing)
+		m_folders.push_back(folderName);
+}
+
+//------------------------------------------------------------------------
+bool CWeaponSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
+{
+	if (strcmpi(root->getTag(), "ammo"))
+		return false;
+
+	const char* name = root->getAttr("name");
+	if (!name)
+	{
+		CryLogWarningAlways("Missing ammo name in XML '%s'! Skipping...", xmlFile);
+		return false;
+	}
+
+	const char* className = root->getAttr("class");
+
+	if (!className)
+	{
+		CryLogWarningAlways("Missing ammo class in XML '%s'! Skipping...", xmlFile);
+		return false;
+	}
+
+	TProjectileRegistry::iterator it = m_projectileregistry.find(CONST_TEMP_STRING(className));
+	if (it == m_projectileregistry.end())
+	{
+		CryLogWarningAlways("Unknown ammo class '%s' specified in XML '%s'! Skipping...", className, xmlFile);
+		return false;
+	}
+
+	const char* scriptName = root->getAttr("script");
+	IEntityClassRegistry::SEntityClassDesc classDesc;
+	classDesc.sName = name;
+	classDesc.sScriptFile = scriptName ? scriptName : "";
+	//classDesc.pUserProxyData = (void *)it->second;
+	//classDesc.pUserProxyCreateFunc = &CreateProxy<CProjectile>;
+	classDesc.flags |= ECLF_INVISIBLE;
+
+	IEntityClass* pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
+
+	if (!m_reloading && !pClass)
+	{
+		m_pGame->GetIGameFramework()->GetIGameObjectSystem()->RegisterExtension(name, it->second, &classDesc);
+		pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
+		assert(pClass);
+	}
+
+
+	TAmmoTypeParams::iterator ait = m_ammoparams.find(pClass);
+	if (ait == m_ammoparams.end())
+	{
+		std::pair<TAmmoTypeParams::iterator, bool> result = m_ammoparams.insert(TAmmoTypeParams::value_type(pClass, SAmmoTypeDesc()));
+		ait = result.first;
+	}
+
+	const char* configName = root->getAttr("configuration");
+
+	IItemParamsNode* params = m_pItemSystem->CreateParams();
+	params->ConvertFromXML(root);
+
+	SAmmoParams* pAmmoParams = new SAmmoParams(params, pClass);
+
+	SAmmoTypeDesc& desc = ait->second;
+
+	if (!configName || !configName[0])
+	{
+		if (desc.params)
+			delete desc.params;
+		desc.params = pAmmoParams;
+	}
+	else
+		desc.configurations.insert(std::make_pair<string, const SAmmoParams*>(configName, static_cast<const SAmmoParams*>(pAmmoParams)));
+
+	return true;
+}
+
 
 //------------------------------------------------------------------------
 void CWeaponSystem::RegisterAmmo(const char* name, const char* className, const char* script, const char* config, IItemParamsNode* params)
@@ -711,8 +845,7 @@ void CWeaponSystem::RemoveFromPool(CProjectile* pProjectile)
 		return;
 	}
 
-	std::erase_if(it->second.freeProjectiles, [&](const SmartProjectile& x) { return x.get() == pProjectile; });
-	it->second.totalCount--;
+	it->second.totalCount -= std::erase_if(it->second.freeProjectiles, [&](const SmartProjectile& x) { return x.get() == pProjectile; });
 }
 
 //------------------------------------------------------------------------
@@ -728,6 +861,20 @@ void CWeaponSystem::DumpPoolSizes()
 		const char* name = pClass ? pClass->GetName() : "NULL";
 		CryLogAlways("%s: totalCount=%zu, freeCount=%zu", name, pool.totalCount, pool.freeProjectiles.size());
 	}
+
+	CryLogAlways("------------------------ Tracer Manager Statistics -----------------------------");
+
+	CTracerManager& pTracerMgr = GetTracerManager();
+
+	const size_t total = pTracerMgr.GetPoolSize();
+	const size_t actives = pTracerMgr.GetActiveCount();
+	const unsigned int reused = pTracerMgr.GetNumReused();
+	const unsigned int allocated = pTracerMgr.GetNumAllocated();
+
+	CryLogAlways("Total Allocated (in pool): %zu", total);
+	CryLogAlways("Currently Active: %zu", actives);
+	CryLogAlways("Reused: %u", reused);
+	CryLogAlways("Newly Spawned: %u", allocated);
 
 	CryLogAlways("--------------------------------------------------------------------------------");
 }

@@ -904,11 +904,14 @@ end
 
 ----------------------------------------------------------------------------------------------------
 function TeamInstantAction:CalculateScore(deaths, kills, teamkills, selfKills)
-	
 --	local score = (deaths * -1) + (kills * 3) + (teamkills * -3);
-	local score = (kills * 3);	
+	if g_gameRules.class == "PowerStruggle" then
+		return kills
+	else
+		local score = (kills * 3);	
 
-	return score;
+		return score;
+	end
 end
 
 

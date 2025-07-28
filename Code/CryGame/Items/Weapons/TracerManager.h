@@ -68,15 +68,37 @@ public:
     };
 
     void EmitTracer(const STracerParams& params);
+    size_t CreateTracer(const STracerParams& params);
     void Update(float frameTime);
     void Reset();
     void GetMemoryStatistics(ICrySizer*);
+
+    size_t GetPoolSize() const
+    {
+        return m_pool.size();
+    }
+
+    size_t GetActiveCount() const
+    {
+        return m_actives.size();
+    }
+
+    unsigned int GetNumReused() const 
+    { 
+        return m_numReused; 
+    }
+
+    unsigned int GetNumAllocated() const
+    { 
+        return m_numAllocated;
+    }
 
 private:
     std::vector<std::unique_ptr<CTracer>> m_pool;
     std::vector<int>                      m_updating;
     std::vector<int>                      m_actives;
-    int                                   m_lastFree = 0;
+    unsigned int m_numReused = 0;
+    unsigned int m_numAllocated = 0;
 };
 
 #endif //__TRACERMANAGER_H__
