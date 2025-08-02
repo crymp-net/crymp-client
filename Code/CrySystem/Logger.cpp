@@ -424,7 +424,7 @@ void Logger::RegisterConsoleVariables()
 	);
 
 	m_cvars.paralog = pConsole->RegisterInt("log_Paralog", m_paralog, VF_NOT_NET_SYNCED,
-		"Enable and set time-frame for parallel logging of all messages for debugging purposed."
+		"Enable and set time-frame for parallel logging of all messages for debugging purposes."
 	);
 }
 
