@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <filesystem>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -15,6 +16,7 @@ struct ICVar;
 
 class Logger final : public ILog
 {
+public:
 	struct Message
 	{
 		enum
@@ -27,8 +29,10 @@ class Logger final : public ILog
 		unsigned int flags = 0;
 		std::string prefix;
 		std::string content;
+		uint64_t time = 0;
 	};
 
+private:
 	struct FileHandleDeleter
 	{
 		void operator()(std::FILE* file) const
@@ -40,6 +44,7 @@ class Logger final : public ILog
 	using FileHandle = std::unique_ptr<std::FILE, FileHandleDeleter>;
 
 	int m_verbosity = 0;
+	int m_paralog = 0;
 	FileHandle m_file;
 	std::filesystem::path m_filePath;
 	std::string m_fileName;
@@ -50,6 +55,7 @@ class Logger final : public ILog
 		ICVar* verbosity = nullptr;
 		ICVar* fileVerbosity = nullptr;
 		ICVar* prefix = nullptr;
+		ICVar* paralog = nullptr;
 	};
 
 	CVars m_cvars;
@@ -57,6 +63,8 @@ class Logger final : public ILog
 	std::thread::id m_mainThreadID;
 	std::vector<Message> m_messages;
 	std::vector<ILogCallback*> m_callbacks;
+
+	std::list<Message> m_paralogMessages;
 
 	static Logger s_globalInstance;
 
@@ -122,6 +130,8 @@ public:
 
 	void AddCallback(ILogCallback* callback) override;
 	void RemoveCallback(ILogCallback* callback) override;
+
+	void GetParalog(std::vector<Message>& outMessages);
 
 	////////////////////////////////////////////////////////////////////////////////
 

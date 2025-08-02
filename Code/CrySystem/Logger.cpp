@@ -14,6 +14,11 @@
 
 Logger Logger::s_globalInstance;
 
+static uint64_t Now() {
+	std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+	return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+}
+
 Logger::Logger()
 {
 	m_mainThreadID = std::this_thread::get_id();
@@ -417,6 +422,10 @@ void Logger::RegisterConsoleVariables()
 		"  %T = Equivalent to \"%H:%M:%S\" (the ISO 8601 time format)\n"
 		"  %t = Thread ID where the message was logged"
 	);
+
+	m_cvars.paralog = pConsole->RegisterInt("log_Paralog", m_paralog, VF_NOT_NET_SYNCED,
+		"Enable and set time-frame for parallel logging of all messages for debugging purposed."
+	);
 }
 
 void Logger::UnregisterConsoleVariables()
@@ -486,10 +495,18 @@ void Logger::PushMessageV(ILog::ELogType type, unsigned int flags, const char* f
 	const int currentVerbosity = GetVerbosityLevel();
 	const int requiredVerbosity = GetRequiredVerbosity(type);
 
+	bool logged = true;
+	const int paralog = m_cvars.paralog ? m_cvars.paralog->GetIVal() : 0;
+
 	if (currentVerbosity < requiredVerbosity)
 	{
-		// drop messages above the current verbosity level
-		return;
+		if (paralog <= 0) {
+			// drop messages above the current verbosity level
+			return;
+		} else {
+			// continue, but do not log the message into neither console or file, but still into paralog
+			logged = false;
+		}
 	}
 
 	const int currentFileVerbosity = (m_cvars.fileVerbosity) ? m_cvars.fileVerbosity->GetIVal() : currentVerbosity;
@@ -502,21 +519,37 @@ void Logger::PushMessageV(ILog::ELogType type, unsigned int flags, const char* f
 	Message message;
 	message.type = type;
 	message.flags = flags;
+	message.time = Now();
 
 	BuildMessagePrefix(message);
 	BuildMessageContent(message, format, args);
 
 	TracyMessage(message.content.data(), message.content.length());
 
-	if (std::this_thread::get_id() == m_mainThreadID)
-	{
-		WriteMessage(message);
-	}
-	else
-	{
+	if (paralog) {
 		std::lock_guard lock(m_mutex);
+		m_paralogMessages.push_back(message);
+		while (!m_paralogMessages.empty()) {
+			auto& first = m_paralogMessages.front();
+			if (message.time - first.time >= paralog * 1000) {
+				m_paralogMessages.pop_front();
+			} else {
+				break;
+			}
+		}
+	}
 
-		m_messages.emplace_back(std::move(message));
+	if (logged) {
+		if (std::this_thread::get_id() == m_mainThreadID)
+		{
+			WriteMessage(message);
+		}
+		else
+		{
+			std::lock_guard lock(m_mutex);
+
+			m_messages.emplace_back(std::move(message));
+		}
 	}
 }
 
@@ -684,5 +717,13 @@ void Logger::WriteMessageToConsole(const Message& message)
 	for (ILogCallback* callback : m_callbacks)
 	{
 		callback->OnWriteToConsole(message.content.c_str(), true);
+	}
+}
+
+
+void Logger::GetParalog(std::vector<Message>& outMessages) {
+	std::lock_guard guard(m_mutex);
+	for (auto& message : m_paralogMessages) {
+		outMessages.push_back(message);
 	}
 }

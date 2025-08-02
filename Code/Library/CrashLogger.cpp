@@ -8,6 +8,7 @@
 #include <psapi.h>
 
 #include "CrashLogger.h"
+#include "CrySystem/Logger.h"
 
 #ifdef BUILD_64BIT
 #define ADDR_FMT "%016I64X"
@@ -410,6 +411,20 @@ static void DumpCommandLine(std::FILE* file)
 	std::fflush(file);
 }
 
+
+static void DumpParalog(std::FILE* file) {
+	Logger& logger = Logger::GetInstance();
+	std::vector<Logger::Message> messages;
+	logger.GetParalog(messages);
+	if (!messages.empty()) {
+		std::fprintf(file, "Paralog:\n");
+		for (auto& message : messages) {
+			std::fprintf(file, "%s %s\n", message.prefix.c_str(), message.content.c_str());
+		}
+		fflush(file);
+	}
+}
+
 static void WriteDumpHeader(std::FILE* file)
 {
 	std::fprintf(file, "================================ CRASH DETECTED ================================\n");
@@ -434,6 +449,8 @@ static void WriteCrashDump(std::FILE* file, EXCEPTION_POINTERS* exception)
 	DumpCallStack(file, exception->ContextRecord);
 	DumpLoadedModules(file);
 	DumpCommandLine(file);
+
+	DumpParalog(file);
 
 	WriteDumpFooter(file);
 }
