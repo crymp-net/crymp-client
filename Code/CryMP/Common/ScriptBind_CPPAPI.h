@@ -31,6 +31,7 @@ public:
 	int URLEncode(IFunctionHandler *pH, const char *text);
 	int GetMasters(IFunctionHandler *pH);
 	int GetRenderType(IFunctionHandler* pH);
+	int Is64Bit(IFunctionHandler* pH);
 	int GetKeyName(IFunctionHandler* pH, const char* action);
 	int IsKeyUsed(IFunctionHandler* pH, const char* key);
 	int CreateKeyBind(IFunctionHandler* pH, const char* key, const char* action);
@@ -43,6 +44,7 @@ public:
 	int GetLP(IFunctionHandler* pH);
 	int GetNumVars(IFunctionHandler* pH);
 	int GetVars(IFunctionHandler* pH);
+	int GetProfiles(IFunctionHandler* pH);
 
 	int SetProfile(IFunctionHandler* pH, const char *type, const char* profileId, const char *token);
 	std::optional<SProfileInfo> GetProfile(const std::string& type);

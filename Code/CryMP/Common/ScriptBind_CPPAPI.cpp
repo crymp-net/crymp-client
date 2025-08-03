@@ -5,6 +5,7 @@
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 #include "CryCommon/CryAction/IVehicleSystem.h"
 #include "CryCommon/CryMath/Cry_Camera.h"
+#include "CryCommon/CryAction/IPlayerProfiles.h"
 #include "CrySystem/LocalizationManager.h"
 #include "CrySystem/RandomGenerator.h"
 #include "Library/StringTools.h"
@@ -51,6 +52,7 @@ ScriptBind_CPPAPI::ScriptBind_CPPAPI()
 	SCRIPT_REG_TEMPLFUNC(URLEncode, "text");
 	SCRIPT_REG_TEMPLFUNC(GetMasters, "");
 	SCRIPT_REG_FUNC(GetRenderType);
+	SCRIPT_REG_FUNC(Is64Bit);
 	SCRIPT_REG_TEMPLFUNC(GetKeyName, "action");
 	SCRIPT_REG_TEMPLFUNC(IsKeyUsed, "key");
 	SCRIPT_REG_TEMPLFUNC(CreateKeyBind, "key, command");
@@ -63,6 +65,7 @@ ScriptBind_CPPAPI::ScriptBind_CPPAPI()
 	SCRIPT_REG_FUNC(GetLP);
 	SCRIPT_REG_FUNC(GetNumVars);
 	SCRIPT_REG_FUNC(GetVars);
+	SCRIPT_REG_FUNC(GetProfiles);
 	SCRIPT_REG_TEMPLFUNC(SetProfile, "type, profileId, token");
 
 	// Localization
@@ -340,6 +343,15 @@ int ScriptBind_CPPAPI::GetRenderType(IFunctionHandler* pH)
 	return pH->EndFunction(static_cast<int>(gEnv->pRenderer->GetRenderType()));
 }
 
+int ScriptBind_CPPAPI::Is64Bit(IFunctionHandler* pH)
+{
+#ifdef BUILD_64BIT
+	return pH->EndFunction(true);
+#else
+	return pH->EndFunction(false);
+#endif
+}
+
 int ScriptBind_CPPAPI::GetKeyName(IFunctionHandler* pH, const char* action)
 {
 	IActionMapManager* pAM = gEnv->pGame->GetIGameFramework()->GetIActionMapManager();
@@ -516,6 +528,31 @@ int ScriptBind_CPPAPI::GetVars(IFunctionHandler* pH)
 	}
 	return pH->EndFunction(vars);
 }
+
+int ScriptBind_CPPAPI::GetProfiles(IFunctionHandler* pH)
+{
+	IPlayerProfileManager* pProfileManager = gEnv->pGame->GetIGameFramework()->GetIPlayerProfileManager();
+	if (!pProfileManager)
+	{
+		return pH->EndFunction();
+	}
+
+	const char* userName = gEnv->pSystem->GetUserName();
+	const int profileCount = pProfileManager->GetProfileCount(userName);
+
+	SmartScriptTable profiles(m_pSS);
+	for (int i = 0; i < profileCount; ++i)
+	{
+		IPlayerProfileManager::SProfileDescription desc;
+		if (pProfileManager->GetProfileInfo(userName, i, desc))
+		{
+			profiles->PushBack(desc.name);
+		}
+	}
+
+	return pH->EndFunction(profiles);
+}
+
 
 int ScriptBind_CPPAPI::SetProfile(IFunctionHandler* pH, const char* type, const char* profileId, const char* token) {
 	std::string strType{ type };
