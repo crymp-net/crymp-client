@@ -909,7 +909,9 @@ void COffHand::UpdateHeldObject()
 								{
 									GetScheduler()->Reset();
 								}
-								m_currentState = eOHS_HOLDING_OBJECT;
+
+								SetOffHandState(eOHS_HOLDING_OBJECT);
+
 								OnAction(GetOwnerId(), ActionId("use"), eAAM_OnPress, 0.0f);
 								OnAction(GetOwnerId(), ActionId("use"), eAAM_OnRelease, 0.0f);
 							}
@@ -1020,7 +1022,8 @@ void COffHand::UpdateGrabbedNPCState()
 			if (m_currentState & (eOHS_GRABBING_NPC | eOHS_HOLDING_NPC))
 			{
 				//Drop NPC
-				m_currentState = eOHS_HOLDING_NPC;
+				SetOffHandState(eOHS_HOLDING_NPC);
+
 				OnAction(GetOwnerId(), ActionId("use"), eAAM_OnPress, 0.0f);
 				OnAction(GetOwnerId(), ActionId("use"), eAAM_OnRelease, 0.0f);
 			}
@@ -1596,7 +1599,7 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 		break;
 
 	case eOHA_GRAB_NPC:
-		m_currentState = eOHS_HOLDING_NPC;
+		SetOffHandState(eOHS_HOLDING_NPC);
 		break;
 
 	case eOHA_THROW_NPC:
@@ -1605,11 +1608,11 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 
 		SetHeldEntityId(0);
 
-		m_currentState = eOHS_TRANSITIONING;
+		SetOffHandState(eOHS_TRANSITIONING);
 		break;
 
 	case eOHA_PICK_OBJECT:
-		m_currentState = eOHS_HOLDING_OBJECT;
+		SetOffHandState(eOHS_HOLDING_OBJECT);
 		break;
 
 	case eOHA_THROW_OBJECT:
@@ -1627,7 +1630,8 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 				pEntity->SetSlotLocalTM(0, m_intialBoidLocalMatrix);
 
 		}
-		m_currentState = eOHS_TRANSITIONING;
+
+		SetOffHandState(eOHS_TRANSITIONING);
 	}
 	break;
 
@@ -1678,11 +1682,14 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 
 	break;
 
-	case	eOHA_FINISH_MELEE:	if (m_heldEntityId)
+	case	eOHA_FINISH_MELEE:	
 	{
-		m_currentState = eOHS_HOLDING_OBJECT;
+		if (m_heldEntityId)
+		{
+			SetOffHandState(eOHS_HOLDING_OBJECT);
+		}
 	}
-							 break;
+	break;
 
 	case eOHA_FINISH_AI_THROW_GRENADE:
 	{
@@ -1762,7 +1769,8 @@ void COffHand::StartSwitchGrenade(bool xi_switch, bool fakeSwitch)
 	//CryMP: Optional animations
 	if ((gEnv->bMultiplayer && (!g_pGameCVars->mp_animationGrenadeSwitch || !m_stats.fp)) || xi_switch)
 	{
-		m_currentState = eOHS_SWITCHING_GRENADE;
+		SetOffHandState(eOHS_SWITCHING_GRENADE);
+
 		SetResetTimer(0.3f); //Avoid spamming keyboard issues
 		RequireUpdate(eIUS_General);
 		return;
@@ -1819,7 +1827,7 @@ void COffHand::StartSwitchGrenade(bool xi_switch, bool fakeSwitch)
 	}
 
 	//Change offhand state
-	m_currentState = eOHS_SWITCHING_GRENADE;
+	SetOffHandState(eOHS_SWITCHING_GRENADE);
 
 	if (fakeSwitch)
 		AttachGrenadeToHand(firstMode);
@@ -1863,7 +1871,9 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 		return;
 
 	if (activationMode == eAAM_OnPress)
-		m_currentState = eOHS_HOLDING_GRENADE;
+	{
+		SetOffHandState(eOHS_HOLDING_GRENADE);
+	}
 
 	//Throw objects...
 	if (throwableId && activationMode == eAAM_OnPress)
@@ -1876,15 +1886,21 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 				pPlayer->NotifyObjectGrabbed(false, throwableId, false);
 			}
 
-			m_currentState = eOHS_THROWING_OBJECT;
+			SetOffHandState(eOHS_THROWING_OBJECT);
+
 			CThrow* pThrow = static_cast<CThrow*>(m_fm);
-			pThrow->SetThrowable(throwableId, m_forceThrow, CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_THROW_OBJECT, this)));
+			pThrow->SetThrowable(throwableId, m_forceThrow, 
+				CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_THROW_OBJECT, this))
+			);
 		}
 		else
 		{
-			m_currentState = eOHS_THROWING_NPC;
+			SetOffHandState(eOHS_THROWING_NPC);
+
 			CThrow* pThrow = static_cast<CThrow*>(m_fm);
-			pThrow->SetThrowable(throwableId, true, CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_THROW_NPC, this)));
+			pThrow->SetThrowable(throwableId, true, 
+				CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_THROW_NPC, this))
+			);
 		}
 		m_forceThrow = false;
 
@@ -1940,7 +1956,7 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 		}
 		else if (m_currentState == eOHS_HOLDING_GRENADE)
 		{
-			m_currentState = eOHS_THROWING_GRENADE;
+			SetOffHandState(eOHS_THROWING_GRENADE);
 		}
 		else
 		{
@@ -2778,7 +2794,8 @@ void COffHand::StartPickUpItem()
 	//No animation in MP
 	if (gEnv->bMultiplayer)
 	{
-		m_currentState = eOHS_PICKING_ITEM2;
+		SetOffHandState(eOHS_PICKING_ITEM2);
+
 		pPlayer->PickUpItem(m_preHeldEntityId, true);
 		CancelAction();
 		return;
@@ -2798,7 +2815,8 @@ void COffHand::StartPickUpItem()
 	}
 
 	//Everything seems ok, start the action...
-	m_currentState = eOHS_PICKING_ITEM;
+	SetOffHandState(eOHS_PICKING_ITEM);
+
 	m_pickingTimer = 0.3f;
 	m_mainHandIsDualWield = false;
 	pPlayer->NeedToCrouch(pPreHeldEntity->GetWorldPos());
@@ -2871,7 +2889,7 @@ void COffHand::EndPickUpItem()
 	}
 
 	//Pick-up the item, and reset offhand
-	m_currentState = eOHS_PICKING_ITEM2;
+	SetOffHandState(eOHS_PICKING_ITEM2);
 
 	GetOwnerActor()->PickUpItem(m_heldEntityId, true);
 	SetIgnoreCollisionsWithOwner(false, m_heldEntityId);
@@ -2980,7 +2998,8 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 	}
 	if (!isLivingEnt)
 	{
-		m_currentState = eOHS_PICKING;
+		SetOffHandState(eOHS_PICKING);
+
 		m_pickingTimer = 0.3f;
 
 		//PerformPickUp();
@@ -2995,7 +3014,8 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 	}
 	else
 	{
-		m_currentState = eOHS_GRABBING_NPC;
+		SetOffHandState(eOHS_GRABBING_NPC);
+
 		m_grabType = GRAB_TYPE_NPC;
 		SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
 		PlayAction(m_grabTypes[m_grabType].pickup);
@@ -3376,7 +3396,8 @@ void COffHand::MeleeAttack()
 
 		CMelee* melee = static_cast<CMelee*>(m_melee);
 
-		m_currentState = eOHS_MELEE;
+		SetOffHandState(eOHS_MELEE);
+
 		m_melee->Activate(true);
 		if (melee)
 		{
