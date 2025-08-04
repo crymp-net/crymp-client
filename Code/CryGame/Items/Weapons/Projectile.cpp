@@ -56,6 +56,16 @@ CProjectile::~CProjectile()
 }
 
 //------------------------------------------------------------------------
+void CProjectile::DestroyObstructObject()
+{
+	if (m_pObstructObject)
+	{
+		gEnv->pPhysicalWorld->DestroyPhysicalEntity(m_pObstructObject);
+		m_pObstructObject = nullptr;
+	}
+}
+
+//------------------------------------------------------------------------
 bool CProjectile::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 {
 	//if (m_pAmmoParams->physicalizationType == ePT_None)
@@ -293,11 +303,12 @@ void CProjectile::ReInitFromPool()
 	else
 		GetEntity()->SetSlotFlags(0, GetEntity()->GetSlotFlags(0)|ENTITY_SLOT_RENDER);
 
+	DestroyObstructObject();
+
 	//Reset some members
 	m_remote=false;
 	m_totalLifetime=0.0f;
 	m_scaledEffectval=0.0f;
-	m_obstructObject=0;
 	m_scaledEffectSignaled=false;
 	m_hitListener=false;
 	m_hitPoints=-1;
@@ -698,13 +709,9 @@ void CProjectile::Destroy()
 
 	EndScaledEffect(m_pAmmoParams->pScaledEffect);
 
-	GetGameObject()->ReleaseProfileManager(this);
 	GetGameObject()->EnablePhysicsEvent(false, eEPE_OnCollisionLogged);
 
-	if (m_obstructObject)
-	{
-		gEnv->pPhysicalWorld->DestroyPhysicalEntity(m_obstructObject);
-	}
+	DestroyObstructObject();
 
 	if (m_hitListener)
 	{
@@ -1134,13 +1141,13 @@ void CProjectile::ScaledEffect(const SScaledEffectParams* pScaledEffect)
 			fadeOutAmt = max(fadeOutAmt, 0.0f);
 		}
 
-		if (!m_obstructObject && pScaledEffect->aiObstructionRadius != 0.0f)
+		if (!m_pObstructObject && pScaledEffect->aiObstructionRadius != 0.0f)
 		{
 			pe_params_pos pos;
 			pos.scale = 0.1f;
 			pos.pos = GetEntity()->GetWorldPos() + Vec3(0, 0, pScaledEffect->aiObstructionRadius / 4 * pos.scale);
-			m_obstructObject = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_STATIC, &pos);
-			if (m_obstructObject)
+			m_pObstructObject = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_STATIC, &pos);
+			if (m_pObstructObject)
 			{
 				primitives::sphere sphere;
 				sphere.center = Vec3(0, 0, 0);
@@ -1151,7 +1158,7 @@ void CProjectile::ScaledEffect(const SScaledEffectParams* pScaledEffect)
 				pe_geomparams params;
 				params.flags = geom_colltype14;
 				geometry->nRefCount = 0; // automatically delete geometry
-				m_obstructObject->AddGeometry(geometry, &params);
+				m_pObstructObject->AddGeometry(geometry, &params);
 			}
 		}
 		else
@@ -1159,7 +1166,7 @@ void CProjectile::ScaledEffect(const SScaledEffectParams* pScaledEffect)
 			pe_params_pos pos;
 			pos.scale = 0.1f + min(fadeInAmt, fadeOutAmt) * 0.9f;
 			pos.pos = GetEntity()->GetWorldPos() + Vec3(0, 0, pScaledEffect->aiObstructionRadius / 4.0f * pos.scale);
-			m_obstructObject->SetParams(&pos);
+			m_pObstructObject->SetParams(&pos);
 
 			// Signal the AI
 			if (gEnv->pAISystem && !m_scaledEffectSignaled && m_totalLifetime > (pScaledEffect->delay + pScaledEffect->fadeInTime))

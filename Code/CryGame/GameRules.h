@@ -1179,6 +1179,7 @@ protected:
 	int									m_currentStateId;
 
 	THitListenerVec     m_hitListeners;
+	THitListenerVec     m_hitListenersCopy;
 
 	CTimeValue					m_endTime;	// time the game will end. 0 for unlimited
 	CTimeValue					m_roundEndTime;	// time the round will end. 0 for unlimited

@@ -146,6 +146,8 @@ public:
 protected:
 	CWeapon *GetWeapon();
 
+	void DestroyObstructObject();
+
 	IEntitySoundProxy *GetSoundProxy();
 	template<typename T> T GetParam(const char *name, T &def)
 	{
@@ -198,7 +200,7 @@ protected:
 	bool m_noBulletHits = false;
 	bool m_hitListener = false;
 
-	IPhysicalEntity* m_obstructObject = nullptr;
+	IPhysicalEntity* m_pObstructObject = nullptr;
 
 	float m_spawnTime = 0.0f;
 	float m_lastUpdate = 0.0f;
