@@ -370,7 +370,7 @@ void COffHand::PostPostSerialize()
 	{
 		if (m_preHeldEntityId && !m_heldEntityId && m_startPickUp)
 		{
-			m_currentState = eOHS_PICKING;
+			SetOffHandState(eOHS_PICKING);
 			SetHeldEntityId(m_preHeldEntityId);
 		}
 
@@ -390,7 +390,7 @@ void COffHand::PostPostSerialize()
 				if (m_currentState & (eOHS_HOLDING_OBJECT | eOHS_PICKING | eOHS_THROWING_OBJECT | eOHS_MELEE))
 				{
 					//Do grabbing again
-					m_currentState = eOHS_INIT_STATE;
+					SetOffHandState(eOHS_INIT_STATE);
 					m_preHeldEntityId = m_heldEntityId;
 					PreExecuteAction(eOHA_USE, eAAM_OnPress, true);
 
@@ -399,7 +399,7 @@ void COffHand::PostPostSerialize()
 				else if (m_currentState & (eOHS_HOLDING_NPC | eOHS_GRABBING_NPC | eOHS_THROWING_NPC))
 				{
 					//Do grabbing again
-					m_currentState = eOHS_INIT_STATE;
+					SetOffHandState(eOHS_INIT_STATE);
 					CActor* pActor = static_cast<CActor*>(m_pActorSystem->GetActor(m_heldEntityId));
 					bool isDead = false;
 					if (pActor && ((pActor->GetActorStats() && pActor->GetActorStats()->isRagDoll) || pActor->GetHealth() <= 0))
@@ -434,10 +434,12 @@ void COffHand::PostPostSerialize()
 
 	if (needsReset)
 	{
-		m_mainHand = static_cast<CItem*>(GetOwnerActor()->GetCurrentItem());
-		m_mainHandWeapon = m_mainHand ? static_cast<CWeapon*>(m_mainHand->GetIWeapon()) : NULL;
+		SetMainHand(static_cast<CItem*>(GetOwnerActor()->GetCurrentItem()));
+		SetMainHandWeapon(m_mainHand ? static_cast<CWeapon*>(m_mainHand->GetIWeapon()) : nullptr);
+
 		m_mainHandIsDualWield = m_mainHand ? m_mainHand->IsDualWield() : false;
-		m_currentState = eOHS_TRANSITIONING;
+		
+		SetOffHandState(eOHS_TRANSITIONING);
 		FinishAction(eOHA_RESET);
 	}
 
@@ -1493,8 +1495,9 @@ bool COffHand::PreExecuteAction(int requestedAction, int activationMode, bool fo
 				SetBusy(false);
 			}
 		}
-		m_mainHand = pMain;
-		m_mainHandWeapon = pMainWeapon;
+		SetMainHand(pMain);
+		SetMainHandWeapon(pMainWeapon);
+
 		m_mainHandIsDualWield = false;
 
 		if (requestedAction == eOHA_THROW_GRENADE)
@@ -1502,11 +1505,14 @@ bool COffHand::PreExecuteAction(int requestedAction, int activationMode, bool fo
 			if (m_mainHand && m_mainHand->TwoHandMode() == 1)
 			{
 				GetOwnerActor()->HolsterItem(true);
-				m_mainHand = m_mainHandWeapon = NULL;
+
+				SetMainHand(nullptr);
+				SetMainHandWeapon(nullptr);
 			}
 			else if (m_mainHand && m_mainHand->IsDualWield() && m_mainHand->GetDualWieldSlave())
 			{
-				m_mainHand = static_cast<CItem*>(m_mainHand->GetDualWieldSlave());
+				SetMainHand(static_cast<CItem*>(m_mainHand->GetDualWieldSlave()));
+
 				m_mainHandIsDualWield = true;
 				m_mainHand->Select(false);
 			}
@@ -1514,8 +1520,8 @@ bool COffHand::PreExecuteAction(int requestedAction, int activationMode, bool fo
 	}
 	else if (requestedAction == eOHA_REINIT_WEAPON)
 	{
-		m_mainHand = pMain;
-		m_mainHandWeapon = pMainWeapon;
+		SetMainHand(pMain);
+		SetMainHandWeapon(pMainWeapon);
 	}
 
 	return exec;
@@ -1541,7 +1547,7 @@ void COffHand::NetStartFire()
 	//Handle FP Spectator
 	if (m_stats.fp)
 	{
-		m_mainHand = static_cast<CItem*>(GetOwnerActor()->GetCurrentItem());
+		SetMainHand(static_cast<CItem*>(GetOwnerActor()->GetCurrentItem()));
 		if (m_mainHand)
 		{
 			//if (!(m_currentState & (eOHS_THROWING_NPC | eOHS_THROWING_OBJECT)))
@@ -1603,7 +1609,9 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 		break;
 
 	case eOHA_THROW_NPC:
-		GetScheduler()->TimerAction(300, CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_RESET, this)), true);
+		GetScheduler()->TimerAction(300, 
+			CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_RESET, this)), 
+			true);
 		ThrowNPC(m_heldEntityId);
 
 		SetHeldEntityId(0);
@@ -1618,7 +1626,9 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 	case eOHA_THROW_OBJECT:
 	{
 		// after it's thrown, wait 500ms to enable collisions again
-		GetScheduler()->TimerAction(500, CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_RESET, this)), true);
+		GetScheduler()->TimerAction(500, 
+			CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_RESET, this)), 
+			true);
 
 		SetHeldEntityId(0);
 
@@ -1642,8 +1652,8 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 		if (m_prevMainHandId && !pActor->IsSwimming())
 		{
 			pActor->SelectItem(m_prevMainHandId, false);
-			m_mainHand = static_cast<CItem*>(pActor->GetCurrentItem());
-			m_mainHandWeapon = static_cast<CWeapon*>(m_mainHand ? m_mainHand->GetIWeapon() : NULL);
+			SetMainHand(static_cast<CItem*>(pActor->GetCurrentItem()));
+			SetMainHandWeapon(static_cast<CWeapon*>(m_mainHand ? m_mainHand->GetIWeapon() : nullptr));
 		}
 
 		if (pActor->IsClient())
@@ -1725,12 +1735,26 @@ void COffHand::SetOffHandState(EOffHandStates eOHS)
 
 	if (eOHS & eOHS_INIT_STATE)
 	{
-		m_mainHand = m_mainHandWeapon = nullptr;
+		SetMainHand(nullptr);
+		SetMainHandWeapon(nullptr);
+
 		m_preHeldEntityId = 0;
 		SetHeldEntityId(0);
 		m_mainHandIsDualWield = false;
 		Select(false);
 	}
+}
+
+//==============================================================================
+void COffHand::SetMainHand(CItem *pItem)
+{
+	m_mainHand = pItem;
+}
+
+//==============================================================================
+void COffHand::SetMainHandWeapon(CWeapon* pWeapon)
+{
+	m_mainHandWeapon = pWeapon;
 }
 
 //==============================================================================
@@ -1814,14 +1838,17 @@ void COffHand::StartSwitchGrenade(bool xi_switch, bool fakeSwitch)
 		//No main item or holstered (wait 100ms)
 		if (m_mainHand && m_mainHand->IsDualWield() && m_mainHand->GetDualWieldSlave())
 		{
-			m_mainHand = static_cast<CItem*>(m_mainHand->GetDualWieldSlave());
+			SetMainHand(static_cast<CItem*>(m_mainHand->GetDualWieldSlave()));
+
 			m_mainHand->Select(false);
 			m_mainHandIsDualWield = true;
 		}
 		else
 		{
 			GetOwnerActor()->HolsterItem(true);
-			m_mainHand = m_mainHandWeapon = NULL;
+
+			SetMainHand(nullptr);
+			SetMainHandWeapon(nullptr);
 		}
 		GetScheduler()->TimerAction(100, CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_SWITCH_GRENADE, this)), false);
 	}
@@ -2824,7 +2851,9 @@ void COffHand::StartPickUpItem()
 	if (m_mainHand && (m_mainHand->TwoHandMode() == 1 || drop_success))
 	{
 		GetOwnerActor()->HolsterItem(true);
-		m_mainHand = m_mainHandWeapon = NULL;
+
+		SetMainHand(nullptr);
+		SetMainHandWeapon(nullptr);
 	}
 	else
 	{
@@ -2832,7 +2861,8 @@ void COffHand::StartPickUpItem()
 		{
 			if (m_mainHand->IsDualWield() && m_mainHand->GetDualWieldSlave())
 			{
-				m_mainHand = static_cast<CItem*>(m_mainHand->GetDualWieldSlave());
+				SetMainHand(static_cast<CItem*>(m_mainHand->GetDualWieldSlave()));
+
 				m_mainHand->Select(false);
 				m_mainHandIsDualWield = true;
 			}
@@ -2954,14 +2984,17 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 		if (m_grabTypes[m_grabType].twoHanded)
 		{
 			GetOwnerActor()->HolsterItem(true);
-			m_mainHand = m_mainHandWeapon = NULL;
+			
+			SetMainHand(nullptr);
+			SetMainHandWeapon(nullptr);
 		}
 		else
 		{
 			m_prevMainHandId = m_mainHand->GetEntityId();
 			GetOwnerActor()->SelectItemByName("Fists", false);
-			m_mainHand = GetActorItem(GetOwnerActor());
-			m_mainHandWeapon = static_cast<CWeapon*>(m_mainHand ? m_mainHand->GetIWeapon() : NULL);
+
+			SetMainHand(GetActorItem(GetOwnerActor()));
+			SetMainHandWeapon(static_cast<CWeapon*>(m_mainHand ? m_mainHand->GetIWeapon() : nullptr));
 		}
 	}
 
@@ -2976,7 +3009,8 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 
 		if (m_mainHand->IsDualWield() && m_mainHand->GetDualWieldSlave())
 		{
-			m_mainHand = static_cast<CItem*>(m_mainHand->GetDualWieldSlave());
+			SetMainHand(static_cast<CItem*>(m_mainHand->GetDualWieldSlave()));
+
 			m_mainHand->Select(false);
 			m_mainHandIsDualWield = true;
 		}
@@ -3563,7 +3597,6 @@ EntityId COffHand::SpawnRockProjectile(IRenderNode* pRenderNode)
 	pRock->SetSequence(GenerateShootSeqN());
 
 	pRock->Launch(statObjMtx.GetTranslation(), Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, 0.0f), 1.0f);
-
 
 	SEntityPhysicalizeParams params;
 	params.type = PE_RIGID;

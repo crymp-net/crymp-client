@@ -147,6 +147,8 @@ public:
 	virtual void GetMemoryStatistics(ICrySizer* s) { s->Add(*this); CWeapon::GetMemoryStatistics(s); }
 
 	void  SetOffHandState(EOffHandStates eOHS);
+	void SetMainHand(CItem* pItem);
+	void SetMainHandWeapon(CWeapon* pWeapon);
 	ILINE int  GetOffHandState() { return m_currentState; }
 	void  FinishAction(EOffHandActions eOHA);
 	virtual void Freeze(bool freeze);
