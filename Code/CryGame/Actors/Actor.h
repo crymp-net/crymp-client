@@ -1103,6 +1103,7 @@ public:
 	CWeapon* GetCurrentWeapon(bool includeVehicle/*=false*/) const;
 	EntityId GetCurrentItemId(bool includeVehicle = false) const;
 	virtual IItem* GetHolsteredItem() const;
+	EntityId GetHolsteredItemId() const;
 
 	IInteractor* GetInteractor() const;
 

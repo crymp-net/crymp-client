@@ -1891,13 +1891,13 @@ void COffHand::PerformThrow(float speedScale)
 		CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_FINISH_AI_THROW_GRENADE, this)), false);
 }
 
-//===============================================================================
+//==============================================================================
 void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMId /* = 0 */, bool isLivingEnt /*=false*/)
 {
 	if (!m_fm)
 		return;
 
-	if (activationMode == eAAM_OnPress)
+	if (!throwableId and activationMode == eAAM_OnPress)
 	{
 		SetOffHandState(eOHS_HOLDING_GRENADE);
 	}
@@ -1916,7 +1916,7 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 			SetOffHandState(eOHS_THROWING_OBJECT);
 
 			CThrow* pThrow = static_cast<CThrow*>(m_fm);
-			pThrow->SetThrowable(throwableId, m_forceThrow, 
+			pThrow->SetThrowable(throwableId, m_forceThrow,
 				CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_THROW_OBJECT, this))
 			);
 		}
@@ -1925,7 +1925,7 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 			SetOffHandState(eOHS_THROWING_NPC);
 
 			CThrow* pThrow = static_cast<CThrow*>(m_fm);
-			pThrow->SetThrowable(throwableId, true, 
+			pThrow->SetThrowable(throwableId, true,
 				CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_THROW_NPC, this))
 			);
 		}
@@ -2003,7 +2003,7 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 	}
 }
 
-//--------------
+//===============================================================================
 int COffHand::CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity /*=NULL*/, bool getEntityInfo /*= false*/)
 {
 	if (!pActor || (!pActor->IsClient() && !pActor->IsFpSpectatorTarget())) //CryMP Fp Spec enable pickup HUD 

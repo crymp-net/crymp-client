@@ -4946,18 +4946,32 @@ bool CPlayer::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile,
 		ser.Value("frozen", isFrozen, 'bool');
 		ser.Value("frozenAmount", m_frozenAmount, 'frzn');
 	}
+
 	if (aspect == ASPECT_CURRENT_ITEM)
 	{
-		bool reading = ser.IsReading();
-		bool hasWeapon = false;
-		if (!reading)
-			hasWeapon = NetGetCurrentItem() != 0;
+		bool bReading = ser.IsReading();
+		EntityId currentItemId = 0;
 
-		ser.Value("hasWeapon", hasWeapon, 'bool');
-		ser.Value("currentItemId", static_cast<CActor*>(this), &CActor::NetGetCurrentItem, &CActor::NetSetCurrentItem, /* 'eid' */0x00656964);
+		if (!bReading)
+		{
+			currentItemId = NetGetCurrentItem();
+		}
 
-		if (reading && hasWeapon && NetGetCurrentItem() == 0) // fix the case where this guy's weapon might not have been bound on this client yet
-			ser.FlagPartialRead();
+		bool isCurrentItemValid = currentItemId ? true : false;
+
+		ser.Value("hasWeapon", isCurrentItemValid, 'bool');
+		ser.Value("currentItemId", currentItemId, 'eid');
+
+		if (bReading)
+		{
+			 //CryMP: Supports net-synched holstered items
+			 NetSetCurrentItem(currentItemId);
+
+			 if (isCurrentItemValid && NetGetCurrentItem() == 0) // fix the case where this guy's weapon might not have been bound on this client yet
+			 {
+				 ser.FlagPartialRead();
+			 }
+		}
 	}
 
 	if (m_pNanoSuit)													// nanosuit needs to be serialized before input

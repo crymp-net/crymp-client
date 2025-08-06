@@ -3339,6 +3339,16 @@ IItem* CActor::GetHolsteredItem() const
 }
 
 //------------------------------------------------------------------------
+EntityId CActor::GetHolsteredItemId() const
+{
+	IInventory* pInventory = GetInventory();
+	if (!pInventory)
+		return 0;
+
+	return pInventory->GetHolsteredItem();
+}
+
+//------------------------------------------------------------------------
 IInventory* CActor::GetInventory() const
 {
 	if (!m_pInventory)
@@ -3368,6 +3378,21 @@ EntityId CActor::NetGetCurrentItem() const
 void CActor::NetSetCurrentItem(EntityId id)
 {
 	SelectItem(id, false);
+	if (id == 0)
+	{
+		HolsterItem(true);
+	}
+	else
+	{
+		if (GetHolsteredItemId() == id)
+		{
+			HolsterItem(false);
+		}
+		else
+		{
+			SelectItem(id, false);
+		}
+	}
 }
 
 //------------------------------------------------------------------------
