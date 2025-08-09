@@ -84,6 +84,7 @@ IEntityClass* CItem::sHurricaneClass = 0;
 IEntityClass* CItem::sDoorClass = 0;
 IEntityClass* CItem::sElevatorSwitchClass = 0;
 IEntityClass* CItem::sFlagClass = 0;
+IEntityClass* CItem::sGeomEntityClass = 0;
 //vehicles
 IEntityClass* CItem::sAsian_apc = 0;
 IEntityClass* CItem::sAsian_helicopter = 0;
@@ -256,6 +257,7 @@ bool CItem::Init(IGameObject* pGameObject)
 		sLockpickKitClass = pRegistry->FindClass("LockpickKit");
 		sHurricaneClass = pRegistry->FindClass("Hurricane");
 		sFlagClass = pRegistry->FindClass("Flag");
+		sGeomEntityClass = pRegistry->FindClass("GeomEntity");
 		sAsian_apc = pRegistry->FindClass("Asian_apc");
 		sAsian_helicopter = pRegistry->FindClass("Asian_helicopter");
 		sAsian_truck = pRegistry->FindClass("Asian_truck");

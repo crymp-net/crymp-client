@@ -1385,6 +1385,7 @@ public:
 	static IEntityClass*	sDoorClass;
 	static IEntityClass*	sElevatorSwitchClass;
 	static IEntityClass*	sFlagClass;
+	static IEntityClass*    sGeomEntityClass;
 	static IEntityClass*    sAsian_apc;
 	static IEntityClass*	sAsian_helicopter;
 	static IEntityClass*	sAsian_truck;
