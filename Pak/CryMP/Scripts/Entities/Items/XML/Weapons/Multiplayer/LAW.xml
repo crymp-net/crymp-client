@@ -1,0 +1,243 @@
+<item name="LAW" class="RocketLauncher" category="heavy" priority="0" uniqueId="2" configuration="mp" >
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="1" />
+		<param name="pose" 				value="rocket" />
+		<param name="mass"				value="45" />
+		<param name="two_hand"				value="1" />
+		<param name="melee_attack_firemode"		value="melee" />
+		<param name="prone_not_usable" value="1" />
+		<param name="raiseable"		value="true" />
+		<param name="raise_distance" value="0.90" />
+		<param name="auto_droppable" value="1" />
+		<param name="has_first_select" value="1" />
+		<param name="display_name"	value="@mp_eML" />
+	</params>
+	<ai_descriptor handler="projectile_fast" speed="20" damage_radius="10" charge_time="0" signal_on_shoot="1" />
+	<ammos>
+		<ammo name="rocket" extra="0" amount="3" />
+	</ammos>
+	<geometry>
+		<firstperson name="objects/weapons/us/law/law_fp.chr" angles="0,0,0" />
+		<thirdperson name="objects/weapons/us/law/law_tp.cgf" angles="0,0,0" />
+		<thirdpersonAux name="objects/weapons/us/law/law_tp_closed.cgf" />
+		<aux1 name="objects/effects/beam_laser_02.cgf" />
+		<boneAttachments>
+			<attachment target="firstperson" name="muzzle_flash_effect" bone="weapon_term" />
+			<attachment target="firstperson" name="muzzle_flash_light" bone="weapon_term" />
+			<attachment target="firstperson" name="muzzle_flash_effect" bone="weapon_term" />
+			<attachment target="firstperson" name="muzzle_flash_light" bone="weapon_term" />	
+			<attachment target="firstperson" name="scope_term" bone="scope_term" />
+		</boneAttachments>
+	</geometry>
+	<actions>
+		<action name="select">
+			<animation target="firstperson" name="select_02" speed="0.65"/>
+			<animation target="owner" name="select" />
+			<sound target="thirdperson" name="sounds/weapons:law:select" radius="10" />
+		</action>
+		<action name="first_select">
+			<animation target="firstperson" name="select_01" />
+			<animation target="owner" name="first_select" />
+			<sound target="thirdperson" name="sounds/weapons:law:select" radius="10" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_01" />
+			<animation target="owner" name="deselect" />
+			<sound target="firstperson" name="sounds/weapons:law:deselect" radius="10" />
+			<sound target="thirdperson" name="sounds/weapons:law:deselect" radius="10" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_%suffix%01" speed="0.7" />
+			<animation target="owner" name="idle" />
+		</action>
+		
+		<action name="pickedup">
+			<sound target="firstperson" name="Sounds/weapons:weapon_accessories:pickup_weapon_fp" radius="5" />
+			<sound target="thirdperson" name="Sounds/weapons:weapon_accessories:pickup_weapon" radius="5" />
+		</action>
+
+		<action name="fire">
+			<animation target="firstperson" name="fire_rockets_%suffix%01" />
+			<animation target="owner" name="shoot" />
+			<sound target="firstperson" name="sounds/weapons:law:fire_fp" radius="150" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:law:fire" radius="150" static="1" />
+		</action>
+	
+		<action name="reload">
+			<animation target="firstperson" name="reload_01" />
+			<animation target="owner" name="reload" />
+			<!--<sound target="thirdperson" name="sounds/weapons:law:reload" radius="10" />-->
+		</action>
+		<action name="empty_clip">
+			<sound target="firstperson" name="Sounds/weapons:law:dryfire_fp" radius="5" />
+			<sound target="thirdperson" name="Sounds/weapons:law:dryfire" radius="5" />
+		</action>
+
+		<action name="zoom_in">
+			<animation target="firstperson" name="scope_zoom_01" speed="2.25" />
+		</action>
+		<action name="zoom_out">
+			<animation target="firstperson" name="scope_zoomout_01" speed="2.25" />
+		</action>
+		
+		<action name="melee">
+			<animation target="firstperson" name="melee_01" />
+			<animation target="owner" name="melee" />
+			<!--<sound target="thirdperson" name="sounds/weapons:melee:fire" radius="5" />-->
+		</action>
+		
+		<action name="raise">
+			<animation target="firstperson" name="raise_%hand%_%suffix%01" />
+		</action>
+		
+		<action name="idle_raised">
+			<animation target="firstperson" name="idle_raised_%hand%_%suffix%01" />
+		</action>
+		
+		<action name="lower">
+			<animation target="firstperson" name="lower_%hand%_%suffix%01" />
+		</action>
+		
+	</actions>
+	<!--<layers>
+		<layer name="zoomed">
+			<animation target="firstperson" name="scope_zoom_layered_01" layerId="1" />
+			<bones>
+				<bone name="root" />
+			</bones>
+		</layer>
+	</layers>-->
+	<firemodes>
+		<firemode type="default">
+			<fire>
+				<param name="ammo_type" value="rocket" />
+				<param name="rate" value="20" />
+				<param name="clip_size" value="3" />
+				<param name="max_clips" value="0" />
+				<param name="damage" value="150" />
+			</fire>
+			<recoil>
+        <param name="max_recoil" value="10" />
+        <param name="attack" value="10" />
+        <param name="decay" value="0.35" />
+        <param name="maxx" value="3" />
+        <param name="maxy" value="3" />
+        <param name="randomness" value="3" />
+				<hints>
+					<hint x="1" 		y="0.00" />
+					<hint x="0.85" 	y="0.00" />
+				</hints>
+			</recoil>	
+			<spread>
+        <param name="min" value="1.75" />
+        <param name="max" value="4.75" />
+        <param name="attack" value="3" />
+        <param name="decay" value="0.95" />
+        <param name="speed_m" value="0.85" />
+        <param name="rotation_m" value="0" />
+			</spread>
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Rocketlauncher.LAW" helper="muzzle_flash_effect" light_helper="muzzle_flash_light" light_radius="2.5" time="0.500" light_color="1,1,0.8" light_diffuse_mult="8" />
+				<thirdperson effect="muzzleflash.Rocketlauncher.LAW_tp" helper="weapon_term" light_helper="weapon_term"  light_radius="2.5" time="0.500" light_color="1,1,0.8" light_diffuse_mult="8" />
+			</muzzleflash>
+			<recoil>
+				<param name="angular_impulse" value="1.2" />
+				<param name="back_impulse" value="3.0" />
+			</recoil>
+		</firemode>
+		<firemode name="Single" type="Single">
+			<fire>
+				<param name="autoaim" value="false" />
+				<param name="autoaim_zoom" value="true" />
+				<param name="autoaim_locktime" value="1.0" />
+				<param name="autoaim_distance" value="500" />
+				<param name="autoaim_tolerance" value="90" />				
+				<param name="autoaim_minvolume" value="16" />
+			  <param name="autoaim_maxvolume" value="8192" />				
+			  <param name="autoaim_autofiringdir" value="false" />
+			  <param name="autoaim_timeout" value="true" />
+			 </fire>
+		</firemode>
+		<firemode name="melee" type="Melee">
+			<melee>
+				<param name="helper" value="collision" />
+				<param name="offset" value="0.35" />
+				<param name="damage" value="75" />
+				<param name="impulse" value="80" />
+				<param name="delay" value="0.10" />
+				<param name="duration" value="0.45" />
+			</melee>
+			<actions>
+				<param name="attack" value="melee" />
+			</actions>
+		</firemode>
+	</firemodes>
+	<zoommodes>
+		<zoommode name="Scope" type="Scope">
+			<zoom>
+				<param name="suffix" value="scope_" />
+				<param name="blur_amount" value="1" />
+				<param name="blur_mask" value="textures/weapons/assaultscope_blur.dds" />
+				<param name="dof_mask" value="textures/weapons/assaultscope_blur.dds" />
+				<param name="zoom_in_time" value="0.15" />
+				<param name="zoom_out_time" value="0.125" />
+				<param name="scope_mode" value="1" />
+				<param name="scope_nearFov" value="10" />
+				<param name="scope_offset" value="-0.001,0.0,-0.02" />
+				<stages>
+					<stage value="3.5" />
+				</stages>
+			</zoom>
+			<zoomSway>
+				<param name="maxX" value="0.012" />
+				<param name="maxY" value="0.015" />
+				<param name="stabilizeTime" value="1.5"/>
+				<param name="minScale" value="0.2"/>
+				<param name="strengthScale" value="0.66"/>
+				<param name="strengthScaleTime" value="0.66"/>
+				<param name="crouchScale" value="0.66"/>
+				<param name="proneScale" value="0.66"/>
+			</zoomSway>
+			<scope>
+				<param name="scope" value="scope_assault" />
+				<param name="dark_in_time" value="0.15" />
+				<param name="dark_out_time" value="0.125" />
+			</scope>
+      <spreadMod>
+        <param name="max_mod" value="1.0"/>
+        <param name="attack_mod" value="1.0"/>
+        <param name="decay_mod" value="1.0"/>
+        <param name="speed_m_mod" value="4.0" />
+        <param name="min_mod" value="0.002"/>
+        <param name="rotation_m_mod" value="0"/>
+        <param name="spread_crouch_m_mod" value="0.66"/>
+        <param name="spread_prone_m_mod" value="0.33"/>
+        <param name="spread_jump_m_mod" value="2.5"/>
+      </spreadMod>
+      <recoilMod>
+        <param name="max_recoil_mod" value="1.0" />
+        <param name="attack_mod" value="1.0" />
+        <param name="decay_mod" value="1.0" />
+        <param name="impulse_mod" value="1.0" />
+        <param name="maxx_mod" value="0.85" />
+        <param name="maxy_mod" value="0.85" />
+        <param name="angular_impulse_mod" value="1.0" />
+        <param name="back_impulse_mod" value="1.0" />
+        <param name="recoil_crouch_m_mod" value="0.66" />
+        <param name="recoil_prone_m_mod" value="0.33" />
+        <param name="recoil_jump_m_mod" value="2.5" />
+        <param name="recoil_strMode_m_mod" value="0.66" />
+      </recoilMod>
+		</zoommode>
+	</zoommodes>
+	<accessories>
+		<initialsetup>
+			<accessory name="LAWScope" />
+		</initialsetup>
+		<accessory name="LAWScope">
+			<attach helper="scope_term" layer="" />
+			<detach />
+		</accessory>
+	</accessories>
+</item>

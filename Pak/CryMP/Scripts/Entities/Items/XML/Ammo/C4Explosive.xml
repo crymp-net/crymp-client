@@ -1,0 +1,39 @@
+<ammo name="c4explosive" class="C4Projectile" script="scripts/entities/items/explosive.lua">
+	<geometry>
+		<firstperson name="objects/weapons/us/c4/c4_tp.cgf" />
+		<thirdperson name="objects/weapons/us/c4/c4_tp.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="rigid">
+		<param name="mass" value="30" />
+		<param name="speed" value="4" />
+		
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, -9.8" />
+		<param name="water_gravity" value="0, 0, -9.8" />
+
+	</physics>
+	<explosion>
+		<param name="pressure" value="2000" />
+		<param name="min_radius" value="3" />
+		<param name="max_radius" value="12" />
+		<param name="min_phys_radius" value="2.2" />
+		<param name="max_phys_radius" value="3" />
+		<param name="hole_size" value="2" />
+		<param name="terrain_hole_size" value="5" />
+		<param name="effect_scale" value="2" />
+		<param name="radialblurdist" value="65" />
+		<param name="type" value="c4" />
+	</explosion>
+	<params>
+		<param name="lifetime" value="0" />
+		<param name="showtime" value="0" />
+		<param name="hitPoints" value="100" />
+		<param name="quietRemoval" value="1" />
+		<param name="noBulletHits" value="1" />
+	</params>
+</ammo>

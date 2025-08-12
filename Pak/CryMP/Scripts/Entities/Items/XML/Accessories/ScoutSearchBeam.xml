@@ -1,0 +1,27 @@
+<item name="ScoutSearchBeam" class="LAM">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="1" />
+		<param name="droppable" value="0" />
+	</params>
+	<lam>	  
+    <firstperson light_range="0" laser_effect="" />
+    <thirdperson light_range="40" light_fov="20" light_color="2,2,2" light_diffuse_mul="10" light_texture="textures/lights/alien_turret.dds" light_material="materials/lightbeams/lightbeam_floodlight.mtl" light_hdr_dyn="2" laser_effect="" />	  
+	</lam>
+	<geometry>	
+	</geometry>
+	<actions>
+	  <action name="enable_light">
+	    <sound target="firstperson" name="Sounds/alien:scout:searchbeam_start" />	
+			<sound target="thirdperson" name="Sounds/alien:scout:searchbeam_start" />		
+	  </action>
+	  <action name="disable_light">
+	    <sound target="firstperson" name="Sounds/alien:scout:searchbeam_stop" />	
+			<sound target="thirdperson" name="Sounds/alien:scout:searchbeam_stop" />		
+	  </action>
+	  <action name="use_light">
+	    <sound target="firstperson" name="Sounds/alien:scout:searchbeam_loop" />	
+			<sound target="thirdperson" name="Sounds/alien:scout:searchbeam_loop" />		
+	  </action>
+	</actions>
+</item>

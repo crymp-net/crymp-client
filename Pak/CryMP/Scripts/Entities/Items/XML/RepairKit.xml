@@ -1,0 +1,78 @@
+<item name="RepairKit" class="Weapon" category="utility" priority="40" uniqueId="1">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="1" />
+		<param name="droppable" 	value="1" />
+		<param name="pose" 				value="lockpick" />
+		<param name="mass"				value="4" />
+		<param name="raiseable"		value="true" />
+		<param name="raise_distance" value="0.60" />
+		<param name="uniqueId" value="1" />
+		<param name="display_name"	value="@mp_eRepair" />		
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/equipment/repair_kit/repair_kit_fp.chr" angles="0,0,0" />
+		<thirdperson name="objects/weapons/equipment/repair_kit/repair_kit_tp.cgf" />
+		
+		<boneAttachments>
+			<attachment target="firstperson" name="weapon_term" bone="weapon_term" />
+			<attachment target="firstperson" name="beam_emitter" bone="weapon_term" />
+		</boneAttachments>		
+	</geometry>
+	<actions>
+	
+		<action name="select">
+			<animation target="firstperson" name="select_01" />
+			<animation target="owner" name="select" />
+			<sound target="thirdperson" name="sounds/weapons:moar_small:select" radius="5" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_01" />
+			<animation target="owner" name="deselect" />
+			<sound target="thirdperson" name="sounds/weapons:moar_small:deselect" radius="5" />
+		</action>
+
+		<action name="idle">
+			<animation target="firstperson" name="idle_01" />
+			<animation target="owner" name="idle" />
+			<animation target="ownerloop" name="idle" />
+		</action>
+	
+		<action name="work">
+			<animation target="firstperson" name="fire_01" />
+			<animation target="ownerloop" name="use_lockpick" />
+			
+			<sound target="firstperson" name="Sounds/weapons:repairkit:repairkit_fire_fp" radius="25" />
+			<sound target="thirdperson" name="sounds/weapons:repairkit:repairkit_fire" radius="25" />
+		</action>
+	
+		<action name="raise">
+			<animation target="firstperson" name="raise_%hand%_%suffix%01" />
+		</action>
+		
+		<action name="idle_raised">
+			<animation target="firstperson" name="idle_raised_%hand%_%suffix%01" />
+		</action>
+		
+		<action name="lower">
+			<animation target="firstperson" name="lower_%hand%_%suffix%01" />
+		</action>
+	
+	</actions>
+	<firemodes>
+		<firemode name="Repair" type="WorkOnTarget">
+			<work>
+				<param name="work_type" value="repair" />
+				<param name="range" 		value="2.5" />
+				<param name="amount" 		value="100" />
+				<param name="delay" 		value="0.2" />
+				<effect>
+					<firstperson effect="muzzleflash.repairkit.not_repairing" helper="beam_emitter" />
+					<thirdperson effect="muzzleflash.repairkit.not_repairing_tp" helper="weapon_term" />
+				</effect>				
+			</work>
+		</firemode>
+	</firemodes>
+	<zoommodes>
+	</zoommodes>
+</item>

@@ -1,0 +1,11 @@
+<item name="Reflex" class="Item" priority="101">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/attachments/reflex_rifle/reflex_rifle_fp.cgf"/>
+		<thirdperson name="objects/weapons/attachments/reflex_rifle/reflex_rifle_tp.cgf" />
+	</geometry>
+</item>

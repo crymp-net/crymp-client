@@ -1,0 +1,10 @@
+<item name="OffhandSmoke" class="Item" invisible="1" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0'" />
+		<param name="droppable" 	value="0" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/us/smoke grenade/smoke_grenade.cgf"/>
+	</geometry>
+</item>

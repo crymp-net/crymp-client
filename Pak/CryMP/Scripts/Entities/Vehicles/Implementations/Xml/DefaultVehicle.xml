@@ -1,0 +1,40 @@
+<Vehicle filename="Objects/Default.cgf" name="DefaultVehicle" >
+  <Physics pushable="1" collDamageThreshold="0">
+    <Buoyancy waterDensity="0" waterResistance="0" />
+  </Physics>
+  <Components />
+  <Parts>
+    <Part class="Static" disableCollision="0" mass="100" name="body">
+    	<Static filename="Objects/Default.cgf" geometry="" />
+      <Helpers>        
+      </Helpers>
+    </Part>
+  </Parts>
+  <Seats>
+    <Seat AimPart="" enterHelper="" isDriver="1" name="driver" part="" sitHelper="" useBoundsForEntering="1" >
+      <Views>
+        <View class="FirstPerson" canRotate="0">
+          <FirstPerson helper="" />
+        </View>
+        <View class="ThirdPerson" canRotate="0">
+          <ThirdPerson distance="5" heightOffset="1" speed="5" />
+        </View>
+      </Views>
+      <Weapons>
+        <Primary />
+      </Weapons>
+      <ActionParts />
+    </Seat>
+  </Seats>
+  <DamageExtensions fallingDamageThreshold="-15" />
+  <MovementParams />
+  <Particles>
+    <Exhaust insideWater="0" outsideWater="1" >
+      <Helpers />
+      <EngineStart effect="" />
+      <EngineStop effect="" />
+      <EngineRunning baseSizeScale="1" effect="" boostEffect="" maxPower="1" maxPowerCountScale="1" maxPowerSizeScale="1" maxSpeed="20" minPower="0" minPowerCountScale="1" minPowerSizeScale="1" minSpeed="0" minSpeedCountScale="1" minSpeedSizeScale="1" maxSpeedCountScale="1" maxSpeedSizeScale="1"/>
+    </Exhaust>
+    <DamageEffects />
+  </Particles>
+</Vehicle>

@@ -1,0 +1,54 @@
+<ammo name="homingmissile" class="HomingMissile">
+	<geometry>
+		<firstperson name="objects/weapons/rockets/sidewinder/sidewinder.cgf" />
+		<thirdperson name="objects/weapons/rockets/sidewinder/sidewinder.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="5" />
+		<param name="speed" value="18" />
+		<param name="radius" value="0.15" />
+		
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, 0" />
+		<param name="water_gravity" value="0, 0, 0" />
+		
+		<param name="thrust" value="0" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="16" />
+		<param name="material" value="mat_metal" />
+	
+		<param name="single_contact" value="1" />
+		<param name="pierceability" value="8" />
+	</physics>
+	<explosion>
+		<param name="pressure" value="1000" />
+		<param name="max_radius" value="15" />
+		<param name="hole_size" value="5" />
+		<param name="terrain_hole_size" value="10" />
+		<param name="decal" value="textures/decal/explo_decal.dds" />
+		<param name="effect" value="explosions.rocket_terrain.explosion" />
+		<param name="effect_scale" value="0.6" />
+	</explosion>
+	<params>
+		<param name="lifetime" value="30" />
+		<param name="showtime" value="0.15" />
+		<param name="accel" value="20" />
+		<param name="turn_speed" value="100" />
+		<param name="max_speed" value="120" />
+		<param name="cruise_altitude" value="80" />
+		<param name="align_altitude" value="25" />
+		<param name="descend_distance" value="75" />		
+	</params>
+	
+	<trail>
+		<param name="effect" value="smoke_and_fire.weapon_Rocket.Trail" />
+		<param name="scale" value="1" />
+		<param name="sound" value="sounds/physics:bullet_whiz:missile_whiz_loop" />
+	</trail>	
+	
+</ammo>

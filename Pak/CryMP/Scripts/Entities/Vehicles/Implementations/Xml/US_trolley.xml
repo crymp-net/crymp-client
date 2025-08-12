@@ -1,0 +1,95 @@
+<Vehicle name="US_trolley" actionMap="landvehicle">
+  <Physics pushable="1" >
+    <Buoyancy waterDensity="0" waterResistance="0" />
+    <Simulation maxLoggedCollisions="2" maxTimeStep="0.02" minEnergy="0.002" />
+  </Physics>
+  <Components>
+    <Component damageMax="0" major="0" maxBound="-0.24,-2.47,1.082" minBound="0.243,-2.304,1.198" name="Handle" useBoundsFromParts="0" >
+      <DamageBehaviors />
+    </Component>
+  </Components>
+  <Parts>
+    <Part class="Animated" disableCollision="0" disablePhysics="0" mass="0" name="body" >
+      <Parts>
+        <Part class="SubPartWheel" component="wheel1" name="wheel01" >
+          <SubPartWheel axle="0" damping="-0.5" density="5000" driving="1" lenMax="0.125" maxFriction="0.92" minFriction="0.92" stiffness="0" suspLength="0.04" />
+        </Part>
+        <Part class="SubPartWheel" component="wheel2" name="wheel03" >
+          <SubPartWheel axle="1" damping="-0.5" density="5000" driving="1" lenMax="0.125" maxFriction="0.95" minFriction="0.95" stiffness="0" suspLength="0.04" />
+        </Part>
+        <Part class="SubPartWheel" component="wheel3" name="wheel02" >
+          <SubPartWheel axle="0" damping="-0.5" density="5000" driving="1" lenMax="0.125" maxFriction="0.92" minFriction="0.92" stiffness="0" suspLength="0.04" />
+        </Part>
+        <Part class="SubPartWheel" component="wheel4" name="wheel04" >
+          <SubPartWheel axle="1" damping="-0.5" density="5000" driving="1" lenMax="0.125" maxFriction="0.95" minFriction="0.95" stiffness="0" suspLength="0.04" />
+        </Part>
+      </Parts>
+      <Helpers>
+        <Helper direction="0,1,0" name="viewPos" position="0,-2.596,1.7" />
+        <Helper direction="0,1,0" name="actorPos" position="0,-3.1,0.3" />
+        <Helper direction="0,1,0" name="leftArmPos" position="-0.15,-2.46,1.165" />
+        <Helper direction="0,1,0" name="rightArmPos" position="0.15,-2.46,1.14" />
+      </Helpers>
+      <Animated filename="Objects/Library/Architecture/Aircraftcarrier/props/trolley/bigtrolley_useable.cga" />
+    </Part>
+    <Part class="MassBox" component="" disableCollision="0" disablePhysics="0" isHidden="0" mass="3600" name="mass" position="0,0,0.4" >
+      <Helpers />
+      <MassBox size="0.2,0.5,0.2" />
+    </Part>
+  </Parts>
+  <Actions>
+    <Action class="Enter">
+			<Activations>
+				<Activation type="OnUsed" param1="component" param2="Handle" />
+			</Activations>
+      <Enter>
+        <Seats>
+          <Seat value="user" />
+        </Seats>
+      </Enter>
+    </Action>
+  </Actions>
+  <Seats>
+    <Seat AimPart="" enterHelper="actorPos" isDriver="1" movePassengerOnExit="0" name="user" part="" sitHelper="actorPos" useBoundsForEntering="1" disableStopAllAnimationsOnEnter="1" >
+      <Views>
+        <View canRotate="1" class="FirstPerson" rotationMax="22,0,20" rotationInit="-20,0,0">
+          <FirstPerson helper="viewPos" />
+        </View>
+      </Views>
+      <SeatActions>
+        <SeatAction class="PassengerIK" >
+          <PassengerIK waitShortlyBeforeStarting="1" >
+            <Limbs>
+              <Limb helper="leftArmPos" limb="leftArm" />
+              <Limb helper="rightArmPos" limb="rightArm" />
+            </Limbs>
+          </PassengerIK>
+        </SeatAction>
+      </SeatActions>
+      <Sounds inout="1" />
+    </Seat>
+  </Seats>
+  <MovementParams>
+    <StdWheeled engineIgnitionTime="0" engineSoundPosition="engineSmokeOut" isBreakingOnIdle="1" kvSteerMax="10" pedalLimitMax="0.15" steerRelaxation="90" steerSpeed="40" steerSpeedMin="90" steerSpeedScale="0.8" steerSpeedScaleMin="1" v0SteerMax="30" vMaxSteerMax="20" >
+      <Wheeled axleFriction="1500" brakeTorque="1400" clutchSpeed="0.8" damping="0" dynFriction="1.41" engineIdleRPM="0" engineMaxRPM="1400" engineMinRPM="0" enginePower="55" engineShiftDownRPM="400" engineShiftUpRPM="1050" engineStartRPM="100" gearDirSwitchRPM="1500" maxSteer="0.52" maxTimeStep="0.02" minEnergy="0.012" slipThreshold="0.1" stabilizer="1" >
+        <gearRatios>
+          <gearRatio value="-10" />
+          <gearRatio value="0" />
+          <gearRatio value="9" />
+          <gearRatio value="7" />
+          <gearRatio value="5.5" />
+        </gearRatios>
+      </Wheeled>
+      <SoundParams engineSoundPosition="" runSoundDelay="0.1" />
+    </StdWheeled>
+  </MovementParams>
+  <Particles>
+    <Exhaust insideWater="0" outsideWater="1" >
+      <Helpers />
+      <EngineStart effect="" />
+      <EngineStop effect="" />
+      <EngineRunning baseSizeScale="1" effect="" boostEffect="" maxPower="1" maxPowerCountScale="1" maxPowerSizeScale="1" maxSpeed="20" maxSpeedCountScale="1" maxSpeedSizeScale="1" minPower="0" minPowerCountScale="1" minPowerSizeScale="1" minSpeed="0" minSpeedCountScale="1" minSpeedSizeScale="1" />
+    </Exhaust>
+    <DamageEffects />
+  </Particles>
+</Vehicle>

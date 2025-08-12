@@ -1,0 +1,609 @@
+<Vehicle name="US_tank" actionMap="landvehicle">
+ <Physics pushable="0">
+  <Buoyancy waterDensity="150" waterResistance="2500"/>
+  <Simulation maxTimeStep="0.02" minEnergy="0.01" maxLoggedCollisions="2"/>
+ </Physics>
+ <Damages submergedRatioMax="0.89999998" submergedDamageMult="0.5" collDamageThreshold="600" groundCollisionMinMult="1" groundCollisionMaxMult="1" groundCollisionMinSpeed="18" groundCollisionMaxSpeed="18">
+  <DamageMultipliers>
+   <DamageMultiplier damageType="bullet" multiplier="0"/>
+   <DamageMultiplier damageType="moacbullet" multiplier="0"/>
+   <DamageMultiplier damageType="gaussbullet" multiplier="0"/>
+   <DamageMultiplier damageType="melee" multiplier="0"/>
+   <DamageMultiplier damageType="fire" multiplier="0"/>
+   <DamageMultiplier damageType="collision" multiplier="0.05"/>
+   <DamageMultiplier damageType="explosion" multiplier="1" splash="0.1"/>
+   <DamageMultiplier damageType="law_rocket" multiplier="2" splash="0.2"/>
+   <DamageMultiplier damageType="frag" multiplier="0" splash="0"/>
+   <DamageMultiplier damageType="aacannon" multiplier="0" splash="0"/>
+   <DamageMultiplier damageType="c4" multiplier="1.5" splash="0.5"/>
+   <DamageMultiplier damageType="tac" multiplier="2" splash="2"/>
+   <DamageMultiplier damageType="avmine" multiplier="1" splash="1"/>
+  </DamageMultipliers>
+  <DamagesGroups>
+   <DamagesGroup name="Destroy" useTemplate="TankDestroy">
+    <DamagesSubGroups>
+     <DamagesSubGroup delay="0" randomness="0.5">
+      <DamageBehaviors>
+       <DamageBehavior class="Impulse" damageRatioMin="1" ignoreVehicleDestruction="1">
+        <Impulse forceMin="1" forceMax="1.5" direction="0,0,1" momentum="-0.2,0.2,0"/>
+       </DamageBehavior>
+      </DamageBehaviors>
+     </DamagesSubGroup>
+    </DamagesSubGroups>
+   </DamagesGroup>
+  </DamagesGroups>
+ </Damages>
+ <Components>
+ <Component name="hull" damageMax="1500" major="1" minBound="-2.47,-5.8,0.65" maxBound="2.74,3.6,1.95" useBoundsFromParts="0" id="idHull">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="fire" multiplier="0.5"/>
+    <DamageMultiplier damageType="explosion" multiplier="1.5" splash="1" id="idhullexmult"/>
+    <DamageMultiplier damageType="law_rocket" multiplier="3" splash="2" />
+    <DamageMultiplier damageType="frag" multiplier="0.025" splash="0.015"/>
+    <DamageMultiplier damageType="avmine" multiplier="2" splash="0.75"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="Group" damageRatioMin="1">
+     <Group name="Destroy"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="0.25" damageRatioMax="0.75">
+     <Effect effect="HullDamaged25" disableAfterExplosion="1"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="0.75" damageRatioMax="1">
+     <Effect effect="HullDamaged75" disableAfterExplosion="1"/>
+    </DamageBehavior>
+    <DamageBehavior class="Indicator" damageRatioMin="0.75">
+     <Indicator>
+      <Light material="" sound="sounds/vehicles:vehicle_accessories:warning_beep_tank" soundRatioMin="0.75" helper="turretPos"/>
+     </Indicator>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="engine" damageMax="700" major="1" minBound="-1.25,-5.7209001,0.47420001" maxBound="1.25,-3.1008,2.0799" useBoundsFromParts="0" hullAffection="1.5" id="idEngine">
+    <DamageMultipliers>
+      <DamageMultiplier damageType="fire" multiplier="0.5"/>
+      <DamageMultiplier damageType="explosion" multiplier="2" splash="0.2"/>
+      <DamageMultiplier damageType="law_rocket" multiplier="4" splash="0.4"/>
+      <DamageMultiplier damageType="frag" multiplier="1" splash="0.66"/>
+      <DamageMultiplier damageType="avmine" multiplier="1" splash="0.5"/>
+    </DamageMultipliers>
+    <DamageBehaviors>
+      <DamageBehavior class="Effect" damageRatioMin="0.25" damageRatioMax="0.75">
+        <Effect effect="EngineDamaged25" disableAfterExplosion="1"/>
+      </DamageBehavior>
+      <DamageBehavior class="Effect" damageRatioMin="0.75">
+        <Effect effect="EngineDamaged75" disableAfterExplosion="1"/>
+      </DamageBehavior>
+      <DamageBehavior class="MovementNotification" damageRatioMin="0.25">
+        <MovementNotification isFatal="0"/>
+      </DamageBehavior>
+    </DamageBehaviors>
+  </Component>
+  <Component name="turret" damageMax="1100" major="1" minBound="-3.7,-5,1.95" maxBound="3.7,2.2,3" useBoundsFromParts="0" hullAffection="0.75" id="idTurret">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="explosion" multiplier="1" splash="0.1"/>
+    <DamageMultiplier damageType="law_rocket" multiplier="2" splash="0.2"/>
+    <DamageMultiplier damageType="avmine" multiplier="0.1" splash="0.1"/>
+   </DamageMultipliers>
+   <DamageBehaviors />
+  </Component>
+  <Component name="leftTread" damageMax="490" major="1" minBound="-2.15,-5.2,-0.2166" maxBound="-1.2,3.4,1.3332" useBoundsFromParts="0" hullAffection="0.75" id="idLeftTread">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="explosion" multiplier="1" splash="0.1"/>
+    <DamageMultiplier damageType="law_rocket" multiplier="2" splash="0.2"/>
+    <DamageMultiplier damageType="frag" multiplier="1" splash="0.25"/>
+    <DamageMultiplier damageType="aacannon" multiplier="0.05" splash="0"/>
+    <DamageMultiplier damageType="avmine" multiplier="2" splash="0.75"/>
+   </DamageMultipliers>
+   <DamageBehaviors />
+  </Component>
+  <Component name="rightTread" damageMax="490" major="1" minBound="1.2,-5.2,-0.2191" maxBound="2.15,3.4,1.3308001" useBoundsFromParts="0" hullAffection="0.75" id="idRightTread">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="explosion" multiplier="1" splash="0.1"/>
+    <DamageMultiplier damageType="law_rocket" multiplier="2" splash="0.2"/>
+    <DamageMultiplier damageType="frag" multiplier="1" splash="0.25"/>
+    <DamageMultiplier damageType="aacannon" multiplier="0.05" splash="0"/>
+    <DamageMultiplier damageType="avmine" multiplier="2" splash="0.75"/>
+   </DamageMultipliers>
+   <DamageBehaviors />
+  </Component>
+  <Component name="mainEnterLeft" damageMax="0" major="0" minBound="-2.7175,-4.1718998,0.061099999" maxBound="-1.342,2.2578001,1.7693" useBoundsFromParts="0">
+   <DamageBehaviors />
+  </Component>
+  <Component name="mainEnterRight" damageMax="0" major="0" minBound="1.3123,-4.3059001,0.0253" maxBound="2.6784999,2.4040999,1.8661" useBoundsFromParts="0">
+   <DamageBehaviors />
+  </Component>
+  <Component name="gunnerEnterTop" damageMax="0" major="0" minBound="-0.94779998,-2.8341999,2.2212" maxBound="1.2559,-0.20919999,3.7695999" useBoundsFromParts="0">
+   <DamageBehaviors />
+  </Component>
+  <Component name="FlippedOver" damageMax="1" major="0" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="1">
+   <DamageBehaviors>
+    <DamageBehavior class="Effect" damageRatioMin="1">
+     <Effect effect="VehicleFlipped" disableAfterExplosion="1"/>
+    </DamageBehavior>
+    <DamageBehavior class="Burn">
+     <Burn helper="" damage="0" selfDamage="150" radius="7" interval="0.75"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+ </Components>
+ <Parts>
+  <Part name="tank" class="Animated" mass="0" isHidden="0">
+   <Parts>
+    <Part name="turret" class="AnimatedJoint" component="turret" mass="10000">
+     <Parts>
+      <Part name="cannon_base" class="AnimatedJoint" component="turret" mass="0">
+       <Parts>
+        <Part name="cannon" class="AnimatedJoint" component="turret" mass="500" useOption="0" id="idCannonPart">
+         <Helpers>
+          <Helper name="cannonOut" position="0,6.5261002,2.1170001" direction="0,1,0"/>
+          <Helper name="cannonBase" position="0, 1, 2.117" direction="0,1,0"/>
+          <Helper name="cannonViewPos" position="-0.56099999,1.0759,2.5191" direction="0,1,0"/>
+          <Helper name="ghostViewPos" position="0.0264,5.2238998,3.0525999" direction="0,1,0"/>
+          <Helper name="coaxOut" position="0.2852,1.5771,2.1199999" direction="0,1,0"/>
+          <Helper name="cannonOutMOAC" position="-0.034400001,4.1862998,2.0274999" direction="0,1,0"/>
+         </Helpers>
+         <AnimatedJoint filename="" filenameDestroyed="" id="idCannonAnimatedJoint"/>
+        </Part>
+       </Parts>
+       <Helpers />
+       <AnimatedJoint>
+        <Rotation pitchSpeed="32" pitchAccel="100">
+         <pitchLimits>
+          <pitchLimit value="-5"/>
+          <pitchLimit value="35"/>
+         </pitchLimits>
+         <RotationTest helper1="cannonBase" helper2="cannonOut" radius="0.25"/>
+         <Sound event="cannon" helper="turretPos"/>
+        </Rotation>
+       </AnimatedJoint>
+      </Part>
+      <Part name="shitenTurret" class="AnimatedJoint" mass="0" isHidden="0">
+       <Parts>
+        <Part name="shiten" class="AnimatedJoint" mass="0">
+         <Helpers>
+          <Helper name="gunnerEyePos" position="0.67500001,-1.2459,3.4590001" direction="0,1,0"/>
+          <Helper name="searchLightPos" position="0.84,-0.67,3.16" direction="0,1,0"/>
+         </Helpers>
+         <AnimatedJoint filename="" filenameDestroyed="">
+          <Rotation pitchSpeed="70" worldSpace="1">
+           <pitchLimits>
+                        <pitchLimit value="-17"/>
+                        <pitchLimit value="60"/>
+           </pitchLimits>
+          </Rotation>
+         </AnimatedJoint>
+        </Part>
+        <Part name="searchLight" class="Light" component="searchLight" helper="searchLightPos">
+         <Light type="HeadLightDynamic" radius="30" diffuseMult="15" directFactor="10"/>
+        </Part>
+        <Part name="gunnerLightFlare" class="Light" component="searchLight" helper="searchLightPos">
+         <Light type="HeadLightFlare"/>
+        </Part>
+       </Parts>
+       <Helpers>
+        <Helper name="gunnerPos" position="0,0,0" direction="0,1,0"/>
+       </Helpers>
+       <AnimatedJoint>
+        <Rotation yawSpeed="75" worldSpace="1">
+         <yawLimits>
+          <yawLimit value="0"/>
+          <yawLimit value="0"/>
+         </yawLimits>
+        </Rotation>
+       </AnimatedJoint>
+      </Part>
+     </Parts>
+     <Helpers>
+      <Helper name="driverSitPos" position="0.66240001,-1.4275,2.0504" direction="0,1,0"/>
+      <Helper name="turretPos" position="-0.001,-0.82889998,2.1110001" direction="0,1,0"/>
+     </Helpers>
+     <AnimatedJoint>
+      <Rotation yawSpeed="39" yawAccel="120">
+       <Sound event="turret" eventDamage="sounds/vehicles:vehicle_accessories:turret_turn_damaged" helper="turretPos"/>
+       <RotationTest helper1="cannonBase" helper2="cannonOut" radius="0.25"/> 
+      </Rotation>
+     </AnimatedJoint>
+    </Part>
+    <Part name="wheel1" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="0" density="3000" damping="0" driving="0" lenMax="0" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0" rayCast="0"/>
+    </Part>
+    <Part name="wheel2" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="1" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="0"/>
+    </Part>
+    <Part name="wheel3" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="2" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="1"/>
+    </Part>
+    <Part name="wheel4" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="3" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="1"/>
+    </Part>
+    <Part name="wheel5" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="4" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="1"/>
+    </Part>
+    <Part name="wheel6" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="5" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="1"/>
+    </Part>
+    <Part name="wheel7" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="6" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="0"/>
+    </Part>
+    <Part name="wheel8" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="7" density="3000" damping="0" driving="1" lenMax="0" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0" rayCast="0"/>
+    </Part>
+    <Part name="wheel9" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="0" density="3000" damping="0" driving="0" lenMax="0" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0" rayCast="0"/>
+    </Part>
+    <Part name="wheel10" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="1" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="0"/>
+    </Part>
+    <Part name="wheel11" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="2" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="1"/>
+    </Part>
+    <Part name="wheel12" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="3" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="1"/>
+    </Part>
+    <Part name="wheel13" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="4" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="1"/>
+    </Part>
+    <Part name="wheel14" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="5" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="1"/>
+    </Part>
+    <Part name="wheel15" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="6" density="3000" damping="-0.30000001" driving="0" lenMax="0.75" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0.47" rayCast="0"/>
+    </Part>
+    <Part name="wheel16" class="SubPartWheel" isHidden="0">
+     <SubPartWheel axle="7" density="3000" damping="0" driving="1" lenMax="0" maxFriction="1.1" minFriction="1.1" stiffness="0" suspLength="0" rayCast="0"/>
+    </Part>
+   </Parts>
+   <Helpers>
+    <Helper name="driverEnterPos" position="3.3215001,-0.57080001,0.50300002" direction="0,1,0" id="idHelperDriverEnterPos"/>
+    <Helper name="gunnerEnterPos" position="3.3108001,-1.4680001,0.49900001" direction="0,1,0"/>
+    <Helper name="engineSmokeOut" position="-0.001,-4.0922999,1.801" direction="0,1,0"/>
+    <Helper name="burningPos" position="0,-0.86110002,1.234" direction="0.0020999999,0,1"/>
+    <Helper name="ai_anchor1" position="-0.034200002,-6.9189,0.64899999" direction="0,1,0"/>
+    <Helper name="ai_anchor2" position="-2.925,-3.5818,0.77499998" direction="0.9659,-0.259,-0.0020999999"/>
+    <Helper name="ai_anchor3" position="3.302,-3.4302001,0.79299998" direction="-0.93970001,-0.34189999,0.0020000001"/>
+    <Helper name="ai_anchor4" position="-3.2047999,2.0042,0.61000001" direction="0.70709997,0.70709997,-0.0014"/>
+    <Helper name="ai_anchor5" position="3.3153999,1.6711,0.68300003" direction="-0.81889999,0.57389998,0.0018"/>
+    <Helper name="exhaust" position="-0.76419997,-5.5430002,1.303" direction="-0.0019,-0.92030001,-0.39120001"/>
+    <Helper name="headLightLeft" position="1.7117,3.1903999,1.4432" direction="0,0.99479997,-0.1021"/>
+    <Helper name="headLightRight" position="-1.6982,3.1847999,1.444" direction="0,0.99479997,-0.1021"/>
+    <Helper name="headLightCenter" position="0.0176,3.2937,1.476" direction="0,0.99479997,-0.1021"/>
+    <Helper name="rearLightLeft" position="-1.9845999,-5.3874998,1.5842" direction="0,-1,0"/>
+    <Helper name="rearLightRight" position="1.9873,-5.3892002,1.6021" direction="0,-1,0"/>
+    <Helper name="centerPos" position="-0.0082999999,-1.7976,1.1338" direction="0,1,0"/>
+   </Helpers>
+   <Animated filename="Objects/Vehicles/us_tank/us_tank.cga" filenameDestroyed="Objects/Vehicles/us_tank/us_tank_damaged.cga"/>
+  </Part>
+  <Part name="leftTread" class="Tread" component="leftTread">
+   <Tread filename="Objects/Vehicles/us_tank/tread_left.chr" materialName="us_tank_treads" uvRateMax="23" uvSliceCount="12"/>
+  </Part>
+  <Part name="rightTread" class="Tread" component="rightTread">
+   <Tread filename="Objects/Vehicles/us_tank/tread_right.chr" materialName="us_tank_treads" uvRateMax="23" uvSliceCount="12"/>
+  </Part>
+  <Part name="massBox" class="MassBox" component="" mass="30000" position="0.00050000002,-0.87180001,0.93169999" disablePhysics="0" disableCollision="0" isHidden="0">
+   <Helpers />
+   <MassBox size="2,3,1"/>
+  </Part>
+  <Part name="lumberjack" class="MassBox" component="" mass="0" position="0.00050000002,-0.50199997,1.3233" disablePhysics="0" disableCollision="0" isHidden="0">
+   <Helpers />
+   <MassBox size="2.4716001,5.1023002,0.98000002" lumberjack="1"/>
+  </Part>
+  <Part name="headLightCenter" class="Light" component="" helper="headLightCenter">
+   <Light type="HeadLightDynamic"/>
+  </Part>
+  <Part name="headLightLeft" class="Light" component="headLightLeft" helper="headLightLeft">
+   <Light type="HeadLightBeam"/>
+  </Part>
+  <Part name="headLightLeftFlare" class="Light" component="headLightLeft" helper="headLightLeft">
+   <Light type="HeadLightFlare"/>
+  </Part>
+  <Part name="headLightRight" class="Light" component="headLightRight" helper="headLightRight">
+   <Light type="HeadLightBeam"/>
+  </Part>
+  <Part name="headLightRightFlare" class="Light" component="headLightRight" helper="headLightRight">
+   <Light type="HeadLightFlare"/>
+  </Part>
+  <Part name="rearLightLeft" class="Light" component="rearLightsLeft" helper="rearLightLeft">
+   <Light type="Rear"/>
+  </Part>
+  <Part name="rearLightRight" class="Light" component="rearLightsRight" helper="rearLightRight">
+   <Light type="Rear"/>
+  </Part>
+ </Parts>
+ <Actions>
+  <Action class="Enter">
+   <Activations>
+    <Activation type="OnUsed" param1="component" param2="mainEnterLeft"/>
+   </Activations>
+   <Enter>
+    <Seats>
+     <Seat value="driver"/>
+     <Seat value="gunner"/>
+    </Seats>
+   </Enter>
+  </Action>
+  <Action class="Enter">
+   <Activations>
+    <Activation type="OnUsed" param1="component" param2="mainEnterRight"/>
+   </Activations>
+   <Enter>
+    <Seats>
+     <Seat value="driver"/>
+     <Seat value="gunner"/>
+    </Seats>
+   </Enter>
+  </Action>
+  <Action class="Enter">
+   <Activations>
+    <Activation type="OnUsed" param1="component" param2="gunnerEnterTop"/>
+   </Activations>
+   <Enter>
+    <Seats>
+     <Seat value="gunner"/>
+    </Seats>
+   </Enter>
+  </Action>
+ </Actions>
+ <Seats>
+  <Seat name="driver" part="" enterHelper="driverEnterPos" sitHelper="driverSitPos" isDriver="1" isPassengerShielded="1" isPassengerHidden="1" AimPart="cannon" seatGroupIndex="1" transitionAnim="1" blurMult="0" explosionShakeMult="0.2">
+   <Views>
+    <View class="FirstPerson" canRotate="0">
+     <FirstPerson helper="cannonViewPos" frameObject=""/>
+    </View>
+    <View class="ActionThirdPerson" canRotate="0">
+     <ActionThirdPerson cameraPosOffset="0,-6.6,1" cameraAimOffset="0,3,0.5" lagSpeed="5" velocityMult="0,0.050000001,1"/>
+    </View>
+   </Views>
+   <SeatActions>
+    <SeatAction class="RotateTurret">
+     <RotateTurret pitchPart="cannon_base" yawPart="turret"/>
+    </SeatAction>
+    <SeatAction class="Weapons">
+     <Weapons>
+      <Weapons>
+       <Weapon class="USTankCannon" part="cannon" id="idWeaponDriver">
+        <Helpers>
+         <Helper value="cannonOut"/>
+        </Helpers>
+        <Actions>
+         <Action name="fire">
+          <Animations>
+           <Animation name="cannon_fire" id="idCannonFireAnim"/>
+          </Animations>
+         </Action>
+        </Actions>
+       </Weapon>
+      </Weapons>
+     </Weapons>
+    </SeatAction>
+    <SeatAction class="Weapons">
+     <Weapons isSecondary="1">
+      <Weapons>
+       <Weapon class="USCoaxialGun" part="cannon_base" id="idWeaponDriver2">
+        <Helpers>
+         <Helper value="coaxOut"/>
+        </Helpers>
+       </Weapon>
+      </Weapons>
+     </Weapons>
+    </SeatAction>
+    <SeatAction class="Lights">
+     <Lights activation="toggle">
+      <LightParts>
+       <LightPart value="headLightLeft"/>
+       <LightPart value="headLightLeftFlare"/>
+       <LightPart value="headLightRight"/>
+       <LightPart value="headLightRightFlare"/>
+       <LightPart value="headLightCenter"/>
+       <LightPart value="rearLightLeft"/>
+       <LightPart value="rearLightRight"/>
+      </LightParts>
+     </Lights>
+    </SeatAction>
+   </SeatActions>
+   <Sounds inout="0" mood="1"/>
+  </Seat>
+  <Seat name="gunner" part="shitenTurret" enterHelper="gunnerEnterPos" sitHelper="gunnerPos" useBoundsForEntering="0" isDriver="0" AimPart="shiten" isPassengerExposed="1" seatGroupIndex="2" transitionAnim="1" blurMult="0.1">
+   <Views>
+    <View class="FirstPerson" canRotate="0" hidePlayer="1">
+     <FirstPerson helper="gunnerEyePos"/>
+    </View>
+    <View class="ActionThirdPerson" canRotate="0">
+     <ActionThirdPerson cameraPosOffset="0,-4.5,0.5" cameraAimOffset="0,3,0" lagSpeed="5" velocityMult="0,0.050000001,1"/>
+    </View>
+   </Views>
+   <SeatActions>
+    <SeatAction class="RotateTurret">
+     <RotateTurret pitchPart="shiten" yawPart="shitenTurret"/>
+    </SeatAction>
+    <SeatAction class="Weapons">
+     <Weapons>
+      <Weapons>
+       <Weapon class="VehicleUSMachinegun" part="shiten" id="idWeaponGunner">
+        <Helpers />
+       </Weapon>
+      </Weapons>
+     </Weapons>
+    </SeatAction>
+    <SeatAction class="Lights">
+     <Lights activation="toggle" sound="2">
+      <LightParts>
+       <LightPart value="searchLight"/>
+       <LightPart value="gunnerLightFlare"/>
+      </LightParts>
+     </Lights>
+    </SeatAction>
+   </SeatActions>
+   <Sounds inout="1"/>
+  </Seat>
+ </Seats>
+ <MovementParams>
+  <Tank pedalSpeed="7" pedalThreshold="0" steerSpeed="8" steerSpeedRelax="5" steerLimit="1" latFricMin="0.40000001" latFricMinSteer="0.1" latFricMax="1.2" latSlipMin="0.89999998" latSlipMax="2.5999999" rpmInterpSpeed="2" rpmRelaxSpeed="2" rpmGearShiftSpeed="2" steeringImpulseMin="1" steeringImpulseMax="2" steeringImpulseRelaxMin="4" steeringImpulseRelaxMax="6">
+   <Wheeled axleFriction="600" axleFrictionMax="6000" brakeTorque="6000" clutchSpeed="8" damping="0.02" engineIdleRPM="700" engineMaxRPM="2650" engineMinRPM="200" enginePower="800" engineShiftDownRPM="1200" engineShiftUpRPM="2000" engineStartRPM="700" stabilizer="0.1" stabiMin="0" stabiMax="0.25" minBrakingFriction="1.2" maxSteer="0.78500003" maxSpeed="16" maxTimeStep="0.02" minEnergy="0.01" slipThreshold="0.050000001" gearDirSwitchRPM="2500" dynFriction="1" steerTrackNeutralTurn="0.78500003" pullTilt="7" latFriction="0.5" maxGear="0" id="idWheeledProps">
+    <gearRatios>
+     <gearRatio value="-12"/>
+     <gearRatio value="0"/>
+     <gearRatio value="13"/>
+     <gearRatio value="10.5"/>
+     <gearRatio value="8.5"/>
+     <gearRatio value="7"/>
+    </gearRatios>
+   </Wheeled>
+   <SoundParams engineSoundPosition="engineSmokeOut" runSoundDelay="1.5" rpmPitchSpeed="0" roadBumpMinSusp="8" roadBumpMinSpeed="8" roadBumpIntensity="0.30000001"/>
+   <TweakGroups>
+    <TweakGroup name="player_boost">
+     <Tweaks>
+      <Tweak name="pullTilt" value="2" op="1"/>
+     </Tweaks>
+    </TweakGroup>
+    <TweakGroup name="ai">
+     <Tweaks>
+      <Tweak name="latFricMin" value="0.15000001" op="0"/>
+     </Tweaks>
+    </TweakGroup>
+   </TweakGroups>
+  </Tank>
+ </MovementParams>
+ <Particles>
+  <Exhaust insideWater="0" outsideWater="1">
+   <Helpers>
+    <Helper value="exhaust"/>
+   </Helpers>
+   <EngineStart effect="vehicle_fx.vehicle_exhaust.tank_starter"/>
+   <EngineStop effect="vehicle_fx.vehicle_exhaust.tank_engine_off"/>
+   <EngineRunning effect="vehicle_fx.vehicle_exhaust.tank_exhaust" boostEffect="vehicle_fx.vehicle_exhaust.heavy_boost" baseSizeScale="1" minSpeed="0" minSpeedSizeScale="0.80000001" minSpeedCountScale="1" minSpeedSpeedScale="1" maxSpeed="15" maxSpeedSizeScale="1.3" maxSpeedCountScale="1.3" maxSpeedSpeedScale="1" minPower="0" minPowerSizeScale="1" minPowerCountScale="1" minPowerSpeedScale="1" maxPower="1" maxPowerSizeScale="1" maxPowerCountScale="1" maxPowerSpeedScale="1"/>
+  </Exhaust>
+  <ShatterEffect effect="vehicle_fx.frozen_shatter.small" /> 
+  <DamageEffects>
+   <DamageEffect name="EngineDamaged25" helper="engineSmokeOut" effect="Vehicle_fx.Damages_Land.USTank_engine_smoke_a"/>
+   <DamageEffect name="EngineDamaged75" helper="engineSmokeOut" effect="Vehicle_fx.Damages_Land.USTank_engine_smoke_b"/>
+   <DamageEffect name="HullDamaged25" helper="burningPos" effect="Vehicle_fx.Damages_Land.USTank_hull_smoke_a"/>
+   <DamageEffect name="HullDamaged75" helper="burningPos" effect="Vehicle_fx.Damages_Land.USTank_hull_smoke_b"/>
+   <DamageEffect name="VehicleDestroyed" helper="burningPos" effect="explosions.tank_explosion.chinese_tank" gravityDirection="0,0,1"/>
+   <DamageEffect name="VehicleFlipped" helper="centerPos" effect="smoke_and_fire.Jeep.flipped_heavy"/>
+  </DamageEffects>
+  <EnvironmentLayers>
+   <EnvironmentLayer minSpeed="0.5" minSpeedSizeScale="1" minSpeedCountScale="1" minSpeedSpeedScale="1" maxSpeed="20" maxSpeedSizeScale="1" maxSpeedCountScale="1" maxSpeedSpeedScale="1">
+    <Alignment alignGroundHeight="0" maxHeightSizeScale="1" maxHeightCountScale="1" alignToWater="0"/>
+    <Emitters />
+    <Wheels>
+     <WheelGroups>
+      <WheelGroup>
+       <Wheels>
+        <Wheel value="2"/>
+       </Wheels>
+      </WheelGroup>
+      <WheelGroup>
+       <Wheels>
+        <Wheel value="7"/>
+       </Wheels>
+      </WheelGroup>
+      <WheelGroup>
+       <Wheels>
+        <Wheel value="10"/>
+       </Wheels>
+      </WheelGroup>
+      <WheelGroup>
+       <Wheels>
+        <Wheel value="15"/>
+       </Wheels>
+      </WheelGroup>
+     </WheelGroups>
+    </Wheels>
+   </EnvironmentLayer>
+  </EnvironmentLayers>
+ </Particles>
+ <Animations>
+  <Animation name="cannon_fire" part="tank">
+   <States>
+    <State name="shoot" animation="tank_cannon_recoil" isLooped="0" speedDefault="1" speedMin="1" speedMax="1"/>
+   </States>
+  </Animation>
+ </Animations>
+ <Inventory>
+  <AmmoTypes>
+   <Ammo type="tank125" capacity="30"/>
+   <Ammo type="gausstankbullet" capacity="10"/>
+   <Ammo type="tacprojectile" capacity="2"/>
+   <Ammo type="Tank_singularityprojectile" capacity="10"/>
+  </AmmoTypes>
+ </Inventory>
+ <Paints>
+  <Paint name="nk" material="objects/vehicles/us_tank/us_tank_nk.mtl"/>
+  <Paint name="us" material="objects/vehicles/us_tank/us_tank.mtl"/>
+ </Paints>
+ <WheelMaster>
+  <SubPartWheel axle="0" density="100" damping="-0.30000001" driving="0" lenMax="0.69999999" maxFriction="1.2" minFriction="1.2" stiffness="0" suspLength="0.5" rayCast="0"/>
+ </WheelMaster>
+ <Modifications>
+  <Modification name="MP">
+   <Elems>
+    <Elem idRef="idHull" name="damageMax" value="1500"/>
+    <Elem idRef="idHelperDriverEnterPos" name="position" value="-3.3520999,-0.38240001,0.50300002"/>
+    <Elem idRef="idhullexmult" name="multiplier" value="1.5"/>
+   </Elems>
+  </Modification>
+  <Modification name="GaussCannon" parent="MP">
+   <Elems>
+    <Elem idRef="idCannonPart" name="useOption" value="1"/>
+    <Elem idRef="idWeaponDriver" name="class" value="GaussCannon"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filename" value="objects/vehicles/tank_cannon_options/gausscannon.cgf"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filenameDestroyed" value="objects/vehicles/tank_cannon_options/gausscannon_damaged.cgf"/>
+   </Elems>
+  </Modification>
+  <Modification name="TACCannon" parent="MP">
+   <Elems>
+    <Elem idRef="idCannonPart" name="useOption" value="1"/>
+    <Elem idRef="idWeaponDriver" name="class" value="TACCannon"/>
+    <Elem idRef="idWeaponGunner" name="class" value="VehicleGaussMounted"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filename" value="objects/vehicles/tank_cannon_options/taccannon.cgf"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filenameDestroyed" value="objects/vehicles/tank_cannon_options/taccannon_damaged.cgf"/>
+    <Elem idRef="idWheeledProps" name="maxGear" value="2"/>
+   </Elems>
+  </Modification>
+  <Modification name="MOAC" parent="MP">
+   <Elems>
+    <Elem idRef="idCannonPart" name="useOption" value="1"/>
+    <Elem idRef="idWeaponDriver" name="class" value="VehicleMOAC"/>
+    <Elem idRef="idCannonFireAnim" name="name" value=""/>
+    <Elem idRef="idCannonOutHelper" name="value" value="cannonOutMOAC"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filename" value="objects/vehicles/tank_cannon_options/moac.cgf"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filenameDestroyed" value="objects/vehicles/tank_cannon_options/moac_damaged.cgf"/>
+   </Elems>
+  </Modification>
+  <Modification name="MOAR" parent="MP">
+   <Elems>
+    <Elem idRef="idCannonPart" name="useOption" value="1"/>
+    <Elem idRef="idWeaponDriver" name="class" value="VehicleMOAR"/>
+    <Elem idRef="idCannonFireAnim" name="name" value=""/>
+    <Elem idRef="idCannonOutHelper" name="value" value="cannonOutMOAC"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filename" value="objects/vehicles/tank_cannon_options/moar.cgf"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filenameDestroyed" value="objects/vehicles/tank_cannon_options/moar_damaged.cgf"/>
+   </Elems>
+  </Modification>
+  <Modification name="Singularity" parent="MP">
+   <Elems>
+    <Elem idRef="idCannonPart" name="useOption" value="1"/>
+    <Elem idRef="idWeaponDriver" name="class" value="VehicleSingularity"/>
+    <Elem idRef="idWeaponGunner" name="class" value="VehicleGaussMounted"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filename" value="objects/vehicles/tank_cannon_options/singularity.cgf"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filenameDestroyed" value="objects/vehicles/tank_cannon_options/singularity_damaged.cgf"/>
+    <Elem idRef="idWheeledProps" name="maxGear" value="2"/>
+   </Elems>
+  </Modification>
+  <Modification name="GaussRifle" parent="MP">
+   <Elems>
+    <Elem idRef="idWeaponGunner" name="class" value="VehicleGaussMounted"/>
+   </Elems>
+  </Modification>
+  <Modification name="FullGauss" parent="MP">
+   <Elems>
+    <Elem idRef="idCannonPart" name="useOption" value="1"/>
+    <Elem idRef="idWeaponDriver" name="class" value="GaussCannon"/>
+    <Elem idRef="idWeaponGunner" name="class" value="VehicleGaussMounted"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filename" value="objects/vehicles/tank_cannon_options/gausscannon.cgf"/>
+    <Elem idRef="idCannonAnimatedJoint" name="filenameDestroyed" value="objects/vehicles/tank_cannon_options/gausscannon_damaged.cgf"/>
+   </Elems>
+  </Modification>
+ </Modifications>
+</Vehicle>

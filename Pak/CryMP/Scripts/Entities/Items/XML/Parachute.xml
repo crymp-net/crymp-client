@@ -1,0 +1,15 @@
+<item name="Parachute" class="PlayerFeature">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="unique" value="1" />
+		<param name="mass" value="10" />		
+		<param name="display_name"	value="@mp_eParachute" />		
+	</params>
+	<features>
+		<feature name="parachute" />
+	</features>	
+	<geometry>
+	</geometry>	
+</item>

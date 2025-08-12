@@ -1,0 +1,478 @@
+<Vehicle name="Alien_warrior" actionMap="landvehicle">
+ <Physics damping="0.15" pushable="0" collDamageThreshold="100000" retainGravity="1">
+  <Buoyancy waterDensity="400" waterResistance="600" waterDamping="0"/>
+  <Simulation maxTimeStep="0.02" minEnergy="0.002" maxLoggedCollisions="2"/>
+ </Physics>
+ <Components>
+  <Component name="hull" damageMax="10000" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="0">
+   <DamageBehaviors />
+  </Component>
+  <Component name="enterArea" damageMax="0" minBound="-2.739,-1.703,28.562" maxBound="2.952,4.069,31.875" useBoundsFromParts="0">
+   <DamageBehaviors />
+  </Component>
+  <Component name="enterAreaInside" damageMax="0" minBound="-2.739,-3.419,21.039" maxBound="2.952,2.353,24.352" useBoundsFromParts="0">
+   <DamageBehaviors />
+  </Component>
+  <Component name="thruster_01" damageMax="400" minBound="-19.411,24.573,-2.034" maxBound="-9.995,34.235,9.742" useBoundsFromParts="0">
+   <DamageBehaviors>
+    <DamageBehavior class="MovementNotification">
+     <MovementNotification isFatal="0"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="1">
+     <Effect effect="Thruster1_Destroyed"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="thruster_02" damageMax="400" minBound="10.361,25.115,-2.264" maxBound="19.595,34.591,9.054" useBoundsFromParts="0">
+   <DamageBehaviors>
+    <DamageBehavior class="MovementNotification">
+     <MovementNotification isFatal="0"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="1">
+     <Effect effect="Thruster2_Destroyed"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="thruster_03" damageMax="400" minBound="-27.344,14.433,-2.409" maxBound="-17.382,24.563,9.865" useBoundsFromParts="0">
+   <DamageBehaviors>
+    <DamageBehavior class="MovementNotification">
+     <MovementNotification isFatal="0"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="1">
+     <Effect effect="Thruster3_Destroyed"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="thruster_04" damageMax="400" minBound="17.687,13.806,-2.274" maxBound="27.662,24.588,8.86" useBoundsFromParts="0">
+   <DamageBehaviors>
+    <DamageBehavior class="MovementNotification">
+     <MovementNotification isFatal="0"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="1">
+     <Effect effect="Thruster4_Destroyed"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="thruster_05" damageMax="400" minBound="-35.219,-6.627,-2.247" maxBound="-24.026,3.503,9.577" useBoundsFromParts="0">
+   <DamageBehaviors>
+    <DamageBehavior class="MovementNotification">
+     <MovementNotification isFatal="0"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="thruster_06" damageMax="400" minBound="23.987,-6.031,-2.479" maxBound="34.72,4.102,9.887" useBoundsFromParts="0">
+   <DamageBehaviors>
+    <DamageBehavior class="MovementNotification">
+     <MovementNotification isFatal="0"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="thruster_07" damageMax="400" minBound="-30.706,-23.434,-2.479" maxBound="-19.973,-13.301,9.887" useBoundsFromParts="0">
+   <DamageBehaviors>
+    <DamageBehavior class="MovementNotification">
+     <MovementNotification isFatal="0"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="thruster_08" damageMax="400" minBound="20.584,-24.031,-2.479" maxBound="31.317,-13.898,9.887" useBoundsFromParts="0">
+   <DamageBehaviors>
+    <DamageBehavior class="MovementNotification">
+     <MovementNotification isFatal="0"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="thruster_09" damageMax="400" minBound="-20.128,-33.694,-2.479" maxBound="-9.395,-23.561,9.887" useBoundsFromParts="0">
+   <DamageBehaviors>
+    <DamageBehavior class="MovementNotification">
+     <MovementNotification isFatal="0"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="thruster_10" damageMax="400" minBound="9.276,-33.603,-2.479" maxBound="20.009,-22.848,9.887" useBoundsFromParts="0">
+   <DamageBehaviors>
+    <DamageBehavior class="MovementNotification">
+     <MovementNotification isFatal="0"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+ </Components>
+ <Parts>
+  <Part name="warrior" class="Animated" mass="0" isHidden="0">
+   <Parts>
+    <Part name="turret" class="AnimatedJoint" mass="0" isHidden="0">
+     <Parts>
+      <Part name="cannon" class="AnimatedJoint" mass="0">
+       <Helpers>
+        <Helper name="gunOut" position="16.321,30.738,19.782" direction="0.004,0.986,-0.168"/>
+        <Helper name="driverEyePos" position="0.031,1.016,31.256" direction="0,0.966,-0.259"/>
+       </Helpers>
+       <AnimatedJoint detachBaseForce="0,0,0">
+        <Rotation pitchSpeed="20" pitchAccel="100">
+         <pitchLimits>
+          <pitchLimit value="-10"/>
+          <pitchLimit value="20"/>
+         </pitchLimits>
+        </Rotation>
+       </AnimatedJoint>
+      </Part>
+      <Part name="generator" class="AnimatedJoint" mass="0">
+       <AnimatedJoint>
+        <Rotation pitchSpeed="20">
+         <pitchLimits>
+          <pitchLimit value="-45"/>
+          <pitchLimit value="10"/>
+         </pitchLimits>
+        </Rotation>
+       </AnimatedJoint>
+      </Part>
+     </Parts>
+     <Helpers>
+      <Helper name="driverExitPos" position="0.025,-0.284,29.602" direction="0,1,0"/>
+      <Helper name="driverSitPos" position="1.193,0.819,23.048" direction="0,1,0"/>
+      <Helper name="topSitPos" position="-0.029,0.595,28.978" direction="0,1,0"/>
+     </Helpers>
+     <AnimatedJoint>
+      <Rotation yawSpeed="20" yawAccel="100">
+       <yawLimits>
+        <yawLimit value="-60"/>
+        <yawLimit value="60"/>
+       </yawLimits>
+      </Rotation>
+     </AnimatedJoint>
+    </Part>
+    <Part name="transient" class="AnimatedJoint" mass="0">
+     <AnimatedJoint />
+    </Part>
+    <Part name="attachment_base_01" class="EntityAttachment" component="" helper="attachment_base_01_helper" mass="0" disablePhysics="0" disableCollision="0" isHidden="0">
+     <Helpers />
+     <Attachment />
+    </Part>
+    <Part name="base" class="AnimatedJoint" mass="0">
+     <Parts>
+      <Part name="leg_01" class="AnimatedJoint" component="" mass="0">
+       <Parts>
+        <Part name="foot_01" class="AnimatedJoint" component="thruster_01" mass="0">
+         <Parts>
+          <Part name="attachment_foot_01" class="EntityAttachment" component="" helper="attachment_foot_01_helper" mass="0"/>
+         </Parts>
+         <Helpers>
+          <Helper name="thruster_01" position="-15.23,30.3,0.502" direction="0,0,-1"/>
+          <Helper name="attachment_foot_01_helper" position="-16.109,32.734,5.338" direction="-0.078,0.132,-0.988"/>
+         </Helpers>
+         <AnimatedJoint />
+        </Part>
+       </Parts>
+       <AnimatedJoint />
+      </Part>
+      <Part name="leg_02" class="AnimatedJoint" component="" mass="0">
+       <Parts>
+        <Part name="foot_02" class="AnimatedJoint" component="thruster_02" mass="0">
+         <Parts>
+          <Part name="attachment_foot_02" class="EntityAttachment" component="" helper="attachment_foot_02_helper" mass="0"/>
+         </Parts>
+         <Helpers>
+          <Helper name="thruster_02" position="15.257,30.659,0.502" direction="0,0,-1"/>
+          <Helper name="attachment_foot_02_helper" position="16.012,32.789,5.488" direction="0.109,0.134,-0.985"/>
+         </Helpers>
+         <AnimatedJoint />
+        </Part>
+       </Parts>
+       <AnimatedJoint />
+      </Part>
+      <Part name="leg_03" class="AnimatedJoint" component="" mass="0">
+       <Parts>
+        <Part name="foot_03" class="AnimatedJoint" component="thruster_03" mass="0">
+         <Parts>
+          <Part name="attachment_foot_03" class="EntityAttachment" component="" helper="attachment_foot_03_helper" mass="0" disablePhysics="0" disableCollision="0" isHidden="0">
+           <Helpers />
+          </Part>
+         </Parts>
+         <Helpers>
+          <Helper name="thruster_03" position="-23.831,20.277,0.502" direction="0,0,-1"/>
+          <Helper name="attachment_foot_03_helper" position="-25.422,21.912,5.398" direction="-0.114,0.114,-0.987"/>
+         </Helpers>
+         <AnimatedJoint />
+        </Part>
+       </Parts>
+       <AnimatedJoint />
+      </Part>
+      <Part name="leg_04" class="AnimatedJoint" component="" mass="0">
+       <Parts>
+        <Part name="foot_04" class="AnimatedJoint" component="thruster_04" mass="0">
+         <Parts>
+          <Part name="attachment_foot_04" class="EntityAttachment" component="" helper="attachment_foot_04_helper" mass="0" disablePhysics="0" disableCollision="0" isHidden="0">
+           <Helpers />
+          </Part>
+         </Parts>
+         <Helpers>
+          <Helper name="thruster_04" position="23.64,20.293,0.502" direction="0,0,-1"/>
+          <Helper name="attachment_foot_04_helper" position="25.408,21.968,5.738" direction="0.117,0.127,-0.985"/>
+         </Helpers>
+         <AnimatedJoint />
+        </Part>
+       </Parts>
+       <AnimatedJoint />
+      </Part>
+      <Part name="leg_05" class="AnimatedJoint" component="" mass="0">
+       <Parts>
+        <Part name="foot_05" class="AnimatedJoint" component="thruster_05" mass="0">
+         <Parts>
+          <Part name="attachment_foot_05" class="EntityAttachment" component="" helper="attachment_foot_05_helper" mass="0" disablePhysics="0" disableCollision="0" isHidden="0">
+           <Helpers />
+          </Part>
+         </Parts>
+         <Helpers>
+          <Helper name="thruster_05" position="-30.59,-1.107,0.502" direction="0,0,-1"/>
+          <Helper name="attachment_foot_05_helper" position="-32.948,-1.233,5.488" direction="-0.088,0.006,-0.996"/>
+         </Helpers>
+         <AnimatedJoint />
+        </Part>
+       </Parts>
+       <AnimatedJoint />
+      </Part>
+      <Part name="leg_06" class="AnimatedJoint" component="" mass="0">
+       <Parts>
+        <Part name="foot_06" class="AnimatedJoint" component="thruster_06" mass="0">
+         <Parts>
+          <Part name="attachment_foot_06" class="EntityAttachment" component="" helper="attachment_foot_06_helper" mass="0" disablePhysics="0" disableCollision="0" isHidden="0">
+           <Helpers />
+          </Part>
+         </Parts>
+         <Helpers>
+          <Helper name="thruster_06" position="30.66,-1.012,0.502" direction="0,0,-1"/>
+          <Helper name="attachment_foot_06_helper" position="32.915,-1.045,5.498" direction="0.242,0.022,-0.97"/>
+         </Helpers>
+         <AnimatedJoint />
+        </Part>
+       </Parts>
+       <AnimatedJoint />
+      </Part>
+      <Part name="leg_07" class="AnimatedJoint" component="" mass="0">
+       <Parts>
+        <Part name="foot_07" class="AnimatedJoint" component="" mass="0">
+         <Parts>
+          <Part name="attachment_foot_07" class="EntityAttachment" component="" helper="attachment_foot_07_helper" mass="0" disablePhysics="0" disableCollision="0" isHidden="0">
+           <Helpers />
+          </Part>
+         </Parts>
+         <Helpers>
+          <Helper name="thruster_07" position="-25.939,-19.184,0.502" direction="0,0,-1"/>
+          <Helper name="attachment_foot_07_helper" position="-28.066,-20.686,5.488" direction="-0.086,-0.036,-0.996"/>
+         </Helpers>
+         <AnimatedJoint />
+        </Part>
+       </Parts>
+       <AnimatedJoint />
+      </Part>
+      <Part name="leg_08" class="AnimatedJoint" component="" mass="0">
+       <Parts>
+        <Part name="foot_08" class="AnimatedJoint" component="" mass="0">
+         <Parts>
+          <Part name="attachment_foot_08" class="EntityAttachment" component="" helper="attachment_foot_08_helper" mass="0" disablePhysics="0" disableCollision="0" isHidden="0">
+           <Helpers />
+          </Part>
+         </Parts>
+         <Helpers>
+          <Helper name="thruster_08" position="27.086,-20.083,0.502" direction="0,0,-1"/>
+          <Helper name="attachment_foot_08_helper" position="28.491,-21.353,5.907" direction="0.134,-0.11,-0.985"/>
+         </Helpers>
+         <AnimatedJoint />
+        </Part>
+       </Parts>
+       <AnimatedJoint />
+      </Part>
+      <Part name="leg_09" class="AnimatedJoint" component="" mass="0">
+       <Parts>
+        <Part name="foot_09" class="AnimatedJoint" component="" mass="0">
+         <Parts>
+          <Part name="attachment_foot_09" class="EntityAttachment" component="" helper="attachment_foot_09_helper" mass="0" disablePhysics="0" disableCollision="0" isHidden="0">
+           <Helpers />
+          </Part>
+         </Parts>
+         <Helpers>
+          <Helper name="thruster_09" position="-15.551,-29.397,0.502" direction="0,0,-1"/>
+          <Helper name="attachment_foot_09_helper" position="-16.655,-31.368,5.528" direction="-0.034,-0.182,-0.983"/>
+         </Helpers>
+         <AnimatedJoint />
+        </Part>
+       </Parts>
+       <AnimatedJoint />
+      </Part>
+      <Part name="leg_10" class="AnimatedJoint" component="" mass="0">
+       <Parts>
+        <Part name="foot_10" class="AnimatedJoint" component="" mass="0">
+         <Parts>
+          <Part name="attachment_foot_10" class="EntityAttachment" component="" helper="attachment_foot_10_helper" mass="0" disablePhysics="0" disableCollision="0" isHidden="0">
+           <Helpers />
+          </Part>
+         </Parts>
+         <Helpers>
+          <Helper name="thruster_10" position="15.988,-29.917,0.502" direction="0,0,-1"/>
+          <Helper name="attachment_foot_10_helper" position="16.666,-31.855,6.017" direction="0.068,-0.176,-0.982"/>
+         </Helpers>
+         <AnimatedJoint />
+        </Part>
+       </Parts>
+       <AnimatedJoint />
+      </Part>
+     </Parts>
+     <AnimatedJoint />
+    </Part>
+   </Parts>
+   <Helpers>
+    <Helper name="gravityPos" position="0.181,1.125,22.119" direction="0,1,0"/>
+    <Helper name="thruster_body_01" position="-6.492,13.002,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_body_02" position="6.508,13.003,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_body_03" position="-6.491,-8.939,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_body_04" position="6.509,-8.707,8.002" direction="0,0,-1"/>
+    <Helper name="attachment_base_01_helper" position="-0.092,23.319,9.603" direction="0,0.966,-0.259"/>
+    <Helper name="platform_pos" position="-0.031,23.996,7.335" direction="0,1,0"/>
+    <Helper name="thruster_01_base" position="-10,20,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_02_base" position="10,20,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_03_base" position="-15.5,11.5,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_04_base" position="15.5,11.5,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_05_base" position="-19.5,-1,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_06_base" position="19.5,-1,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_07_base" position="-18.5,-13,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_08_base" position="18.5,-13,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_09_base" position="-12,-23,8.002" direction="0,0,-1"/>
+    <Helper name="thruster_10_base" position="12,-23,8.002" direction="0,0,-1"/>
+   </Helpers>
+   <Animated filename="objects/characters/alien/warrior/warrior_wb_v2.cga"/>
+  </Part>
+  <Part name="mass" class="MassBox" component="" mass="40000" position="0,0.771,7.588" disablePhysics="0" disableCollision="0" isHidden="0">
+   <Helpers />
+   <MassBox size="23.123,29.739,5.571"/>
+  </Part>
+ </Parts>
+ <Actions>
+  <Action class="Enter">
+   <Activations>
+    <Activation type="OnUsed" param1="component" param2="enterArea"/>
+   </Activations>
+   <Enter>
+    <Seats>
+     <Seat value="driver_top"/>
+    </Seats>
+   </Enter>
+  </Action>
+  <Action class="Enter">
+   <Activations>
+    <Activation type="OnUsed" param1="component" param2="enterAreaInside"/>
+   </Activations>
+   <Enter>
+    <Seats>
+     <Seat value="driver"/>
+    </Seats>
+   </Enter>
+  </Action>
+ </Actions>
+ <Seats>
+  <Seat name="driver" part="" enterHelper="driverSitPos" exitHelper="driverSitPos" sitHelper="driverSitPos" isDriver="1" AimPart="" blurMult="0">
+   <Views>
+    <View class="FirstPerson" canRotate="0">
+     <FirstPerson helper="driverSitPos"/>
+    </View>
+    <View class="ThirdPerson" canRotate="1">
+     <ThirdPerson distance="65" heightOffset="-10" speed="6"/>
+    </View>
+   </Views>
+   <SeatActions>
+    <SeatAction class="RotateTurret" isAvailableRemotely="1">
+     <RotateTurret pitchPart="cannon" yawPart="turret"/>
+    </SeatAction>
+    <SeatAction class="Weapons" isAvailableRemotely="1">
+     <Weapons>
+      <Weapons>
+       <Weapon class="SingularityCannon" part="cannon" inheritVelocity="0">
+        <Helpers>
+         <Helper value="gunOut"/>
+        </Helpers>
+       </Weapon>
+      </Weapons>
+     </Weapons>
+    </SeatAction>
+   </SeatActions>
+  </Seat>
+  <Seat name="driver_top" part="" enterHelper="driverExitPos" exitHelper="driverExitPos" sitHelper="topSitPos" isDriver="0" AimPart="" remotelyUseActionsFromSeat="driver" blurMult="0">
+   <Views>
+    <View class="FirstPerson" canRotate="0">
+     <FirstPerson helper="driverEyePos"/>
+    </View>
+    <View class="ThirdPerson" canRotate="1">
+     <ThirdPerson distance="65" heightOffset="-10" speed="6"/>
+    </View>
+   </Views>
+   <SeatActions />
+  </Seat>
+ </Seats>
+ <SeatGroups>
+  <SeatGroup name="driver">
+   <Seats>
+    <Seat value="driver"/>
+   </Seats>
+  </SeatGroup>
+  <SeatGroup name="driver_top">
+   <Seats>
+    <Seat value="driver_top"/>
+   </Seats>
+  </SeatGroup>
+ </SeatGroups>
+ <MovementParams>
+  <Warrior maxThrustersDamaged="4" recoveryTime="40" collapsedLegAngle="10" collapsedFeetAngle="-90">
+   <Hovercraft hoverHeight="2" hoverVariance="0.15" hoverFrequency="0.5" numThrusters="0" thrusterBottomOffset="0" thrusterMaxHeightCoeff="2" stiffness="1.3" damping="0.6" dampingLimit="4" thrusterTilt="0" velMax="6" acceleration="3" accelerationMultiplier="1.5" pushOffset="0,0,13" pushTilt="0" linearDamping="2" turnRateMax="0.3" turnAccel="0.35" turnAccelMultiplier="1" turnDamping="4" cornerForce="0.5" cornerOffset="0,-5,25" cornerTilt="0" sampleByHelpers="1" thrusterHeightAdaption="5" thrusterUpdate="0" bEngineAlwaysOn="0">
+    <Thrusters>
+     <Thruster helper="thruster_body_01" hoverVariance="-1" heightAdaption="0" hoverHeight="7" pushing="1" cylinder="0"/>
+     <Thruster helper="thruster_body_02" hoverVariance="-1" heightAdaption="0" hoverHeight="7" pushing="1" cylinder="0"/>
+     <Thruster helper="thruster_body_03" hoverVariance="-1" heightAdaption="0" hoverHeight="7" pushing="1" cylinder="0"/>
+     <Thruster helper="thruster_body_04" hoverVariance="-1" heightAdaption="0" hoverHeight="7" pushing="1" cylinder="0"/>
+     <Thruster helper="thruster_01" hoverVariance="0" heightAdaption="-1" hoverHeight="-1" pushing="0" cylinder="3"/>
+     <Thruster helper="thruster_02" hoverVariance="0" heightAdaption="-1" hoverHeight="-1" pushing="0" cylinder="3"/>
+     <Thruster helper="thruster_03" hoverVariance="0" heightAdaption="-1" hoverHeight="-1" pushing="0" cylinder="3"/>
+     <Thruster helper="thruster_04" hoverVariance="0" heightAdaption="-1" hoverHeight="-1" pushing="0" cylinder="3"/>
+     <Thruster helper="thruster_05" hoverVariance="0" heightAdaption="-1" hoverHeight="-1" pushing="0" cylinder="3"/>
+     <Thruster helper="thruster_06" hoverVariance="0" heightAdaption="-1" hoverHeight="-1" pushing="0" cylinder="3"/>
+     <Thruster helper="thruster_07" hoverVariance="0" heightAdaption="-1" hoverHeight="-1" pushing="0" cylinder="3"/>
+     <Thruster helper="thruster_08" hoverVariance="0" heightAdaption="-1" hoverHeight="-1" pushing="0" cylinder="3"/>
+     <Thruster helper="thruster_09" hoverVariance="0" heightAdaption="-1" hoverHeight="-1" pushing="0" cylinder="3"/>
+     <Thruster helper="thruster_10" hoverVariance="0" heightAdaption="-1" hoverHeight="-1" pushing="0" cylinder="3"/>
+    </Thrusters>
+    <SoundParams engineSoundPosition="" runSoundDelay="0.1" rpmPitchSpeed="1.5"/>
+   </Hovercraft>
+  </Warrior>
+ </MovementParams>
+ <Particles>
+  <Exhaust insideWater="0" outsideWater="1">
+   <Helpers>
+    <Helper value="thruster_01"/>
+    <Helper value="thruster_02"/>
+    <Helper value="thruster_03"/>
+    <Helper value="thruster_04"/>
+    <Helper value="thruster_05"/>
+    <Helper value="thruster_06"/>
+    <Helper value="thruster_07"/>
+    <Helper value="thruster_08"/>
+    <Helper value="thruster_09"/>
+    <Helper value="thruster_10"/>
+   </Helpers>
+   <EngineStart effect=""/>
+   <EngineStop effect=""/>
+   <EngineRunning effect="alien_special.Warrior.thrusters" boostEffect="" baseSizeScale="1" minSpeed="0" minSpeedSizeScale="1" minSpeedCountScale="1" maxSpeed="15" maxSpeedSizeScale="1" maxSpeedCountScale="1" minPower="0" minPowerSizeScale="1" minPowerCountScale="1" maxPower="1" maxPowerSizeScale="1" maxPowerCountScale="1"/>
+  </Exhaust>
+  <DamageEffects>
+   <DamageEffect name="VehicleDestroyed" helper="vehicleBurnPos" effect="explosions.truck_explosion.chinese_truck"/>
+   <DamageEffect name="Thruster1_Destroyed" helper="thruster_01" effect="explosions.grenade_terrain.explosion"/>
+   <DamageEffect name="Thruster2_Destroyed" helper="thruster_02" effect="explosions.grenade_terrain.explosion"/>
+   <DamageEffect name="Thruster3_Destroyed" helper="thruster_03" effect="explosions.grenade_terrain.explosion"/>
+   <DamageEffect name="Thruster4_Destroyed" helper="thruster_04" effect="explosions.grenade_terrain.explosion"/>
+  </DamageEffects>
+  <EnvironmentLayers>
+   <EnvironmentLayer minSpeed="0" minSpeedSizeScale="0.5" minSpeedCountScale="1" maxSpeed="15" maxSpeedSizeScale="1" maxSpeedCountScale="1">
+    <Alignment alignGroundHeight="2" maxHeightSizeScale="0" maxHeightCountScale="0.75" alignToWater="0"/>
+    <Emitters />
+    <Wheels/>
+   </EnvironmentLayer>
+  </EnvironmentLayers>
+ </Particles>
+ <Modifications />
+</Vehicle>

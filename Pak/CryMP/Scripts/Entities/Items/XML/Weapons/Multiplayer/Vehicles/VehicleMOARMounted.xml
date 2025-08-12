@@ -1,0 +1,132 @@
+<item name="VehicleMOARMounted" class="VehicleWeapon" invisible="1" configuration="mp" >
+<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="1" />		
+		<mount>						
+			<param name="left_hand_helper" value="grip_left" />
+			<param name="right_hand_helper" value="grip_right" />
+		</mount>
+	</params>	
+	<ammos>
+		<ammo name="acmo" extra="0" amount="0" />
+	</ammos>
+	<geometry>
+		<firstperson name="objects/weapons/us/alien_weapon_mount/alien_weapon_mount_vehicle_fp.chr" angles="0,0,0" position="0,0,0"/>		
+		<boneAttachments>
+					<attachment target="firstperson" name="spinup_effect" bone="weapon_term" />
+					<attachment target="firstperson" name="spinup_light" bone="weapon_term" />
+					<attachment target="firstperson" name="muzzle_flash_effect" bone="weapon_term" />
+					<attachment target="firstperson" name="muzzle_flash_light" bone="weapon_term" />
+					<attachment target="firstperson" name="attachment_front" bone="attachment_front" />														
+		</boneAttachments>
+	</geometry>
+	<actions>
+	  <action name="select">
+			<animation target="firstperson" name="select_vehicle_01" camera_helper="camera_helper" />			
+			<sound target="thirdperson" name="sounds/weapons:moar_small:select" radius="5" />
+		</action>		
+		<action name="idle" children="1">
+			<animation target="firstperson" name="idle_vehicle_%suffix%01" camera_helper="camera_helper" />			
+		</action>				
+		<action name="fire" children="1">
+		  <sound target="firstperson" name="sounds/weapons:moar_large:fire_loop_fp" radius="100" />
+			<sound target="thirdperson" name="sounds/weapons:moar_large:fire_loop" radius="100" />
+			<animation target="firstperson" name="fire_vehicle_%suffix%01" camera_helper="camera_helper" />			
+		</action>		
+		<action name="rapid_fire">		  
+		</action>				
+		<action name="spin_up" children="1">
+		  <sound target="firstperson" name="sounds/weapons:moar_large:spin_up_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moar_large:spin_up" radius="100" static="1" />
+			<animation target="firstperson" name="prefire_vehicle_%suffix%01" camera_helper="camera_helper" />		
+		</action>		
+		<action name="spin_down" children="1">
+		  <sound target="firstperson" name="sounds/weapons:moar_large:spin_down_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moar_large:spin_down" radius="100" static="1" />
+			<animation target="firstperson" name="postfire_vehicle_%suffix%01" camera_helper="camera_helper" />			
+		</action>		
+		<action name="zoom_in">
+			<animation target="firstperson" name="zoom_in_vehicle_%suffix%01" camera_helper="camera_helper" />
+		</action>
+		<action name="zoom_out">
+			<animation target="firstperson" name="zoom_out_vehicle_%suffix%01" camera_helper="camera_helper"/>
+		</action>		
+		<action name="hit">
+			<sound target="firstperson" name="sounds/physics:bullet_impact:moar_large_beam_impact" radius="100" />
+			<sound target="thirdperson" name="sounds/physics:bullet_impact:moar_large_beam_impact" radius="100" static="1" />			
+		</action>
+    <action name="overheating">
+      <sound target="firstperson" name="Sounds/weapons:moar_small:overfreeze" radius="5" static="0" />
+      <sound target="thirdperson" name="Sounds/weapons:moar_small:overfreeze" radius="5" static="0" />
+    </action>
+	</actions>
+	<firemodes>
+		<firemode name="Beam" type="FreezingBeam">
+			<fire>
+        <param name="clip_size" value="-1" />
+				<param name="ammo_type" value="acmo" />
+				<param name="offset" value="0.15" />
+				<param name="spin_up_time" value="1" />
+				<param name="damage" value="0" />
+				<param name="reload_time" value="2" />
+			</fire>
+			<beam>
+				<param name="hit_decal" value="materials/decals/alien_hunter_freeze.mtl" />
+				<param name="hit_decal_size" value="1.0" />
+				<param name="hit_decal_size_min" value="0.80" />
+				<param name="hit_decal_lifetime" value="180" />
+				<param name="hit_effect" value="bullet.hit_MOAR.a" />
+				<param name="hit_effect_scale" value="1" />
+			</beam>
+      <heating>
+				<param name="overheat_time" value="6.0" /> 
+				<param name="duration" value="0.75" />
+				<param name="cooldown_time" value="2.0" />
+        <param name="helper_fp" value="muzzle_flash_effect" />
+        <param name="effect_fp" value="weapon_fx.gun.cold_steam_on_barrel" />
+        <param name="helper_tp" value="muzzle_flash_effect" />
+        <param name="effect_tp" value="weapon_fx.gun.cold_steam_on_barrel" />
+      </heating>      
+			<spread>
+				<param name="min" value="0.035" />
+				<param name="max" value="2.30" />
+				<param name="attack" value="0.75" />
+				<param name="decay" value="0.50" />
+			</spread>						
+			<effect>
+				<firstperson effect="Alien_Weapons.Freeze_Beam.beam_firemode1" helper="muzzle_flash_effect" light_radius="0" />
+				<thirdperson effect="Alien_Weapons.Freeze_Beam.beam_firemode1_tp" helper="muzzle_flash_effect" light_radius="0" />
+			</effect>
+			<spinup>
+				<firstperson effect="Alien_Weapons.Freeze_Beam.beam_charge" helper="spinup_effect"  light_radius="0" />
+				<thirdperson effect="Alien_Weapons.Freeze_Beam.beam_charge_tp" helper="spinup_effect"  light_radius="0" />	
+			</spinup>
+		</firemode> 
+	</firemodes>
+	<zoommodes>
+		<zoommode name="ironsight" type="IronSight">
+			<zoom>
+				<param name="suffix" value="ironsight_" />
+				<param name="dof_mask" value="textures/weapons/ironzoom_blurmask.dds" />
+				<param name="zoom_in_time" value="0.2" />
+				<param name="zoom_out_time" value="0.2" />
+				<stages>
+					<stage value="1.4" />
+				</stages>
+			</zoom>
+		</zoommode>		
+	</zoommodes>
+	<accessories>
+		<initialsetup>			
+			<accessory name="VehicleMOARAttach" />
+		</initialsetup>		
+		<accessory name="VehicleMOARAttach" exclusive="1">
+			<attach helper="attachment_front" layer="" />
+			<detach />
+		</accessory>		
+	</accessories>
+</item>

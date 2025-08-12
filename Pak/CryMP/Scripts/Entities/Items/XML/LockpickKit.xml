@@ -1,0 +1,52 @@
+<item name="LockpickKit" class="Weapon" category="utility" priority="41" uniqueId="1">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="1" />
+		<param name="droppable" 	value="1" />
+		<param name="pose" 				value="lockpick" />
+		<param name="mass"				value="1" />  
+		<param name="uniqueId"    value="1" />  
+		<param name="display_name"	value="@mp_eLockpick" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/equipment/lockpick_kit/lockpick_kit_fp.chr" angles="0,0,0" />
+		<thirdperson name="objects/weapons/equipment/lockpick_kit/lockpick_kit_tp.cgf" />	
+	</geometry>
+	<actions>	
+		<action name="select">
+			<animation target="firstperson" name="select_01" />
+			<animation target="owner" name="select" />
+			<sound target="thirdperson" name="sounds/weapons:moar_small:select" radius="5" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_01" />
+			<animation target="owner" name="deselect" />
+			<sound target="thirdperson" name="sounds/weapons:moar_small:deselect" radius="5" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_01" />
+			<animation target="owner" name="idle" />
+			<animation target="ownerloop" name="idle" />
+		</action>
+	
+		<action name="work">
+			<animation target="firstperson" name="fire_01" />
+			<animation target="ownerloop" name="use_lockpick" />
+			<sound target="firstperson" name="sounds/weapons:lockpick:lockpick_fire_fp" radius="25" />
+			<sound target="thirdperson" name="Sounds/weapons:lockpick:lockpick_fire" radius="25" />
+		</action>
+
+	</actions>
+	<firemodes>
+		<firemode name="Lockpick" type="WorkOnTarget">
+			<work>
+				<param name="work_type" value="lockpick" />
+				<param name="amount" 		value="15" />
+				<param name="delay" 		value="0.2" />
+				<param name="range" 		value="7.5" />
+			</work>
+		</firemode>
+	</firemodes>
+	<zoommodes>
+	</zoommodes>
+</item>
