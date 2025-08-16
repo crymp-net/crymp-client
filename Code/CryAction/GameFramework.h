@@ -4,6 +4,7 @@
 #include "Library/StlportVector.h"
 
 #include "ActionGame.h"
+#include "Aliases.h"
 
 struct ICVar;
 
@@ -78,7 +79,7 @@ class GameFramework : public IGameFramework
 	char m_guid[128] = "{00000000-0000-0000-0000-000000000000}";
 	ILevelSystem* m_pLevelSystem = nullptr;  // m_reserved_0x4ac_0x4d8
 	ActorSystem* m_pActorSystem = nullptr;  // m_reserved_0x4b0_0x4e0
-	IItemSystem* m_pItemSystem = nullptr;  // m_reserved_0x4b4_0x4e8
+	ItemSystemT* m_pItemSystem = nullptr;  // m_reserved_0x4b4_0x4e8
 	VehicleSystem* m_pVehicleSystem = nullptr;  // m_reserved_0x4b8_0x4f0
 	IActionMapManager* m_pActionMapManager = nullptr;  // m_reserved_0x4bc_0x4f8
 	ViewSystem* m_pViewSystem = nullptr;  // m_reserved_0x4c0_0x500

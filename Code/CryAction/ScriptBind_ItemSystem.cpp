@@ -4,7 +4,7 @@
 
 extern std::uintptr_t CRYACTION_BASE;
 
-ScriptBind_ItemSystem::ScriptBind_ItemSystem(ISystem* pSystem, IItemSystem* pItemSystem, IGameFramework* pGameFramework)
+ScriptBind_ItemSystem::ScriptBind_ItemSystem(ISystem* pSystem, ItemSystemT* pItemSystem, IGameFramework* pGameFramework)
 {
 #ifdef BUILD_64BIT
 	std::uintptr_t ctor = CRYACTION_BASE + 0x328d0;
@@ -12,5 +12,5 @@ ScriptBind_ItemSystem::ScriptBind_ItemSystem(ISystem* pSystem, IItemSystem* pIte
 	std::uintptr_t ctor = CRYACTION_BASE + 0x25d40;
 #endif
 
-	(this->*reinterpret_cast<void(ScriptBind_ItemSystem::*&)(ISystem*, IItemSystem*, IGameFramework*)>(ctor))(pSystem, pItemSystem, pGameFramework);
+	(this->*reinterpret_cast<void(ScriptBind_ItemSystem::*&)(ISystem*, ItemSystemT*, IGameFramework*)>(ctor))(pSystem, pItemSystem, pGameFramework);
 }

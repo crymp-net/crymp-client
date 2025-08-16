@@ -43,7 +43,7 @@ ItemSystemLegacy::~ItemSystemLegacy()
 	*/
 }
 
-void ItemSystemLegacy::Update()
+void ItemSystemLegacy::Update(float frameTime)
 {
 #ifdef BUILD_64BIT
 	std::uintptr_t func = CRYACTION_BASE + 0x28d90;
@@ -52,6 +52,14 @@ void ItemSystemLegacy::Update()
 #endif
 
 	(this->*reinterpret_cast<void(ILevelSystemListener::*&)()>(func))();
+}
+
+void ItemSystemLegacy::PrecacheLevel() {
+
+}
+
+void ItemSystemLegacy::RegisterItemFactory(const char* name, IGameFramework::IItemCreator* creator) {
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

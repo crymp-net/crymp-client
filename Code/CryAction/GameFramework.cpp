@@ -154,9 +154,7 @@ void GameFramework::RegisterFactory(const char* name, IActorCreator* pCreator, b
 
 void GameFramework::RegisterFactory(const char* name, IItemCreator* pCreator, bool isAI)
 {
-#ifdef NEW_ITEM_SYSTEM
-	static_cast<ItemSystem*>(m_pItemSystem)->RegisterItemFactory(name, pCreator);
-#endif
+	m_pItemSystem->RegisterItemFactory(name, pCreator);
 }
 
 void GameFramework::RegisterFactory(const char* name, IVehicleCreator* pCreator, bool isAI)
@@ -220,11 +218,7 @@ bool GameFramework::Init(SSystemInitParams& startupParams)
 	m_pUIDraw = new UIDraw();
 	m_pLevelSystem = new LevelSystem(m_pSystem, "levels");
 	m_pActorSystem = new ActorSystem(m_pSystem, m_pEntitySystem);
-#ifdef NEW_ITEM_SYSTEM
-	m_pItemSystem = new ItemSystem(this, m_pSystem);
-#else
-	m_pItemSystem = new ItemSystemLegacy(this, m_pSystem);
-#endif
+	m_pItemSystem = new ItemSystemT(this, m_pSystem);
 	m_pActionMapManager = new ActionMapManager(m_pSystem->GetIInput());
 	m_pViewSystem = new ViewSystem(m_pSystem);
 	m_pGameplayRecorder = new GameplayRecorder(this);
@@ -271,7 +265,7 @@ bool GameFramework::Init(SSystemInitParams& startupParams)
 
 	RegisterInventoryFactory(this);
 
-	m_pLevelSystem->AddListener(dynamic_cast<ILevelSystemListener*>(m_pItemSystem));
+	m_pLevelSystem->AddListener(m_pItemSystem);
 
 	this->InitScriptBinds();
 
@@ -427,11 +421,7 @@ bool GameFramework::PreUpdate(bool haveFocus, unsigned int updateFlags)
 
 	if (!isGamePaused)
 	{
-#ifdef NEW_ITEM_SYSTEM
-		static_cast<ItemSystem*>(m_pItemSystem)->Update(frameTime);
-#else
-		static_cast<ItemSystemLegacy*>(m_pItemSystem)->Update();
-#endif
+		m_pItemSystem->Update(frameTime);
 		m_pMaterialEffects->Update(frameTime);
 		m_pDialogSystem->Update(frameTime);
 		m_pMusicLogic->Update();
@@ -1516,9 +1506,7 @@ bool GameFramework::SaveServerConfig(const char* path)
 
 void GameFramework::PrefetchLevelAssets(const bool enforceAll)
 {
-#ifdef NEW_ITEM_SYSTEM
-	static_cast<ItemSystem*>(m_pItemSystem)->PrecacheLevel();
-#endif
+	m_pItemSystem->PrecacheLevel();
 }
 
 bool GameFramework::GetModInfo(SModInfo* modInfo, const char* modPath)

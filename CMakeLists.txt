@@ -95,6 +95,7 @@ add_library(Base OBJECT
 	Code/CryAction/ActorIterator.h
 	Code/CryAction/ActorSystem.cpp
 	Code/CryAction/ActorSystem.h
+	Code/CryAction/Aliases.h
 	Code/CryAction/AnimationGraphSystem.cpp
 	Code/CryAction/AnimationGraphSystem.h
 	Code/CryAction/CallbackTimer.cpp

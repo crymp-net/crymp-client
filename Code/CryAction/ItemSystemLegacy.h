@@ -6,6 +6,7 @@
 struct IStatObj;
 struct IGameFramework;
 struct ISystem;
+struct IGameFramework::IItemCreator;
 
 class ItemSystemLegacy : public ILevelSystemListener, public IItemSystem
 {
@@ -19,7 +20,9 @@ public:
 	explicit ItemSystemLegacy(IGameFramework* pGameFramework, ISystem* pSystem);
 	virtual ~ItemSystemLegacy();
 
-	void Update();
+	void Update(float delta);
+	void PrecacheLevel();
+	void RegisterItemFactory(const char* name, IGameFramework::IItemCreator* creator);
 
 	////////////////////////////////////////////////////////////////////////////////
 	// ILevelSystemListener
