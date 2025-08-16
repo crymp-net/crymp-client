@@ -208,14 +208,9 @@ void CWeaponSystem::Reload()
 
 	m_tracerManager.Reset();
 
-	if (!gEnv->bClient) {
-		CryLogAlways("[CryMP] Reloading XML weapon definitions");
-		for (TFolderList::iterator it = m_folders.begin(); it != m_folders.end(); ++it)
-			Scan(it->c_str());
-	} else {
-		CryLogAlways("[CryMP] Reloading pre-compiled weapon definitions");
-		this->RegisterXMLData();
-	}
+	CryLogAlways("[CryMP] Reloading XML weapon definitions");
+	for (TFolderList::iterator it = m_folders.begin(); it != m_folders.end(); ++it)
+		Scan(it->c_str());
 
 	m_reloading = false;
 }
@@ -587,55 +582,6 @@ bool CWeaponSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
 		desc.configurations.insert(std::make_pair<string, const SAmmoParams*>(configName, static_cast<const SAmmoParams*>(pAmmoParams)));
 
 	return true;
-}
-
-
-//------------------------------------------------------------------------
-void CWeaponSystem::RegisterAmmo(const char* name, const char* className, const char* script, const char* config, IItemParamsNode* params)
-{
-	auto it = m_projectileregistry.find(CONST_TEMP_STRING(className));
-	if (it == m_projectileregistry.end())
-	{
-		CryLogWarningAlways("Unknown ammo class '%s'! Skipping...", className);
-	}
-
-	IEntityClassRegistry::SEntityClassDesc classDesc;
-	classDesc.sName = name;
-	classDesc.sScriptFile = script;
-	classDesc.flags |= ECLF_INVISIBLE;
-
-	IEntityClass* pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
-
-	if (!m_reloading && !pClass)
-	{
-		m_pGame->GetIGameFramework()->GetIGameObjectSystem()->RegisterExtension(name, it->second, &classDesc);
-		pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
-		assert(pClass);
-	}
-
-	auto ait = m_ammoparams.find(pClass);
-	if (ait == m_ammoparams.end())
-	{
-		auto result = m_ammoparams.insert(TAmmoTypeParams::value_type(pClass, SAmmoTypeDesc()));
-		ait = result.first;
-	}
-
-	SAmmoParams* pAmmoParams = new SAmmoParams(params, pClass);
-	SAmmoTypeDesc& desc = ait->second;
-
-	if (!config || !config[0])
-	{
-		if (desc.params)
-		{
-			delete desc.params;
-		}
-
-		desc.params=pAmmoParams;
-	}
-	else
-	{
-		desc.configurations.insert(std::make_pair<string, const SAmmoParams*>(config, static_cast<const SAmmoParams*>(pAmmoParams)));
-	}
 }
 
 //------------------------------------------------------------------------

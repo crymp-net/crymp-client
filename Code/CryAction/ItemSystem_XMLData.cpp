@@ -2,6 +2,7 @@
 
 void ItemSystem::RegisterXMLData()
 {
+#ifdef NEW_ITEM_SYSTEM
 	// Scripts/Entities/Items/XML/Accessories/AlienCore.xml
 	{
 		ItemClassData item;
@@ -72493,4 +72494,5 @@ void ItemSystem::RegisterXMLData()
 
 		this->RegisterItemClass(item);
 	}
+#endif
 }

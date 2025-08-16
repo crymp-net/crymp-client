@@ -5,7 +5,7 @@
 struct ISystem;
 struct IGameFramework;
 
-class ItemSystem;
+struct IItemSystem;
 
 class ScriptBind_ItemSystem : public CScriptableBase
 {
@@ -16,5 +16,5 @@ class ScriptBind_ItemSystem : public CScriptableBase
 #endif
 
 public:
-	explicit ScriptBind_ItemSystem(ISystem* pSystem, ItemSystem* pItemSystem, IGameFramework* pGameFramework);
+	explicit ScriptBind_ItemSystem(ISystem* pSystem, IItemSystem* pItemSystem, IGameFramework* pGameFramework);
 };
