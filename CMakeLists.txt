@@ -996,6 +996,7 @@ add_library(CryGame OBJECT
 	Code/CryGame/Items/Weapons/WeaponInput.cpp
 	Code/CryGame/Items/Weapons/WeaponSystem.cpp
 	Code/CryGame/Items/Weapons/WeaponSystem.h
+	Code/CryGame/Items/Weapons/WeaponSystem_XMLData.cpp
 	Code/CryGame/Items/Weapons/ZoomModes/IronSight.cpp
 	Code/CryGame/Items/Weapons/ZoomModes/IronSight.h
 	Code/CryGame/Items/Weapons/ZoomModes/Scope.cpp

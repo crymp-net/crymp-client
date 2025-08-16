@@ -2,6 +2,7 @@
 
 void CWeaponSystem::RegisterXMLData()
 {
+#ifdef NEW_ITEM_SYSTEM
 	// Scripts/Entities/Items/XML/Ammo/50bullet.xml
 	{
 		IItemParamsNode* node = m_pItemSystem->CreateParams();
@@ -11248,4 +11249,5 @@ void CWeaponSystem::RegisterXMLData()
 
 		this->RegisterAmmo("alienmount_acmo", "Bullet", "", "", node);
 	}
+#endif
 }
