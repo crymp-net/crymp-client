@@ -1,0 +1,28 @@
+<item name="VehicleMOARAttach" class="Item">
+	<params>
+		<param name="giveable" value="0" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/US/Alien_Weapon_Mount/moar_fp.chr"/>		
+	</geometry>
+	<actions>
+		<action name="idle">
+			<animation target="firstperson" name="idle_vehicle_%suffix%01" />			
+		</action>
+		<action name="spin_up">
+			<animation target="firstperson" name="prefire_vehicle_%suffix%01"/>
+		</action>
+		<action name="spin_down">
+			<animation target="firstperson" name="postfire_vehicle_%suffix%01" speed="1"/>			
+		</action>		
+		<action name="fire">
+			<animation target="firstperson" name="fire_vehicle_%suffix%01" />			
+		</action>		
+		<action name="blast">
+			<sound target="firstperson" name="sounds/weapons:moar_small:fire_fp" radius="15" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moar_small:fire" radius="15" static="1" />
+		</action>
+	</actions>
+</item>

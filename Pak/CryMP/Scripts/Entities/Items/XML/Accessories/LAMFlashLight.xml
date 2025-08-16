@@ -1,0 +1,16 @@
+<item name="LAMFlashLight" class="LAM" priority="112">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+	</params>
+	<lam>	  
+    <firstperson light_range="12" light_fov="40" light_color="1,1,1" light_diffuse_mul="5" light_texture="textures/lights/flashlight3.dds" light_material="" light_hdr_dyn="1.5"/>
+    <thirdperson light_range="5" light_fov="40" light_color="1,1,1" light_diffuse_mul="1" light_texture="textures/lights/flashlight3.dds" light_material="materials/lightbeams/lightbeam_floodlight.mtl" light_hdr_dyn="1"/>
+		<special		 isLaser="0" isFlashLight="1" isLamRifle="0" giveExtraAccessory="0" extraAccessoryName="" />
+	</lam>
+	<geometry>
+		<firstperson name="objects/weapons/attachments/LAM_pistol/LAM_pistol_off_fp.cgf"/>
+		<thirdperson name="objects/weapons/attachments/LAM_pistol/LAM_pistol_tp.cgf" />
+	</geometry>
+</item>

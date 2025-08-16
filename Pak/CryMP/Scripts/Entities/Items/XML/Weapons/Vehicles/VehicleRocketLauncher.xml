@@ -1,0 +1,27 @@
+<item name="VehicleRocketLauncher" class="VehicleWeapon" invisible="1" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ammos>
+		<ammo name="helicoptermissile" extra="0" amount="200" />
+	</ammos>
+	<firemodes>
+		<firemode name="Automatic" type="Automatic">
+			<fire>
+				<param name="ammo_type" value="helicoptermissile" />
+				<param name="clip_size" value="200" />
+				<param name="rate" value="160" />
+				<param name="damage" value="250" />
+			</fire>
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Rocketlauncher.Hellfire"    helper="" light_helper="" light_radius="10" light_time="0.03" light_color="1,1,0.8" light_diffuse_mult="8"  />
+				<thirdperson effect="muzzleflash.Rocketlauncher.Hellfire_tp" helper="" light_helper="" light_radius="10" light_time="0.03" light_color="1,1,0.8" light_diffuse_mult="8"  />
+			</muzzleflash>
+		</firemode>
+	</firemodes>
+</item>

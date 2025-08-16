@@ -1,0 +1,71 @@
+<item name="LightMOAC" class="Weapon" >
+	<params>
+		<param name="equipeable"	value="1" />
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="1" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="0" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ammos>
+		<ammo name="lightacmo" amount="1" />
+	</ammos>
+	<actions>
+	
+		<action name="spin_up">
+			<sound target="firstperson" name="sounds/weapons:moac_small:spin_up_fp" radius="15" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moac_small:spin_up" radius="15" static="1" />
+		</action>
+		<action name="spin_down">
+			<sound target="firstperson" name="sounds/weapons:moac_small:spin_down_fp" radius="15" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moac_small:spin_down" radius="15" static="1" />
+		</action>
+		<action name="rapid_fire">
+			<sound target="firstperson" name="sounds/weapons:moac_small:fireloop_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moac_small:fireloop" radius="100" static="1" />
+		</action>
+		<action name="blast">
+			<sound target="firstperson" name="sounds/weapons:moac_small:fire_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moac_small:fire" radius="100" static="1" />
+		</action>		
+
+		<action name="fire">
+			<animation target="thirdperson" name="fire_acmo_01" />
+			<animation target="owner" name="shoot" />
+			<sound target="firstperson" name="sounds/weapons:moac_small:fire_riflemode_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moac_small:fire_riflemode" radius="100" static="1" />
+		</action>
+
+		<action name="idle">
+			<animation target="thirdperson" name="idle_01" />
+			<animation target="owner" name="idle" />
+		</action>
+	</actions>
+	<firemodes>
+		<firemode name="Charge" type="Charge">
+			<fire>
+				<param name="spin_up_time" value="0.02" />
+				<param name="ammo_type" value="lightacmo" />
+				<param name="rate" value="640" />
+				<param name="damage" value="40" />
+				<param name="clip_size" value="-1" />
+				<param name="max_clip" value="-1" />
+				<param name="offset" value="1" />
+				<param name="helper" value="dummy" />
+			</fire>
+			<charge>
+				<param name="time" value="0.1" />
+				<param name="max_charges" value="1" />
+			</charge>
+			<spinup>
+				<firstperson effect="muzzleflash.Alien.MOAC_Firing" time="2" light_radius="0" />
+				<thirdperson effect="muzzleflash.Alien.MOAC_Firing" time="2" light_radius="0" />
+			</spinup>
+			<effect>
+				<firstperson effect="muzzleflash.Alien.MOAC_charge" time="1" light_radius="0" />
+				<thirdperson effect="muzzleflash.Alien.MOAC_charge" time="1" light_radius="0" />
+			</effect>
+		</firemode>
+	</firemodes>
+</item>

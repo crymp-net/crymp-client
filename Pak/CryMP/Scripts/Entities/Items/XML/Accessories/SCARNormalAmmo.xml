@@ -1,0 +1,14 @@
+<item name="SCARNormalAmmo" class="Item">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+	</params>
+	<!--<accessoryAmmo>
+		<ammo name="bullet" amount="30" />
+	</accessoryAmmo>-->
+	<geometry>
+		<firstperson name="objects/weapons/attachments/magazine_rifle/magazine_rifle_fp.cgf"/>
+		<thirdperson name="objects/weapons/attachments/magazine_rifle/magazine_rifle_tp.cgf"/>
+	</geometry>
+</item>

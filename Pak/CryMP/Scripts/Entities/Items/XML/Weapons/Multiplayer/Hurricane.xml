@@ -1,0 +1,272 @@
+<item name="Hurricane" class="Weapon" category="heavy" priority="0" configuration="mp" >
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="1" />
+		<param name="pose" 				value="mg" />
+		<param name="mass"				value="50" />
+		<param name="two_hand"				value="1" />
+		<param name="melee_attack_firemode"		value="melee" />
+		<param name="prone_not_usable" value="1" />
+		<param name="raiseable"		value="true" />
+		<param name="raise_distance" value="0.90" />
+		<param name="display_name"	value="@mp_eMinigun" />
+	</params>
+
+	<ai_descriptor handler="instant" speed="400" damage_radius="-1" charge_time="3"
+	 coverFireTime="20" spreadRadius="0.5" draw_time="2.0" sweep_width="3.0" sweep_frequency="1.5"
+	 burstBulletCountMin="5" burstBulletCountMax="20" burstPauseTimeMin="0.0" burstPauseTimeMax="0.0" singleFireTriggerTime="-1"
+	 />
+
+	<ammos>
+		<ammo name="hurricanebullet" extra="500" amount="500" />
+	</ammos>
+	<geometry>
+		<firstperson name="objects/weapons/us/hurricane/hurricane_fp.cdf" angles="0,0,0" position="0,0,0"/>
+		<thirdperson name="objects/weapons/us/hurricane/hurricane_tp.cgf" angles="0,0,0" />
+		<boneAttachments>
+			<attachment target="firstperson" name="muzzle_flash_effect" bone="weapon_term" />
+			<attachment target="firstperson" name="muzzle_flash_light" bone="weapon_term" />
+			<attachment target="firstperson" name="attachment_side" bone="attachment_side" />
+			<attachment target="firstperson" name="attachment_side_light" bone="attachment_side"/>
+		</boneAttachments>
+	</geometry>
+	<actions>
+
+		<action name="spin_up">
+			<animation target="firstperson" name="prefire_01" speed="0.45" />
+			<animation target="owner" name="spin_up" />
+			<sound target="firstperson" name="sounds/weapons:hurricane:spin_up_fp" radius="10" />
+			<sound target="thirdperson" name="sounds/weapons:hurricane:spin_up_3rd" radius="10" />
+		</action>
+		<action name="spin_down">
+			<animation target="firstperson" name="postfire_01" />
+			<animation target="owner" name="spin_down" />
+			<sound target="firstperson" name="sounds/weapons:hurricane:spin_down_fp" radius="10" />
+			<sound target="thirdperson" name="sounds/weapons:hurricane:spin_down_3rd" radius="10" />
+		</action>
+		<action name="spin_down_tail">
+			<sound target="firstperson" name="Sounds/weapons:hurricane:fire_fp_tail%env%" radius="5" static="1" />
+			<sound target="thirdperson" name="Sounds/weapons:hurricane:fire_3rd_tail%env%" radius="5" static="1" />
+		</action>
+		<action name="select">
+			<animation target="firstperson" name="select_01" />
+			<animation target="owner" name="select" />
+			<sound target="thirdperson" name="sounds/weapons:hurricane:select" radius="10" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_01" />
+			<animation target="owner" name="deselect" />
+			<sound target="firstperson" name="sounds/weapons:hurricane:deselect" radius="10" />
+			<sound target="thirdperson" name="sounds/weapons:hurricane:deselect" radius="10" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_01" speed="0.7" />
+			<animation target="owner" name="idle" />
+		</action>
+		
+		<action name="pickedup">
+			<sound target="firstperson" name="Sounds/weapons:weapon_accessories:pickup_weapon_fp" radius="5" />
+			<sound target="thirdperson" name="Sounds/weapons:weapon_accessories:pickup_weapon" radius="5" />
+		</action>
+
+		<action name="fire">
+			<animation target="firstperson" name="fire_01" />
+			<animation target="owner" name="shoot" />
+		</action>
+
+		<action name="rapid_fire">
+			<sound target="firstperson" name="sounds/weapons:hurricane:fire_fp" radius="300" static="1" synched="1" />
+			<sound target="thirdperson" name="sounds/weapons:hurricane:fire_3rd" radius="300" static="1" synched="1" />
+		</action>
+		
+		<action name="melee">
+			<animation target="firstperson" name="melee_01" />
+			<animation target="owner" name="weaponPunch" />
+			<!--<sound target="firstperson" name="sounds/weapons:melee:fire_fp_mw" radius="5" />-->
+			<sound target="thirdperson" name="sounds/weapons:melee:fire" radius="5" />
+		</action>
+		
+		<action name="hit">
+			<sound target="firstperson" name="sounds/physics:bullet_impact:melee_impact_mw" radius="5" />
+			<sound target="thirdperson" name="sounds/physics:bullet_impact:melee_impact_mw" radius="5" />
+		</action>
+
+		<action name="reload">
+			<animation target="firstperson" name="reload_01" />
+			<animation target="owner" name="reload" />
+			<!--<sound target="thirdperson" name="sounds/weapons:hurricane:reload" radius="10" />-->
+		</action>
+		
+		<action name="empty_clip">
+			<sound target="firstperson" name="Sounds/weapons:hurricane:dryfire_fp" radius="2" />
+			<sound target="thirdperson" name="Sounds/weapons:hurricane:dryfire" radius="2" />
+		</action>	
+		
+		<action name="enter_modify">
+			<animation target="firstperson" name="enter_modify_01" />
+      <animation target="ownerloop" name="modify_weapon" />
+    </action>
+		<action name="leave_modify">
+			<animation target="firstperson" name="leave_modify_01" />
+      <animation target="ownerloop" name="idle" />
+    </action>		
+		
+		<action name="raise">
+			<animation target="firstperson" name="raise_%hand%_%suffix%01" />
+		</action>
+		
+		<action name="idle_raised">
+			<animation target="firstperson" name="idle_raised_%hand%_%suffix%01" />
+		</action>
+		
+		<action name="lower">
+			<animation target="firstperson" name="lower_%hand%_%suffix%01" />
+		</action>
+	</actions>
+	<layers>
+		<layer name="modify_layer">
+			<animation target="firstperson" name="modify_layer_01" layerId="2" />
+		</layer>
+		<layer name="lam">
+			<animation target="firstperson" name="flashlight_on_layer_01" layerId="3" />
+		</layer>	
+	</layers>
+	<firemodes>
+		<firemode name="Rapid" type="Rapid">
+			<fire>
+				<param name="ammo_type" value="hurricanebullet" />
+				<param name="rate" value="1200" />
+				<param name="damage" value="40" />
+				<param name="clip_size" value="500" />
+				<param name="helper_tp" value="weapon_term" />
+				<param name="autozoom" value="true" />
+				<param name="ooatracer_treshold" value="8" />
+				<param name="reload_time" value="3.2" />
+				<param name="nearmiss_signal" value="OnNearMiss" />
+				<param name="distance" value="800" />
+				<param name="fake_fire_rate" value="5"/>
+				<param name="ai_vs_player_damage" value="40"/>
+			</fire>
+			<tracer>
+				<param name="geometryFP" 	value="objects/effects/tracer_standard_new.cgf" />
+				<param name="geometry" 	value="objects/effects/tracer_standard_new.cgf" />
+				<param name="effectFP" 		value="weapon_fx.tracer.standardfp" />
+				<param name="effect" 		value="weapon_fx.tracer.standard" />
+				<paran name="speed" 		value="1000" />
+				<param name="speedFP"   value="1000" />
+				<param name="frequency" value="2" />
+				<param name="helper_fp" value="weapon_term" />
+				<param name="helper_tp" value="weapon_term" />
+			</tracer>				
+			<outofammotracer>
+				<param name="geometryFP" 	value="objects/effects/tracer_standard_red_new.cgf" />
+				<param name="geometry" 	value="objects/effects/tracer_standard_red_new.cgf" />
+				<param name="effectFP" 		value="weapon_fx.tracer.standardfp" />
+				<param name="effect" 		value="weapon_fx.tracer.standard" />
+				<paran name="speed" 		value="1000" />
+				<param name="speedFP"   value="1000" />
+				<param name="frequency" value="2" />
+				<param name="helper_fp" value="weapon_term" />
+				<param name="helper_tp" value="weapon_term" />
+			</outofammotracer>
+			<spread>
+				<param name="min" value="1.35" />
+				<param name="max" value="2.35" />
+				<param name="attack" value="0.75" />
+				<param name="decay" value="0.50" />
+			</spread>
+			<rapid>
+				<param name="min_speed" value="2.55" />
+				<param name="max_speed" value="2.55" />
+				<param name="acceleration" value="2.35" />
+				<param name="deceleration" value="-3.0" />
+				
+				<param name="barrel_attachment" value="barrel" />
+				<param name="engine_attachment" value="engine" />
+				
+				<param name="camshake_rotate" value=".005,0,0" />
+				<param name="camshake_perShot" value="4.0" />
+			</rapid>
+			<recoil>
+				<param name="angular_impulse" value="0.75" />
+				<param name="back_impulse" value="0.2" />
+				<param name="max_recoil"	value="10" />
+				<param name="attack" 			value="2.25" />
+				<param name="decay" 			value="0.7" />
+				<param name="maxx" 				value="8" />
+				<param name="maxy" 				value="1.35" />
+				<param name="randomness" 	value="0.25" />
+				<param name="recoil_strMode_m" value="0.1" />
+				<hints>
+					<hint x="0.00" 	y="0.00" />
+					<hint x="0.08" 	y="0.00" />
+					<hint x="0.15" 	y="0.15" />
+					<hint x="0.25" 	y="0.25" />					
+					<hint x="0.35" 	y="0.30" />
+					<hint x="0.45"	y="0.25" />
+					<hint x="0.50" 	y="0.15" />
+					<hint x="0.60" 	y="-0.0" />
+					<hint x="0.85" 	y="-0.15" />
+					<hint x="0.75" 	y="-0.35" />
+					<hint x="0.75" 	y="-0.65" />
+					<hint x="0.90" 	y="-0.15" />
+					<hint x="0.95" 	y="0.55" />
+					<hint x="0.85" 	y="1.0" />
+				</hints>				
+			</recoil>
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Machinegun.Hurricane" helper="muzzle_flash_effect" light_helper="muzzle_flash_light" light_time="0.01" light_radius="3" time="0.500" light_color="1,1,0.8" light_diffuse_mult="8" />
+				<thirdperson effect="muzzleflash.Machinegun.Hurricane_tp" helper="weapon_term" light_helper="weapon_term" light_time="0.01" light_radius="3" time="0.500" light_color="1,1,0.8" light_diffuse_mult="8" />
+			</muzzleflash>
+			<muzzlesmoke>
+				<firstperson effect="" />
+				<thirdperson effect="" />
+			</muzzlesmoke>
+			<reject>
+				<firstperson effect="weapon_fx.shells.hurricane" helper="shells" />
+				<thirdperson effect="weapon_fx.shells.hurricane" helper="shells" />
+			</reject>
+		</firemode>
+		<firemode name="melee" type="Melee">
+			<melee>
+				<param name="helper" value="collision" />
+				<param name="offset" value="0.5" />
+				<param name="damage" value="75" />
+				<param name="impulse" value="80" />
+				<param name="delay" value="0.15" />
+				<param name="duration" value="0.35" />
+			</melee>
+			<actions>
+				<param name="attack" value="melee" />
+			</actions>	
+		</firemode>
+	</firemodes>
+	<accessories>
+		<!--<accessory name="Flashlight">
+			<attach helper="attachment_side" layer="lam" />
+			<detach />			
+			<params>
+			</params>
+		</accessory>-->
+		<accessory name="LAMRifle">
+			<attach helper="attachment_side" layer="lam" />
+			<detach />
+			<params>
+				<firemodes>
+					<firemode type="default">
+						<spread>
+  						<param name="min" value="1.75" />
+  						<param name="max" value="3.25" />
+  						<param name="speed_m" value="0.1" />
+  						<param name="rotation_m" value="0.2" />                        
+						</spread>
+					</firemode>
+				</firemodes>
+			</params>
+		</accessory>
+		<accessory name="LAMRifleFlashLight">
+			<attach helper="attachment_side" layer="lam" />
+			<detach />
+		</accessory>
+	</accessories>	
+</item>

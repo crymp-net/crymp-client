@@ -1,0 +1,201 @@
+<item name="ShiTen" class="Weapon">
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="droppable"		value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="mountable" 		value="1" />
+		<param name="pose" 				value="rifle" />
+		<mount>
+			<param name="pivot" value="weapon" />		
+			<param name="min_pitch" value="-22" />
+			<param name="max_pitch" value="60" />
+			<param name="yaw_range" value="70" />
+			<param name="eye_distance" value="1.2" />
+			<param name="eye_height" value="0.20" />
+			<param name="body_distance" value="0.90" />
+			<param name="left_hand_helper" value="grip_left" />
+			<param name="right_hand_helper" value="grip_right" />
+		</mount>
+	</params>
+	<ai_descriptor handler="instant" speed="400" damage_radius="-1" charge_time="1"
+	 smartobject_class="MountedMG" coverFireTime="10" spreadRadius="0.5" draw_time="3.0" sweep_width="3.0" sweep_frequency="1.5"
+	 burstBulletCountMin="10" burstBulletCountMax="20" burstPauseTimeMin="0.0" burstPauseTimeMax="0.3" singleFireTriggerTime="-1" >
+		 <weaponOffset>
+		 	<offset stanceId="STANCE_PRONE" weaponOffset="0.1,0.0,1.35" />
+		 	<useEyeOffset />
+		 	<offset stanceId="STANCE_STAND" weaponOffset="0.2,0.2,1.37" weaponOffsetLeanLeft="-0.5,0.0,1.3" weaponOffsetLeanRight="0.6,0.0,1.3"  />
+		 </weaponOffset>
+	</ai_descriptor>
+	<ammos>
+		<ammo name="MGbullet" extra="0" amount="0" />
+	</ammos>
+	<geometry>
+		<firstperson name="objects/weapons/asian/shi_ten/shi_ten_mounted_fp.chr" angles="0,0,0"/>
+		<boneAttachments>
+			<attachment target="firstperson" name="muzzle_flash_effect" bone="weapon_term" />
+			<attachment target="firstperson" name="muzzle_flash_smoke" bone="weapon_term" />
+			<attachment target="firstperson" name="muzzle_flash_effect_tp" bone="weapon_term" />
+			<attachment target="firstperson" name="muzzle_flash_light" bone="weapon_term" />
+			<attachment target="firstperson" name="overheat_effect" bone="weapon_term" />
+		</boneAttachments>
+	</geometry>
+	<actions>
+		<action name="select">
+			<animation target="firstperson" name="select_01" camera_helper="camera_helper"/>
+			<sound target="firstperson" name="sounds/weapons:heavymachinegun:select" radius="10" />
+			<sound target="thirdperson" name="sounds/weapons:heavymachinegun:select" radius="10" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_01" />
+			<animation target="owner" name="deselect" />
+			<sound target="firstperson" name="sounds/weapons:heavymachinegun:deselect" radius="10" />
+			<sound target="thirdperson" name="sounds/weapons:heavymachinegun:deselect" radius="10" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_%suffix%01" camera_helper="camera_helper"/>
+			<animation target="owner" name="gunnerMounted" />
+		</action>
+
+		<action name="spin_down">
+			<sound target="firstperson" name="Sounds/weapons:shiten:fire_fp_tail%env%" radius="5" static="1" />
+			<sound target="thirdperson" name="Sounds/weapons:shiten:fire_3rd_tail%env%" radius="5" static="1" />
+		</action>
+		<action name="fire">
+			<animation target="firstperson" name="fire_%suffix%01" camera_helper="camera_helper"/>
+			<animation target="owner" name="shoot" />
+			<sound target="firstperson" name="sounds/weapons:shiten:fire_fp_single%env%" radius="300" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:shiten:fire_3rd_single%env%" radius="300" static="1" />
+		</action>
+		<action name="rapid_fire">
+			<sound target="firstperson" name="Sounds/weapons:shiten:fire_fp_loop" radius="400" static="1" synched="1"/>
+			<sound target="thirdperson" name="Sounds/weapons:shiten:fire_3rd_loop" radius="400" static="1" synched="1"/>
+		</action>
+		
+		<action name="reload">
+			<animation target="firstperson" name="reload_01" />
+			<animation target="owner" name="reload" />
+			<sound target="thirdperson" name="sounds/weapons:heavymachinegun:reload" radius="10" />
+		</action>
+		<action name="empty_clip">
+			<sound target="firstperson" name="Sounds/weapons:shiten:dryfire_fp" radius="10" />
+			<sound target="thirdperson" name="Sounds/weapons:shiten:dryfire" radius="10" />
+		</action>
+		<action name="null_fire">
+			<sound target="firstperson" name="Sounds/interface:hud:null_fire" radius="2" />
+		</action>			
+		<action name="zoom_in">
+			<animation target="firstperson" name="zoom_in_%suffix%01"  camera_helper="camera_helper"/>
+		</action>
+		<action name="zoom_out">
+			<animation target="firstperson" name="zoom_out_%suffix%01" camera_helper="camera_helper"/>
+		</action>	
+		<action name="overheating">
+			<sound target="firstperson" name="sounds/weapons:shiten:overheat" radius="5" static="0" />
+			<sound target="thirdperson" name="sounds/weapons:shiten:overheat" radius="5" static="0" />
+		</action>
+	</actions>
+	<firemodes>
+		<firemode type="default">
+			<fire>
+				<param name="ammo_type" value="MGbullet" />
+				<param name="rate" value="800" />
+				<param name="damage" value="60" />
+				<param name="clip_size" value="-1" />
+				<param name="reload_time" value="3.2" />
+				<param name="bullet_chamber" value="1" />
+				<param name="helper_tp" value="weapon_term" />
+				<param name="nearmiss_signal" value="OnNearMiss" />
+				<param name="distance"    value="700" />
+			</fire>
+			<heating>				
+				<param name="overheat_time" value="4.0" /> 
+				<param name="duration" value="2.0" />
+				<param name="cooldown_time" value="2.0" />
+				<param name="helper_fp" value="overheat_effect" />
+				<param name="effect_fp" value="weapon_fx.gun.overheat_haze" />
+				<param name="helper_tp" value="overheat_effect" />
+				<param name="effect_tp" value="weapon_fx.gun.overheat_haze" />
+			</heating>
+			<recoil>
+				<param name="max_recoil"	value="8" />
+				<param name="attack" 			value="1.95" />
+				<param name="decay" 			value="0.55" />
+				<param name="maxx" 				value="4.25" />
+				<param name="maxy" 				value="2.5" />
+				<param name="randomness" 	value="1" />
+				<hints>
+					<hint x="0.01" 	y="0.00" />
+					<hint x="0.02" 	y="0.00" />
+					<hint x="0.15" 	y="0.15" />
+					<hint x="0.35" 	y="0.25" />					
+					<hint x="0.50" 	y="0.50" />
+					<hint x="0.85"	y="0.30" />
+					<hint x="0.50" 	y="0.45" />
+					<hint x="1.50" 	y="0.55" />
+					<hint x="1.00" 	y="0.25" />
+					<hint x="0.75" 	y="0.20" />
+					<hint x="1.00" 	y="0.20" />
+					<hint x="1.00" 	y="0.45" />
+					<hint x="1.25" 	y="1.0" />
+					<hint x="1.00" 	y="1.25" />
+					<hint x="0.75"	y="1.0" />		
+				</hints>
+			</recoil>	
+			<spread>
+				<param name="min" value="0.015" />
+				<param name="max" value="5.0" />
+				<param name="attack" value="1.25" />
+				<param name="decay" value="0.55" />
+			</spread>
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Machinegun.ShiTen" helper="muzzle_flash_effect" light_helper="muzzle_flash_light" light_radius="2" light_time="0.010" light_color="1,1,0.8" light_diffuse_mult="8" />
+				<thirdperson effect="muzzleflash.Machinegun.ShiTen_tp" helper="muzzle_flash_effect_tp" light_helper="muzzle_flash_light" light_radius="2.3" light_time="0.010" light_color="1,1,0.8" light_diffuse_mult="8" />
+			</muzzleflash>
+			<muzzlesmoke>
+				<firstperson effect="muzzleflash.AssaultRifle.shiten_smoke" helper="muzzle_flash_smoke" time="0" />
+				<thirdperson effect="muzzleflash.AssaultRifle.shiten_smoke_tp" helper="muzzle_flash_smoke" time="0" />
+			</muzzlesmoke>
+			<muzzlesmoke_ice>
+				<firstperson effect="weapon_fx.gun.cold_steam_on_barrel" helper="muzzle_flash_smoke" />
+				<thirdperson effect="weapon_fx.gun.cold_steam_on_barrel" helper="weapon_term" />
+			</muzzlesmoke_ice>
+			<reject>
+				<firstperson effect="weapon_fx.shells.shiten" helper="shells" />
+				<thirdperson effect="weapon_fx.shells.shiten" helper="shells" />
+			</reject>			
+		</firemode>
+		<firemode name="Rapid" type="Rapid">
+			<tracer>
+				<param name="geometryFP" 	value="objects/effects/tracer_standard_new.cgf" />
+				<param name="geometry" 	value="objects/effects/tracer_standard_new.cgf" />
+				<param name="effectFP" 		value="weapon_fx.tracer.standardfp" />
+				<param name="effect" 		value="weapon_fx.tracer.standard" />
+				<param name="speed" 		value="375" />
+				<param name="speedFP"   value="900" />
+				<param name="frequency" value="2" />
+				<param name="helper_fp" value="weapon_term" />
+				<param name="helper_tp" value="weapon_term" />
+			</tracer>
+			<rapid>
+				<param name="min_speed" value="0.001" />
+				<param name="max_speed" value="0.001" />
+				<param name="acceleration" value="2.35" />
+				<param name="deceleration" value="-3.0" />
+			</rapid>				
+		</firemode>
+	</firemodes>
+	<zoommodes>
+		<zoommode name="ironsight" type="IronSight">
+			<zoom>
+				<param name="suffix" value="ironsight_" />
+				<param name="dof_mask" value="textures/weapons/ironzoom_blurmask.dds" />
+				<param name="zoom_in_time" value="0.2" />
+				<param name="zoom_out_time" value="0.2" />
+				<stages>
+					<stage value="1.4" />
+				</stages>
+			</zoom>
+		</zoommode>		
+	</zoommodes>
+</item>

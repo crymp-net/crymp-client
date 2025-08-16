@@ -1,0 +1,391 @@
+<Vehicle name="Asian_patrolboat" actionMap="seavehicle">
+ <Physics damping="0" pushable="0">
+  <Buoyancy waterDensity="110" waterResistance="300"/>
+  <Simulation maxTimeStep="0.02" minEnergy="0.16" maxLoggedCollisions="2"/>
+ </Physics>
+ <Damages collDamageThreshold="200">
+  <DamageMultipliers>
+   <DamageMultiplier damageType="bullet" multiplier="0.1"/>
+   <DamageMultiplier damageType="moacbullet" multiplier="0.1"/>
+   <DamageMultiplier damageType="gaussbullet" multiplier="0.5"/>
+   <DamageMultiplier damageType="melee" multiplier="0.1"/>
+   <DamageMultiplier damageType="collision" multiplier="1"/>
+   <DamageMultiplier damageType="explosion" multiplier="2" splash="0.5"/>
+   <DamageMultiplier damageType="law_rocket" multiplier="4" splash="1"/>
+   <DamageMultiplier damageType="frag" multiplier="1" splash="0.1"/>
+   <DamageMultiplier damageType="aacannon" multiplier="1" splash="0.1"/>
+   <DamageMultiplier damageType="c4" multiplier="4" splash="1"/>
+   <DamageMultiplier damageType="tac" multiplier="2" splash="1"/>
+  </DamageMultipliers>
+  <DamagesGroups>
+   <DamagesGroup name="Destroy" useTemplate="VehicleDestroy">
+    <DamagesSubGroups>
+     <DamagesSubGroup delay="0.34999999" randomness="0.1">
+      <DamageBehaviors>
+       <DamageBehavior class="Explosion">
+        <Explosion helper="impulsePos" damage="500" radius="9" pressure="25"/>
+       </DamageBehavior>
+      </DamageBehaviors>
+     </DamagesSubGroup>
+    </DamagesSubGroups>
+   </DamagesGroup>
+  </DamagesGroups>
+ </Damages>
+ <Components>
+  <Component name="Hull" damageMax="1250" major="1" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="0" id="idHull">
+   <DamageBehaviors>
+    <DamageBehavior class="Group" damageRatioMin="1">
+     <Group name="Destroy"/>
+    </DamageBehavior>
+    <DamageBehavior class="Sink" damageRatioMin="1"/>
+    <DamageBehavior class="Indicator" damageRatioMin="0.75">
+     <Indicator>
+      <Light material="" sound="sounds/vehicles:vehicle_accessories:warning_beep_boat" soundRatioMin="0.75" helper=""/>
+     </Indicator>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="0.25" damageRatioMax="0.75" ignoreVehicleDestruction="1">
+     <Effect effect="HullDamaged25"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="0.75" damageRatioMax="1" ignoreVehicleDestruction="1">
+     <Effect effect="HullDamaged75"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="EnterBottom" damageMax="0" major="0" minBound="-3.7393,-12.8865,-1.5826" maxBound="3.7720001,9.9162998,2.0163" useBoundsFromParts="0">
+   <DamageBehaviors />
+  </Component>
+  <Component name="EnterDriver" damageMax="0" major="0" minBound="-1.0233999,-0.18870001,3.2637" maxBound="0.97659999,1.1423,4.3629999" useBoundsFromParts="0">
+   <DamageBehaviors />
+  </Component>
+  <Component name="EnterGunner" damageMax="0" major="0" minBound="-0.9648,5.8119998,2.1851001" maxBound="1.0225,8.4761,3.3677001" useBoundsFromParts="0">
+   <DamageBehaviors />
+  </Component>
+  <Component name="EnterPassengers" damageMax="0" major="0" minBound="-1.8832999,-4.0324998,2.0281999" maxBound="1.7559,-2.7024,3.1294999" useBoundsFromParts="0">
+   <DamageBehaviors />
+  </Component>
+  <Component name="FlippedOver" damageMax="1" major="0" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="1">
+   <DamageBehaviors>
+    <DamageBehavior class="Effect" damageRatioMin="1">
+     <Effect effect="VehicleFlipped" disableAfterExplosion="1"/>
+    </DamageBehavior>
+    <DamageBehavior class="Burn">
+     <Burn helper="" damage="0" selfDamage="1000" radius="5" interval="1"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+ </Components>
+ <Parts>
+  <Part name="chassis" class="Animated" mass="0" disablePhysics="0">
+   <Parts>
+    <Part name="shitenTurret" class="AnimatedJoint" mass="0" isHidden="0">
+     <Parts>
+      <Part name="shiten" class="AnimatedJoint" mass="0">
+       <Helpers>
+        <Helper name="gunnerEyePos" position="0.0060999999,6.8709002,3.2750001" direction="0,1,0"/>
+        <Helper name="gunnerLightPos" position="0.16,7.5,3.05" direction="0,1,0"/>
+       </Helpers>
+       <AnimatedJoint>
+        <Rotation pitchSpeed="70" worldSpace="1">
+         <pitchLimits>
+          <pitchLimit value="-8"/>
+          <pitchLimit value="60"/>
+         </pitchLimits>
+        </Rotation>
+       </AnimatedJoint>
+      </Part>
+      <Part name="gunnerLightBeam" class="Light" component="searchLight" helper="gunnerLightPos">
+       <Light type="HeadLightDynamic"/>
+      </Part>
+      <Part name="gunnerLightFlare" class="Light" component="searchLight" helper="gunnerLightPos">
+       <Light type="HeadLightFlare"/>
+      </Part> 
+     </Parts>
+     <Helpers>
+      <Helper name="helper_passenger02_pos" position="0,0,0" direction="0,1,0"/>
+     </Helpers>
+     <AnimatedJoint>
+      <Rotation yawSpeed="135" worldSpace="1">
+       <yawLimits>
+        <yawLimit value="-140"/>
+        <yawLimit value="140"/>
+       </yawLimits>
+      </Rotation>
+     </AnimatedJoint>
+    </Part>
+   </Parts>
+   <Helpers>
+    <Helper name="turret_pos" position="-0.1001,4,1.2018" direction="0,1,0"/>
+    <Helper name="propeller_left_pos" position="-2.5009999,-11.6821,-0.77560002" direction="0,1,0"/>
+    <Helper name="propeller_right_pos" position="2.3921001,-11.6492,-0.73760003" direction="0,1,0"/>
+    <Helper name="driver_eye_pos" position="-0.1091,-0.039799999,4.7182002" direction="0,1,0"/>
+    <Helper name="enter_driver_left" position="-4.5946999,-1.783,0.42140001" direction="0,1,0"/>
+    <Helper name="enter_gunner_left" position="-4.6162,-2.7460999,0.39539999" direction="0,1,0"/>
+    <Helper name="enter_passenger_left_01" position="-4.6283998,-0.89480001,0.39320001" direction="0,1,0"/>
+    <Helper name="enter_passenger_left_02" position="-4.6355,0.28099999,0.42199999" direction="0,1,0"/>
+    <Helper name="enter_passenger_right_01" position="-4.6210999,-3.6787,0.42640001" direction="0,1,0"/>
+    <Helper name="enter_passenger_right_02" position="-4.6410999,-4.7421999,0.4386" direction="0,1,0"/>
+    <Helper name="cornerForcePos" position="0,-1.5322,2.5609" direction="0,1,0"/>
+    <Helper name="pushForcePos" position="0,-12.5627,-1.1705" direction="0,1,0"/>
+    <Helper name="engineSoundPos" position="0,-7.3239999,2.5762" direction="0,1,0"/>
+    <Helper name="wakePos" position="0,-3.7339001,-1.293" direction="0,1,0"/>
+    <Helper name="searchLightPos" position="1.2393,1.5281,4.3014002" direction="0,1,0"/>
+    <Helper name="burningPos" position="0,-1.1987,1.701" direction="0,1,0"/>
+   </Helpers>
+   <Animated filename="Objects/Vehicles/Asian_patrolboat/asian_patrolboat.cga" filenameDestroyed="Objects/Vehicles/Asian_patrolboat/asian_patrolboat_damaged.cga" id="idAnimatedMain"/>
+  </Part>
+  <Part name="mass" class="MassBox" component="" mass="10000" position="-0.00050000002,-1.3379,0.72829998" disablePhysics="0" disableCollision="0" isHidden="0">
+   <Helpers />
+   <MassBox size="3.0190001,7.7972999,1.353"/>
+  </Part>
+  <Part name="searchLight" class="Light" component="searchLight" helper="searchLightPos">
+   <Light type="HeadLightDynamic" radius="30" diffuseMult="20" directFactor="1"/>
+  </Part>
+  <Part name="searchLightBeam" class="Light" component="searchLight" helper="searchLightPos">
+   <Light type="HeadLightBeam"/>
+  </Part>
+  <Part name="searchLightFlare" class="Light" component="searchLight" helper="searchLightPos">
+   <Light type="HeadLightFlare"/>
+  </Part>
+ </Parts>
+ <Actions>
+  <Action class="Enter">
+   <Activations>
+    <Activation type="OnUsed" param1="component" param2="EnterBottom"/>
+   </Activations>
+   <Enter>
+    <Seats>
+     <Seat value="driver"/>
+     <Seat value="gunner"/>
+     <Seat value="passenger03"/>
+     <Seat value="passenger04"/>
+     <Seat value="passenger05"/>
+     <Seat value="passenger06"/>
+    </Seats>
+   </Enter>
+  </Action>
+  <Action class="Enter">
+   <Activations>
+    <Activation type="OnUsed" param1="component" param2="EnterDriver"/>
+   </Activations>
+   <Enter>
+    <Seats>
+     <Seat value="driver"/>
+    </Seats>
+   </Enter>
+  </Action>
+  <Action class="Enter">
+   <Activations>
+    <Activation type="OnUsed" param1="component" param2="EnterGunner"/>
+   </Activations>
+   <Enter>
+    <Seats>
+     <Seat value="gunner"/>
+    </Seats>
+   </Enter>
+  </Action>
+  <Action class="Enter">
+   <Activations>
+    <Activation type="OnUsed" param1="component" param2="EnterPassengers"/>
+   </Activations>
+   <Enter>
+    <Seats>
+     <Seat value="passenger03"/>
+     <Seat value="passenger04"/>
+     <Seat value="passenger05"/>
+     <Seat value="passenger06"/>
+    </Seats>
+   </Enter>
+  </Action>
+ </Actions>
+ <Seats>
+  <Seat name="driver" part="" enterHelper="enter_driver_left" exitOffsetPlayer="4.594,1.5,3" sitHelper="helper_passenger01_pos" isDriver="1" AimPart="" seatGroupIndex="1" remotelyUseActionsFromSeat="gunner" blurMult="0" id="idSeatDriver">
+   <Views>
+    <View class="FirstPerson" canRotate="1" rotationMin="-20,0,-110" rotationMax="55,0,110">
+     <FirstPerson offset="0,0,0.25" relativeToHorizon="0.5"/>
+    </View>
+    <View class="ThirdPerson" canRotate="1">
+     <ThirdPerson distance="17" heightOffset="0.5" speed="5"/>
+    </View>
+   </Views>
+   <SeatActions>
+    <SeatAction class="SteeringWheel">
+     <SteeringWheel vehicleAnimation="steeringWheel">
+      <Actions anglesMax="0,130,0"/>
+     </SteeringWheel>
+    </SeatAction>
+    <SeatAction class="Lights">
+     <Lights activation="toggle" sound="3">
+      <LightParts>
+       <LightPart value="searchLight"/>
+       <LightPart value="searchLightBeam"/>
+       <LightPart value="searchLightFlare"/>
+      </LightParts>
+     </Lights>
+    </SeatAction>
+    <SeatAction class="Sound">
+     <Sound sound="Sounds/vehicles:asian_patrolboat:horn" helper="searchLightPos"/>
+    </SeatAction>
+   </SeatActions>
+   <Sounds inout="1"/>
+  </Seat>
+  <Seat name="gunner" part="shitenTurret" enterHelper="enter_gunner_left" exitOffsetPlayer="4.61,12,2.8" sitHelper="helper_passenger02_pos" isDriver="0" AimPart="shiten" seatGroupIndex="2" blurMult="0">
+   <Views>
+    <View class="FirstPerson" canRotate="0" hidePlayer="1">
+     <FirstPerson helper="gunnerEyePos"/>
+    </View>
+    <View class="ActionThirdPerson" canRotate="0" isAvailableRemotely="1">
+     <ActionThirdPerson cameraPosOffset="0,-1.5,0" cameraAimOffset="0,3,0" lagSpeed="5" velocityMult="0,0.050000001,1"/>
+    </View>
+   </Views>
+   <SeatActions>
+    <SeatAction class="RotateTurret" isAvailableRemotely="1">
+     <RotateTurret pitchPart="shiten" yawPart="shitenTurret"/>
+    </SeatAction>
+    <SeatAction class="Weapons" isAvailableRemotely="1">
+     <Weapons>
+      <Weapons>
+       <Weapon class="VehicleShiTenV2" part="shiten" id="idGun">
+        <Helpers />
+       </Weapon>
+      </Weapons>
+     </Weapons>
+    </SeatAction>    
+   </SeatActions>
+   <Sounds inout="1"/>
+  </Seat>
+  <Seat name="passenger03" part="" enterHelper="enter_passenger_left_01" exitOffsetPlayer="3.4,-2,2.2" sitHelper="helper_passenger03_pos" isDriver="0" AimPart="" seatGroupIndex="3">
+   <Views>
+    <View class="FirstPerson" canRotate="1" rotationMin="-20,0,-110" rotationMax="55,0,110">
+     <FirstPerson offset="0,0,0"/>
+    </View>
+    <View class="ThirdPerson" canRotate="0">
+     <ThirdPerson distance="15" speed="5"/>
+    </View>
+   </Views>
+   <SeatActions />
+  </Seat>
+  <Seat name="passenger04" part="" enterHelper="enter_passenger_left_02" exitOffsetPlayer="4.2,-3,2.2" sitHelper="helper_passenger04_pos" isDriver="0" AimPart="" seatGroupIndex="3">
+    <Views>
+      <View class="FirstPerson" canRotate="1" rotationMin="-20,0,-110" rotationMax="55,0,110">
+        <FirstPerson offset="0,0,0"/>
+      </View>
+      <View class="ThirdPerson" canRotate="0">
+        <ThirdPerson distance="15" speed="5"/>
+      </View>
+    </Views>
+    <SeatActions />
+    <Sounds inout="1"/>
+  </Seat>
+  <Seat name="passenger05" part="" enterHelper="enter_passenger_right_01" exitOffsetPlayer="5,1,2.2" sitHelper="helper_passenger05_pos" isDriver="0" AimPart="" seatGroupIndex="3">
+   <Views>
+    <View class="FirstPerson" canRotate="1" rotationMin="-20,0,-110" rotationMax="55,0,110">
+     <FirstPerson offset="0,0,0"/>
+    </View>
+    <View class="ThirdPerson" canRotate="0">
+     <ThirdPerson distance="15" speed="5"/>
+    </View>
+   </Views>
+   <SeatActions />
+   <Sounds inout="1"/>
+  </Seat>
+  <Seat name="passenger06" part="" enterHelper="enter_passenger_right_02" exitOffsetPlayer="5.8,2,2.2" sitHelper="helper_passenger06_pos" isDriver="0" AimPart="" seatGroupIndex="3">
+   <Views>
+    <View class="FirstPerson" canRotate="1" rotationMin="-20,0,-110" rotationMax="55,0,110">
+     <FirstPerson offset="0,0,0"/>
+    </View>
+    <View class="ThirdPerson" canRotate="0">
+     <ThirdPerson distance="15" speed="5"/>
+    </View>
+   </Views>
+   <SeatActions />
+   <Sounds inout="1"/>
+  </Seat>
+ </Seats>
+ <MovementParams>
+  <StdBoat velMax="27" velMaxReverse="6" velLift="19.5" acceleration="5" accelerationVelMax="0.75" accelerationMultiplier="0.75" pushHelper="pushForcePos" pushTilt="0" turnRateMax="1.3" turnAccel="1.1" turnVelocityMult="2" turnAccelMultiplier="0.5" turnDamping="0" cornerForce="2" cornerHelper="cornerForcePos" cornerTilt="0" waveIdleStrength="0.2,0.2,0">
+   <SoundParams engineSoundPosition="engineSoundPos" runSoundDelay="1.25" rpmPitchSpeed="0.40000001"/>
+   <TweakGroups>
+    <TweakGroup name="player">
+     <Tweaks>
+      <Tweak name="velMax" value="19" op="0"/>
+     </Tweaks>
+    </TweakGroup>
+    <TweakGroup name="player_boost">
+     <Tweaks>
+      <Tweak name="velMax" value="27" op="0"/>
+      <Tweak name="acceleration" value="8" op="0"/>
+      <Tweak name="turnVelocityMult" value="1" op="0"/>
+      <Tweak name="pushTilt" value="10" op="0"/>
+     </Tweaks>
+    </TweakGroup>
+    <TweakGroup name="ai">
+     <Tweaks>
+      <Tweak name="velMax" value="22" op="0"/>
+     </Tweaks>
+    </TweakGroup>
+   </TweakGroups>
+  </StdBoat>
+ </MovementParams>
+ <Particles>
+  <Exhaust insideWater="1" outsideWater="0">
+   <Helpers />
+   <EngineStart effect=""/>
+   <EngineStop effect=""/>
+   <EngineRunning effect="" boostEffect="" baseSizeScale="1" minSpeed="0" minSpeedSizeScale="1" minSpeedCountScale="1" minSpeedSpeedScale="1" maxSpeed="20" maxSpeedSizeScale="1" maxSpeedCountScale="1" maxSpeedSpeedScale="1" minPower="0" minPowerSizeScale="1" minPowerCountScale="1" minPowerSpeedScale="1" maxPower="1" maxPowerSizeScale="1" maxPowerCountScale="1" maxPowerSpeedScale="1"/>
+  </Exhaust>
+  <ShatterEffect effect="vehicle_fx.frozen_shatter.small" /> 
+  <DamageEffects>
+   <DamageEffect name="VehicleDestroyed" helper="engineSoundPos" effect="explosions.Large_Vehicle.a"/>
+   <DamageEffect name="VehicleFlipped" helper="engineSoundPos" effect="smoke_and_fire.Jeep.flipped_jeep"/>
+   <DamageEffect name="HullDamaged25" helper="burningPos" effect="Vehicle_fx.Damages_Sea.NKPatBoat_hull_smoke_a" scaleMax="1" gravityDirection="0,0,1" pulsePeriod="0"/>
+   <DamageEffect name="HullDamaged75" helper="burningPos" effect="Vehicle_fx.Damages_Sea.NKPatBoat_hull_smoke_b" scaleMax="1" gravityDirection="0,0,1" pulsePeriod="0"/>
+  </DamageEffects>
+  <EnvironmentLayers>
+   <EnvironmentLayer minSpeed="1" minSpeedSizeScale="1" minSpeedCountScale="1" minSpeedSpeedScale="1" maxSpeed="15" maxSpeedSizeScale="1" maxSpeedCountScale="1" maxSpeedSpeedScale="1" minPowerSizeScale="1" minPowerCountScale="1" maxPowerSizeScale="1" maxPowerCountScale="1">
+    <Alignment alignGroundHeight="0" maxHeightSizeScale="1" maxHeightCountScale="1" alignToWater="1"/>
+    <Emitters>
+     <Helper value="wakePos"/>
+    </Emitters>
+    <Wheels />
+   </EnvironmentLayer>
+  </EnvironmentLayers>
+ </Particles>
+ <Animations>
+  <Animation name="steeringWheel" part="chassis">
+   <States>
+    <State name="" animation="patrolboat_steeringWheel" isLooped="1" speedDefault="1" speedMin="1" speedMax="1"/>
+   </States>
+  </Animation>
+  <Animation name="propeller" part="chassis">
+   <States>
+    <State name="" animation="patrolboat_rotor" isLooped="1" speedDefault="0.1" speedMin="0.1" speedMax="1"/>
+   </States>
+  </Animation>
+ </Animations>
+ <Paints>
+  <Paint name="nk" material="objects/vehicles/asian_patrolboat/asian_patrolboat.mtl"/>
+  <Paint name="us" material="objects/vehicles/asian_patrolboat/asian_patrolboat_us.mtl"/>
+ </Paints>
+ <Modifications>
+  <Modification name="MP">
+   <Elems>
+    <Elem idRef="idSeatDriver" name="remotelyUseActionsFromSeat" value=""/>
+   </Elems>
+  </Modification>
+  <Modification name="Gauss" parent="MP">
+   <Elems>
+    <Elem idRef="idGun" name="class" value="VehicleGaussMounted"/>
+   </Elems>
+  </Modification>
+  <Modification name="MOAC" parent="MP">
+   <Elems>
+    <Elem idRef="idGun" name="class" value="VehicleMOACMounted"/>
+   </Elems>
+  </Modification>
+  <Modification name="MOAR" parent="MP">
+   <Elems>
+    <Elem idRef="idGun" name="class" value="VehicleMOARMounted"/>
+   </Elems>
+  </Modification>
+ </Modifications>
+</Vehicle>

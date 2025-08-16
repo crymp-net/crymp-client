@@ -1,0 +1,31 @@
+<ammo name="tankaa" class="Bullet">
+	<flags>
+		<param name="serverspawn" value="0" />
+		<param name="predictspawn" value="0" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="0.0125" />
+		<param name="speed" value="800" />
+		<param name="radius" value="0.25" />
+		
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, -1" />
+		<param name="water_gravity" value="0, 0, -1" />
+		<param name="material" value="mat_metal" />
+		<param name="pierceability" value="7" />
+	
+		<param name="single_contact" value="1" />
+	</physics>
+
+	<params>
+		<param name="lifetime" value="2.5" />
+		<param name="showtime" value="0.1" />
+	</params>
+	
+	<trail>
+		<param name="effect" value="smoke_and_fire.AA_round.Trail" />
+		<param name="scale" value="1" />
+	</trail>	
+	
+</ammo>

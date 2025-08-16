@@ -1,0 +1,339 @@
+<item name="OffHand" class="OffHand" invisible="1" >
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="1" />
+		<param name="droppable" value="0" />
+		<param name="pose" value="ignore" />
+		<param name="mass" value="0" />
+		<param name="update_hud" value="0" />
+		<param name="attachment_left" value="left_hand_grenade_attachment" />
+		<param name="melee_attack_firemode"		value="melee" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/us/frag_grenade/frag_grenade_left.chr" angles="0,0,0" />
+		<aux0 name="objects/weapons/us/frag_grenade/frag_grenade_tp.cgf" />
+		<aux1 name="objects/weapons/us/smoke grenade/smoke_grenade_tp.cgf" />
+		<boneAttachments>
+			<attachment target="firstperson" name="grenade_attachment" bone="item_attachment" />
+		</boneAttachments>
+	</geometry>	
+	<pickabletypes>
+		<onehanded helper="grab_onehanded_01" pickup="pickup_object_left" idle="idle_object_left" throwFM="ThrowObject"/>
+		<twohanded helper="grab_twohanded_01" pickup="pickup_object" idle="idle_object" throwFM="ThrowObjectTwoHanded"/>
+		<onehanded helper=" " 								pickup="pickup_npc" 	 idle="idle_npc" 		throwFM="ThrowNPC"/>
+	</pickabletypes>
+	<ammos>
+		<ammo name="explosivegrenade" extra="0" amount="0" />
+		<ammo name="smokegrenade" extra="0" amount="0" />
+		<ammo name="flashbang" extra="0" amount="0" />
+	</ammos>
+	
+	<actions>
+		<action name="select_grenade">
+			<animation target="firstperson" name="select_grenade_%hand%_01" />
+		</action>				
+		<action name="deselect_grenade">
+			<animation target="firstperson" name="deselect_grenade_%hand%_01" />
+		</action>				
+		<action name="throw_grenade">
+			<animation target="firstperson" name="throw_grenade_%hand%_01" speed="0.8"/>
+			<animation target="ownerloop" name="idle" />
+			<!--<sound target="firstperson" name="sounds/weapons:fraggrenade:fire" radius="5" static="0" />
+			<sound target="thirdperson" name="sounds/weapons:fraggrenade:fire" radius="5" static="0" />-->
+		</action>
+		<action name="hold_grenade">
+			<animation target="ownerloop" name="hold_grenade" />
+			<!--<sound target="firstperson" name="sounds/weapons:fraggrenade:fire" radius="5" static="0" />
+			<sound target="thirdperson" name="sounds/weapons:fraggrenade:fire" radius="5" static="0" />-->
+		</action>
+		<action name="pickup_object_left">
+			<animation target="firstperson" name="pick_up_item_%hand%_01" speed="0.85"/>
+			<animation target="owner" name="pickup" />
+		</action>			
+		<action name="idle_object_left">
+			<animation target="firstperson" name="idle_item_%hand%_01" />
+			<animation target="ownerloop" name="hold_grenade" />
+		</action>
+		<action name="pickup_weapon_left">
+			<animation target="firstperson" name="pick_up_weapon_%hand%_01" speed="0.85"/>
+			<animation target="owner" name="pickup" />
+		</action>		
+		<action name="throw_object_left">
+			<animation target="firstperson" name="throw_item_%hand%_01" />
+			<animation target="ownerloop" name="idle" />
+		</action>
+		<action name="drop_object_left">
+			<animation target="firstperson" name="drop_item_%hand%_01" />
+			<animation target="ownerloop" name="idle" />
+		</action>					
+		<action name="pickup_object">
+			<animation target="firstperson" name="pick_up_item_01" />
+			<animation target="owner" name="pickup" />
+		</action>				
+		<action name="idle_object">
+			<animation target="firstperson" name="idle_item_01" />
+			<animation target="ownerloop" name="hold_grenade" />
+		</action>
+		<action name="throw_object">
+			<animation target="firstperson" name="throw_item_01" />
+			<animation target="ownerloop" name="idle" />
+		</action>	
+		<action name="drop_object">
+			<animation target="ownerloop" name="idle" />
+		</action>			
+		<action name="idle">
+			<animation target="firstperson" name="idle_left_01" />
+			<animation target="owner" name="idle" />
+		</action>
+		<action name="swim_idle">
+			<animation target="firstperson" name="swim_underwater_nw_forward_left_01" speed=".4" />
+			<animation target="owner" name="idle" />
+		</action>
+		<action name="swim_forward">
+			<animation target="firstperson" name="swim_nw_forward_left_01" />
+			<animation target="owner" name="idle" />
+		</action>
+		<action name="throw_npc">
+			<animation target="firstperson" name="throw_npc_%hand%_01" />
+			<animation target="ownerloop" name="idle" />
+		</action>				
+		<action name="pickup_npc">
+			<animation target="firstperson" name="pick_up_npc_%hand%_01" />
+			<animation target="owner" name="pickup" />
+		</action>		
+		<action name="drop_npc">
+			<animation target="firstperson" name="drop_npc_%hand%_01" />
+			<animation target="ownerloop" name="idle" />
+		</action>			
+		<action name="idle_npc">
+			<animation target="firstperson" name="idle_npc_%hand%_01" />
+			<animation target="ownerloop" name="hold_grenade" />
+		</action>
+		<action name="idle_usable">
+			<animation target="firstperson" name="idle_item_%hand%_01" />
+			<animation target="owner" name="idle" />
+		</action>
+		<action name="melee">
+			<animation target="firstperson" name="melee_left_01" />
+			<animation target="owner" name="melee" />
+			<sound target="thirdperson" name="sounds/weapons:melee:fire" radius="5" />
+		</action>
+	</actions>
+
+	<layers>
+		<layer name="grenade_off">
+			<animation target="firstperson" name="grenade_offscreen_layer_01" layerId="1" />
+			<bones>
+				<bone name="grenade" />
+			</bones>
+		</layer>
+	</layers>
+	<firemodes>
+		<firemode type="Throw" name="Grenade_Explosive">
+			<fire>
+				<param name="ammo_type" value="explosivegrenade" />
+				<param name="clip_size" value="0" />
+				<param name="rate" value="60" />
+				<param name="damage" value="250" />
+				<param name="helper_tp" value="dummy" />
+				<param name="helper_fp" value="grenade" />
+				<param name="track_projectiles" value="1" />
+			</fire>
+			<throw>
+				<param name="delay" 		value="0.15" />
+				<param name="auto_select_last" value="0" />
+				<param name="hold_duration" 	 value="2.0" />
+				<param name="hold_min_scale" 	 value="0.15" />
+				<param name="hold_max_scale" 	 value="3.0" />
+				<param name="strenght_scale" value="1.5f" />
+				<param name="auto_select_last" value="0" />
+			</throw>
+			<recoil>
+				<param name="max_recoil"	value="0" />
+				<param name="attack" 			value="0" />
+			</recoil>
+			<actions>
+				<param name="throw" value="throw_grenade" />
+				<param name="hold" value="hold_grenade" />
+			</actions>
+		</firemode>
+		<firemode type="Throw" name="Grenade_Smoke">
+			<fire>
+				<param name="ammo_type" value="smokegrenade" />
+				<param name="clip_size" value="0" />
+				<param name="rate" value="60" />
+				<param name="damage" value="0" />
+				<param name="helper_tp" value="dummy" />
+				<param name="helper_fp" value="grenade" />
+				<param name="track_projectiles" value="1" />
+			</fire>
+			<throw>
+				<param name="delay" 		value="0.15" />
+				<param name="auto_select_last" value="0" />
+				<param name="hold_duration" 	 value="1.0" />
+				<param name="hold_min_scale" 	 value="0.75" />
+				<param name="hold_max_scale" 	 value="1.15" />
+				<param name="strenght_scale" value="1.5f" />
+				<param name="auto_select_last" value="0" />
+			</throw>
+			<recoil>
+				<param name="max_recoil"	value="0" />
+				<param name="attack" 			value="0" />
+			</recoil>
+			<actions>
+				<param name="throw" value="throw_grenade" />
+				<param name="hold" value="hold_grenade" />
+			</actions>
+		</firemode>
+		<firemode type="Throw" name="Grenade_Flashbang">
+			<fire>
+				<param name="ammo_type" value="flashbang" />
+				<param name="clip_size" value="0" />
+				<param name="rate" value="60" />
+				<param name="damage" value="0" />
+				<param name="helper_tp" value="dummy" />
+				<param name="helper_fp" value="grenade" />
+				<param name="track_projectiles" value="1" />
+			</fire>
+			<throw>
+				<param name="delay" 		value="0.15" />
+				<param name="auto_select_last" value="0" />
+				<param name="hold_duration" 	 value="1.0" />
+				<param name="hold_min_scale" 	 value="0.75" />
+				<param name="hold_max_scale" 	 value="1.15" />
+				<param name="strenght_scale" value="1.5f" />
+				<param name="auto_select_last" value="0" />
+			</throw>
+			<recoil>
+				<param name="max_recoil"	value="0" />
+				<param name="attack" 			value="0" />
+			</recoil>
+			<actions>
+				<param name="throw" value="throw_grenade" />
+				<param name="hold" value="hold_grenade" />
+			</actions>
+		</firemode>
+		<firemode type="Throw" name="Grenade_EMP">
+			<fire>
+				<param name="ammo_type" value="empgrenade" />
+				<param name="clip_size" value="0" />
+				<param name="rate" value="60" />
+				<param name="damage" value="20" />
+				<param name="helper_tp" value="dummy" />
+				<param name="helper_fp" value="grenade" />
+				<param name="track_projectiles" value="1" />
+			</fire>
+			<throw>
+				<param name="delay" 		value="0.15" />
+				<param name="auto_select_last" value="0" />
+				<param name="hold_duration" 	 value="1.0" />
+				<param name="hold_min_scale" 	 value="0.75" />
+				<param name="hold_max_scale" 	 value="1.15" />
+				<param name="strenght_scale" value="1.5f" />
+				<param name="auto_select_last" value="0" />
+			</throw>
+			<recoil>
+				<param name="max_recoil"	value="0" />
+				<param name="attack" 			value="0" />
+			</recoil>
+			<actions>
+				<param name="throw" value="throw_grenade" />
+				<param name="hold" value="hold_grenade" />
+			</actions>
+		</firemode>
+		<firemode type="Throw" name="ThrowObject">
+			<fire>
+				<param name="helper_fp" value="item_attachment" />
+			</fire>
+			<throw>
+				<param name="delay" value="0.38" />
+				<param name="auto_select_last" value="0" />
+				<param name="hold_duration" 	 value="0.2" />
+				<param name="hold_min_scale" 	 value="0.75" />
+				<param name="hold_max_scale" 	 value="1.5" />
+				<param name="strenght_scale" value="1.5f" />
+			</throw>
+			<recoil>
+				<param name="max_recoil"	value="0" />
+				<param name="attack" 			value="0" />
+			</recoil>
+			<actions>
+				<param name="throw" value="throw_object_left" />
+				<param name="drop"  value="drop_object_left" />
+			</actions>
+		</firemode>
+		<firemode type="Throw" name="ThrowObjectTwoHanded">
+			<fire>
+				<param name="helper_fp" value="item_attachment" />
+			</fire>
+			<throw>
+				<param name="delay" value="0.150" />
+				<param name="auto_select_last" value="0" />
+				<param name="hold_duration" 	 value="0.2" />
+				<param name="hold_min_scale" 	 value="0.75" />
+				<param name="hold_max_scale" 	 value="1.5" />
+				<param name="strenght_scale" value="1.5f" />
+			</throw>
+			<recoil>
+				<param name="max_recoil"	value="0" />
+				<param name="attack" 			value="0" />
+			</recoil>
+			<actions>
+				<param name="throw" value="throw_object" />
+				<param name="drop"  value="drop_object" />
+			</actions>
+		</firemode>
+		<firemode type="Throw" name="ThrowNPC">
+			<fire>
+				<param name="helper_fp" value="item_attachment" />
+			</fire>
+			<throw>
+				<param name="delay" value="0.30" />
+				<param name="auto_select_last" value="0" />
+				<param name="hold_duration" 	 value="0" />
+				<param name="hold_min_scale" 	 value="0.75" />
+				<param name="hold_max_scale" 	 value="1.5" />
+				<param name="strenght_scale" value="1.8" />
+			</throw>
+			<recoil>
+				<param name="max_recoil"	value="0" />
+				<param name="attack" 			value="0" />
+			</recoil>
+			<actions>
+				<param name="throw" value="throw_npc" />
+				<param name="drop"  value="drop_npc" />
+			</actions>
+		</firemode>
+		<firemode name="melee" type="Melee">
+			<melee>
+				<param name="helper" value="item_attachment" />
+				<param name="offset" value="0.85" />
+				<param name="damage" value="65" />
+				<param name="impulse" value="40" />
+				<param name="delay" value="0.45" />
+				<param name="duration" value="0.35" />
+			</melee>
+			<actions>
+				<param name="attack" value="melee" />
+			</actions>
+		</firemode>
+	</firemodes>
+	<accessories>
+		<accessory name="OffhandGrenade">
+			<attach helper="grenade_attachment" layer="" />
+			<detach />
+		</accessory>
+		<accessory name="OffhandSmoke">
+			<attach helper="grenade_attachment" layer="" />
+			<detach />
+		</accessory>
+		<accessory name="OffhandFlashbang">
+			<attach helper="grenade_attachment" layer="" />
+			<detach />
+		</accessory>
+		<accessory name="OffhandNanoDisruptor">
+			<attach helper="grenade_attachment" layer="" />
+			<detach />
+		</accessory>
+	</accessories>
+</item>

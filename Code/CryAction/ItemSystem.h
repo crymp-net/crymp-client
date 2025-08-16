@@ -69,7 +69,7 @@ class ItemSystem final : public ILevelSystemListener, public IItemSystem
 	ICVar* m_pLyingItemLimitCVar = nullptr;
 
 public:
-	explicit ItemSystem(IGameFramework* pGameFramework);
+	explicit ItemSystem(IGameFramework* pGameFramework, ISystem* pSystem);
 	virtual ~ItemSystem();
 
 	void Update(float frameTime);

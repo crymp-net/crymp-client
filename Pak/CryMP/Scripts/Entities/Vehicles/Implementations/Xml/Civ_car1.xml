@@ -1,0 +1,560 @@
+<Vehicle name="Civ_car1" actionMap="landvehicle">
+ <Physics pushable="0">
+  <Buoyancy waterDensity="50" waterResistance="0"/>
+  <Simulation maxTimeStep="0.02" minEnergy="0.0020000001" maxLoggedCollisions="2"/>
+ </Physics>
+ <Damages submergedRatioMax="0.64999998" submergedDamageMult="1" collDamageThreshold="10" groundCollisionMinMult="1.3" groundCollisionMaxMult="1.4" groundCollisionMinSpeed="8" groundCollisionMaxSpeed="22" vehicleCollisionDestructionSpeed="18">
+  <DamageMultipliers>
+   <DamageMultiplier damageType="bullet" multiplier="0.02"/>
+   <DamageMultiplier damageType="moacbullet" multiplier="0.02"/>
+   <DamageMultiplier damageType="gaussbullet" multiplier="0.15000001"/>
+   <DamageMultiplier damageType="melee" multiplier="0.050000001"/>
+   <DamageMultiplier damageType="fire" multiplier="0.050000001"/>
+   <DamageMultiplier damageType="collision" multiplier="1"/>
+   <DamageMultiplier damageType="explosion" multiplier="1" splash="0.25"/>
+   <DamageMultiplier damageType="law_rocket" multiplier="2" splash="0.5"/>   
+   <DamageMultiplier damageType="frag" multiplier="0.25" splash="0.25"/>
+   <DamageMultiplier damageType="aacannon" multiplier="0.1" splash="0"/>
+   <DamageMultiplier damageType="c4" multiplier="1" splash="0.25"/>
+   <DamageMultiplier damageType="tac" multiplier="2" splash="2"/>
+   <DamageMultiplier damageType="avmine" multiplier="2" splash="0.25"/>
+   <DamageMultiplier damageType="scout_moac" multiplier="0.2"/>
+  </DamageMultipliers>
+  <DamagesGroups>
+   <DamagesGroup name="Destroy" useTemplate="CarDestroy">
+    <DamagesSubGroups>
+     <DamagesSubGroup delay="0.2" randomness="0.5">
+      <DamageBehaviors>
+       <DamageBehavior class="Impulse" damageRatioMin="1" ignoreVehicleDestruction="1">
+        <Impulse forceMin="4.5" forceMax="6" direction="0,1,1" momentum="2.95,-0.15000001,0"/>
+       </DamageBehavior>
+      </DamageBehaviors>
+     </DamagesSubGroup>
+    </DamagesSubGroups>
+   </DamagesGroup>
+   <DamagesGroup name="IndicatorWheels">
+    <DamagesSubGroups>
+     <DamagesSubGroup delay="0" randomness="0">
+      <DamageBehaviors>
+       <DamageBehavior class="Indicator" damageRatioMin="0.5" damageRatioMax="1">
+        <Indicator>
+         <Light material="damagelight_wheels" sound=""/>
+        </Indicator>
+       </DamageBehavior>
+      </DamageBehaviors>
+     </DamagesSubGroup>
+    </DamagesSubGroups>
+   </DamagesGroup>
+  </DamagesGroups>
+ </Damages>
+ <Components>
+  <Component name="Hull" damageMax="150" major="1" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="1" id="idHull">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="fire" multiplier="1"/>
+    <DamageMultiplier damageType="explosion" multiplier="1" splash="0.35"/>
+   <DamageMultiplier damageType="law_rocket" multiplier="2" splash="0.7"/>
+    <DamageMultiplier damageType="frag" multiplier="0.25" splash="0.5"/>
+    <DamageMultiplier damageType="gaussbullet" multiplier="0.2"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="Group" damageRatioMin="1">
+     <Group name="Destroy"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="0.25" damageRatioMax="0.75">
+     <Effect effect="HullDamaged25" disableAfterExplosion="1"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="0.75" damageRatioMax="1">
+     <Effect effect="HullDamaged75" disableAfterExplosion="1"/>
+    </DamageBehavior>
+    <DamageBehavior class="Indicator" damageRatioMin="0.60000002">
+     <Indicator>
+      <Light material="damagelight_chassis" sound="sounds/vehicles:vehicle_accessories:warning_beep_wheeled" soundRatioMin="0.75" helper="dashboardPos"/>
+     </Indicator>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="Engine" damageMax="100" major="1" minBound="-0.7,1.4739,0.58399999" maxBound="0.7,2.75,1.5" useBoundsFromParts="0" hullAffection="0.5" id="idEngine">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="fire" multiplier="1"/>
+    <DamageMultiplier damageType="explosion" multiplier="1" splash="0.35"/>
+   <DamageMultiplier damageType="law_rocket" multiplier="2" splash="0.7"/>
+    <DamageMultiplier damageType="frag" multiplier="0.25" splash="0.5"/>
+    <DamageMultiplier damageType="gaussbullet" multiplier="1"/>
+    <DamageMultiplier damageType="collision" multiplier="0.2"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="MovementNotification" damageRatioMin="0.25">
+     <MovementNotification isFatal="0"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="0.25" damageRatioMax="0.75">
+     <Effect effect="EngineDamaged25" disableAfterExplosion="1"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="0.75">
+     <Effect effect="EngineDamaged75" disableAfterExplosion="1"/>
+    </DamageBehavior>
+    <DamageBehavior class="Indicator" damageRatioMin="0.75">
+     <Indicator>
+      <Light material="damagelight_engine" sound=""/>
+     </Indicator>
+    </DamageBehavior>
+    <DamageBehavior class="Group" damageRatioMin="1">
+     <Group name="Destroy"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="wheel1" damageMax="80" major="1" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="1" hullAffection="0" isOnlyDamageableByPlayer="1">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="bullet" multiplier="1"/>
+    <DamageMultiplier damageType="moacbullet" multiplier="1"/>
+    <DamageMultiplier damageType="gaussbullet" multiplier="1"/>
+    <DamageMultiplier damageType="melee" multiplier="0.25"/>
+    <DamageMultiplier damageType="fire" multiplier="1"/>
+    <DamageMultiplier damageType="collision" multiplier="1"/>
+    <DamageMultiplier damageType="explosion" multiplier="1" splash="1"/>
+   <DamageMultiplier damageType="law_rocket" multiplier="2" splash="2"/>
+    <DamageMultiplier damageType="frag" multiplier="1" splash="0.75"/>
+    <DamageMultiplier damageType="aacannon" multiplier="1" splash="0"/>
+    <DamageMultiplier damageType="avmine" multiplier="1" splash="1"/>
+    <DamageMultiplier damageType="scout_moac" multiplier="0.2"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="BlowTire" damageRatioMin="1">
+     <BlowTire />
+    </DamageBehavior>
+    <DamageBehavior class="Group" damageRatioMin="0.5">
+     <Group name="IndicatorWheels"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="wheel2" damageMax="80" major="1" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="1" hullAffection="0" isOnlyDamageableByPlayer="1">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="bullet" multiplier="1"/>
+    <DamageMultiplier damageType="moacbullet" multiplier="1"/>
+    <DamageMultiplier damageType="gaussbullet" multiplier="1"/>
+    <DamageMultiplier damageType="melee" multiplier="0.25"/>
+    <DamageMultiplier damageType="fire" multiplier="1"/>
+    <DamageMultiplier damageType="collision" multiplier="1"/>
+    <DamageMultiplier damageType="explosion" multiplier="1" splash="1"/>
+   <DamageMultiplier damageType="law_rocket" multiplier="2" splash="2"/>
+    <DamageMultiplier damageType="frag" multiplier="1" splash="0.75"/>
+    <DamageMultiplier damageType="aacannon" multiplier="1" splash="0"/>
+    <DamageMultiplier damageType="avmine" multiplier="1" splash="1"/>
+    <DamageMultiplier damageType="scout_moac" multiplier="0.2"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="BlowTire" damageRatioMin="1">
+     <BlowTire />
+    </DamageBehavior>
+    <DamageBehavior class="Group" damageRatioMin="0.5">
+     <Group name="IndicatorWheels"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="wheel3" damageMax="80" major="1" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="1" hullAffection="0" isOnlyDamageableByPlayer="1">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="bullet" multiplier="1"/>
+    <DamageMultiplier damageType="moacbullet" multiplier="1"/>
+    <DamageMultiplier damageType="gaussbullet" multiplier="1"/>
+    <DamageMultiplier damageType="melee" multiplier="0.25"/>
+    <DamageMultiplier damageType="fire" multiplier="1"/>
+    <DamageMultiplier damageType="collision" multiplier="1"/>
+    <DamageMultiplier damageType="explosion" multiplier="1" splash="1"/>
+   <DamageMultiplier damageType="law_rocket" multiplier="2" splash="2"/>
+    <DamageMultiplier damageType="frag" multiplier="1" splash="0.75"/>
+    <DamageMultiplier damageType="aacannon" multiplier="1" splash="0"/>
+    <DamageMultiplier damageType="avmine" multiplier="1" splash="1"/>
+    <DamageMultiplier damageType="scout_moac" multiplier="0.2"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="BlowTire" damageRatioMin="1">
+     <BlowTire />
+    </DamageBehavior>
+    <DamageBehavior class="Group" damageRatioMin="0.5">
+     <Group name="IndicatorWheels"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="wheel4" damageMax="80" major="1" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="1" hullAffection="0" isOnlyDamageableByPlayer="1">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="bullet" multiplier="1"/>
+    <DamageMultiplier damageType="moacbullet" multiplier="1"/>
+    <DamageMultiplier damageType="gaussbullet" multiplier="1"/>
+    <DamageMultiplier damageType="melee" multiplier="0.25"/>
+    <DamageMultiplier damageType="fire" multiplier="1"/>
+    <DamageMultiplier damageType="collision" multiplier="1"/>
+    <DamageMultiplier damageType="explosion" multiplier="1" splash="1"/>
+   <DamageMultiplier damageType="law_rocket" multiplier="2" splash="2"/>
+    <DamageMultiplier damageType="frag" multiplier="1" splash="0.75"/>
+    <DamageMultiplier damageType="aacannon" multiplier="1" splash="0"/>
+    <DamageMultiplier damageType="avmine" multiplier="1" splash="1"/>
+    <DamageMultiplier damageType="scout_moac" multiplier="0.2"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="BlowTire" damageRatioMin="1">
+     <BlowTire />
+    </DamageBehavior>
+    <DamageBehavior class="Group" damageRatioMin="0.5">
+     <Group name="IndicatorWheels"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="headLightLeft" damageMax="45" major="0" minBound="-0.85,2.55,0.95" maxBound="-0.5,2.85,1.2" useBoundsFromParts="0" hullAffection="1">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="bullet" multiplier="1"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="Effect">
+     <Effect effect="LightShot"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="headLightRight" damageMax="45" major="0" minBound="0.5,2.55,0.95" maxBound="0.85,2.85,1.2" useBoundsFromParts="0" hullAffection="1">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="bullet" multiplier="1"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="Effect">
+     <Effect effect="LightShot"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="rearLightsLeft" damageMax="45" major="0" minBound="-1.0,-2.7,1.1" maxBound="-0.85,-2.45,1.5" useBoundsFromParts="0" hullAffection="1">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="bullet" multiplier="1"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="Effect">
+     <Effect effect="LightShot"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="rearLightsRight" damageMax="45" major="0" minBound="0.85,-2.7,1.1" maxBound="1.0,-2.45,1.5" useBoundsFromParts="0" hullAffection="1">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="bullet" multiplier="1"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="Effect">
+     <Effect effect="LightShot"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="FlippedOver" damageMax="1" major="0" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="1">
+   <DamageBehaviors>
+    <DamageBehavior class="Effect" damageRatioMin="1">
+     <Effect effect="VehicleFlipped" disableAfterExplosion="1"/>
+    </DamageBehavior>
+    <DamageBehavior class="Burn">
+     <Burn helper="" damage="0" selfDamage="20" radius="5" interval="1"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+ </Components>
+ <Parts>
+  <Part name="body" class="Animated" component="Hull" mass="0" disablePhysics="0" isHidden="0">
+   <Parts>
+    <Part name="door01" class="AnimatedJoint" component="Hull" mass="50">
+     <AnimatedJoint detachBaseForce="-1,0,0"/>
+    </Part>
+    <Part name="door02" class="AnimatedJoint" component="Hull" mass="50">
+     <AnimatedJoint detachBaseForce="1,0,0"/>
+    </Part>
+    <Part name="back_door" class="AnimatedJoint" component="Hull" mass="50">
+     <AnimatedJoint detachBaseForce="0,-1,0"/>
+    </Part>
+    <Part name="hood" class="AnimatedJoint" component="Hull" mass="50">
+     <AnimatedJoint detachBaseForce="0,1,1"/>
+    </Part>
+    <Part name="steeringWheel" class="AnimatedJoint" mass="0"/>
+    <Part name="dials_speedometer" class="AnimatedJoint" component="Hull" mass="0">
+     <AnimatedJoint>
+      <Dials rotationMax="130"/>
+     </AnimatedJoint>
+    </Part>
+    <Part name="dials_revometer" class="AnimatedJoint" component="Hull" mass="0">
+     <AnimatedJoint>
+      <Dials rotationMax="270"/>
+     </AnimatedJoint>
+    </Part>
+    <Part name="wheel01" class="SubPartWheel" component="wheel1" mass="80">
+     <SubPartWheel axle="0" density="0" damping="-0.69999999" driving="1" lenMax="0.40000001" maxFriction="1" minFriction="1" slipFrictionMod="0.40000001" stiffness="0" suspLength="0.25" rimRadius="0.25" torqueScale="1"/>
+    </Part>
+    <Part name="wheel02" class="SubPartWheel" component="wheel2" mass="80">
+     <SubPartWheel axle="1" density="0" damping="-0.69999999" driving="1" lenMax="0.40000001" maxFriction="1" minFriction="1" slipFrictionMod="0.40000001" stiffness="0" suspLength="0.25" rimRadius="0.25" torqueScale="1"/>
+    </Part>
+    <Part name="wheel03" class="SubPartWheel" component="wheel3" mass="80">
+     <SubPartWheel axle="0" density="0" damping="-0.69999999" driving="1" lenMax="0.40000001" maxFriction="1" minFriction="1" slipFrictionMod="0.40000001" stiffness="0" suspLength="0.25" rimRadius="0.25" torqueScale="1"/>
+    </Part>
+    <Part name="wheel04" class="SubPartWheel" component="wheel4" mass="80">
+     <SubPartWheel axle="1" density="0" damping="-0.69999999" driving="1" lenMax="0.40000001" maxFriction="1" minFriction="1" slipFrictionMod="0.40000001" stiffness="0" suspLength="0.25" rimRadius="0.25" torqueScale="1"/>
+    </Part>
+   </Parts>
+   <Helpers>
+    <Helper name="exhaust_pos" position="0.56879997,-2.7351,0.62400001" direction="0,-1,0"/>
+    <Helper name="engineSmokeOut" position="0.0339,2.2307,1.1449" direction="0,1,0"/>
+    <Helper name="exhaust_posL" position="-0.56840003,-2.7560999,0.62400001" direction="0,-1,0"/>
+    <Helper name="headLightLeft" position="-0.69480002,2.7725,1.0477" direction="0,0.99479997,-0.1021"/>
+    <Helper name="headLightRight" position="0.71700001,2.7809999,1.0446" direction="0,0.99479997,-0.1021"/>
+    <Helper name="headLightCenter" position="-0.0031999999,2.9233,1.0583" direction="0,0.99479997,-0.1021"/>
+    <Helper name="rearLightLeft" position="-0.926,-2.6499,1.331" direction="0,-1,0"/>
+    <Helper name="rearLightRight" position="0.90549999,-2.6559999,1.3150001" direction="0,-1,0"/>
+    <Helper name="burningPos" position="0,0,0.89160001" direction="0,1,0"/>
+   </Helpers>
+   <Animated filename="Objects/Vehicles/Civ_car1/Civ_car.cga" filenameDestroyed="Objects/Vehicles/Civ_car1/Civ_car_damaged.cga"/>
+  </Part>
+  <Part name="massBox" class="MassBox" mass="1500" position="-0.001,0.0017,0.95480001" disablePhysics="0" disableCollision="0" isHidden="0">
+   <Helpers />
+   <MassBox size="1,2,0.67799997" drivingOffset="-0.80000001"/>
+  </Part>
+  <Part name="headLightCenter" class="Light" component="" helper="headLightCenter">
+   <Components>
+    <Component value="headLightLeft"/>
+    <Component value="headLightRight"/>
+   </Components>
+   <Light type="HeadLightDynamic"/>
+  </Part>
+  <Part name="headLightLeft" class="Light" component="headLightLeft" helper="headLightLeft">
+   <Light type="HeadLightBeam"/>
+  </Part>
+  <Part name="headLightLeftFlare" class="Light" component="headLightLeft" helper="headLightLeft">
+   <Light type="HeadLightFlare"/>
+  </Part>
+  <Part name="headLightRight" class="Light" component="headLightRight" helper="headLightRight">
+   <Light type="HeadLightBeam"/>
+  </Part>
+  <Part name="headLightRightFlare" class="Light" component="headLightRight" helper="headLightRight">
+   <Light type="HeadLightFlare"/>
+  </Part>
+  <Part name="rearLightLeft" class="Light" component="rearLightsLeft" helper="rearLightLeft">
+   <Light type="Rear"/>
+  </Part>
+  <Part name="rearLightRight" class="Light" component="rearLightsRight" helper="rearLightRight">
+   <Light type="Rear"/>
+  </Part>
+  <Part name="brakeLightLeft" class="Light" component="rearLightsLeft" helper="rearLightLeft">
+   <Light type="Brake"/>
+  </Part>
+  <Part name="brakeLightRight" class="Light" component="rearLightsRight" helper="rearLightRight">
+   <Light type="Brake"/>
+  </Part>
+ </Parts>
+ <Actions>
+  <Action class="Enter">
+   <Activations>
+    <Activation type="OnUsed" param1="part" param2="door01"/>
+   </Activations>
+   <Enter>
+    <Seats>
+     <Seat value="driver"/>
+    </Seats>
+   </Enter>
+  </Action>
+  <Action class="Enter">
+   <Activations>
+    <Activation type="OnUsed" param1="part" param2="door02"/>
+   </Activations>
+   <Enter>
+    <Seats>
+     <Seat value="passenger"/>
+    </Seats>
+   </Enter>
+  </Action>
+ </Actions>
+ <Seats>
+  <Seat name="driver" part="" enterHelper="passenger01_enter_pos" sitHelper="passenger01_seat_pos" isDriver="1" AimPart="" seatGroupIndex="1" agVehicleName="US_ltv" agSeatNumber="1">
+   <Views>
+    <View class="FirstPerson" canRotate="1" rotationMin="-20,0,-100" rotationMax="5,0,100">
+     <FirstPerson offset="0,0.050000001,0.050000001" relativeToHorizon="0.5"/>
+    </View>
+    <View class="ActionThirdPerson" canRotate="1" rotationMax="0,0,65">
+     <ActionThirdPerson cameraPosOffset="0,-1.25,0" cameraAimOffset="0,0,0.5" lagSpeed="3" velocityMult="-2,0.029999999,2"/>
+    </View>
+   </Views>
+   <SeatActions>
+    <SeatAction class="SteeringWheel">
+     <SteeringWheel vehicleAnimation="steeringWheel">
+      <Car wheelRotationMax="0.050000001"/>
+     </SteeringWheel>
+    </SeatAction>
+    <SeatAction class="Sound">
+     <Sound sound="sounds/vehicles:civ_car1:horn" helper="engineSmokeOut" id="idHorn"/>
+    </SeatAction>
+    <SeatAction class="Lights">
+     <Lights activation="toggle">
+      <LightParts>
+       <LightPart value="headLightLeft"/>
+       <LightPart value="headLightRight"/>
+       <LightPart value="headLightLeftFlare"/>
+       <LightPart value="headLightRightFlare"/>
+       <LightPart value="headLightCenter"/>
+       <LightPart value="rearLightLeft"/>
+       <LightPart value="rearLightRight"/>
+      </LightParts>
+     </Lights>
+    </SeatAction>
+    <SeatAction class="Lights">
+     <Lights activation="brake">
+      <LightParts>
+       <LightPart value="brakeLightLeft"/>
+       <LightPart value="brakeLightRight"/>
+      </LightParts>
+     </Lights>
+    </SeatAction>
+   </SeatActions>
+   <Sounds inout="0" mood="0.5"/>
+  </Seat>
+  <Seat name="passenger" part="" enterHelper="passenger02_enter_pos" sitHelper="passenger02_seat_pos" isDriver="0" AimPart="" seatGroupIndex="2" agVehicleName="US_ltv" agSeatNumber="3">
+   <Views>
+    <View class="FirstPerson" canRotate="1" rotationMin="-12,0,-110" rotationMax="5,0,110">
+     <FirstPerson offset="0,0,0.1" relativeToHorizon="0.5"/>
+    </View>
+    <View class="ActionThirdPerson" canRotate="0">
+     <ActionThirdPerson cameraPosOffset="0,-1.25,0" cameraAimOffset="0,0,0.5" lagSpeed="3" velocityMult="-2,0.029999999,2"/>
+    </View>
+   </Views>
+   <SeatActions />
+   <Sounds inout="0" mood="0.5"/>
+  </Seat>
+ </Seats>
+ <SeatGroups>
+  <SeatGroup name="Cabin">
+   <Seats>
+    <Seat value="driver"/>
+    <Seat value="passenger"/>
+   </Seats>
+  </SeatGroup>
+ </SeatGroups>
+ <MovementParams>
+  <StdWheeled vMaxSteerMax="20" steerSpeed="60" steerSpeedMin="100" steerSpeedScale="1" steerSpeedScaleMin="1" v0SteerMax="33" kvSteerMax="4" steerRelaxation="500" pedalLimitMax="0.1" rpmInterpSpeed="4" rpmRelaxSpeed="2" rpmGearShiftSpeed="3">
+   <Wheeled axleFriction="700" axleFrictionMax="2000" brakeTorque="5000" brakeImpulse="0.5" clutchSpeed="2.3" damping="0.02" engineIdleRPM="500" engineMaxRPM="3800" engineMinRPM="100" enginePower="160" engineShiftDownRPM="1300" engineShiftUpRPM="2000" engineStartRPM="500" stabilizer="0.2" maxBrakingFriction="0.60000002" rearWheelBrakingFrictionMult="0.9" maxSteer="0.44999999" maxSpeed="23" maxTimeStep="0.02" minEnergy="0.012" slipThreshold="0.02" suspDampingMin="-0.18000001" suspDampingMax="-0.5" suspDampingMaxSpeed="13" gearDirSwitchRPM="1000" dynFriction="1.1">
+    <gearRatios>
+     <gearRatio value="-20"/>
+     <gearRatio value="0"/>
+     <gearRatio value="8.5"/>
+     <gearRatio value="6"/>
+     <gearRatio value="5"/>
+    </gearRatios>
+   </Wheeled>
+   <SoundParams engineSoundPosition="engineSmokeOut" runSoundDelay="1" roadBumpMinSusp="10" roadBumpMinSpeed="6" roadBumpIntensity="0.30000001" maxSlipSpeed="11"/>
+   <TweakGroups>
+    <TweakGroup name="ai">
+     <Tweaks>
+      <Tweak name="enginePower" value="1" op="1"/>
+      <Tweak name="engineMaxRPM" value="1" op="1"/>
+      <Tweak name="maxSpeed" value="1" op="1"/>
+     </Tweaks>
+    </TweakGroup>
+    <TweakGroup name="player_boost">
+     <Tweaks>
+      <Tweak name="enginePower" value="1.4" op="1"/>
+      <Tweak name="engineMaxRPM" value="1.25" op="1"/>
+      <Tweak name="axleFriction" value="0.75" op="1"/>
+     </Tweaks>
+    </TweakGroup>
+   </TweakGroups>
+   <AirDamp dampAngle="1.2,0.75,0" dampAngVel="1.5,0.80000001,0.80000001"/>
+  </StdWheeled>
+ </MovementParams>
+ <Particles>
+  <Exhaust insideWater="0" outsideWater="1">
+   <Helpers>
+    <Helper value="exhaust_pos"/>
+    <Helper value="exhaust_posL"/>
+   </Helpers>
+   <EngineStart effect="vehicle_fx.vehicle_exhaust.CIV_Start"/>
+   <EngineStop effect="vehicle_fx.vehicle_exhaust.CIV_Start"/>
+   <EngineRunning effect="vehicle_fx.vehicle_exhaust.smoke_white" boostEffect="vehicle_fx.vehicle_exhaust.boost" baseSizeScale="1" minSpeed="0" minSpeedSizeScale="1" minSpeedCountScale="1" minSpeedSpeedScale="1" maxSpeed="15" maxSpeedSizeScale="1" maxSpeedCountScale="1" maxSpeedSpeedScale="1" minPower="0" minPowerSizeScale="0.5" minPowerCountScale="1" minPowerSpeedScale="1" maxPower="1" maxPowerSizeScale="1.5" maxPowerCountScale="1.5" maxPowerSpeedScale="1"/>
+  </Exhaust>
+  <ShatterEffect effect="vehicle_fx.frozen_shatter.small" /> 
+  <DamageEffects>
+   <DamageEffect name="HullDamaged25" helper="burningPos" effect="vehicle_fx.Damages_Land.CivCar_hull_smoke_a"/>
+   <DamageEffect name="HullDamaged75" helper="burningPos" effect="vehicle_fx.Damages_Land.CivCar_hull_smoke_b"/>
+   <DamageEffect name="VehicleDestroyed" helper="burningPos" effect="explosions.CIV_explosion.a" scaleMax="0.30000001" gravityDirection="0,0,1"/>
+   <DamageEffect name="VehicleFlipped" helper="burningPos" effect="smoke_and_fire.Jeep.flipped_jeep"/>
+   <DamageEffect name="EngineDamaged25" helper="engineSmokeOut" effect="vehicle_fx.Damages_Land.CivCar_engine_smoke_a" scaleMax="1" gravityDirection="0,0,1" pulsePeriod="0"/>
+   <DamageEffect name="EngineDamaged75" helper="engineSmokeOut" effect="vehicle_fx.Damages_Land.CivCar_engine_smoke_b" scaleMax="1" gravityDirection="0,0,1" pulsePeriod="0"/>
+  </DamageEffects>
+  <EnvironmentLayers>
+   <EnvironmentLayer minSpeed="0.5" minSpeedSizeScale="1" minSpeedCountScale="1" minSpeedSpeedScale="1" maxSpeed="25" maxSpeedSizeScale="1" maxSpeedCountScale="1" maxSpeedSpeedScale="1">
+    <Alignment alignGroundHeight="0" maxHeightSizeScale="1" maxHeightCountScale="1" alignToWater="0"/>
+    <Emitters />
+    <Wheels>
+     <WheelGroups>
+      <WheelGroup>
+       <Wheels>
+        <Wheel value="2"/>
+       </Wheels>
+      </WheelGroup>
+      <WheelGroup>
+       <Wheels>
+        <Wheel value="4"/>
+       </Wheels>
+      </WheelGroup>
+     </WheelGroups>
+    </Wheels>
+   </EnvironmentLayer>
+   <EnvironmentLayer name="slip" minSpeed="1" minSpeedSizeScale="0.80000001" minSpeedCountScale="0.5" maxSpeed="7" maxSpeedSizeScale="1" maxSpeedCountScale="1">
+    <Alignment alignGroundHeight="0" maxHeightSizeScale="1" maxHeightCountScale="1" alignToWater="0"/>
+    <Emitters />
+    <Wheels>
+     <WheelGroups>
+      <WheelGroup>
+       <Wheels>
+        <Wheel value="1"/>
+       </Wheels>
+      </WheelGroup>
+      <WheelGroup>
+       <Wheels>
+        <Wheel value="2"/>
+       </Wheels>
+      </WheelGroup>
+      <WheelGroup>
+       <Wheels>
+        <Wheel value="3"/>
+       </Wheels>
+      </WheelGroup>
+      <WheelGroup>
+       <Wheels>
+        <Wheel value="4"/>
+       </Wheels>
+      </WheelGroup>
+     </WheelGroups>
+    </Wheels>
+   </EnvironmentLayer>
+   <EnvironmentLayer name="rims" minSpeed="0.30000001" minSpeedSizeScale="0.25" minSpeedCountScale="1" maxSpeed="10" maxSpeedSizeScale="1" maxSpeedCountScale="1">
+    <Alignment alignGroundHeight="0" maxHeightSizeScale="1" maxHeightCountScale="1" alignToWater="0"/>
+    <Emitters />
+    <Wheels all="1" allActive="0"/>
+   </EnvironmentLayer>
+  </EnvironmentLayers>
+ </Particles>
+ <Animations>
+  <Animation name="steeringWheel" part="body">
+   <States>
+    <State name="" animation="car_steeringWheel" isLooped="1" speedDefault="1" speedMin="1" speedMax="1"/>
+   </States>
+  </Animation>
+ </Animations>
+ <Paints>
+  <Paint name="black" material="objects/vehicles/civ_car1/civ_car_color_variations_black.mtl"/>
+  <Paint name="blue" material="objects/vehicles/civ_car1/civ_car_color_variations_blue.mtl"/>
+  <Paint name="green" material="objects/vehicles/civ_car1/civ_car_color_variations_green.mtl"/>
+  <Paint name="police" material="objects/vehicles/civ_car1/civ_car_color_variations_police.mtl"/>
+  <Paint name="red" material="objects/vehicles/civ_car1/civ_car_color_variations_red.mtl"/>
+  <Paint name="silver" material="objects/vehicles/civ_car1/civ_car_color_variations_silver.mtl"/>
+  <Paint name="utility" material="objects/vehicles/civ_car1/civ_car_color_variations_utility.mtl"/>
+ </Paints>
+ <WheelMaster>
+  <SubPartWheel axle="0" density="5000" damping="-0.69999999" driving="1" lenMax="0.40000001" maxFriction="1" minFriction="1" stiffness="0" suspLength="0.25"/>
+ </WheelMaster>
+ <Modifications>
+  <Modification name="MP">
+   <Elems>
+   </Elems>
+  </Modification>
+  <Modification name="PoliceCar" parent="MP">
+   <Elems>
+    <Elem idRef="idHorn" name="sound" value="sounds/vehicles:civ_car1:police_horn"/>
+   </Elems>
+  </Modification>
+ </Modifications>
+</Vehicle>
