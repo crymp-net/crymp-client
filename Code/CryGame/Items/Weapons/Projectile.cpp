@@ -238,6 +238,11 @@ bool CProjectile::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 prof
 			return false;
 		}
 
+		if (!m_netUpdateReceived && ser.IsReading())
+		{
+			m_netUpdateReceived = true;
+		}
+
 		pEPP->SerializeTyped(ser, type, pflags);
 	}
 	return true;
@@ -369,33 +374,9 @@ void CProjectile::FullSerialize(TSerialize ser)
 }
 
 //------------------------------------------------------------------------
-bool CProjectile::RemoveIfExpired()
-{
-	if (IsExpired())
-	{
-		gEnv->pEntitySystem->RemoveEntity(GetEntity()->GetId());
-		return true;
-	}
-	return false;
-}
-
-//------------------------------------------------------------------------
 void CProjectile::Update(SEntityUpdateContext& ctx, int updateSlot)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
-
-	/*
-	//CryMP begin: Check for dead projectiles
-	if (gEnv->bMultiplayer)
-	{
-		m_lastUpdate = ctx.fCurrTime;
-		if (RemoveIfExpired())
-		{
-			m_spawnTime = ctx.fCurrTime;
-		}
-	}
-	//CryMP end
-	*/
 
 	if (updateSlot != 0)
 		return;
@@ -737,6 +718,15 @@ void CProjectile::Destroy()
 		if ((GetEntity()->GetFlags() & ENTITY_FLAG_CLIENT_ONLY) || gEnv->bServer)
 		{
 			gEnv->pEntitySystem->RemoveEntity(GetEntity()->GetId());
+		}
+		else
+		{
+			if (gEnv->bClient && !m_netUpdateReceived)
+			{
+				m_ghost = true;
+				GetEntity()->Hide(true);
+				GetEntity()->SetWorldTM(IDENTITY);
+			}
 		}
 	}
 }
