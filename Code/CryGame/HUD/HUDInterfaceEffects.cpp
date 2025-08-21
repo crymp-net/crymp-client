@@ -437,6 +437,9 @@ void CHUD::TrackProjectiles(CPlayer* pPlayerActor)
 	{
 		if (CProjectile *pProjectile=pWeaponSystem->GetProjectile(projId))
 		{
+			if (pProjectile->GetEntity()->IsHidden()) //CryMP: Skip ghost grenades
+				continue;
+
 			Vec3 proj=pProjectile->GetEntity()->GetWorldPos();
 			m_pRenderer->ProjectToScreen(	proj.x, proj.y,	proj.z, &screen.x,	&screen.y, &screen.z );
 
