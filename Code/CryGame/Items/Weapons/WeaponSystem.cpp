@@ -148,7 +148,7 @@ CWeaponSystem::CWeaponSystem(CGame *pGame, ISystem *pSystem)
 			}
 		},
 		0,
-		"Dump current ammo pool sizes for debugging"
+		"Dump hidden ghost projectiles"
 	);
 }
 
