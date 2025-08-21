@@ -915,8 +915,8 @@ void CWeaponSystem::DumpGhostProjectiles()
 			idx,
 			className,
 			ownerName,
-			p->IsRemote(),
-			p->IsUpdated()
+			static_cast<int>(p->IsRemote()),
+			static_cast<int>(p->IsUpdated())
 		);
 
 		++idx;
