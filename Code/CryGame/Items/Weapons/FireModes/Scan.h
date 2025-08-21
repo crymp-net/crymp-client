@@ -186,19 +186,21 @@ protected:
 	SScanParams		m_scanparams;
 	SScanActions	m_scanactions;
 
-	CWeapon			*m_pWeapon;
-	bool				m_enabled;
-	string			m_name;
+	CWeapon* m_pWeapon = nullptr;
+	bool m_enabled = false;
+	string m_name;
 
-	tSoundID		m_scanLoopId;
+	tSoundID m_scanSoundId = INVALID_SOUNDID;
 
-	bool				m_scanning;
+	bool m_scanning = false;
 
 	float m_fPulse = 0.0f;
 	bool m_rTop = false;
 	unsigned int m_delayTimerId = 0;
 	unsigned int m_durationTimerId = 0;
 	unsigned int m_scanTimerId = 0;
+
+	void StopScanSound();
 
 public:
 

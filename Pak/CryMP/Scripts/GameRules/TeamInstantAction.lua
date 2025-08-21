@@ -493,7 +493,7 @@ end
 function TeamInstantAction:CheckScoreLimit(teamId, score)
 
 	local state=self:GetState();
-	if (state and state~="InGame") then
+	if (state and state~="InGame") or g_gameRules.class == "PowerStruggle" then
 		return;
 	end
 
