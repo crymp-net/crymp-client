@@ -1,10 +1,12 @@
 #include <cctype>
+#include <cwctype>
 #include <string_view>
 
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryCommon/CrySystem/IConsole.h"
 #include "CryGame/GameRules.h"
 #include "Library/WinAPI.h"
+#include "Library/StringTools.h"
 
 #include "HUDTextChat.h"
 #include "HUD.h"
@@ -116,7 +118,7 @@ void CHUDTextChat::Update(float deltaTime)
 
 	if (m_inputText != m_lastInputText)
 	{
-		m_flashChat->Invoke("setInputText", WinAPI::WStringToUtf8(m_inputText).c_str());
+		m_flashChat->Invoke("setInputText", StringTools::ToUtf8(m_inputText).c_str());
 		m_lastInputText = m_inputText;
 	}
 }
@@ -230,7 +232,7 @@ void CHUDTextChat::HandleFSCommand(const char* command, const char* args)
 	{
 		const std::string_view text(args);
 
-		for (wchar_t ch : WinAPI::Utf8ToWString(args) )
+		for (wchar_t ch : StringTools::ToWide(args) )
 		{
 			this->Insert(ch);
 		}
@@ -385,7 +387,7 @@ void CHUDTextChat::Insert(wchar_t ch)
 		return;
 	}
 
-	if (ch == 0)
+	if (!std::iswprint(ch))
 	{
 		// allow only printable characters
 		return;
@@ -397,7 +399,7 @@ void CHUDTextChat::Insert(wchar_t ch)
 
 void CHUDTextChat::Paste()
 {
-	for (char ch : WinAPI::GetClipboardText(MAX_MESSAGE_LENGTH))
+	for (wchar_t ch : StringTools::ToWide(WinAPI::GetClipboardText(MAX_MESSAGE_LENGTH)))
 	{
 		this->Insert(ch);
 	}
@@ -416,7 +418,7 @@ void CHUDTextChat::Flush()
 			chatType,
 			senderID,
 			0,
-			WinAPI::WStringToUtf8(m_inputText).c_str()
+			StringTools::ToUtf8(m_inputText).c_str()
 		);
 
 		m_history.Add(m_inputText);

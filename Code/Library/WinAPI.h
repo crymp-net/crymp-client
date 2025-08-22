@@ -139,8 +139,6 @@ namespace WinAPI
 
 	std::wstring CharToWString(char ch);
 	unsigned GetActiveKeyboardAnsiCP();
-	std::string WStringToUtf8(const std::wstring& wstr);
-	std::wstring Utf8ToWString(const std::string& utf8);
 
 	/////////////////
 	// System info //
