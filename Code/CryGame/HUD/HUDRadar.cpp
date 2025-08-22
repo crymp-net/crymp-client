@@ -14,24 +14,26 @@ History:
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryCommon/CryAction/IUIDraw.h"
 #include "CryCommon/CryEntitySystem/EntityId.h"
-#include "CryGame/Actors/Actor.h"
-#include "CryGame/Items/Weapons/Weapon.h"
-#include "HUD.h"
-#include "HUDRadar.h"
-#include "CryGame/Game.h"
-#include "CryCommon/CryAction/IWorldQuery.h"
-#include "CryGame/GameRules.h"
 #include "CryCommon/CryAction/IVehicleSystem.h"
 #include "CryCommon/CryAISystem/IAIGroup.h"
+#include "CryCommon/CryAction/IWorldQuery.h"
+
+#include "HUD.h"
+#include "HUDRadar.h"
+#include "HUDPowerStruggle.h"
+#include "HUDScopes.h"
 #include "HUDSilhouettes.h"
 
 #include "GameFlashAnimation.h"
 #include "GameFlashLogic.h"
-#include "CryGame/GameCVars.h"
 
-#include "HUDPowerStruggle.h"
-#include "HUDScopes.h"
+#include "CryGame/Game.h"
+#include "CryGame/Actors/Actor.h"
+#include "CryGame/Items/Weapons/Weapon.h"
+#include "CryGame/GameRules.h"
+#include "CryGame/GameCVars.h"
 #include "CryGame/Items/Weapons/FireModes/Scan.h"
+#include "CryGame/Items/Weapons/GunTurret.h"
 
 #define RANDOM() ((((float)cry_rand()/(float)RAND_MAX)*2.0f)-1.0f)
 
@@ -142,6 +144,8 @@ CHUDRadar::CHUDRadar(CHUD *pHUD)
 	m_pBoatA = pEntityClassRegistry->FindClass("Asian_patrolboat");
 	m_pCarCiv = pEntityClassRegistry->FindClass("Civ_car1");
 	m_pParachute = pEntityClassRegistry->FindClass("Parachute");
+	m_pAutoTurret = pEntityClassRegistry->FindClass("AutoTurret");
+	m_pAutoTurretAA = pEntityClassRegistry->FindClass("AutoTurretAA");
 
 	assert(m_pLTVA && m_pLTVUS && m_pTankA && m_pTankUS && m_pWarrior && m_pHunter && m_pAlien && m_pScout && m_pGrunt && m_pHeli && m_pVTOL && m_pAAA && m_pTruck && m_pAPCUS && m_pAPCA && m_pBoatCiv && m_pHover && m_pBoatUS && m_pBoatA && m_pCarCiv && m_pParachute);
 }
@@ -175,7 +179,9 @@ void CHUDRadar::AddEntityTemporarily(EntityId id, float time)
 {
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
 	if (pEntity)
+	{
 		ShowEntityTemporarily(ChooseType(pEntity, true), id, time);
+	}
 }
 
 void CHUDRadar::ShowEntityTemporarily(FlashRadarType type, EntityId id, float timeLimit)
@@ -185,7 +191,7 @@ void CHUDRadar::ShowEntityTemporarily(FlashRadarType type, EntityId id, float ti
 		if (entity.m_id == id)
 		{
 			entity.m_type = type;
-			entity.m_spawnTime = gEnv->pTimer->GetFrameStartTime().GetSeconds();;
+			entity.m_spawnTime = gEnv->pTimer->GetFrameStartTime().GetSeconds();
 
 			if (timeLimit > entity.m_timeLimit)
 			{
@@ -197,6 +203,19 @@ void CHUDRadar::ShowEntityTemporarily(FlashRadarType type, EntityId id, float ti
 	}
 
 	m_tempEntitiesOnRadar.emplace_back(id, type, timeLimit);
+}
+
+bool CHUDRadar::IsEntityOnTempRadar(const EntityId id)
+{
+	for (TempRadarEntity& entity : m_tempEntitiesOnRadar)
+	{
+		if (entity.m_id == id)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void CHUDRadar::AddStoryEntity(EntityId id, FlashRadarType type /* = EWayPoint */, const char* text /* = NULL */)
@@ -464,6 +483,7 @@ void CHUDRadar::Update(float fDeltaTime)
 			--t;
 			continue;
 		}
+
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(temp.m_id);
 		if (pEntity && !pEntity->IsHidden())
 		{
@@ -492,27 +512,75 @@ void CHUDRadar::Update(float fDeltaTime)
 				fY = intersection.y;
 			}
 
-			float fAngle = pActor->GetAngles().z - pEntity->GetWorldAngles().z;
+			// Determine correct rotation (turret barrel or entity base)
+			CGunTurret *pTurret = nullptr;
+			bool turretAggressive = false;
+			Ang3 turretAngles;
+
+			if (IItem* pItem = g_pGame->GetIGameFramework()->GetIItemSystem()->GetItem(pEntity->GetId()))
+			{
+				IEntityClass* pClass = pEntity->GetClass();
+				if (pClass == CItem::sAutoTurret || pClass == CItem::sAutoTurretAA)
+				{
+					const int barrelSlot = CItem::eIBA_Secondary; 
+					if (pEntity->GetSlotFlags(barrelSlot) & ENTITY_SLOT_RENDER)
+					{
+						//CryMP: Update barrel rotation in radar
+						const Matrix34& slotTM = pEntity->GetSlotWorldTM(barrelSlot);
+						turretAngles = Ang3::GetAnglesXYZ(Matrix33(slotTM));
+						pTurret = static_cast<CGunTurret*>(pItem);
+
+						if (pTurret->IsFiring(false) || pTurret->IsFiring(true) || pTurret->IsWarningSoundPlayedRecently())
+						{
+							turretAggressive = true;
+						}
+					}
+				}
+			}
+
+			Ang3 entityAngles = pTurret ? turretAngles : pEntity->GetWorldAngles();
+			float fAngle = pActor->GetAngles().z - entityAngles.z;
 			float fAlpha = 0.85f;
-			
+
 			float sizeScale = GetRadarSize(pEntity, pActor);
 
-			//in flash
+			// in flash
 			float lowerBoundY = m_fY - fRadarSizeOverTwo;
 			float dimX = (m_fX + fRadarSizeOverTwo) - lowerBoundX;
 			float dimY = (m_fY + fRadarSizeOverTwo) - lowerBoundY;
 
 			int playerTeam = m_pGameRules->GetTeam(pActor->GetEntityId());
-			const auto friendOrFoe = FriendOrFoe(gEnv->bMultiplayer, playerTeam, pEntity,
-				m_pGameRules);
+			FlashRadarFaction friendOrFoe = FriendOrFoe(gEnv->bMultiplayer, playerTeam, pEntity, m_pGameRules);
 
-			//CryMP: Brighter red color for Enemy
+			//CryMP: Different colors according to turret state
+			//Blue: friendy, Red: enemy, Yellow: aggressive
+			if (pTurret)
+			{
+				friendOrFoe = pTurret->IsHostileTowardsClient() ? EFriend : ENeutral; //EFriend is red color in flash
+
+				if (turretAggressive)
+				{
+					friendOrFoe = EEnemy; //yellow color in flash
+				}
+			}
+
+			// CryMP: Brighter red color for Enemy
 			if (friendOrFoe == EEnemy)
 			{
 				fAlpha = 1.0f;
 			}
-			numOfValues += ::FillUpDoubleArray(&entityValues, temp.m_id, temp.m_type, (fX - lowerBoundX) / dimX, (fY - lowerBoundY) / dimY,
-				180.0f + RAD2DEG(fAngle), friendOrFoe, sizeScale * 25.0f, fAlpha * 100.0f);
+
+			numOfValues += ::FillUpDoubleArray(
+				&entityValues,
+				temp.m_id,
+				temp.m_type,
+				(fX - lowerBoundX) / dimX,
+				(fY - lowerBoundY) / dimY,
+				180.0f + RAD2DEG(fAngle),
+				friendOrFoe,
+				sizeScale * 25.0f,
+				fAlpha * 100.0f
+			);
 		}
 	}
 
@@ -2587,7 +2655,18 @@ FlashRadarType CHUDRadar::ChooseType(IEntity* pEntity, bool radarOnly)
 	}
 	if (radarOnly)
 	{
-		if (returnType == EPlayer)
+		//1 Player
+		//2 Heli
+		//3 Box (cars)
+		//4 Small round circle
+		//5 Small yellow dot
+		//6 --
+		//7 Mini yellow dot
+		//8 Tank (friendly red: neutral: blue, enemy: yellow)
+		//9 enemy: Yellow dot
+		if (pCls == m_pAutoTurret || pCls == m_pAutoTurretAA)
+			returnType = (FlashRadarType)(8);
+		else if (returnType == EPlayer)
 			returnType = ETank; //1
 		else if (returnType == EHeli)
 			returnType = EAPC; //2

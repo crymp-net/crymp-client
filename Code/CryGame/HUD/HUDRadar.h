@@ -187,12 +187,36 @@ public:
 	//show an entity on the radar for a short time only (default is one second)
 	void ShowEntityTemporarily(FlashRadarType type, EntityId id, float timeLimit = 1.0f);
 
+	bool IsEntityOnTempRadar(const EntityId id);
+
 	void Serialize(TSerialize ser);
 
 	//entity classes for comparison
-	IEntityClass *m_pVTOL, *m_pHeli, *m_pHunter, *m_pWarrior, *m_pAlien, *m_pTrooper, *m_pGrunt, *m_pPlayerClass,
-		*m_pScout, *m_pTankUS, *m_pTankA, *m_pLTVUS, *m_pLTVA, *m_pAAA, *m_pTruck, *m_pAPCUS, *m_pAPCA, *m_pBoatCiv,
-		*m_pHover, *m_pBoatUS, *m_pBoatA, *m_pCarCiv, *m_pParachute;
+	IEntityClass* m_pVTOL = nullptr;
+	IEntityClass* m_pHeli = nullptr;
+	IEntityClass* m_pHunter = nullptr;
+	IEntityClass* m_pWarrior = nullptr;
+	IEntityClass* m_pAlien = nullptr;
+	IEntityClass* m_pTrooper = nullptr;
+	IEntityClass* m_pGrunt = nullptr;
+	IEntityClass* m_pPlayerClass = nullptr;
+	IEntityClass* m_pScout = nullptr;
+	IEntityClass* m_pTankUS = nullptr;
+	IEntityClass* m_pTankA = nullptr;
+	IEntityClass* m_pLTVUS = nullptr;
+	IEntityClass* m_pLTVA = nullptr;
+	IEntityClass* m_pAAA = nullptr;
+	IEntityClass* m_pTruck = nullptr;
+	IEntityClass* m_pAPCUS = nullptr;
+	IEntityClass* m_pAPCA = nullptr;
+	IEntityClass* m_pBoatCiv = nullptr;
+	IEntityClass* m_pHover = nullptr;
+	IEntityClass* m_pBoatUS = nullptr;
+	IEntityClass* m_pBoatA = nullptr;
+	IEntityClass* m_pCarCiv = nullptr;
+	IEntityClass* m_pParachute = nullptr;
+	IEntityClass* m_pAutoTurret = nullptr;
+	IEntityClass* m_pAutoTurretAA = nullptr;
 
 private:
 

@@ -397,6 +397,16 @@ private:
 
 	bool   m_destroyed;
   bool   m_canShoot;
+
+	float m_lastWarningSoundPlayed = 0.0f;
+
+ public:
+	 bool IsHostileTowardsClient() const;
+	 void OnTurretAggressive(bool playSound = false);
+	 bool IsWarningSoundPlayedRecently() const
+	 {
+		 return (m_lastWarningSoundPlayed > 0.0f && gEnv->pTimer->GetCurrTime() - m_lastWarningSoundPlayed < 2.0f);
+	 }
 };
 
 #endif // __GunTurret_H__

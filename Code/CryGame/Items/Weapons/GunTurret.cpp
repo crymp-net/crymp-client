@@ -28,6 +28,8 @@ History:
 #include "WeaponSystem.h"
 #include "Projectile.h"
 #include "CryGame/Actors/Player/Player.h"
+#include "CryGame/HUD/HUD.h"
+#include "CryGame/HUD/HUDRadar.h"
 
 
 namespace
@@ -1184,7 +1186,10 @@ void CGunTurret::UpdateOrientation(float deltaTime)
 		Interp(turretAngles.z, m_goalYaw, speed, deltaTime, 0.25 * speed);
 
 		if (m_turretSound == INVALID_SOUNDID && gEnv->bClient)
+		{
 			m_turretSound = PlayAction(g_pItemStrings->turret);
+			OnTurretAggressive(true);
+		}
 		changed = true;
 	}
 	else if (m_turretSound != INVALID_SOUNDID)
@@ -1390,6 +1395,11 @@ void CGunTurret::StartFire(bool sec)
 		m_fm2->StartFire();
 
 	m_fireHint = 1;
+
+	if (gEnv->bClient)
+	{
+		OnTurretAggressive();
+	}
 }
 
 //------------------------------------------------------------------------
@@ -1853,4 +1863,37 @@ void    CGunTurret::DrawDebug()
 	pDebug->AddSphere(rocket, 0.2f, ColorF(0, 1, 0, 1), 1.f);
 	pDebug->AddSphere(radar, 0.2f, ColorF(0, 0, 1, 1), 1.f);
 	pDebug->AddSphere(barrel, 0.2f, ColorF(1, 0, 1, 1), 1.f);
+}
+
+//------------------------------------------------------------------------
+bool CGunTurret::IsHostileTowardsClient() const
+{
+	IActor* pClient = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	if (pClient && IsTargetHostile(pClient))
+	{
+		return true;
+	}
+	return false;
+}
+
+//------------------------------------------------------------------------
+void CGunTurret::OnTurretAggressive(bool playSound)
+{
+	//CryMP: Add turret temporarily to the radar on client
+	//Triggered by sound or start firing
+	if (gEnv->bClient)
+	{
+		if (IsHostileTowardsClient())
+		{
+			if (playSound)
+			{
+				m_lastWarningSoundPlayed = gEnv->pTimer->GetCurrTime();
+			}
+			CHUD* pHUD = g_pGame->GetHUD();
+			if (pHUD && pHUD->GetRadar() && !pHUD->GetRadar()->IsEntityOnTempRadar(GetEntityId()))
+			{
+				pHUD->GetRadar()->ShowEntityTemporarily((FlashRadarType)(8), GetEntityId(), 5.0f); //special icon
+			}
+		}
+	}
 }
