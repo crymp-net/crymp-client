@@ -146,6 +146,20 @@ enum FlashRadarType	//don't change order (unless you change the flash asset)
 	ELastType
 };
 
+enum class RadarIcon
+{
+	Zero = 0,
+	One,         // 1
+	Two,         // 2
+	Three,       // 3 (box cars)
+	Four,        // 4 (small round circle)
+	Five,        // 5
+	Six,         // 6 
+	Seven,       // 7 (mini yellow dot)
+	Eight,       // 8
+	Nine         // 9 (enemy yellow dot)
+};
+
 //factions on mini map
 enum FlashRadarFaction
 {

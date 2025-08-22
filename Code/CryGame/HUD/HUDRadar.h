@@ -247,9 +247,12 @@ private:
 	bool					CheckObjectMultiplayer(EntityId id);	// additional checks to see if this object is worth looking at in MP.
 
 	//activate minimap rendering
-	ILINE void SetRenderMapOverlay(bool bActive) {	m_renderMiniMap = bActive;}
+	ILINE void SetRenderMiniMap(bool bActive) 
+	{	
+		m_renderMiniMap = bActive;
+	}
 	//renders player position, AI positions and structures on the overview map (should be replaced in flash)
-	void RenderMapOverlay();
+	void RenderMiniMap();
 	//get an entity's position on the minimap
 	bool GetPosOnMap(float inX, float inY, float &outX, float &outY, bool flashCoordinates = true);
 	bool GetPosOnMap(IEntity *pEntity, float &outX, float &outY, bool flashCoordinates = true);
@@ -259,6 +262,7 @@ private:
 	void ComputeMiniMapResolution();
 	//chooses the right icon for a given vehicle or building entity (class)
 	FlashRadarType ChooseType(IEntity* pEntity, bool radarOnly = false);
+	RadarIcon ChooseRadarIcon(IEntity* pEntity);
 	//chooses the right icon for a given synched entity type (ammo trucks, tac tanks ... special mp units)
 	FlashRadarType GetSynchedEntityType(int type);
 	//return whether the entity is friend or foe to the player

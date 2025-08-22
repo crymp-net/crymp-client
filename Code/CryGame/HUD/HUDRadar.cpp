@@ -360,7 +360,7 @@ void CHUDRadar::Update(float fDeltaTime)
 		{
 			//render the mini map
 			if (m_renderMiniMap)
-				RenderMapOverlay();
+				RenderMiniMap();
 		}
 		return;
 	}
@@ -468,7 +468,16 @@ void CHUDRadar::Update(float fDeltaTime)
 			float lowerBoundY = m_fY - fRadarSizeOverTwo;
 			float dimX = (m_fX + fRadarSizeOverTwo) - lowerBoundX;
 			float dimY = (m_fY + fRadarSizeOverTwo) - lowerBoundY;
-			numOfValues += ::FillUpDoubleArray(&entityValues, pEntity->GetId(), 5 /* MO */, (fX - lowerBoundX) / dimX, (fY - lowerBoundY) / dimY, 180 + RAD2DEG(fAngle), faction, 75.0f, fAlpha * 100.0f);
+			numOfValues += ::FillUpDoubleArray(&entityValues, 
+				pEntity->GetId(), 
+				static_cast<int>(RadarIcon::Five), //5
+				(fX - lowerBoundX) / dimX, 
+				(fY - lowerBoundY) / dimY, 
+				180 + RAD2DEG(fAngle), 
+				faction, 
+				75.0f, 
+				fAlpha * 100.0f
+			);
 		}
 	}
 
@@ -611,7 +620,16 @@ void CHUDRadar::Update(float fDeltaTime)
 				float lowerBoundY = m_fY - fRadarSizeOverTwo;
 				float dimX = (m_fX + fRadarSizeOverTwo) - lowerBoundX;
 				float dimY = (m_fY + fRadarSizeOverTwo) - lowerBoundY;
-				numOfValues += ::FillUpDoubleArray(&entityValues, pEntity->GetId(), 7 /*tagged entity*/, (fX - lowerBoundX) / dimX, (fY - lowerBoundY) / dimY, 0.0f, 0, sizeScale * 100.0f, 100.0f);
+				numOfValues += ::FillUpDoubleArray(&entityValues, 
+					pEntity->GetId(), 
+					static_cast<int>(RadarIcon::Seven), //7
+					(fX - lowerBoundX) / dimX, 
+					(fY - lowerBoundY) / dimY, 
+					0.0f, 
+					0, 
+					sizeScale * 100.0f, 
+					100.0f
+				);
 			}
 		}
 	}
@@ -658,12 +676,21 @@ void CHUDRadar::Update(float fDeltaTime)
 			float lowerBoundY = m_fY - fRadarSizeOverTwo;
 			float dimX = (m_fX + fRadarSizeOverTwo) - lowerBoundX;
 			float dimY = (m_fY + fRadarSizeOverTwo) - lowerBoundY;
-			numOfValues += ::FillUpDoubleArray(&entityValues, temp.m_id, 6 /*sound*/, (fX - lowerBoundX) / dimX, (fY - lowerBoundY) / dimY, 0.0f, 0, size * 10.0f, (1.0f - (0.5f * diffTime)) * 100.0f);
+			numOfValues += ::FillUpDoubleArray(&entityValues, 
+				temp.m_id, 
+				static_cast<int>(RadarIcon::Six), //6 
+				(fX - lowerBoundX) / dimX, 
+				(fY - lowerBoundY) / dimY, 
+				0.0f, 
+				0, 
+				size * 10.0f, 
+				(1.0f - (0.5f * diffTime)) * 100.0f
+			);
 		}
 	}
 	//render the mini map
 	if (m_renderMiniMap)
-		RenderMapOverlay();
+		RenderMiniMap();
 
 	entityValues.Flush();
 	float playerX = 0.5f;
@@ -965,7 +992,7 @@ void CHUDRadar::UpdateRadarEntities(CActor* pClientActor, float& fRadius, Matrix
 				continue;
 			//**********************************************************************************************
 
-			FlashRadarType FlashType = ChooseType(pEntity, true);
+			RadarIcon FlashType = ChooseRadarIcon(pEntity);
 
 			if (mate)
 			{
@@ -976,7 +1003,7 @@ void CHUDRadar::UpdateRadarEntities(CActor* pClientActor, float& fRadius, Matrix
 					if (pScan && pScan->IsScanning())
 					{
 						bShowScan = true;
-						FlashType = static_cast<FlashRadarType>(5); //CryMP: special green arrow
+						FlashType = RadarIcon::Five; //CryMP: special icon
 						sizeScale *= 1.5f;
 						const float speed = gEnv->pTimer->GetRealFrameTime();
 						fAlpha *= pScan->Pulse(0.1f, 0.7f, speed); //highlite scanning teammates
@@ -997,9 +1024,16 @@ void CHUDRadar::UpdateRadarEntities(CActor* pClientActor, float& fRadius, Matrix
 
 			if (!bIsClient || bShowScan)
 			{
-				numOfValues += ::FillUpDoubleArray(entityValues, pEntity->GetId(),
-					FlashType, (fX - lowerBoundX) / dimX, (fY - lowerBoundY) / dimY,
-					180.0f + RAD2DEG(fAngle), friendly, sizeScale * 25.0f, fAlpha * 100.0f);
+				numOfValues += ::FillUpDoubleArray(entityValues, 
+					pEntity->GetId(),
+					static_cast<int>(FlashType), 
+					(fX - lowerBoundX) / dimX, 
+					(fY - lowerBoundY) / dimY,
+					180.0f + RAD2DEG(fAngle), 
+					friendly, 
+					sizeScale * 25.0f, 
+					fAlpha * 100.0f
+				);
 			}
 		}
 	}
@@ -1644,7 +1678,7 @@ void CHUDRadar::OnLoadingComplete(ILevel* pLevel)
 		m_pLevelData = pLevel;
 	}
 
-	RenderMapOverlay();
+	RenderMiniMap();
 	SetMiniMapTexture(m_mapId, true);
 }
 
@@ -1809,7 +1843,7 @@ void CHUDRadar::LoadMiniMap(const char* mapPath)
 
 //-----------------------------------------------------------------------------------------------------
 
-void CHUDRadar::RenderMapOverlay()
+void CHUDRadar::RenderMiniMap()
 {
 	CGameFlashAnimation* m_flashMap = m_flashPDA;
 	if (!m_flashMap || !m_flashMap->IsAvailable("Root.PDAArea.Map_M.MapArea"))
@@ -2677,6 +2711,30 @@ FlashRadarType CHUDRadar::ChooseType(IEntity* pEntity, bool radarOnly)
 	}
 
 	return returnType;
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+RadarIcon CHUDRadar::ChooseRadarIcon(IEntity* pEntity)
+{
+	if (!pEntity)
+		return RadarIcon::None;
+
+	const IEntityClass* pCls = pEntity->GetClass();
+
+	if (pCls == m_pAutoTurret || pCls == m_pAutoTurretAA)
+		return RadarIcon::Eight; // 8
+
+	if (pCls == m_pPlayerClass || pCls == m_pGrunt || pCls == m_pAlien || pCls == m_pTrooper)
+		return RadarIcon::One; // 1
+
+	if (pCls == m_pHeli || pCls == m_pScout)
+		return RadarIcon::Two; // 2
+
+	if (pCls == m_pWarrior || pCls == m_pHunter)
+		return RadarIcon::One; // 1
+
+	return RadarIcon::Three; // 3
 }
 
 //-----------------------------------------------------------------------------------------------------
