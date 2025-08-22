@@ -123,8 +123,7 @@ void CGunTurret::PostInit(IGameObject* pGameObject)
 {
 	CItem::PostInit(pGameObject);
 
-	if (gEnv->bServer)
-		UpdateEntityProperties();
+	UpdateEntityProperties();
 
 	SetOwnerId(GetEntityId());
 
@@ -1678,21 +1677,37 @@ void CGunTurret::ServerUpdate(SEntityUpdateContext& ctx, int update)
 //------------------------------------------------------------------------
 void CGunTurret::UpdateEntityProperties()
 {
-	bool enabled = m_turretparams.enabled;
-	GetEntityProperty("GunTurret", "bEnabled", m_turretparams.enabled);
-	if (enabled != m_turretparams.enabled)
+	if (gEnv->bServer)
 	{
-		Activate(m_turretparams.enabled);
-		GetGameObject()->ChangedNetworkState(ASPECT_STATEBITS);
+		bool enabled = m_turretparams.enabled;
+		GetEntityProperty("GunTurret", "bEnabled", m_turretparams.enabled);
+		if (enabled != m_turretparams.enabled)
+		{
+			Activate(m_turretparams.enabled);
+			GetGameObject()->ChangedNetworkState(ASPECT_STATEBITS);
+		}
+
+		GetEntityProperty("GunTurret", "bSearching", m_turretparams.searching);
+		GetEntityProperty("GunTurret", "bSurveillance", m_turretparams.surveillance);
 	}
 
-	GetEntityProperty("GunTurret", "bSearching", m_turretparams.searching);
-	GetEntityProperty("GunTurret", "bSurveillance", m_turretparams.surveillance);
-
-	const char* teamName = 0;
+	const char* teamName = nullptr;
 	GetEntityProperty("teamName", teamName);
 	if (teamName && teamName[0])
-		m_turretparams.team = g_pGame->GetGameRules()->GetTeamId(teamName);
+	{
+		CGameRules* pGameRules = g_pGame->GetGameRules();
+		if (pGameRules)
+		{
+			m_turretparams.team = pGameRules->GetTeamId(teamName);
+
+			//CryMP: Server adaptation - set teamId in mp
+			//For correct silhouette colors of binoculars tagging etc
+			if (gEnv->bServer && gEnv->bMultiplayer && m_turretparams.team)
+			{
+				pGameRules->SetTeam(m_turretparams.team, GetEntityId());
+			}
+		}
+	}
 }
 
 //------------------------------------------------------------------------
