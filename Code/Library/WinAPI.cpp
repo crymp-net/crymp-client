@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <winhttp.h>
+#include <winnls.h>
 
 #include "WinAPI.h"
 #include "StringTools.h"
@@ -608,6 +609,108 @@ wchar_t WinAPI::WideCharToUpper(wchar_t ch, int languageID)
 	{
 		return ch;
 	}
+}
+
+std::wstring WinAPI::CharToWString(char c) {
+	WCHAR wideChar[2];
+	int wlen = MultiByteToWideChar(GetActiveKeyboardAnsiCP(), 0, &c, 1, wideChar, 2);
+	if (wlen == 0) {
+		return std::wstring{};
+	} else {
+		return std::wstring{ wideChar, wideChar + wlen };
+	}
+}
+
+unsigned WinAPI::GetActiveKeyboardAnsiCP()
+{
+	HKL hkl = GetKeyboardLayout(0);
+	LANGID langId = LOWORD(hkl);
+
+	LCID lcid = MAKELCID(langId, SORT_DEFAULT);
+
+	wchar_t buffer[10];
+
+	if (GetLocaleInfoW(lcid, LOCALE_IDEFAULTANSICODEPAGE, buffer, 10) == 0) {
+		return 0;
+	}
+
+	return std::wcstol(buffer, NULL, 10);
+}
+
+std::string WinAPI::WStringToUtf8(const std::wstring& wstr)
+{
+	if (wstr.empty()) {
+		return {};
+	}
+
+	int requiredSize = WideCharToMultiByte(
+		CP_UTF8,
+		0,
+		wstr.c_str(),
+		static_cast<int>(wstr.size()),
+		nullptr,
+		0,
+		nullptr,
+		nullptr
+	);
+
+	if (requiredSize <= 0) {
+		return {};
+	}
+
+	std::string utf8(requiredSize, '\0');
+
+	WideCharToMultiByte(
+		CP_UTF8,
+		0,
+		wstr.c_str(),
+		static_cast<int>(wstr.size()),
+		utf8.data(),
+		requiredSize,
+		nullptr,
+		nullptr
+	);
+
+	return utf8;
+}
+
+std::wstring WinAPI::Utf8ToWString(const std::string& utf8)
+{
+	if (utf8.empty()) {
+		return {};
+	}
+
+	// First, calculate how many wide chars are needed
+	int requiredSize = MultiByteToWideChar(
+		CP_UTF8,                // Source string is UTF-8
+		MB_ERR_INVALID_CHARS,   // Fail if invalid UTF-8
+		utf8.data(),
+		static_cast<int>(utf8.size()),
+		nullptr,
+		0
+	);
+
+	if (requiredSize <= 0) {
+		return {}; // Conversion failed
+	}
+
+	std::wstring wide(requiredSize, L'\0');
+
+	// Perform the actual conversion
+	int converted = MultiByteToWideChar(
+		CP_UTF8,
+		MB_ERR_INVALID_CHARS,
+		utf8.data(),
+		static_cast<int>(utf8.size()),
+		&wide[0],
+		requiredSize
+	);
+
+	if (converted <= 0) {
+		return {}; // Conversion failed
+	}
+
+	return wide;
 }
 
 /////////////////

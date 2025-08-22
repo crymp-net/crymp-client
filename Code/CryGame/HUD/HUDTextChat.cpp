@@ -9,7 +9,7 @@
 #include "HUDTextChat.h"
 #include "HUD.h"
 
-void CHUDTextChat::History::Add(const std::string& message)
+void CHUDTextChat::History::Add(const std::wstring& message)
 {
 	if (message.empty() || this->messages[this->last] == message)
 	{
@@ -27,14 +27,14 @@ void CHUDTextChat::History::ResetSelection()
 	this->pos = 0;
 }
 
-bool CHUDTextChat::History::MoveUp(std::string& message)
+bool CHUDTextChat::History::MoveUp(std::wstring& message)
 {
 	if (this->pos >= this->messages.size())
 	{
 		return false;
 	}
 
-	const std::string& next = this->messages[(this->last - this->pos) % this->messages.size()];
+	const std::wstring& next = this->messages[(this->last - this->pos) % this->messages.size()];
 
 	if (next.empty())
 	{
@@ -48,7 +48,7 @@ bool CHUDTextChat::History::MoveUp(std::string& message)
 	return true;
 }
 
-bool CHUDTextChat::History::MoveDown(std::string& message)
+bool CHUDTextChat::History::MoveDown(std::wstring& message)
 {
 	if (this->pos == 0)
 	{
@@ -116,7 +116,7 @@ void CHUDTextChat::Update(float deltaTime)
 
 	if (m_inputText != m_lastInputText)
 	{
-		m_flashChat->Invoke("setInputText", m_inputText.c_str());
+		m_flashChat->Invoke("setInputText", WinAPI::WStringToUtf8(m_inputText).c_str());
 		m_lastInputText = m_inputText;
 	}
 }
@@ -208,9 +208,13 @@ bool CHUDTextChat::OnInputEventUI(const SInputEvent& event)
 		return false;
 	}
 
-	const char ch = event.keyName[0];
+	const char c = event.keyName[0];
 
-	this->Insert(ch);
+	std::wstring wstr = WinAPI::CharToWString(c);
+
+	for (wchar_t wc : wstr) {
+		this->Insert(wc);
+	}
 
 	return true;
 }
@@ -226,7 +230,7 @@ void CHUDTextChat::HandleFSCommand(const char* command, const char* args)
 	{
 		const std::string_view text(args);
 
-		for (char ch : text)
+		for (wchar_t ch : WinAPI::Utf8ToWString(args) )
 		{
 			this->Insert(ch);
 		}
@@ -374,16 +378,16 @@ void CHUDTextChat::Down()
 	}
 }
 
-void CHUDTextChat::Insert(char ch)
+void CHUDTextChat::Insert(wchar_t ch)
 {
 	if (m_inputText.length() >= MAX_MESSAGE_LENGTH)
 	{
 		return;
 	}
 
-	if (!std::isprint(ch))
+	if (ch == 0)
 	{
-		// allow only printable ASCII characters
+		// allow only printable characters
 		return;
 	}
 
@@ -408,7 +412,12 @@ void CHUDTextChat::Flush()
 		const EChatMessageType chatType = m_teamChat ? eChatToTeam : eChatToAll;
 		const EntityId senderID = m_pHUD->m_pClientActor->GetEntityId();
 
-		m_pHUD->m_pGameRules->SendChatMessage(chatType, senderID, 0, m_inputText.c_str());
+		m_pHUD->m_pGameRules->SendChatMessage(
+			chatType,
+			senderID,
+			0,
+			WinAPI::WStringToUtf8(m_inputText).c_str()
+		);
 
 		m_history.Add(m_inputText);
 

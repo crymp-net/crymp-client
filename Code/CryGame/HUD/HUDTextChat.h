@@ -20,8 +20,8 @@ class CHUDTextChat : public CHUDObject, public IInputEventListener, public IFSCo
 	CHUD* m_pHUD = nullptr;
 	CGameFlashAnimation* m_flashChat;
 
-	std::string m_inputText;
-	std::string m_lastInputText;
+	std::wstring m_inputText;
+	std::wstring m_lastInputText;
 	std::size_t m_cursor = 0;
 
 	bool m_isListening = false;
@@ -35,12 +35,12 @@ class CHUDTextChat : public CHUDObject, public IInputEventListener, public IFSCo
 	{
 		unsigned int pos = 0;
 		unsigned int last = 0;
-		std::array<std::string, 64> messages;  // use a power of 2 as the size for maximum performance
+		std::array<std::wstring, 64> messages;  // use a power of 2 as the size for maximum performance
 
-		void Add(const std::string& message);
+		void Add(const std::wstring& message);
 		void ResetSelection();
-		bool MoveUp(std::string& message);
-		bool MoveDown(std::string& message);
+		bool MoveUp(std::wstring& message);
+		bool MoveDown(std::wstring& message);
 	};
 
 	History m_history;
@@ -81,7 +81,7 @@ private:
 	void Right();
 	void Up();
 	void Down();
-	void Insert(char ch);
+	void Insert(wchar_t ch);
 	void Paste();
 	void Flush();
 	void ProcessInput(const SInputEvent& event);
