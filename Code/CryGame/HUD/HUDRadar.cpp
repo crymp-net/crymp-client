@@ -1248,8 +1248,12 @@ void CHUDRadar::UpdateScanner(float frameTime)
 
 			if (m_scannerObjectID)
 			{
-				//don't scan items etc
-				if (m_pActorSystem->GetActor(m_scannerObjectID) ||
+				bool isTurret = false;
+				if (CItem* pItem = static_cast<CItem*>(gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(m_scannerObjectID)))
+				{
+					isTurret = (pItem->GetEntity()->GetClass() == CItem::sAutoTurret || pItem->GetEntity()->GetClass() == CItem::sAutoTurretAA);
+				}
+				if (isTurret || m_pActorSystem->GetActor(m_scannerObjectID) ||
 					m_pVehicleSystem->GetVehicle(m_scannerObjectID))
 				{
 					if (!gEnv->bMultiplayer || CheckObjectMultiplayer(m_scannerObjectID))
