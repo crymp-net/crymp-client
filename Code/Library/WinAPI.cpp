@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <winhttp.h>
+#include <winnls.h>
 
 #include "WinAPI.h"
 #include "StringTools.h"
@@ -608,6 +609,32 @@ wchar_t WinAPI::WideCharToUpper(wchar_t ch, int languageID)
 	{
 		return ch;
 	}
+}
+
+std::wstring WinAPI::CharToWString(char c) {
+	WCHAR wideChar[2];
+	int wlen = MultiByteToWideChar(GetActiveKeyboardAnsiCP(), 0, &c, 1, wideChar, 2);
+	if (wlen == 0) {
+		return std::wstring{};
+	} else {
+		return std::wstring{ wideChar, wideChar + wlen };
+	}
+}
+
+unsigned WinAPI::GetActiveKeyboardAnsiCP()
+{
+	HKL hkl = GetKeyboardLayout(0);
+	LANGID langId = LOWORD(hkl);
+
+	LCID lcid = MAKELCID(langId, SORT_DEFAULT);
+
+	wchar_t buffer[10];
+
+	if (GetLocaleInfoW(lcid, LOCALE_IDEFAULTANSICODEPAGE, buffer, 10) == 0) {
+		return 0;
+	}
+
+	return std::wcstol(buffer, NULL, 10);
 }
 
 /////////////////

@@ -137,6 +137,9 @@ namespace WinAPI
 	wchar_t WideCharToLower(wchar_t ch, int languageID = 0);
 	wchar_t WideCharToUpper(wchar_t ch, int languageID = 0);
 
+	std::wstring CharToWString(char ch);
+	unsigned GetActiveKeyboardAnsiCP();
+
 	/////////////////
 	// System info //
 	/////////////////
