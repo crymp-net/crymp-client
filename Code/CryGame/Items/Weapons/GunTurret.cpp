@@ -680,7 +680,7 @@ CGunTurret::ETargetClass CGunTurret::GetTargetClass(IEntity* pTarget)const
 }
 
 //------------------------------------------------------------------------
-bool CGunTurret::IsInRange(const Vec3& pos, ETargetClass cl)const
+bool CGunTurret::IsInRange(const Vec3& pos, ETargetClass cl) const
 {
 	float r = m_turretparams.mg_range;
 	switch (cl)
@@ -689,7 +689,7 @@ bool CGunTurret::IsInRange(const Vec3& pos, ETargetClass cl)const
 		r = m_turretparams.mg_range;
 		break;
 	case eTC_Vehicle:
-		r = MAX(m_turretparams.mg_range, m_turretparams.rocket_range);
+		r = std::max(m_turretparams.mg_range, m_turretparams.rocket_range);
 		break;
 	case eTC_TACProjectile:
 		r = m_turretparams.tac_range;
@@ -1871,7 +1871,18 @@ bool CGunTurret::IsHostileTowardsClient() const
 	IActor* pClient = gEnv->pGame->GetIGameFramework()->GetClientActor();
 	if (pClient && IsTargetHostile(pClient))
 	{
-		return true;
+		float r = m_turretparams.mg_range;
+		if (pClient->GetLinkedVehicle())
+		{
+			r = std::max(m_turretparams.mg_range, m_turretparams.rocket_range);
+		}
+
+		//CryMP: increase default radius
+		r *= 2.0f;
+
+		const float dist = (pClient->GetEntity()->GetWorldPos() - GetWeaponPos()).len2();
+
+		return (dist < r * r);
 	}
 	return false;
 }
@@ -1889,10 +1900,15 @@ void CGunTurret::OnTurretAggressive(bool playSound)
 			{
 				m_lastWarningSoundPlayed = gEnv->pTimer->GetCurrTime();
 			}
+
 			CHUD* pHUD = g_pGame->GetHUD();
 			if (pHUD && pHUD->GetRadar() && !pHUD->GetRadar()->IsEntityOnTempRadar(GetEntityId()))
 			{
-				pHUD->GetRadar()->ShowEntityTemporarily((FlashRadarType)(8), GetEntityId(), 5.0f); //special icon
+				pHUD->GetRadar()->ShowEntityTemporarily(RadarIcon::Eight, 
+					MiniMapIcon::None, 
+					GetEntityId(),
+					5.0f
+				); 
 			}
 		}
 	}

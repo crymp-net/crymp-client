@@ -320,7 +320,7 @@ private:
 	bool IsTACBullet(IEntity* pTarget) const;
 	ETargetClass GetTargetClass(IEntity* pTarget)const;
 
-	bool IsInRange(const Vec3& pos, ETargetClass cl)const;
+	bool IsInRange(const Vec3& pos, ETargetClass cl) const;
 	bool IsTargetAimable(float angleYaw, float anglePitch) const;
 	bool IsTargetShootable(IEntity* pTarget);
   bool RayCheck(IEntity* pTarget, const Vec3& pos, const Vec3& dir) const;
