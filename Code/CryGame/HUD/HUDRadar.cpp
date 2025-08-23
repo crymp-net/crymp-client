@@ -180,17 +180,18 @@ void CHUDRadar::AddEntityTemporarily(EntityId id, float time)
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
 	if (pEntity)
 	{
-		ShowEntityTemporarily(ChooseType(pEntity, true), id, time);
+		ShowEntityTemporarily(ChooseRadarIcon(pEntity), ChooseMiniMapIcon(pEntity), id, time);
 	}
 }
 
-void CHUDRadar::ShowEntityTemporarily(FlashRadarType type, EntityId id, float timeLimit)
+void CHUDRadar::ShowEntityTemporarily(RadarIcon radarIcon, MiniMapIcon miniMapIcon, EntityId id, float timeLimit)
 {
-	for (TempRadarEntity& entity : m_tempEntitiesOnRadar)
+	for (TempEntity& entity : m_tempEntitiesOnRadar)
 	{
 		if (entity.m_id == id)
 		{
-			entity.m_type = type;
+			entity.m_radarIcon = radarIcon;
+			entity.m_miniMapIcon = miniMapIcon;
 			entity.m_spawnTime = gEnv->pTimer->GetFrameStartTime().GetSeconds();
 
 			if (timeLimit > entity.m_timeLimit)
@@ -202,12 +203,12 @@ void CHUDRadar::ShowEntityTemporarily(FlashRadarType type, EntityId id, float ti
 		}
 	}
 
-	m_tempEntitiesOnRadar.emplace_back(id, type, timeLimit);
+	m_tempEntitiesOnRadar.emplace_back(id, radarIcon, miniMapIcon, timeLimit);
 }
 
 bool CHUDRadar::IsEntityOnTempRadar(const EntityId id)
 {
-	for (TempRadarEntity& entity : m_tempEntitiesOnRadar)
+	for (TempEntity& entity : m_tempEntitiesOnRadar)
 	{
 		if (entity.m_id == id)
 		{
@@ -218,25 +219,26 @@ bool CHUDRadar::IsEntityOnTempRadar(const EntityId id)
 	return false;
 }
 
-void CHUDRadar::AddStoryEntity(EntityId id, FlashRadarType type /* = EWayPoint */, const char* text /* = NULL */)
+void CHUDRadar::AddStoryEntity(EntityId id, MiniMapIcon type /* = MiniMapIcon::WayPoint */, const char* text /* = nullptr */)
 {
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
 	if (pEntity)
 	{
-		std::vector<TempRadarEntity>::iterator it = m_storyEntitiesOnRadar.begin();
-		std::vector<TempRadarEntity>::iterator end = m_storyEntitiesOnRadar.end();
+		std::vector<TempEntity>::iterator it = m_storyEntitiesOnRadar.begin();
+		std::vector<TempEntity>::iterator end = m_storyEntitiesOnRadar.end();
 		for (; it != end; ++it)
 			if ((*it).m_id == id)
 				return;
-		TempRadarEntity temp(id, type, 0.0f, text);
+
+		TempEntity temp(id, RadarIcon::None, type, 0.0f, text);
 		m_storyEntitiesOnRadar.push_back(temp);
 	}
 }
 
 void CHUDRadar::RemoveStoryEntity(EntityId id)
 {
-	std::vector<TempRadarEntity>::iterator it = m_storyEntitiesOnRadar.begin();
-	std::vector<TempRadarEntity>::iterator end = m_storyEntitiesOnRadar.end();
+	std::vector<TempEntity>::iterator it = m_storyEntitiesOnRadar.begin();
+	std::vector<TempEntity>::iterator end = m_storyEntitiesOnRadar.end();
 	for (; it != end; ++it)
 	{
 		if ((*it).m_id == id)
@@ -378,6 +380,7 @@ void CHUDRadar::Update(float fDeltaTime)
 		fRadius = (float)m_mapRadarRadius[m_mapId];
 
 	//check for a broadscan:
+	//CryMP: This is never called, m_startBroadScanTime always 0
 	if (m_startBroadScanTime && now - m_startBroadScanTime > 1.5f)
 		StartBroadScan();
 
@@ -484,7 +487,7 @@ void CHUDRadar::Update(float fDeltaTime)
 	//temp units on radar
 	for (int t = 0; t < m_tempEntitiesOnRadar.size(); ++t)
 	{
-		TempRadarEntity temp = m_tempEntitiesOnRadar[t];
+		TempEntity temp = m_tempEntitiesOnRadar[t];
 		float diffTime = now - temp.m_spawnTime;
 		if (diffTime > temp.m_timeLimit || diffTime < 0.0f)
 		{
@@ -582,7 +585,7 @@ void CHUDRadar::Update(float fDeltaTime)
 			numOfValues += ::FillUpDoubleArray(
 				&entityValues,
 				temp.m_id,
-				temp.m_type,
+				static_cast<int>(temp.m_radarIcon),
 				(fX - lowerBoundX) / dimX,
 				(fY - lowerBoundY) / dimY,
 				180.0f + RAD2DEG(fAngle),
@@ -780,8 +783,8 @@ void CHUDRadar::UpdateRadarEntities(CActor* pClientActor, float& fRadius, Matrix
 
 			if (inAAA)	//check whether it's an unknown, flying airplane when you are in an AAA (show all airplanes > 3m over ground)
 			{
-				FlashRadarType eType = ChooseType(pEntity);
-				if (eType == EHeli)
+				MiniMapIcon eType = ChooseMiniMapIcon(pEntity);
+				if (eType == MiniMapIcon::Heli)
 				{
 					Vec3 pos = pEntity->GetPos();
 					if (pos.z - gEnv->p3DEngine->GetTerrainZ((int)pos.x, (int)pos.y) > 5.0f)
@@ -1933,10 +1936,10 @@ void CHUDRadar::RenderMiniMap()
 				}
 			}
 
-			FlashRadarType type = ChooseType(pEntity);
-			if ((type == EHeadquarter || type == EHeadquarter2) && m_pHUD->HasTACWeapon() && friendly == EEnemy)
+			MiniMapIcon type = ChooseMiniMapIcon(pEntity);
+			if ((type == MiniMapIcon::Headquarter || type == MiniMapIcon::Headquarter2) && m_pHUD->HasTACWeapon() && friendly == EEnemy)
 			{
-				type = EHitZone;
+				type = MiniMapIcon::HitZone;
 			}
 			if (addBuilding == true)
 			{
@@ -1946,7 +1949,19 @@ void CHUDRadar::RenderMiniMap()
 					underAttack = m_pHUD->IsUnderAttack(pEntity) && friendly == EFriend;
 				}
 				m_possibleOnScreenObjectives.push_back(pEntity->GetId());
-				numOfValues += FillUpDoubleArray(&entityValues, pEntity->GetId(), type, fX, fY, 270.0f - RAD2DEG(pEntity->GetWorldAngles().z), friendly, 100, 100, iOnScreenObjective == m_buildingsOnRadar[i].m_id, iCurrentSpawnPoint == m_buildingsOnRadar[i].m_id, underAttack);
+				numOfValues += FillUpDoubleArray(&entityValues, 
+					pEntity->GetId(), 
+					static_cast<int>(type), 
+					fX, 
+					fY, 
+					270.0f - RAD2DEG(pEntity->GetWorldAngles().z), 
+					friendly, 
+					100,
+					100, 
+					iOnScreenObjective == m_buildingsOnRadar[i].m_id, 
+					iCurrentSpawnPoint == m_buildingsOnRadar[i].m_id, 
+					underAttack
+				);
 			}
 		}
 	}
@@ -1961,9 +1976,9 @@ void CHUDRadar::RenderMiniMap()
 		for (int m = 0; m < synchEntities.size(); ++m)
 		{
 			CGameRules::SMinimapEntity mEntity = synchEntities[m];
-			FlashRadarType type = GetSynchedEntityType(mEntity.type);
+			MiniMapIcon type = GetSynchedEntityType(mEntity.type);
 			IEntity* pEntity = NULL;
-			if (type == ENuclearWeapon || type == ETechCharger)	//might be a gun
+			if (type == MiniMapIcon::NuclearWeapon || type == MiniMapIcon::TechCharger)	//might be a gun
 			{
 				if (IItem* pWeapon = g_pGame->GetIGameFramework()->GetIItemSystem()->GetItem(mEntity.entityId))
 				{
@@ -1979,12 +1994,34 @@ void CHUDRadar::RenderMiniMap()
 				int friendly = FriendOrFoe(isMultiplayer, team, pEntity, m_pGameRules);
 				if (friendly == EFriend || friendly == ENeutral)
 				{
-					if (type == EAmmoTruck && stl::find_in_map(drawnVehicles, mEntity.entityId, false))
+					if (type == MiniMapIcon::AmmoTruck && stl::find_in_map(drawnVehicles, mEntity.entityId, false))
 					{
-						numOfValues += FillUpDoubleArray(&entityValues, pEntity->GetId(), EBarracks, fX, fY, 270.0f - RAD2DEG(pEntity->GetWorldAngles().z), friendly, 100, 100, iOnScreenObjective == mEntity.entityId, iCurrentSpawnPoint == mEntity.entityId);
+						numOfValues += FillUpDoubleArray(&entityValues, 
+							pEntity->GetId(), 
+							static_cast<int>(MiniMapIcon::Barracks), 
+							fX, 
+							fY, 
+							270.0f - RAD2DEG(pEntity->GetWorldAngles().z), 
+							friendly, 
+							100, 
+							100, 
+							iOnScreenObjective == mEntity.entityId, 
+							iCurrentSpawnPoint == mEntity.entityId
+						);
 					}
 					else
-						numOfValues += FillUpDoubleArray(&entityValues, pEntity->GetId(), type, fX, fY, 270.0f - RAD2DEG(pEntity->GetWorldAngles().z), friendly, 100, 100, iOnScreenObjective == mEntity.entityId, iCurrentSpawnPoint == mEntity.entityId);
+						numOfValues += FillUpDoubleArray(&entityValues, 
+							pEntity->GetId(), 
+							static_cast<int>(type),
+							fX, 
+							fY, 
+							270.0f - RAD2DEG(pEntity->GetWorldAngles().z), 
+							friendly, 
+							100, 
+							100, 
+							iOnScreenObjective == mEntity.entityId, 
+							iCurrentSpawnPoint == mEntity.entityId
+						);
 				}
 			}
 		}
@@ -2007,14 +2044,36 @@ void CHUDRadar::RenderMiniMap()
 						if (!stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false))
 						{
 							GetPosOnMap(pVehicle->GetEntity(), fX, fY);
-							numOfValues += FillUpDoubleArray(&entityValues, pVehicle->GetEntity()->GetId(), ETaggedEntity, fX, fY, 270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z), ENeutral, 100, 100, iOnScreenObjective == pVehicle->GetEntity()->GetId(), iCurrentSpawnPoint == pVehicle->GetEntity()->GetId());
+							numOfValues += FillUpDoubleArray(&entityValues, 
+								pVehicle->GetEntityId(),
+								static_cast<int>(MiniMapIcon::TaggedEntity),
+								fX, 
+								fY, 
+								270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z), 
+								ENeutral, 
+								100, 
+								100, 
+								iOnScreenObjective == pVehicle->GetEntityId(), 
+								iCurrentSpawnPoint == pVehicle->GetEntityId()
+							);
 							drawnVehicles[pVehicle->GetEntityId()] = true;
 						}
 					}
 					else
 					{
 						GetPosOnMap(pTempActor->GetEntity(), fX, fY);
-						numOfValues += FillUpDoubleArray(&entityValues, pActor->GetEntity()->GetId(), ETaggedEntity, fX, fY, 270.0f - RAD2DEG(pTempActor->GetEntity()->GetWorldAngles().z), ENeutral, 100, 100, iOnScreenObjective == pActor->GetEntity()->GetId(), iCurrentSpawnPoint == pActor->GetEntity()->GetId());
+						numOfValues += FillUpDoubleArray(&entityValues, 
+							pActor->GetEntityId(), 
+							static_cast<int>(MiniMapIcon::TaggedEntity),
+							fX, 
+							fY, 
+							270.0f - RAD2DEG(pTempActor->GetEntity()->GetWorldAngles().z), 
+							ENeutral,
+							100, 
+							100, 
+							iOnScreenObjective == pActor->GetEntityId(), 
+							iCurrentSpawnPoint == pActor->GetEntityId()
+						);
 					}
 				}
 				else if (IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(id))
@@ -2022,7 +2081,18 @@ void CHUDRadar::RenderMiniMap()
 					if (!stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false))
 					{
 						GetPosOnMap(pVehicle->GetEntity(), fX, fY);
-						numOfValues += FillUpDoubleArray(&entityValues, pVehicle->GetEntity()->GetId(), ETaggedEntity, fX, fY, 270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z), ENeutral, 100, 100, iOnScreenObjective == pVehicle->GetEntity()->GetId(), iCurrentSpawnPoint == pVehicle->GetEntity()->GetId());
+						numOfValues += FillUpDoubleArray(&entityValues, 
+							pVehicle->GetEntityId(), 
+							static_cast<int>(MiniMapIcon::TaggedEntity),
+							fX, 
+							fY, 
+							270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z), 
+							ENeutral, 
+							100, 
+							100, 
+							iOnScreenObjective == pVehicle->GetEntityId(), 
+							iCurrentSpawnPoint == pVehicle->GetEntityId()
+						);
 						drawnVehicles[pVehicle->GetEntityId()] = true;
 					}
 				}
@@ -2042,26 +2112,63 @@ void CHUDRadar::RenderMiniMap()
 				{
 					if (!stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false))
 					{
+						MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon != MiniMapIcon::None ? 
+							m_tempEntitiesOnRadar[e].m_miniMapIcon : ChooseMiniMapIcon(pVehicle->GetEntity());
+
 						GetPosOnMap(pVehicle->GetEntity(), fX, fY);
-						numOfValues += FillUpDoubleArray(&entityValues, pVehicle->GetEntity()->GetId(), ChooseType(pVehicle->GetEntity(), false), fX, fY,
-							270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z), FriendOrFoe(isMultiplayer, team, pVehicle->GetEntity(), m_pGameRules), 100, 100, iOnScreenObjective == pVehicle->GetEntity()->GetId(), iCurrentSpawnPoint == pVehicle->GetEntity()->GetId());
+						numOfValues += FillUpDoubleArray(&entityValues, 
+							pVehicle->GetEntityId(),
+							static_cast<int>(icon), 
+							fX, 
+							fY,
+							270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z),
+							FriendOrFoe(isMultiplayer, team, pVehicle->GetEntity(), m_pGameRules), 
+							100, 
+							100, 
+							iOnScreenObjective == pVehicle->GetEntityId(), 
+							iCurrentSpawnPoint == pVehicle->GetEntityId()
+						);
 						drawnVehicles[pVehicle->GetEntityId()] = true;
 					}
 				}
 				else
 				{
+					MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon != MiniMapIcon::None ?
+						m_tempEntitiesOnRadar[e].m_miniMapIcon : ChooseMiniMapIcon(pTempActor->GetEntity());
+
 					GetPosOnMap(pTempActor->GetEntity(), fX, fY);
-					numOfValues += FillUpDoubleArray(&entityValues, pActor->GetEntity()->GetId(), ChooseType(pTempActor->GetEntity(), false), fX, fY,
-						270.0f - RAD2DEG(pTempActor->GetEntity()->GetWorldAngles().z), FriendOrFoe(isMultiplayer, team, pTempActor->GetEntity(), m_pGameRules), 100, 100, iOnScreenObjective == pTempActor->GetEntity()->GetId(), iCurrentSpawnPoint == pTempActor->GetEntity()->GetId());
+					numOfValues += FillUpDoubleArray(&entityValues, 
+						pActor->GetEntityId(), 
+						static_cast<int>(icon),
+						fX, 
+						fY,
+						270.0f - RAD2DEG(pTempActor->GetEntity()->GetWorldAngles().z), 
+						FriendOrFoe(isMultiplayer, team, pTempActor->GetEntity(), m_pGameRules), 
+						100, 100, iOnScreenObjective == pTempActor->GetEntityId(), 
+						iCurrentSpawnPoint == pTempActor->GetEntityId()
+					);
 				}
 			}
 			else if (IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(id))
 			{
 				if (!stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false))
 				{
+					MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon != MiniMapIcon::None ?
+						m_tempEntitiesOnRadar[e].m_miniMapIcon : ChooseMiniMapIcon(pVehicle->GetEntity());
+
 					GetPosOnMap(pVehicle->GetEntity(), fX, fY);
-					numOfValues += FillUpDoubleArray(&entityValues, pVehicle->GetEntity()->GetId(), ChooseType(pVehicle->GetEntity(), false), fX, fY,
-						270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z), FriendOrFoe(isMultiplayer, team, pVehicle->GetEntity(), m_pGameRules), 100, 100, iOnScreenObjective == pVehicle->GetEntity()->GetId(), iCurrentSpawnPoint == pVehicle->GetEntity()->GetId());
+					numOfValues += FillUpDoubleArray(&entityValues, 
+						pVehicle->GetEntityId(), 
+						static_cast<int>(icon),
+						fX, 
+						fY,
+						270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z),
+						FriendOrFoe(isMultiplayer, team, pVehicle->GetEntity(), m_pGameRules), 
+						100, 
+						100,
+						iOnScreenObjective == pVehicle->GetEntityId(),
+						iCurrentSpawnPoint == pVehicle->GetEntityId()
+					);
 					drawnVehicles[pVehicle->GetEntityId()] = true;
 				}
 			}
@@ -2076,8 +2183,18 @@ void CHUDRadar::RenderMiniMap()
 			if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id))
 			{
 				GetPosOnMap(pEntity, fX, fY);
-				numOfValues += FillUpDoubleArray(&entityValues, id, m_storyEntitiesOnRadar[e].m_type, fX, fY,
-					270.0f - RAD2DEG(pEntity->GetWorldAngles().z), ENeutral, 100, 100, iOnScreenObjective == id, iCurrentSpawnPoint == id);
+				numOfValues += FillUpDoubleArray(&entityValues, 
+					id, 
+					static_cast<int>(m_storyEntitiesOnRadar[e].m_miniMapIcon),
+					fX, 
+					fY,
+					270.0f - RAD2DEG(pEntity->GetWorldAngles().z),
+					ENeutral, 
+					100, 
+					100, 
+					iOnScreenObjective == id, 
+					iCurrentSpawnPoint == id
+				);
 				if (!m_storyEntitiesOnRadar[e].m_text.empty())
 					textOnMap[id] = m_storyEntitiesOnRadar[e].m_text;
 			}
@@ -2098,7 +2215,18 @@ void CHUDRadar::RenderMiniMap()
 					if (!stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false))
 					{
 						GetPosOnMap(pVehicle->GetEntity(), fX, fY);
-						numOfValues += FillUpDoubleArray(&entityValues, pVehicle->GetEntity()->GetId(), ChooseType(pVehicle->GetEntity()), fX, fY, 270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z), EFriend, 100, 100, iOnScreenObjective == pVehicle->GetEntity()->GetId(), iCurrentSpawnPoint == pVehicle->GetEntity()->GetId());
+						numOfValues += FillUpDoubleArray(&entityValues, 
+							pVehicle->GetEntityId(), 
+							static_cast<int>(ChooseMiniMapIcon(pVehicle->GetEntity())),
+							fX, 
+							fY, 
+							270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z), 
+							EFriend, 
+							100, 
+							100, 
+							iOnScreenObjective == pVehicle->GetEntityId(), 
+							iCurrentSpawnPoint == pVehicle->GetEntityId()
+						);
 						drawnVehicles[pVehicle->GetEntityId()] = true;
 					}
 				}
@@ -2110,7 +2238,18 @@ void CHUDRadar::RenderMiniMap()
 					if (!spectating)
 					{
 						GetPosOnMap(pTempActor->GetEntity(), fX, fY);
-						numOfValues += FillUpDoubleArray(&entityValues, pTempActor->GetEntity()->GetId(), EPlayer, fX, fY, 270.0f - RAD2DEG(pTempActor->GetEntity()->GetWorldAngles().z), EFriend, 100, 100, iOnScreenObjective == pTempActor->GetEntity()->GetId(), iCurrentSpawnPoint == pTempActor->GetEntity()->GetId());
+						numOfValues += FillUpDoubleArray(&entityValues, 
+							pTempActor->GetEntityId(), 
+							static_cast<int>(MiniMapIcon::Player),
+							fX, 
+							fY, 
+							270.0f - RAD2DEG(pTempActor->GetEntity()->GetWorldAngles().z), 
+							EFriend,
+							100, 
+							100, 
+							iOnScreenObjective == pTempActor->GetEntityId(),
+							iCurrentSpawnPoint == pTempActor->GetEntityId()
+						);
 						//draw teammate name if selected
 						if (gEnv->bMultiplayer)
 						{
@@ -2152,7 +2291,18 @@ void CHUDRadar::RenderMiniMap()
 				{
 					GetPosOnMap(pVehicle->GetEntity(), fX, fY);
 					int friendly = FriendOrFoe(isMultiplayer, team, pVehicle->GetEntity(), m_pGameRules);
-					numOfValues += FillUpDoubleArray(&entityValues, pVehicle->GetEntity()->GetId(), ChooseType(pVehicle->GetEntity()), fX, fY, 270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z), friendly, 100, 100, iOnScreenObjective == pVehicle->GetEntity()->GetId(), iCurrentSpawnPoint == pVehicle->GetEntity()->GetId());
+					numOfValues += FillUpDoubleArray(&entityValues, 
+						pVehicle->GetEntityId(), 
+						static_cast<int>(ChooseMiniMapIcon(pVehicle->GetEntity())),
+						fX, 
+						fY, 
+						270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z), 
+						friendly,
+						100,
+						100, 
+						iOnScreenObjective == pVehicle->GetEntityId(),
+						iCurrentSpawnPoint == pVehicle->GetEntityId()
+					);
 					drawnVehicles[pVehicle->GetEntityId()] = true;
 				}
 			}
@@ -2160,7 +2310,18 @@ void CHUDRadar::RenderMiniMap()
 			{
 				int friendly = FriendOrFoe(isMultiplayer, team, pTempActor->GetEntity(), m_pGameRules);
 				GetPosOnMap(pTempActor->GetEntity(), fX, fY);
-				numOfValues += FillUpDoubleArray(&entityValues, pTempActor->GetEntity()->GetId(), EPlayer, fX, fY, 270.0f - RAD2DEG(pTempActor->GetEntity()->GetWorldAngles().z), friendly, 100, 100, iOnScreenObjective == pTempActor->GetEntity()->GetId(), iCurrentSpawnPoint == pTempActor->GetEntity()->GetId());
+				numOfValues += FillUpDoubleArray(&entityValues, 
+					pTempActor->GetEntityId(), 
+					static_cast<int>(MiniMapIcon::Player),
+					fX, 
+					fY, 
+					270.0f - RAD2DEG(pTempActor->GetEntity()->GetWorldAngles().z),
+					friendly, 
+					100,
+					100,
+					iOnScreenObjective == pTempActor->GetEntityId(), 
+					iCurrentSpawnPoint == pTempActor->GetEntityId()
+				);
 			}
 		}
 		else if (IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(uiEntityId))
@@ -2175,7 +2336,18 @@ void CHUDRadar::RenderMiniMap()
 
 				int friendly = FriendOrFoe(isMultiplayer, team, pEntity, m_pGameRules);
 				GetPosOnMap(pEntity, fX, fY);
-				numOfValues += FillUpDoubleArray(&entityValues, uiEntityId, ChooseType(pEntity), fX, fY, 270.0f - RAD2DEG(pEntity->GetWorldAngles().z), friendly, 100, 100, iOnScreenObjective == uiEntityId, iCurrentSpawnPoint == uiEntityId);
+				numOfValues += FillUpDoubleArray(&entityValues, 
+					uiEntityId, 
+					static_cast<int>(ChooseMiniMapIcon(pEntity)),
+					fX, 
+					fY, 
+					270.0f - RAD2DEG(pEntity->GetWorldAngles().z), 
+					friendly,
+					100, 
+					100, 
+					iOnScreenObjective == uiEntityId, 
+					iCurrentSpawnPoint == uiEntityId
+				);
 				drawnVehicles[uiEntityId] = true;
 			}
 		}
@@ -2191,7 +2363,18 @@ void CHUDRadar::RenderMiniMap()
 			GetPosOnMap(pVehicle->GetEntity(), fX, fY);
 			vPlayerPos.x = fX;
 			vPlayerPos.y = fY;
-			numOfValues += FillUpDoubleArray(&entityValues, pVehicle->GetEntity()->GetId(), ChooseType(pVehicle->GetEntity()), fX, fY, 270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z), ESelf, 100, 100, iOnScreenObjective == pVehicle->GetEntity()->GetId(), iCurrentSpawnPoint == pVehicle->GetEntity()->GetId());
+			numOfValues += FillUpDoubleArray(&entityValues,
+				pVehicle->GetEntityId(), 
+				static_cast<int>(ChooseMiniMapIcon(pVehicle->GetEntity())),
+				fX, 
+				fY,
+				270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z),
+				ESelf,
+				100, 
+				100,
+				iOnScreenObjective == pVehicle->GetEntityId(), 
+				iCurrentSpawnPoint == pVehicle->GetEntityId()
+			);
 			drawnVehicles[pVehicle->GetEntityId()] = true;
 			//}
 		}
@@ -2218,7 +2401,18 @@ void CHUDRadar::RenderMiniMap()
 					{
 						if (friendly == EFriend)
 						{
-							numOfValues += FillUpDoubleArray(&entityValues, pEntity->GetId(), ESpawnTruck, fX, fY, 270.0f - RAD2DEG(pEntity->GetWorldAngles().z), friendly, 100, 100, iOnScreenObjective == locations[i], iCurrentSpawnPoint == locations[i]);
+							numOfValues += FillUpDoubleArray(&entityValues, 
+								pEntity->GetId(),
+								static_cast<int>(MiniMapIcon::SpawnTruck),
+								fX, 
+								fY,
+								270.0f - RAD2DEG(pEntity->GetWorldAngles().z), 
+								friendly, 
+								100, 
+								100, 
+								iOnScreenObjective == locations[i],
+								iCurrentSpawnPoint == locations[i]
+							);
 							drawnVehicles[pVehicle->GetEntityId()] = true;
 						}
 					}
@@ -2227,7 +2421,18 @@ void CHUDRadar::RenderMiniMap()
 						bool underAttack = m_pHUD->IsUnderAttack(pEntity) && friendly == EFriend;
 						if (friendly != 2)
 						{
-							numOfValues += FillUpDoubleArray(&entityValues, pEntity->GetId(), ESpawnPoint, fX, fY, 270.0f - RAD2DEG(pEntity->GetWorldAngles().z), friendly, 100, 100, iOnScreenObjective == locations[i], iCurrentSpawnPoint == locations[i], underAttack);
+							numOfValues += FillUpDoubleArray(&entityValues,
+								pEntity->GetId(), 
+								static_cast<int>(MiniMapIcon::SpawnPoint),
+								fX, 
+								fY, 
+								270.0f - RAD2DEG(pEntity->GetWorldAngles().z), 
+								friendly, 
+								100,
+								100, iOnScreenObjective == locations[i], 
+								iCurrentSpawnPoint == locations[i],
+								underAttack
+							);
 							m_possibleOnScreenObjectives.push_back(pEntity->GetId());
 						}
 						else
@@ -2238,7 +2443,19 @@ void CHUDRadar::RenderMiniMap()
 								int capturable = 0;
 								if (props->GetValue("bCapturable", capturable) && capturable)
 								{
-									numOfValues += FillUpDoubleArray(&entityValues, pEntity->GetId(), ESpawnPoint, fX, fY, 270.0f - RAD2DEG(pEntity->GetWorldAngles().z), friendly, 100, 100, iOnScreenObjective == locations[i], iCurrentSpawnPoint == locations[i], underAttack);
+									numOfValues += FillUpDoubleArray(&entityValues,
+										pEntity->GetId(), 
+										static_cast<int>(MiniMapIcon::SpawnPoint),
+										fX, 
+										fY, 
+										270.0f - RAD2DEG(pEntity->GetWorldAngles().z),
+										friendly, 
+										100, 
+										100, 
+										iOnScreenObjective == locations[i], 
+										iCurrentSpawnPoint == locations[i], 
+										underAttack
+									);
 									m_possibleOnScreenObjectives.push_back(pEntity->GetId());
 								}
 							}
@@ -2258,7 +2475,18 @@ void CHUDRadar::RenderMiniMap()
 			vPlayerPos.x = fX;
 			vPlayerPos.y = fY;
 			string name(pActor->GetEntity()->GetName());
-			numOfValues += FillUpDoubleArray(&entityValues, pActor->GetEntity()->GetId(), (name.find("Quarantine", 0) != string::npos) ? ENuclearWeapon : EPlayer, fX, fY, 270.0f - RAD2DEG(pActor->GetEntity()->GetWorldAngles().z), ESelf, 100, 100, iOnScreenObjective == pActor->GetEntity()->GetId(), iCurrentSpawnPoint == pActor->GetEntity()->GetId());
+			numOfValues += FillUpDoubleArray(&entityValues, 
+				pActor->GetEntityId(), 
+				(name.find("Quarantine", 0) != string::npos) ? static_cast<int>(MiniMapIcon::NuclearWeapon) : static_cast<int>(MiniMapIcon::Player),
+				fX, 
+				fY, 
+				270.0f - RAD2DEG(pActor->GetEntity()->GetWorldAngles().z),
+				ESelf, 
+				100, 
+				100,
+				iOnScreenObjective == pActor->GetEntityId(), 
+				iCurrentSpawnPoint == pActor->GetEntityId()
+			);
 		}
 	}
 
@@ -2273,7 +2501,18 @@ void CHUDRadar::RenderMiniMap()
 			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(it->first);
 			if (GetPosOnMap(pEntity, fX, fY))
 			{
-				numOfValues += FillUpDoubleArray(&entityValues, pEntity->GetId(), (it->second.secondaryObjective) ? ESecondaryObjective : EWayPoint, fX, fY, 180.0f, ENeutral, 100, 100, iOnScreenObjective == it->first, iCurrentSpawnPoint == it->first);
+				numOfValues += FillUpDoubleArray(&entityValues, 
+					pEntity->GetId(), 
+					(it->second.secondaryObjective) ? static_cast<int>(MiniMapIcon::SecondaryObjective) : static_cast<int>(MiniMapIcon::WayPoint),
+					fX, 
+					fY,
+					180.0f, 
+					ENeutral,
+					100, 
+					100, 
+					iOnScreenObjective == it->first, 
+					iCurrentSpawnPoint == it->first
+				);
 				textOnMap[pEntity->GetId()] = it->second.text;
 			}
 		}
@@ -2493,7 +2732,13 @@ void CHUDRadar::Serialize(TSerialize ser)
 		{
 			ser.BeginGroup("StoryEntity");
 			ser.Value("id", m_storyEntitiesOnRadar[s].m_id);
-			ser.EnumValue("type", m_storyEntitiesOnRadar[s].m_type, EFirstType, ELastType);
+
+			int type = static_cast<int>(m_storyEntitiesOnRadar[s].m_miniMapIcon);
+			ser.EnumValue("type", type,
+				static_cast<int>(MiniMapIcon::None),
+				static_cast<int>(MiniMapIcon::LastType));
+			m_storyEntitiesOnRadar[s].m_miniMapIcon = static_cast<MiniMapIcon>(type);
+			
 			ser.Value("spawnTime", m_storyEntitiesOnRadar[s].m_spawnTime);
 			ser.Value("timeLimit", m_storyEntitiesOnRadar[s].m_timeLimit);
 			ser.Value("text", m_storyEntitiesOnRadar[s].m_text);
@@ -2612,102 +2857,82 @@ const char* CHUDRadar::GetObjectiveDescription(EntityId id)
 
 //-----------------------------------------------------------------------------------------------------
 
-FlashRadarType CHUDRadar::ChooseType(IEntity* pEntity, bool radarOnly)
+MiniMapIcon CHUDRadar::ChooseMiniMapIcon(IEntity* pEntity)
 {
 	if (!pEntity)
-		return EFirstType;
+	{
+		return MiniMapIcon::None;
+	}
+
 	const IEntityClass* pCls = pEntity->GetClass();
 	const char* cls = pCls->GetName();
 	const char* name = pEntity->GetName();
 
-	FlashRadarType returnType = ELTV;
+	MiniMapIcon returnType = MiniMapIcon::LTV;
 
 	if (pCls == m_pPlayerClass || pCls == m_pGrunt)
-		returnType = EPlayer;
+		returnType = MiniMapIcon::Player;
 	else if (pCls == m_pAlien || pCls == m_pTrooper)
-		returnType = EPlayer;
+		returnType = MiniMapIcon::Player;
 	else if (pCls == m_pLTVUS || pCls == m_pLTVA)
-		returnType = ELTV;
+		returnType = MiniMapIcon::LTV;
 	else if (pCls == m_pTankUS || pCls == m_pTankA)
-		returnType = ETank;
+		returnType = MiniMapIcon::Tank;
 	else if (pCls == m_pAAA)
-		returnType = EAAA;
+		returnType = MiniMapIcon::AAA;
 	else if (pCls == m_pTruck)
-		returnType = ETruck;
+		returnType = MiniMapIcon::Truck;
 	else if (pCls == m_pTruck || pCls == m_pAPCUS || pCls == m_pAPCA)
-		returnType = EAPC;
+		returnType = MiniMapIcon::APC;
 	else if (pCls == m_pHeli)
-		returnType = EHeli;
+		returnType = MiniMapIcon::Heli;
 	else if (pCls == m_pVTOL)
-		returnType = EVTOL;
+		returnType = MiniMapIcon::VTOL;
 	else if (pCls == m_pScout)
-		returnType = EHeli;
+		returnType = MiniMapIcon::Heli;
 	else if (pCls == m_pWarrior || pCls == m_pHunter)
-		returnType = EINVALID1;
+		returnType = MiniMapIcon::INVALID1;
 	else if (pCls == m_pBoatCiv)
-		returnType = ESmallBoat;
+		returnType = MiniMapIcon::SmallBoat;
 	else if (pCls == m_pHover)
-		returnType = EHovercraft;
+		returnType = MiniMapIcon::Hovercraft;
 	else if (pCls == m_pBoatA)
-		returnType = EPatrolBoat;
+		returnType = MiniMapIcon::PatrolBoat;
 	else if (pCls == m_pBoatUS)
-		returnType = ESpeedBoat;
+		returnType = MiniMapIcon::SpeedBoat;
 	else if (!_stricmp(cls, "HQ"))
 	{
-		CGameRules* pGameRules = static_cast<CGameRules*>(gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->GetCurrentGameRules());
-		if (pGameRules->GetTeam(pEntity->GetId()) == 2) //us team
-			returnType = EHeadquarter2;
+		if (m_pGameRules->GetTeam(pEntity->GetId()) == 2) //us team
+			returnType = MiniMapIcon::Headquarter2;
 		else
-			returnType = EHeadquarter;
+			returnType = MiniMapIcon::Headquarter;
 	}
 	else if (!_stricmp(cls, "Factory") && m_pHUD->GetPowerStruggleHUD())	//this should be much bigger and choose out of the different factory versions (not yet existing)
 	{
 		if (m_pHUD->GetPowerStruggleHUD()->CanBuild(pEntity, "ustank"))
 		{
-			returnType = EFactoryTank;
+			returnType = MiniMapIcon::FactoryTank;
 		}
 		else if (m_pHUD->GetPowerStruggleHUD()->CanBuild(pEntity, "nkhelicopter"))
 		{
-			returnType = EFactoryAir;
+			returnType = MiniMapIcon::FactoryAir;
 		}
 		else if (m_pHUD->GetPowerStruggleHUD()->CanBuild(pEntity, "nkboat"))
 		{
-			returnType = EFactorySea;
+			returnType = MiniMapIcon::FactorySea;
 		}
 		else if (m_pHUD->GetPowerStruggleHUD()->CanBuild(pEntity, "us4wd"))
 		{
-			returnType = EFactoryVehicle;
+			returnType = MiniMapIcon::FactoryVehicle;
 		}
 		else
 		{
-			returnType = EFactoryPrototype;
+			returnType = MiniMapIcon::FactoryPrototype;
 		}
 	}
 	else if (!_stricmp(cls, "AlienEnergyPoint"))
 	{
-		returnType = EAlienEnergySource;
-	}
-	if (radarOnly)
-	{
-		//1 Player
-		//2 Heli
-		//3 Box (cars)
-		//4 Small round circle
-		//5 Small yellow dot
-		//6 --
-		//7 Mini yellow dot
-		//8 Tank (friendly red: neutral: blue, enemy: yellow)
-		//9 enemy: Yellow dot
-		if (pCls == m_pAutoTurret || pCls == m_pAutoTurretAA)
-			returnType = (FlashRadarType)(8);
-		else if (returnType == EPlayer)
-			returnType = ETank; //1
-		else if (returnType == EHeli)
-			returnType = EAPC; //2
-		else if (returnType == EINVALID1) //currently big aliens like hunter
-			returnType = ETank;
-		else
-			returnType = ECivilCar; //3
+		returnType = MiniMapIcon::AlienEnergySource;
 	}
 
 	return returnType;
@@ -2785,23 +3010,23 @@ FlashRadarFaction CHUDRadar::FriendOrFoe(bool multiplayer, int playerTeam, IEnti
 	return val;
 }
 
-FlashRadarType CHUDRadar::GetSynchedEntityType(int type)
+MiniMapIcon CHUDRadar::GetSynchedEntityType(int type)
 {
 	switch (type)
 	{
 	case 1:
-		return EAmmoTruck;
+		return MiniMapIcon::AmmoTruck;
 		break;
 	case 2:
-		return ENuclearWeapon;	//this is a tac entity
+		return MiniMapIcon::NuclearWeapon;	//this is a tac entity
 		break;
 	case 3:
-		return ETechCharger;
+		return MiniMapIcon::TechCharger;
 		break;
 	default:
 		break;
 	}
-	return EFirstType;
+	return MiniMapIcon::None;
 }
 
 int CHUDRadar::FillUpDoubleArray(std::vector<double>* doubleArray, double a, double b, double c, double d, double e, double f, double g, double h, double i, double j, double k)

@@ -492,7 +492,7 @@ public:
 		virtual void OnEntityAddedToRadar(EntityId entityId) {};
 
 		// SNH: adding these for PowerStruggle tutorial
-		virtual void OnBuyMenuOpen(bool open, FlashRadarType buyZoneType) {};
+		virtual void OnBuyMenuOpen(bool open, MiniMapIcon buyZoneType) {};
 		virtual void OnMapOpen(bool open) {};
 		virtual void OnBuyMenuItemHover(const char* itemname) {};
 		virtual void OnShowBuyMenuPage(int page) {};

@@ -2802,13 +2802,13 @@ bool CHUD::ShowPDA(bool show, bool buyMenu)
 			ShowPDA(false, false);
 
 		// call listeners
-		FlashRadarType type = EFirstType;
+		MiniMapIcon type = MiniMapIcon::None;
 		if (m_pHUDPowerStruggle->m_currentBuyZones.size() > 0)
 		{
 			IEntity* pFactory = gEnv->pEntitySystem->GetEntity(m_pHUDPowerStruggle->m_currentBuyZones[0]);
 			if (pFactory)
 			{
-				type = m_pHUDRadar->ChooseType(pFactory);
+				type = m_pHUDRadar->ChooseMiniMapIcon(pFactory);
 			}
 		}
 
