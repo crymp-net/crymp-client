@@ -1,0 +1,12 @@
+	<item name="AssaultScope" class="Item" priority="102" configuration="mp">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="display_name" value="@mp_eAScope" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/attachments/scope_assault/scope_assault_fp.cgf" />
+		<thirdperson name="objects/weapons/attachments/scope_assault/scope_assault_tp.cgf" />
+	</geometry>
+</item>

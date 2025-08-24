@@ -105,11 +105,7 @@ public:
 	void Scan(const char* folderName);
 	bool ScanXML(XmlNodeRef& root, const char* xmlFile);
 
-	// CryMP:
-	void RegisterAmmo(const char* name, const char* className, const char* script, const char* config, IItemParamsNode* params);
-	// WeaponSystem_XMLData.cpp
 	void RegisterXMLData();
-	// ~CryMP
 
   static void DebugGun(IConsoleCmdArgs *args = 0);
 	static void RefGun(IConsoleCmdArgs *args = 0);
@@ -139,6 +135,7 @@ public:
 	{
 		m_lastHostId = id;
 	}
+	void RegisterAmmo(const char* name, const char* className, const char* script, const char* config, IItemParamsNode* params);
 
 private: 
 	CProjectile *DoSpawnAmmo(IEntityClass* pAmmoType, bool isRemote, const SAmmoParams *pAmmoParams);

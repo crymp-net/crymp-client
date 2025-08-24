@@ -1,0 +1,28 @@
+<item name="MissilePlatform" class="Weapon">
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="1" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ammos>
+		<ammo name="homingmissile" extra="10" amount="10" />
+	</ammos>
+	<firemodes>
+		<firemode name="Single" type="Single">
+			<fire>
+				<param name="ammo_type" value="homingmissile" />
+				<param name="clip_size" value="10" />				
+				<param name="damage" value="1000" />
+				<param name="rate" value="10" />
+				<param name="offset" value="10" />
+			</fire>
+			<muzzleflash>
+				<firstperson effect="tank_fire.tank.fire" helper="" light_helper="" light_radius="10" time="0.100" />
+				<thirdperson effect="tank_fire.tank.fire" helper="" light_helper="" light_radius="10" time="0.100" />
+			</muzzleflash>
+		</firemode>
+	</firemodes>
+</item>

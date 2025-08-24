@@ -1,0 +1,84 @@
+<item name="Detonator" class="C4Detonator" category="explosive" priority="34">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="0" />
+		<param name="pose" 				value="detonator" />
+		<param name="droppable" 	value="0" />
+		<param name="melee_attack_firemode"		value="melee" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/us/detonator/detonator_fp.chr" angles="0,0,0" />
+		<thirdperson name="objects/weapons/us/detonator/detonator_tp.cgf" angles="0,-90,90" position="0,0,0" />
+	</geometry>
+	<actions>
+		<action name="select">
+			<animation target="firstperson" name="select_01" />
+			<animation target="owner" name="select" />
+			<!--<sound target="firstperson" name="sounds/weapons:detonator:select" radius="2" />
+			<sound target="thirdperson" name="sounds/weapons:detonator:select" radius="2" />-->
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_01" />
+			<animation target="owner" name="deselect" />
+			<sound target="firstperson" name="sounds/weapons:detonator:deselect" radius="2" />
+			<sound target="thirdperson" name="sounds/weapons:detonator:deselect" radius="2" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_01" />
+			<animation target="owner" name="idle" />
+		</action>
+		<action name="melee">
+			<animation target="firstperson" name="melee_01" />
+			<animation target="owner" name="melee" />
+			<sound target="thirdperson" name="sounds/weapons:melee:fire" radius="5" />
+		</action>
+		
+		<action name="hit">
+			<sound target="firstperson" name="sounds/physics:bullet_impact:melee_impact_sw" radius="5" />
+			<sound target="thirdperson" name="sounds/physics:bullet_impact:melee_impact_sw" radius="5" />
+		</action>
+		<action name="pickedup">
+			<!--<sound target="firstperson" name="sounds/weapons:detonator:pickedup" radius="5" />
+			<sound target="thirdperson" name="sounds/weapons:detonator:pickedup" radius="5" />-->
+		</action>
+
+		<action name="fire">
+			<animation target="firstperson" name="fire_01" />
+			<animation target="owner" name="fire_detonator" />
+			<!--<sound target="firstperson" name="sounds/weapons:detonator:fire" radius="5" />
+			<sound target="thirdperson" name="sounds/weapons:detonator:fire" radius="5" />-->
+		</action>
+		
+		<!--<action name="empty_clip">
+			<sound target="firstperson" name="Sounds/weapons:socom:dryfire_fp" radius="2" />
+			<sound target="thirdperson" name="Sounds/weapons:socom:dryfire" radius="2" />
+		</action>-->
+	</actions>
+
+	<firemodes>
+		<firemode type="Detonate" name="Detonate">
+			<fire>
+				<param name="clip_size" value="-1" />
+				<param name="rate" value="60" />
+				<param name="damage" value="50" />
+			</fire>
+			<recoil>
+				<param name="max_recoil"	value="0" />
+				<param name="attack" 			value="0" />
+			</recoil>
+		</firemode>
+		<firemode name="melee" type="Melee">
+			<melee>
+				<param name="helper" value="collision" />
+				<param name="offset" value="0.35" />
+				<param name="damage" value="65" />
+				<param name="impulse" value="80" />
+				<param name="delay" value="0.10" />
+				<param name="duration" value="0.45" />
+			</melee>
+			<actions>
+				<param name="attack" value="melee" />
+			</actions>
+		</firemode>
+	</firemodes>
+</item>

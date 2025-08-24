@@ -1,0 +1,296 @@
+<Vehicle name="US_hovercraft" actionMap="landvehicle">
+ <Physics damping="0.02" dampingFreefall="0.0099999998" pushable="0">
+  <Buoyancy waterDensity="65" waterResistance="500" waterDamping="0"/>
+  <Simulation maxTimeStep="0.02" minEnergy="0.1" maxLoggedCollisions="2"/>
+ </Physics>
+ <Damages submergedRatioMax="1" submergedDamageMult="1" collDamageThreshold="50">
+  <DamageMultipliers>
+   <DamageMultiplier damageType="bullet" multiplier="0.001"/>
+   <DamageMultiplier damageType="moacbullet" multiplier="0.02"/>
+   <DamageMultiplier damageType="gaussbullet" multiplier="0.15"/>
+   <DamageMultiplier damageType="melee" multiplier="0.05"/>
+   <DamageMultiplier damageType="fire" multiplier="0.05"/>
+   <DamageMultiplier damageType="collision" multiplier="1"/>
+   <DamageMultiplier damageType="explosion" multiplier="1" splash="0.25"/>
+    <DamageMultiplier damageType="law_rocket" multiplier="2" splash="0.5"/>
+   <DamageMultiplier damageType="frag" multiplier="0.25" splash="0.25"/>
+   <DamageMultiplier damageType="aacannon" multiplier="0.02" splash="0"/>
+   <DamageMultiplier damageType="c4" multiplier="1" splash="0.25"/>
+   <DamageMultiplier damageType="tac" multiplier="2" splash="2"/>
+   <DamageMultiplier damageType="avmine" multiplier="2" splash="0.25"/>
+   <DamageMultiplier damageType="scout_moac" multiplier="0.05"/>
+  </DamageMultipliers>
+    <DamagesGroups>
+   <DamagesGroup name="Destroy" useTemplate="BoatDestroy">
+    <DamagesSubGroups>
+     <DamagesSubGroup delay="0" randomness="0.5">
+      <DamageBehaviors>
+       <DamageBehavior class="Impulse" damageRatioMin="1" ignoreVehicleDestruction="0">
+        <Impulse forceMin="6" forceMax="7" direction="0,0,1" momentum="0.75,0.85000002,0" helper="wakePos"/>
+       </DamageBehavior>
+      </DamageBehaviors>
+     </DamagesSubGroup>
+    </DamagesSubGroups>
+   </DamagesGroup>
+  </DamagesGroups>
+ </Damages>
+ <Components>
+  <Component name="Hull" damageMax="350" major="1" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="0" id="idHull">
+   <DamageMultipliers>
+    <DamageMultiplier damageType="explosion" multiplier="1" splash="0.35"/>
+    <DamageMultiplier damageType="law_rocket" multiplier="2" splash="0.7"/>
+    <DamageMultiplier damageType="frag" multiplier="0.25" splash="0.35"/>
+    <DamageMultiplier damageType="aacannon" multiplier="0.2" splash="0"/>
+   </DamageMultipliers>
+   <DamageBehaviors>
+    <DamageBehavior class="Group" damageRatioMin="1">
+     <Group name="Destroy"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect">
+     <Effect effect="VehicleDestroyed"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="0.25" damageRatioMax="0.75" ignoreVehicleDestruction="1">
+     <Effect effect="HullDamaged25"/>
+    </DamageBehavior>
+    <DamageBehavior class="Effect" damageRatioMin="0.75" damageRatioMax="1" ignoreVehicleDestruction="1">
+     <Effect effect="HullDamaged75"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+  <Component name="FlippedOver" damageMax="1" major="0" minBound="0,0,0" maxBound="0,0,0" useBoundsFromParts="1">
+   <DamageBehaviors>
+    <DamageBehavior class="Effect" damageRatioMin="1">
+     <Effect effect="VehicleDestroyed" disableAfterExplosion="1"/>
+    </DamageBehavior>
+    <DamageBehavior class="Burn">
+     <Burn helper="" damage="0" selfDamage="100" radius="5" interval="1"/>
+    </DamageBehavior>
+   </DamageBehaviors>
+  </Component>
+ </Components>
+ <Parts>
+  <Part name="chassis" class="Animated" mass="0" isHidden="0">
+   <Parts>
+    <Part name="shitenTurret" class="AnimatedJoint" helper="" mass="0">
+     <Parts>
+      <Part name="shiten" class="AnimatedJoint" helper="" mass="0">
+       <Helpers>
+        <Helper name="driverEyePos" position="0,1,2.4979999" direction="0,1,0"/>
+        <Helper name="shitenOutPos" position="0,1.95,2.9579999" direction="0,1,0"/>
+       </Helpers>
+       <AnimatedJoint>
+        <Rotation pitchSpeed="60">
+         <pitchLimits>
+          <pitchLimit value="-15"/>
+          <pitchLimit value="60"/>
+         </pitchLimits>
+        </Rotation>
+       </AnimatedJoint>
+      </Part>
+     </Parts>
+     <Helpers>
+      <Helper name="mounted_gun_pos" position="0,0.69999999,2.848" direction="0,1,0"/>
+     </Helpers>
+     <AnimatedJoint>
+      <Rotation yawSpeed="130">
+       <yawLimits>
+        <yawLimit value="-90"/>
+        <yawLimit value="90"/>
+       </yawLimits>
+      </Rotation>
+     </AnimatedJoint>
+    </Part>
+   </Parts>
+   <Helpers>
+    <Helper name="turret_pos" position="0,0.69999999,2.848" direction="0,1,0"/>
+    <Helper name="driverSitPos" position="0,1.17,1.5" direction="0,1,0"/>
+    <Helper name="driverExitPos" position="-3.1201,0.87989998,1.5532" direction="0,1,0"/>
+    <Helper name="exhaustPos" position="0,-6,1.998" direction="0,1,0"/>
+    <Helper name="dustPos" position="0,-0.69410002,0.62400001" direction="0,1,0"/>
+    <Helper name="passenger01_sit_pos" position="-0.8125,-1.1045001,1.574" direction="0,1,0"/>
+    <Helper name="passenger02_sit_pos" position="-0.0308,-1.0989,1.5789" direction="0,1,0"/>
+    <Helper name="passenger03_sit_pos" position="0.74269998,-1.1066999,1.5723" direction="0,1,0"/>
+    <Helper name="passenger01_exit_pos" position="-3.1814001,-0.6196,0.96810001" direction="0,1,0"/>
+    <Helper name="passenger02_exit_pos" position="-3.1975,-1.4741,0.96810001" direction="0,1,0"/>
+    <Helper name="passenger03_exit_pos" position="3.1973,-0.87400001,0.96810001" direction="0,1,0"/>
+    <Helper name="headLightLeft" position="-1.45,3,1.78" direction="0,0.99479997,-0.1021"/>
+    <Helper name="headLightRight" position="1.45,3,1.78" direction="0,0.99479997,-0.1021"/>
+    <Helper name="headLightCenter" position="-0.017100001,3.9640999,1.6084" direction="0,0.99479997,-0.1021"/>
+    <Helper name="burningPos" position="0,0.12819999,1.0773" direction="0,1,0"/>
+   </Helpers>
+   <Animated filename="Objects/Vehicles/US_Hovercraft_B/US_Hovercraft_B.cga" filenameDestroyed="Objects/Vehicles/US_Hovercraft_B/US_Hovercraft_B_destroyed.cga"/>
+  </Part>
+  <Part name="skirt" class="Base" mass="0" filename="objects/vehicles/us_hovercraft_b/us_hovercraft_b.chr"/>
+  <Part name="mass" class="MassBox" mass="2000" position="0,-0.1472,0.85000002">
+   <MassBox size="2.2279999,4.4499998,1"/>
+  </Part>
+  <Part name="headLightCenter" class="Light" component="" helper="headLightCenter">
+   <Light type="HeadLightDynamic"/>
+  </Part>
+  <Part name="headLightLeft" class="Light" component="headLightLeft" helper="headLightLeft">
+   <Light type="HeadLightBeam" coronaDistIntensity="-1" coronaDistSize="-1"/>
+  </Part>
+  <Part name="headLightLeftFlare" class="Light" component="headLightLeft" helper="headLightLeft">
+   <Light type="HeadLightFlare"/>
+  </Part>
+  <Part name="headLightRight" class="Light" component="headLightRight" helper="headLightRight">
+   <Light type="HeadLightBeam"/>
+  </Part>
+  <Part name="headLightRightFlare" class="Light" component="headLightRight" helper="headLightRight">
+   <Light type="HeadLightFlare"/>
+  </Part>
+ </Parts>
+ <Seats>
+  <Seat name="driver" part="" enterHelper="driverExitPos" exitHelper="driverExitPos" sitHelper="driverSitPos" isDriver="1" AimPart="shiten" seatGroupIndex="1">
+   <Views>
+    <View class="FirstPerson" canRotate="0">
+     <FirstPerson helper="driverEyePos"/>
+    </View>
+    <View class="ActionThirdPerson" canRotate="0">
+     <ActionThirdPerson cameraPosOffset="0,-7,1" cameraAimOffset="0,2,0" lagSpeed="5" velocityMult="0,0.050000001,1"/>
+    </View>
+   </Views>
+   <SeatActions>
+    <SeatAction class="RotateTurret">
+     <RotateTurret pitchPart="shiten" yawPart="shitenTurret"/>
+    </SeatAction>
+    <SeatAction class="Weapons">
+     <Weapons>
+      <Weapons>
+       <Weapon class="HovercraftGun" part="shiten" id="idGun">
+        <Helpers />
+       </Weapon>
+      </Weapons>
+     </Weapons>
+    </SeatAction>
+    <SeatAction class="SteeringWheel">
+     <SteeringWheel vehicleAnimation="rudders">
+      <Actions anglesMax="0,130,0" steeringForce="5"/>
+     </SteeringWheel>
+    </SeatAction>
+    <SeatAction class="Lights">
+     <Lights activation="toggle">
+      <LightParts>
+       <LightPart value="headLightLeft"/>
+       <LightPart value="headLightLeftFlare"/>
+       <LightPart value="headLightRight"/>
+       <LightPart value="headLightRightFlare"/>
+       <LightPart value="headLightCenter"/>
+      </LightParts>
+     </Lights>
+    </SeatAction>
+    <SeatAction class="Sound">
+     <Sound sound="Sounds/vehicles:us_hovercraft:horn" helper="turret_pos"/>
+    </SeatAction>
+   </SeatActions>
+   <Sounds inout="1"/>
+  </Seat>
+  <Seat name="passenger01" part="" enterHelper="passenger01_exit_pos" sitHelper="passenger01_sit_pos" isDriver="0" AimPart="" seatGroupIndex="2">
+   <Views>
+    <View class="FirstPerson" canRotate="1">
+     <FirstPerson helper=""/>
+    </View>
+    <View class="ActionThirdPerson" canRotate="0">
+     <ActionThirdPerson cameraPosOffset="0,-7,1" cameraAimOffset="0,2,0" lagSpeed="5" velocityMult="0,0.050000001,1"/>
+    </View>
+   </Views>
+   <SeatActions />
+   <Sounds inout="1"/>
+  </Seat>
+  <Seat name="passenger02" part="" enterHelper="passenger02_exit_pos" sitHelper="passenger02_sit_pos" isDriver="0" AimPart="" seatGroupIndex="2">
+   <Views>
+    <View class="FirstPerson" canRotate="1">
+     <FirstPerson helper=""/>
+    </View>
+    <View class="ActionThirdPerson" canRotate="0">
+     <ActionThirdPerson cameraPosOffset="0,-7,1" cameraAimOffset="0,2,0" lagSpeed="5" velocityMult="0,0.050000001,1"/>
+    </View>
+   </Views>
+   <SeatActions />
+   <Sounds inout="1"/>
+  </Seat>
+  <Seat name="passenger03" part="" enterHelper="passenger03_exit_pos" sitHelper="passenger03_sit_pos" isDriver="0" AimPart="" seatGroupIndex="2">
+   <Views>
+    <View class="FirstPerson" canRotate="1">
+     <FirstPerson helper=""/>
+    </View>
+    <View class="ActionThirdPerson" canRotate="0">
+     <ActionThirdPerson cameraPosOffset="0,-7,1" cameraAimOffset="0,2,0" lagSpeed="5" velocityMult="0,0.050000001,1"/>
+    </View>
+   </Views>
+   <SeatActions />
+   <Sounds inout="1"/>
+  </Seat>
+ </Seats>
+ <MovementParams>
+  <Hovercraft hoverHeight="0.85000002" hoverVariance="0" hoverFrequency="0" numThrusters="9" thrusterBottomOffset="1" thrusterMaxHeightCoeff="1.5" stiffness="1.4" damping="1" dampingLimit="2" thrusterTilt="40" velMax="26" velMaxReverse="8" acceleration="11" accelerationMultiplier="1.6" pushOffset="0,-2.5,0" pushTilt="5" linearDamping="0.75" turnRateMax="1.2" turnRateReverse="0.89999998" turnAccel="1" turnAccelMultiplier="2.2" turnDamping="0.80000001" cornerForce="1.9" cornerOffset="0,0,1.2" cornerTilt="0" sampleByHelpers="0" thrusterHeightAdaption="0" thrusterUpdate="0" bEngineAlwaysOn="0">
+   <SoundParams engineSoundPosition="" runSoundDelay="1" rpmPitchSpeed="1.5"/>
+   <TweakGroups>
+    <TweakGroup name="player_boost">
+     <Tweaks>
+      <Tweak name="velMax" value="30" op="0"/>
+      <Tweak name="acceleration" value="14" op="0"/>
+      <Tweak name="pushTilt" value="10" op="0"/>
+     </Tweaks>
+    </TweakGroup>
+   </TweakGroups>
+   <AirDamp dampAngle="1.5,1,0" dampAngVel="1.5,1.5,0"/>
+  </Hovercraft>
+ </MovementParams>
+ <Particles>
+  <Exhaust insideWater="0" outsideWater="1">
+   <Helpers>
+    <Helper value="exhaustPos"/>
+   </Helpers>
+   <EngineStart effect=""/>
+   <EngineStop effect=""/>
+   <EngineRunning effect="" boostEffect="" baseSizeScale="1" minSpeed="0" minSpeedSizeScale="1" minSpeedCountScale="1" minSpeedSpeedScale="1" maxSpeed="20" maxSpeedSizeScale="1" maxSpeedCountScale="1" maxSpeedSpeedScale="1" minPower="0" minPowerSizeScale="1" minPowerCountScale="1" minPowerSpeedScale="1" maxPower="1" maxPowerSizeScale="1" maxPowerCountScale="1" maxPowerSpeedScale="1"/>
+  </Exhaust>
+  <ShatterEffect effect="vehicle_fx.frozen_shatter.small" />
+  <DamageEffects>
+   <DamageEffect name="VehicleDestroyed" helper="vehicleBurnPos" effect="explosions.Large_Vehicle.a"/>
+   <DamageEffect name="HullDamaged25" helper="burningPos" effect="Vehicle_fx.Damages_Sea.UShovercraft_hull_smoke_a" scaleMax="1" gravityDirection="0,0,1" pulsePeriod="0"/>
+   <DamageEffect name="HullDamaged75" helper="burningPos" effect="Vehicle_fx.Damages_Sea.UShovercraft_hull_smoke_b" scaleMax="1" gravityDirection="0,0,1" pulsePeriod="0"/>
+  </DamageEffects>
+  <EnvironmentLayers>
+   <EnvironmentLayer minSpeed="0" minSpeedSizeScale="0.5" minSpeedCountScale="1" minSpeedSpeedScale="1" maxSpeed="15" maxSpeedSizeScale="1" maxSpeedCountScale="1" maxSpeedSpeedScale="1">
+    <Alignment alignGroundHeight="2" maxHeightSizeScale="0" maxHeightCountScale="0.75" alignToWater="0"/>
+    <Emitters />
+    <Wheels />
+   </EnvironmentLayer>
+  </EnvironmentLayers>
+ </Particles>
+ <Animations>
+  <Animation name="rudders" part="chassis">
+   <States>
+    <State name="" animation="hovercraft_b_thrusters" isLooped="1" speedDefault="1" speedMin="1" speedMax="1"/>
+   </States>
+  </Animation>
+ </Animations>
+ <Paints>
+  <Paint name="nk" material="objects/vehicles/us_hovercraft_b/us_hovercraft_nk.mtl"/>
+  <Paint name="us" material="objects/vehicles/us_hovercraft_b/us_hovercraft_b.mtl"/>
+ </Paints>
+ <Modifications>
+  <Modification name="MP">
+   <Elems>
+    <Elem idRef="idGun" name="class" value=""/>
+   </Elems>
+  </Modification>
+  <Modification name="Gauss">
+   <Elems>
+    <Elem idRef="idGun" name="class" value="VehicleGaussMounted"/>
+   </Elems>
+  </Modification>
+  <Modification name="MOAC">
+   <Elems>
+    <Elem idRef="idGun" name="class" value="VehicleMOACMounted"/>
+   </Elems>
+  </Modification>
+  <Modification name="MOAR">
+   <Elems>
+    <Elem idRef="idGun" name="class" value="VehicleMOARMounted"/>
+   </Elems>
+  </Modification>
+ </Modifications>
+</Vehicle>

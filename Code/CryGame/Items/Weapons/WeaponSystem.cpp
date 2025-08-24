@@ -221,14 +221,12 @@ void CWeaponSystem::Reload()
 
 	m_tracerManager.Reset();
 
-	if (!gEnv->bClient) {
-		CryLogAlways("[CryMP] Reloading XML weapon definitions");
-		for (TFolderList::iterator it = m_folders.begin(); it != m_folders.end(); ++it)
-			Scan(it->c_str());
-	} else {
-		CryLogAlways("[CryMP] Reloading pre-compiled weapon definitions");
-		this->RegisterXMLData();
-	}
+#ifdef NEW_ITEM_SYSTEM
+	RegisterXMLData();
+#else
+	for (TFolderList::iterator it = m_folders.begin(); it != m_folders.end(); ++it)
+		Scan(it->c_str());
+#endif
 
 	m_reloading = false;
 }
@@ -602,7 +600,6 @@ bool CWeaponSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
 	return true;
 }
 
-
 //------------------------------------------------------------------------
 void CWeaponSystem::RegisterAmmo(const char* name, const char* className, const char* script, const char* config, IItemParamsNode* params)
 {
@@ -643,7 +640,7 @@ void CWeaponSystem::RegisterAmmo(const char* name, const char* className, const 
 			delete desc.params;
 		}
 
-		desc.params=pAmmoParams;
+		desc.params = pAmmoParams;
 	}
 	else
 	{

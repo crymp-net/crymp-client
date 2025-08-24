@@ -1,0 +1,87 @@
+<item name="AlienTurret" class="GunTurret" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="0" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+		<param name="mass"				value="0" />		
+		<param name="radar_helper" 		value="mounttoradar" />
+		<param name="barrel_helper"   value="" />
+		<param name="fire_helper" 		value="dummy_gun" />		
+	</params>	
+	<turret>
+	  <search>
+	    <hints>	      
+	      <hint x="-1" y="-0"/>
+	      <hint x="1" y="-0"/>	      	      
+	      <hint x="-1" y="-0.5"/>
+	      <hint x="1" y="-0.5"/>	      	      
+	    </hints>
+	    <light helper="searchlight" color="1,1,1" diffuse_mul="3" texture="textures/lights/alien_turret.dds" material="materials/lightbeams/lightbeam_floodlight.mtl" hdr_dyn="3" />
+	  </search>	  	  
+	  <fire>	    
+	    <hints>
+	      <hint x="1" y="11"/>
+	      <hint x="-5" y="8"/>
+	      <hint x="3" y="6"/>
+	    </hints>
+	    <param name="randomness" value="0.33" />
+	  </fire>
+	</turret>	
+ 	<geometry>
+ 		<thirdperson name="objects/characters/alien/warrior/whitebox_gun.cgf" angles="0,0,0" position="0,0,0" />
+ 		<aux0 name="objects/characters/alien/warrior/whitebox_turret.cgf" /> 
+ 		<destroyed name="objects/characters/alien/warrior/whitebox_turret.cgf" /> 		
+ 	</geometry>
+	<actions>	
+    <action name="spin_up">
+			<sound target="thirdperson" name="sounds/weapons:moac_warrior:spin_up" />
+		</action>
+		<action name="spin_down">
+			<sound target="thirdperson" name="sounds/weapons:moac_warrior:spin_down" />
+		</action>
+		<action name="rapid_fire">
+			<sound target="thirdperson" name="sounds/weapons:moac_warrior:fire_loop" static="1" synched="1"/>
+		</action>
+		<action name="destroy">
+		  <effect target="thirdperson" name="alien_weapons.Moac.Warrior_Turret_Explosion" helper="" />
+		</action>
+		<action name="use_light">	    		  
+			<!--
+			<sound target="thirdperson" name="sounds/alien:scout:searchbeam_loop" />		
+			-->
+	  </action>
+	</actions>
+	<firemodes>
+		<firemode name="Rapid" type="Rapid">
+			<fire>
+				<param name="ammo_type" value="turretacmo" />
+				<param name="rate" value="400" />
+				<param name="damage" value="20" />
+				<param name="clip_size" value="-1" />
+				<param name="offset" value="1" />
+				<param name="helper_tp" value="dummy_gun" />
+			</fire>
+			<rapid>
+				<param name="min_speed" value="5.0" />
+				<param name="max_speed" value="10.0" />
+				<param name="acceleration" value="2.0" />
+				<param name="deceleration" value="-10.0" />
+			</rapid>
+      <spread>				
+				<param name="min" value="1.0" />
+				<param name="max" value="1.0" />																
+				<param name="attack" value="1" />
+				<param name="decay" value="0.50" />
+			</spread>						
+			<spinup>								
+				<thirdperson effect="alien_weapons.Moac.Warrior_Turret_Charge" helper="dummy_gun" time="3" light_radius="0" scale="1.0" />
+			</spinup>									
+			<muzzleflash>				
+				<thirdperson effect="Alien_Weapons.Moac.Warrior_Turret_Firing" helper="dummy_gun" light_helper="dummy_gun" light_radius="3" scale="1.0" />
+			</muzzleflash>			
+		</firemode>
+	</firemodes>
+</item>

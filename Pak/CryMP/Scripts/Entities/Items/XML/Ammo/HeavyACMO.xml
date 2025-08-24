@@ -1,0 +1,30 @@
+<ammo name="heavyacmo" class="Bullet">
+	<geometry>
+		<firstperson name="objects/weapons/fx/moac_trail.cgf" />
+		<thirdperson name="objects/weapons/fx/moac_trail.cgf" />
+	</geometry>
+	<flags>
+		<param name="clientonly" value="1" />
+	</flags>
+	<whiz>
+		<param name="sound" value="sounds/physics:bullet_whiz:moac_whiz" />
+	</whiz>
+	<physics type="particle">
+		<param name="mass" value="0.125" />
+		<param name="speed" value="80" />
+		
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0" />
+		<param name="gravity" value="0, 0, -1" />
+		<param name="water_gravity" value="0, 0, -1" />
+	</physics>
+	<params>
+		<param name="lifetime" value="5" />
+		<param name="showtime" value="0.15" />
+	</params>
+	
+	<collision>
+		<param name="effect" value="Alien_Weapons.Moac.Scout_Moac_Impact" />
+		<param name="scale" value="0.75" />
+	</collision>
+</ammo>

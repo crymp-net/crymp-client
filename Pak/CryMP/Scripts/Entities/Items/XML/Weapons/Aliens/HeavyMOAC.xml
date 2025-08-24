@@ -1,0 +1,54 @@
+<item name="HeavyMOAC" class="Weapon" >
+	<params>
+		<param name="equipeable"	value="1" />
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="1" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="0" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ammos>
+		<ammo name="heavyacmo" amount="1" />
+	</ammos>
+	<actions>
+		<action name="spin_up">
+			<sound target="firstperson" name="sounds/weapons:hurricane_fp:spin_up" radius="2" />
+			<sound target="thirdperson" name="sounds/weapons:hurricane:spin_up" radius="2" />
+		</action>
+		<action name="spin_down">
+			<sound target="firstperson" name="sounds/weapons:hurricane_fp%:spin_down" radius="2" />
+			<sound target="thirdperson" name="sounds/weapons:hurricane:spin_down" radius="2" />
+		</action>
+
+		<action name="fire">
+			<animation target="thirdperson" name="fire_acmo_01" />
+			<animation target="owner" name="shoot" />
+			<sound target="firstperson" name="sounds/weapons:hurricane_fp:fire" radius="100" />
+			<sound target="thirdperson" name="sounds/weapons:hurricane:fire" radius="100" />
+		</action>
+
+		<action name="idle">
+			<animation target="thirdperson" name="idle_01" />
+			<animation target="owner" name="idle" />
+		</action>
+	</actions>
+	<firemodes>
+		<firemode name="Single" type="Single">
+			<fire>
+				<param name="ammo_type" value="heavyacmo" />
+				<param name="rate" value="600" />
+				<param name="damage" value="55" />
+				<param name="clip_size" value="-1" />
+				<param name="max_clip" value="-1" />
+				<param name="offset" value="5" />
+			</fire>
+			<muzzleflash>
+				<thirdperson effect="Alien_Weapons.Moac.Fire_Mode1" helper="shoot" light_helper="shoot_light" />
+			</muzzleflash>
+			<spinup>
+				<thirdperson effect="Alien_Weapons.Moac.Weapon_Charge" helper="intake" light_helper="shoot_light" />
+			</spinup>
+		</firemode>
+	</firemodes>
+</item>

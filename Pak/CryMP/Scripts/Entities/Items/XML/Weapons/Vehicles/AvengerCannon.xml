@@ -1,0 +1,106 @@
+<item name="AvengerCannon" class="VehicleWeapon" invisible="1" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ai_descriptor handler="strafing" speed="400" damage_radius="-1" charge_time="-1" />
+	<ammos>
+		<ammo name="50bullet" extra="0" amount="0" />
+	</ammos>
+	
+	<actions>
+    <action name="spin_up">
+      <sound target="firstperson" name="Sounds/weapons:vehicle_us_vtol:spin_up_fp" radius="10" />
+      <sound target="thirdperson" name="Sounds/weapons:vehicle_us_vtol:spin_up_3rd" radius="10" />
+    </action>
+    <action name="spin_down">
+      <sound target="firstperson" name="Sounds/weapons:vehicle_us_vtol:spin_down_fp" radius="10" />
+      <sound target="thirdperson" name="Sounds/weapons:vehicle_us_vtol:spin_down_3rd" radius="10" />
+    </action>     
+		<action name="rapid_fire">
+			<sound target="firstperson" name="Sounds/weapons:vehicle_us_vtol:fire_mg_fp" radius="100" static="1" synched="1" />
+			<sound target="thirdperson" name="Sounds/weapons:vehicle_us_vtol:fire_mg" radius="100" static="1" synched="1"/>
+		</action>
+    <action name="overheating">
+      <sound target="firstperson" name="sounds/weapons:shiten:overheat" radius="5" static="0" />
+      <sound target="thirdperson" name="sounds/weapons:shiten:overheat" radius="5" static="0" />
+    </action>
+	</actions>	
+	
+	<firemodes>
+		<firemode name="Rapid" type="Rapid">
+			<fire>
+				<param name="ammo_type" value="50bullet" />
+				<param name="clip_size" value="-1" />
+				<param name="max_clips" value="0" />
+				<param name="rate" value="1200" />
+				<param name="damage" value="60" />
+				<param name="ooatracer_treshold" value="-1" />
+				<param name="nearmiss_signal" value="OnNearMiss" />
+				<param name="crosshair_assist_range" value="100" />
+			</fire>
+      <heating>
+				<param name="overheat_time" value="4.0" /> 
+				<param name="duration" value="2.0" />
+				<param name="cooldown_time" value="2.0" />
+        <param name="helper_fp" value="overheat_effect" />
+        <param name="effect_fp" value="weapon_fx.gun.overheat_haze" />
+        <param name="helper_tp" value="overheat_effect" />
+        <param name="effect_tp" value="weapon_fx.gun.overheat_haze" />
+      </heating>      
+			<tracer>
+				<param name="geometryFP" 	value="Objects\effects\tracer_standard_new.cgf" />
+				<param name="geometry" 	value="Objects\effects\tracer_standard_new.cgf" />
+				<param name="effectFP" 		value="weapon_fx.tracer.standardfp" />
+				<param name="effect" 		value="weapon_fx.tracer.standard" />
+				<param name="speed" 		value="350" />
+				<param name="speedFP"   value="350" />
+				<param name="frequency" value="1" />
+				<param name="helper_fp" value="dummy" />
+				<param name="helper_tp" value="dummy" />
+			</tracer>				
+			<outofammotracer>
+				<param name="geometryFP" 	value="Objects\effects\tracer_standard_red_new.cgf" />
+				<param name="geometry" 	value="Objects\effects\tracer_standard_red_new.cgf" />
+				<param name="effectFP" 		value="weapon_fx.tracer.standardfp" />
+				<param name="effect" 		value="weapon_fx.tracer.standard" />
+				<param name="speed" 		value="350" />
+				<param name="speedFP"   value="350" />
+				<param name="frequency" value="1" />
+				<param name="helper_fp" value="dummy" />
+				<param name="helper_tp" value="dummy" />
+			</outofammotracer>
+			<spread>
+				<param name="min" value="0.035" />
+				<param name="max" value="2.30" />
+				<param name="attack" value="0.75" />
+				<param name="decay" value="0.50" />
+			</spread>
+			<rapid>
+				<param name="min_speed" value="2.0" />
+				<param name="max_speed" value="2.0" />
+				<param name="acceleration" value="8.0" />
+				<param name="deceleration" value="-10.0" />
+				<param name="camshake_rotate" value="0,0.003,0" />
+				<param name="camshake_shift" value="0,0,0" />
+				<param name="camshake_perShot" value="2.0" />
+			</rapid>
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Machinegun.ShiTen" helper="dummy" light_helper="dummy" light_radius="3" light_time="0.01" light_color="1,1,0.8" light_diffuse_mult="8" />
+				<thirdperson effect="muzzleflash.Machinegun.ShiTen_tp" helper="dummy" light_helper="dummy" light_radius="3" light_time="0.01" light_color="1,1,0.8" light_diffuse_mult="8" />
+			</muzzleflash>
+			<muzzlesmoke>
+				<firstperson effect="muzzleflash.AssaultRifle.hurricane_smoke" helper="muzzle_flash_effect" time="0" />
+				<thirdperson effect="muzzleflash.AssaultRifle.hurricane_smoke_tp" helper="dummy" time="0" />
+			</muzzlesmoke>
+			<reject>
+				<firstperson effect="weapon_fx.shells.hurricane" helper="dummy" />
+				<thirdperson effect="weapon_fx.shells.hurricane" helper="dummy" />
+			</reject>
+		</firemode>
+	</firemodes>
+</item>

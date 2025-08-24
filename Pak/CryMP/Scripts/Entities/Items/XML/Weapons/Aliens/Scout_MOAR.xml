@@ -1,0 +1,68 @@
+<item name="Scout_MOAR" class="Weapon" >
+	<params>
+		<param name="equipeable"	value="1" />
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="1" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="0" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ai_descriptor handler="fast_light_moar" speed="20" damage_radius="10" charge_time="2" signal_on_shoot="0" />
+	<geometry>
+ 		<thirdperson name="objects/weapons/alien/moar/moar.cgf" angles="0,0,0" position="0,0,0" /> 		
+ 	</geometry>	
+	<actions>
+		<action name="fire">
+			<sound target="firstperson" name="sounds/weapons:moar_large:fire_loop_fp" radius="100" />
+			<sound target="thirdperson" name="sounds/weapons:moar_large:fire_loop" radius="100" />
+		</action>
+		<action name="blast">
+			<sound target="firstperson" name="sounds/weapons:moar_large:fire_fp" radius="100" />
+			<sound target="thirdperson" name="sounds/weapons:moar_large:fire" radius="100" />
+		</action>
+		<!--<action name="spin_up">
+			<animation target="owner" name="shoot" />
+			<sound target="firstperson" name="sounds/weapons:moar_large:spin_up_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moar_large:spin_up" radius="100" static="1" />
+		</action>
+		<action name="spin_down">
+			<sound target="firstperson" name="sounds/weapons:moar_large:spin_down_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moar_large:spin_down" radius="100" static="1" />
+		</action>-->
+		<action name="hit">
+			<sound target="firstperson" name="sounds/physics:bullet_impact:moar_large_beam_impact" radius="100" />
+			<sound target="thirdperson" name="sounds/physics:bullet_impact:moar_large_beam_impact" radius="100" static="1" />			
+		</action>
+	</actions>
+	<firemodes>
+		<firemode name="Beam" type="FreezingBeam">
+			<fire>
+				<param name="offset" value="0.15" />				
+				<param name="spin_up_time" value="2" />				
+				<param name="damage" value="5" />
+				<param name="hit_type" value="frost" />				
+			</fire>
+			<beam>			  	  			  
+			  <param name="tick" value="0.1" />
+			  <param name="range" value="100" />
+				<param name="hit_decal" value="materials/decals/alien_scout_freeze.mtl" />
+				<param name="hit_decal_size" value="4.0" />
+				<param name="hit_decal_size_min" value="1.6" />
+				<param name="hit_decal_lifetime" value="180" />
+				<param name="hit_effect" value="Alien_Weapons.Freeze_Beam.Scout_MOAR_Impact" />
+				<param name="hit_effect_scale" value="1" />				
+			</beam>
+	    <freeze>
+	      <param name="freeze_speed" value="1.0" />
+	    </freeze>
+			<effect>
+				<thirdperson effect="alien_weapons.freeze_beam.Scout_MOAR_firing" helper="weapon_term" light_radius="0" scale="0.01"/>
+			</effect>
+			<spinup>
+				<firstperson effect="alien_weapons.freeze_beam.Scout_MOAR_charging" helper="weapon_term" light_radius="0" />
+				<thirdperson effect="alien_weapons.freeze_beam.Scout_MOAR_charging" helper="weapon_term" light_radius="0" />	
+			</spinup>
+		</firemode>
+	</firemodes>
+</item>

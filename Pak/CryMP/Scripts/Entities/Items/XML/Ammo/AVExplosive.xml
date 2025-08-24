@@ -1,0 +1,30 @@
+<ammo name="avexplosive" class="AVExplosive" script="scripts/entities/items/explosive.lua">
+	<geometry>
+		<firstperson name="objects/weapons/us/at_mine/at_mine.cgf" />
+		<thirdperson name="objects/weapons/us/at_mine/at_mine_tp.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>	
+	<physics type="static">
+		<param name="material" value="mat_metal" />
+	</physics>
+	<explosion>
+		<param name="pressure" value="500" />
+		<param name="min_radius" value="3" />
+		<param name="max_radius" value="6" />
+		<param name="min_phys_radius" value="1" />
+		<param name="max_phys_radius" value="2" />
+		<param name="hole_size" value="2" />
+		<param name="terrain_hole_size" value="6" />
+		<param name="effect_scale" value="1" />
+		<param name="type" value="avmine" />
+	</explosion>
+	<params>
+		<param name="triggerweight" 	value="250" />	
+		<param name="box_dimension" value="2" />
+		<param name="quietRemoval" value="1" />
+    <param name="lifetime" value="0" />
+	</params>
+</ammo>
