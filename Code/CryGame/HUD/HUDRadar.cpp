@@ -2207,7 +2207,7 @@ void CHUDRadar::RenderMiniMap()
 					{
 						GetPosOnMap(pVehicle->GetEntity(), fX, fY);
 						numOfValues += FillUpDoubleArray(&entityValues, 
-							pVehicle->GetEntityId(), 
+							pTempActor->GetEntityId(),
 							static_cast<int>(ChooseMiniMapIcon(pVehicle->GetEntity())),
 							fX, 
 							fY, 
@@ -2219,6 +2219,19 @@ void CHUDRadar::RenderMiniMap()
 							iCurrentSpawnPoint == pVehicle->GetEntityId()
 						);
 						drawnVehicles[pVehicle->GetEntityId()] = true;
+					}
+					//draw teammate name if selected
+					if (gEnv->bMultiplayer)
+					{
+						EntityId id = pTempActor->GetEntityId();
+						for (int i = 0; i < m_selectedTeamMates.size(); ++i)
+						{
+							if (m_selectedTeamMates[i] == id)
+							{
+								textOnMap[id] = pTempActor->GetEntity()->GetName();
+								break;
+							}
+						}
 					}
 				}
 				else

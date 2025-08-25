@@ -409,6 +409,19 @@ void CHUDTagNames::DrawTagName(IVehicle* pVehicle)
 			bDrawOnTop = true;
 		}
 
+		for (EntityId teamMateId : *m_pHUD->GetRadar()->GetSelectedTeamMates())
+		{
+			if (uiEntityId == teamMateId)
+			{
+				// Teammate is selected in radar, force the visibility of that name
+				bDrawOnTop = true;
+
+				rgbTagName = COLOR_TAGGED;
+
+				break;
+			}
+		}
+
 		NameTag& nameTag = m_nameTags.emplace_back();
 		FillNameTag(nameTag, uiEntityId, pActor, pEntity, bDrawOnTop, vWorldPos, rgbTagName, friendly);
 	}
