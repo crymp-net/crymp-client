@@ -219,6 +219,21 @@ bool CHUDRadar::IsEntityOnTempRadar(const EntityId id)
 	return false;
 }
 
+void CHUDRadar::ClearExpiredTempEntities(const float now)
+{
+	for (int t = 0; t < m_tempEntitiesOnRadar.size(); ++t)
+	{
+		const TempEntity& temp = m_tempEntitiesOnRadar[t];
+		float diffTime = now - temp.m_spawnTime;
+
+		if (diffTime > temp.m_timeLimit || diffTime < 0.0f)
+		{
+			m_tempEntitiesOnRadar.erase(m_tempEntitiesOnRadar.begin() + t);
+			--t;
+		}
+	}
+}
+
 void CHUDRadar::AddStoryEntity(EntityId id, MiniMapIcon type /* = MiniMapIcon::WayPoint */, const char* text /* = nullptr */)
 {
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
@@ -350,6 +365,9 @@ void CHUDRadar::Update(float fDeltaTime)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
+	const float now = gEnv->pTimer->GetFrameStartTime().GetSeconds();
+	ClearExpiredTempEntities(now);
+
 	if (!m_flashRadar)
 		return; //we require the flash radar now
 
@@ -371,7 +389,6 @@ void CHUDRadar::Update(float fDeltaTime)
 	ArrayFillHelper<double, FVAT_Double, NUM_ARRAY_FILL_HELPER_SIZE> entityValues(m_flashRadar->GetFlashPlayer(), "m_allValues");
 	int numOfValues = 0;
 
-	float now = gEnv->pTimer->GetFrameStartTime().GetSeconds();
 	float fRadius = fRadarDefaultRadius;
 	if (m_mapRadarRadius[m_mapId] > 2)
 		fRadius = (float)m_mapRadarRadius[m_mapId];
@@ -482,14 +499,7 @@ void CHUDRadar::Update(float fDeltaTime)
 	//temp units on radar
 	for (int t = 0; t < m_tempEntitiesOnRadar.size(); ++t)
 	{
-		TempEntity temp = m_tempEntitiesOnRadar[t];
-		float diffTime = now - temp.m_spawnTime;
-		if (diffTime > temp.m_timeLimit || diffTime < 0.0f)
-		{
-			m_tempEntitiesOnRadar.erase(m_tempEntitiesOnRadar.begin() + t);
-			--t;
-			continue;
-		}
+		const TempEntity& temp = m_tempEntitiesOnRadar[t];
 
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(temp.m_id);
 		if (pEntity && !pEntity->IsHidden())
@@ -2496,9 +2506,6 @@ void CHUDRadar::RenderMiniMap()
 	}
 
 	ComputePositioning(vPlayerPos, &entityValues);
-
-	//tell flash file that we are done ...
-	//m_flashMap->Invoke("updateObjects", "");
 
 	if (entityValues.size())
 		m_flashMap->GetFlashPlayer()->SetVariableArray(FVAT_Double, 

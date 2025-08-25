@@ -195,8 +195,8 @@ public:
 
 	//show an entity on the radar for a short time only (default is one second)
 	void ShowEntityTemporarily(RadarIcon radarIcon, MiniMapIcon miniMapIcon, EntityId id, float timeLimit = 1.0f);
-
 	bool IsEntityOnTempRadar(const EntityId id);
+	void ClearExpiredTempEntities(const float now);
 
 	void Serialize(TSerialize ser);
 
