@@ -2469,8 +2469,7 @@ void CHUDRadar::RenderMiniMap()
 	}
 
 	//draw player position
-
-	if (!pClientActor->GetLinkedVehicle())
+	if (!pClientActor->GetLinkedVehicle() && pClientActor->GetSpectatorMode() == CActor::eASM_None)
 	{
 		GetPosOnMap(pClientActor->GetEntity(), fX, fY);
 		vPlayerPos.x = fX;
