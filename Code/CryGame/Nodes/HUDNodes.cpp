@@ -643,7 +643,7 @@ public:
 			InputPortConfig_Void( "Add",    _HELP("Trigger this port to add Entity to map" )),
 			InputPortConfig_Void( "Remove", _HELP("Trigger this port to remove Entity from map" )),
 			InputPortConfig<string> ("Label", _HELP("Label on the map"), 0, _UICONFIG("dt=text")),
-			InputPortConfig<int>    ("Type", EWayPoint, _HELP("Label on the map"), 0, uiConfig),
+			InputPortConfig<int>    ("Type", static_cast<int>(MiniMapIcon::WayPoint), _HELP("Label on the map"), 0, uiConfig),
 			{0}
 		};
 		static const SOutputPortConfig out_ports[] = 
@@ -680,7 +680,7 @@ public:
 				if (IsPortActive(pActInfo, EIP_Add))
 				{
 					const string& label = GetPortString(pActInfo, EIP_Label);
-					FlashRadarType radarType = static_cast<FlashRadarType> (GetPortInt(pActInfo, EIP_Type));
+					MiniMapIcon radarType = static_cast<MiniMapIcon>(GetPortInt(pActInfo, EIP_Type));
 					pRadar->AddStoryEntity(entityId, radarType, label.c_str());
 					ActivateOutput(pActInfo, EOP_Added, true);
 				}

@@ -96,54 +96,68 @@ enum EHUDGAMERULES
 	EHUD_TEAMINSTANTACTION,
 };
 
-//radar objects on mini map and radar
-enum FlashRadarType	//don't change order (unless you change the flash asset)
+// radar objects on mini map and radar
+enum class MiniMapIcon // don't change order (unless you change the flash asset)
 {
-	EFirstType = 0,
-	ETank,
-	EAPC,
-	ECivilCar,
-	ETruck,
-	EHovercraft,
-	ESpeedBoat,
-	EPatrolBoat,
-	ESmallBoat,
-	ELTV,
-	EHeli,
-	EVTOL,
-	EAAA,	// should be AAA
-	ESoundEffect,		// is empty, but we have neither Tank nor APC as an icon
-	ENuclearWeapon,
-	ETechCharger,
-	EWayPoint,
-	EPlayer,
-	ETaggedEntity,
-	ESpawnPoint,
-	EFactoryAir,
-	EFactoryTank,
-	EFactoryPrototype,
-	EFactoryVehicle,
-	EFactorySea,
-	EINVALID1, //EBase,
-	EBarracks,
-	ESpawnTruck,
-	EAmmoTruck,
-	EHeadquarter2,
-	EHeadquarter,
-	//single player only icons
-	EAmmoDepot,
-	EMineField,
-	EMachineGun,
-	ECanalization,
-	ETutorial,
-	ESecretEntrance,
-	EHitZone,
-	EHitZoneNK,
-	EAlienEnergySource,
-	EAlienEnergySourcePlus,
-	EPlaceholderForJuliensAutoTurrets,
-	ESecondaryObjective,
-	ELastType
+	None = 0,
+	Tank,
+	APC,
+	CivilCar,
+	Truck,
+	Hovercraft,
+	SpeedBoat,
+	PatrolBoat,
+	SmallBoat,
+	LTV,
+	Heli,
+	VTOL,
+	AAA,                 // should be AAA
+	SoundEffect,         // is empty, but we have neither Tank nor APC as an icon
+	NuclearWeapon,
+	TechCharger,
+	WayPoint,
+	Player,
+	TaggedEntity,
+	SpawnPoint,
+	FactoryAir,
+	FactoryTank,
+	FactoryPrototype,
+	FactoryVehicle,
+	FactorySea,
+	INVALID1,            // Base
+	Barracks,
+	SpawnTruck,
+	AmmoTruck,
+	Headquarter2,
+	Headquarter,
+	// single player only icons
+	AmmoDepot,
+	MineField,
+	MachineGun,
+	Canalization,
+	Tutorial,
+	SecretEntrance,
+	HitZone,
+	HitZoneNK,
+	AlienEnergySource,
+	AlienEnergySourcePlus,
+	PlaceholderForJuliensAutoTurrets,
+	SecondaryObjective,
+	LastType
+};
+
+enum class RadarIcon
+{
+	None = 0,
+	One,         // 1
+	Two,         // 2
+	Three,       // 3 (box cars)
+	Four,        // 4 (small round circle)
+	Five,        // 5
+	Six,         // 6 
+	Seven,       // 7 (mini yellow dot)
+	Eight,       // 8
+	Nine         // 9 (enemy yellow dot)
 };
 
 //factions on mini map

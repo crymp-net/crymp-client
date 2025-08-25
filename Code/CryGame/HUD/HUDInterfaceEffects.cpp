@@ -1005,9 +1005,9 @@ void CHUD::Targetting(EntityId pTargetEntity, bool bStatic)
 	{
 		bool vehicle = false;
 		CGameRules::SMinimapEntity mEntity = synchEntities[m];
-		FlashRadarType type = m_pHUDRadar->GetSynchedEntityType(mEntity.type);
+		MiniMapIcon type = m_pHUDRadar->GetSynchedEntityType(mEntity.type);
 		IEntity *pEntity = NULL;
-		if(type == ENuclearWeapon)
+		if(type == MiniMapIcon::NuclearWeapon)
 		{
 			if(IItem *pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(mEntity.entityId))
 			{
@@ -1096,14 +1096,14 @@ void CHUD::Targetting(EntityId pTargetEntity, bool bStatic)
 		if(pEntity)
 		{
 			int friendly = m_pHUDRadar->FriendOrFoe(gEnv->bMultiplayer, team, pEntity, m_pGameRules);
-			FlashRadarType type = m_pHUDRadar->ChooseType(pEntity);
+			MiniMapIcon type = m_pHUDRadar->ChooseMiniMapIcon(pEntity);
 			const bool pUnderAttack = IsUnderAttackFast(*it);
 			if(friendly==1 && pUnderAttack)
 			{
 				friendly = 3;
 				AddOnScreenMissionObjective(pEntity, friendly);
 			}
-			else if(HasTACWeapon() && (type == EHeadquarter || type == EHeadquarter2) && friendly == 2)
+			else if(HasTACWeapon() && (type == MiniMapIcon::Headquarter || type == MiniMapIcon::Headquarter2) && friendly == 2)
 			{
 				// Show TAC Target icon
 				AddOnScreenMissionObjective(pEntity, friendly);
@@ -1267,28 +1267,28 @@ bool CHUD::IsUnderAttack(IEntity *pEntity)
 
 void CHUD::AddOnScreenMissionObjective(IEntity *pEntity, int friendly)
 {
-	FlashRadarType type = m_pHUDRadar->ChooseType(pEntity);
-	if(type == EHeadquarter)
+	MiniMapIcon type = m_pHUDRadar->ChooseMiniMapIcon(pEntity);
+	if(type == MiniMapIcon::Headquarter)
 		if(HasTACWeapon() && friendly==2)
 			UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_HQTarget);
 		else
 			UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_HQKorean);
-	else if(type == EHeadquarter2)
+	else if(type == MiniMapIcon::Headquarter2)
 		if(HasTACWeapon() && friendly==2)
 			UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_HQTarget);
 		else
 			UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_HQUS);
-	else if(type == EFactoryTank)
+	else if(type == MiniMapIcon::FactoryTank)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_FactoryTank);
-	else if(type == EFactoryAir)
+	else if(type == MiniMapIcon::FactoryAir)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_FactoryAir);
-	else if(type == EFactorySea)
+	else if(type == MiniMapIcon::FactorySea)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_FactoryNaval);
-	else if(type == EFactoryVehicle)
+	else if(type == MiniMapIcon::FactoryVehicle)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_FactoryVehicle);
-	else if(type == EFactoryPrototype)
+	else if(type == MiniMapIcon::FactoryPrototype)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_FactoryPrototypes);
-	else if(type == EAlienEnergySource)
+	else if(type == MiniMapIcon::AlienEnergySource)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_AlienEnergyPoint);
 
 	else

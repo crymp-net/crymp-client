@@ -2802,13 +2802,13 @@ bool CHUD::ShowPDA(bool show, bool buyMenu)
 			ShowPDA(false, false);
 
 		// call listeners
-		FlashRadarType type = EFirstType;
+		MiniMapIcon type = MiniMapIcon::None;
 		if (m_pHUDPowerStruggle->m_currentBuyZones.size() > 0)
 		{
 			IEntity* pFactory = gEnv->pEntitySystem->GetEntity(m_pHUDPowerStruggle->m_currentBuyZones[0]);
 			if (pFactory)
 			{
-				type = m_pHUDRadar->ChooseType(pFactory);
+				type = m_pHUDRadar->ChooseMiniMapIcon(pFactory);
 			}
 		}
 
@@ -2853,7 +2853,7 @@ bool CHUD::ShowPDA(bool show, bool buyMenu)
 
 		if (!buyMenu)
 		{
-			m_pHUDRadar->SetRenderMapOverlay(true);
+			m_pHUDRadar->SetRenderMiniMap(true);
 			anim->Invoke("setDisconnect", (m_bNoMiniMap || m_pHUDRadar->GetJamming() > 0.5f) ? true : false);
 			if (m_pGameRules->GetTeamId("black") == m_pGameRules->GetTeam(m_pClientActor->GetEntityId()))
 				anim->SetVariable("PlayerTeam", SFlashVarValue("US"));
@@ -2907,7 +2907,7 @@ bool CHUD::ShowPDA(bool show, bool buyMenu)
 		else
 		{
 			m_animPDA.SetVisible(false);
-			m_pHUDRadar->SetRenderMapOverlay(false);
+			m_pHUDRadar->SetRenderMiniMap(false);
 			m_pHUDRadar->SetDrag(false);
 			m_bMiniMapZooming = false;
 		}
