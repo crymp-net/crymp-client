@@ -293,7 +293,7 @@ private:
 	IVehicleSystem *m_pVehicleSystem;
 	CHUD *m_pHUD = nullptr;
 	CGameRules* m_pGameRules = nullptr;
-	IActor* m_pClientActor = nullptr;
+	CPlayer* m_pClientActor = nullptr;
 
 	//helpers for Radar scanning
 	EntityId	m_lookAtObjectID;
