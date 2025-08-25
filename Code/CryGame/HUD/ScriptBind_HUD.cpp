@@ -311,7 +311,7 @@ int CScriptBind_HUD::RadarShowVehicleReady(IFunctionHandler* pH, ScriptHandle ve
 			pHUD->GetRadar()->ShowEntityTemporarily(pHUD->GetRadar()->ChooseRadarIcon(pEntity),
 				MiniMapIcon::WayPoint,
 				(EntityId)vehicleId.n,
-				20.0f  //CryMP: Originally only 1 second, now shows up correctly in radar as well as a waypoint icon in minimap
+				30.0f  //CryMP: Originally only 1 second, now shows up correctly in radar as well as a waypoint icon in minimap
 			);
 		}
 	}
