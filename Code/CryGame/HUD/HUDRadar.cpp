@@ -1922,11 +1922,18 @@ void CHUDRadar::RenderMiniMap()
 			}
 			if (addBuilding == true)
 			{
-				bool underAttack = false;
-				if (m_pHUD)
+				//bool underAttack = m_pHUD->IsUnderAttack(pEntity) && friendly == EFriend;
+				const CHUD::CaptureState state = m_pHUD->GetCaptureState(pEntity);
+				int color = 0; //hidden
+				if (state == CHUD::CaptureState::EnemyCapturing || state == CHUD::CaptureState::EnemyUncapturing)
 				{
-					underAttack = m_pHUD->IsUnderAttack(pEntity) && friendly == EFriend;
+					color = 1; //red
 				}
+				else if (state == CHUD::CaptureState::TeamCapturing || state == CHUD::CaptureState::TeamUncapturing)
+				{
+					color = 2; //blue
+				}
+				
 				m_possibleOnScreenObjectives.push_back(pEntity->GetId());
 				numOfValues += FillUpDoubleArray(&entityValues, 
 					pEntity->GetId(), 
@@ -1939,7 +1946,7 @@ void CHUDRadar::RenderMiniMap()
 					100, 
 					iOnScreenObjective == m_buildingsOnRadar[i].m_id, 
 					iCurrentSpawnPoint == m_buildingsOnRadar[i].m_id, 
-					underAttack
+					color
 				);
 			}
 		}
@@ -2397,7 +2404,18 @@ void CHUDRadar::RenderMiniMap()
 					}
 					else
 					{
-						bool underAttack = m_pHUD->IsUnderAttack(pEntity) && friendly == EFriend;
+						//bool underAttack = m_pHUD->IsUnderAttack(pEntity) && friendly == EFriend;
+						const CHUD::CaptureState state = m_pHUD->GetCaptureState(pEntity);
+						int color = 0; //hidden
+						if (state == CHUD::CaptureState::EnemyCapturing || state == CHUD::CaptureState::EnemyUncapturing)
+						{
+							color = 1; //red
+						}
+						else if (state == CHUD::CaptureState::TeamCapturing || state == CHUD::CaptureState::TeamUncapturing)
+						{
+							color = 2; //blue
+						}
+
 						if (friendly != 2)
 						{
 							numOfValues += FillUpDoubleArray(&entityValues,
@@ -2410,7 +2428,7 @@ void CHUDRadar::RenderMiniMap()
 								100,
 								100, iOnScreenObjective == locations[i], 
 								iCurrentSpawnPoint == locations[i],
-								underAttack
+								color
 							);
 							m_possibleOnScreenObjectives.push_back(pEntity->GetId());
 						}
@@ -2433,7 +2451,7 @@ void CHUDRadar::RenderMiniMap()
 										100, 
 										iOnScreenObjective == locations[i], 
 										iCurrentSpawnPoint == locations[i], 
-										underAttack
+										color
 									);
 									m_possibleOnScreenObjectives.push_back(pEntity->GetId());
 								}

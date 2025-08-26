@@ -1119,6 +1119,18 @@ end
 
 
 ----------------------------------------------------------------------------------------------------
+function PowerStruggle:GetTeamCapturing(buildingId)
+	return self.capturing[buildingId];
+end
+
+
+----------------------------------------------------------------------------------------------------
+function PowerStruggle:GetTeamUncapturing(buildingId)
+	return self.uncapturing[buildingId];
+end
+
+
+----------------------------------------------------------------------------------------------------
 function PowerStruggle:ResetCaptureProgress()
 	self.contested={};
 	self.uncapturing={};

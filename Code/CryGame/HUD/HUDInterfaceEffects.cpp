@@ -1265,6 +1265,48 @@ bool CHUD::IsUnderAttack(IEntity *pEntity)
 	return underAttack;
 }
 
+CHUD::CaptureState CHUD::GetCaptureState(IEntity* pEntity)
+{
+	const int localTeamId = m_pGameRules->GetTeam(m_pClientActor->GetEntityId());
+
+	IScriptTable* pScriptTable = m_pGameRules->GetEntity()->GetScriptTable();
+	if (!pScriptTable)
+		return CaptureState::None;
+
+	//Helper to call a Lua function that returns an int (teamId), given (scriptTable, buildingId)
+	auto callTeamFn = [&](const char* fnName, int& outTeam)->bool
+		{
+			outTeam = 0;
+			HSCRIPTFUNCTION fn = nullptr;
+			if (pScriptTable->GetValue(fnName, fn) && fn)
+			{
+				const bool ok = Script::CallReturn(gEnv->pScriptSystem, fn, pScriptTable, ScriptHandle(pEntity->GetId()), outTeam);
+				gEnv->pScriptSystem->ReleaseFunc(fn);
+				return ok;
+			}
+			return false;
+		};
+
+	int capturingTeam = 0;
+	int uncapturingTeam = 0;
+
+	callTeamFn("GetTeamCapturing", capturingTeam);
+	callTeamFn("GetTeamUncapturing", uncapturingTeam);
+
+	if (capturingTeam > 0)
+	{
+		return (capturingTeam == localTeamId) ? CaptureState::TeamCapturing
+			: CaptureState::EnemyCapturing;
+	}
+	if (uncapturingTeam > 0)
+	{
+		return (uncapturingTeam == localTeamId) ? CaptureState::TeamUncapturing
+			: CaptureState::EnemyUncapturing;
+	}
+
+	return CaptureState::None;
+}
+
 void CHUD::AddOnScreenMissionObjective(IEntity *pEntity, int friendly)
 {
 	MiniMapIcon type = m_pHUDRadar->ChooseMiniMapIcon(pEntity);

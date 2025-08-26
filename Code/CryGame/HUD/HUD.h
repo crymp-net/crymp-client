@@ -344,6 +344,15 @@ public:
 	void ResetScoreBoard();
   void SetVotingState(EVotingState state, int timeout, EntityId id, const char* descr);
 
+	enum class CaptureState
+	{
+		None,
+		TeamCapturing,
+		TeamUncapturing,
+		EnemyCapturing,
+		EnemyUncapturing
+	};
+
 	//RadioButtons & Chat
   	enum class RadioType
 	{
@@ -381,6 +390,7 @@ public:
 	void UpdateObjective(CHUDMissionObjective* pObjective);
 	void SetMainObjective(const char* objectiveKey, bool isGoal);
 	const char* GetMainObjective();
+	CaptureState GetCaptureState(IEntity* pEntity);
 	void AddOnScreenMissionObjective(IEntity *pEntity, int friendly);
 	void SetOnScreenObjective(EntityId pID);
 	EntityId GetOnScreenObjective() {return m_iOnScreenObjective; }
