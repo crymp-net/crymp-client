@@ -221,17 +221,10 @@ bool CHUDRadar::IsEntityOnTempRadar(const EntityId id)
 
 void CHUDRadar::ClearExpiredTempEntities(const float now)
 {
-	for (int t = 0; t < m_tempEntitiesOnRadar.size(); ++t)
-	{
-		const TempEntity& temp = m_tempEntitiesOnRadar[t];
-		float diffTime = now - temp.m_spawnTime;
-
-		if (diffTime > temp.m_timeLimit || diffTime < 0.0f)
-		{
-			m_tempEntitiesOnRadar.erase(m_tempEntitiesOnRadar.begin() + t);
-			--t;
-		}
-	}
+	std::erase_if(m_tempEntitiesOnRadar, [now](const TempEntity& entity) -> bool {
+		const float diffTime = now - entity.m_spawnTime;
+		return diffTime > entity.m_timeLimit || diffTime < 0.0f;
+	});
 }
 
 void CHUDRadar::AddStoryEntity(EntityId id, MiniMapIcon type /* = MiniMapIcon::WayPoint */, const char* text /* = nullptr */)
@@ -497,9 +490,8 @@ void CHUDRadar::Update(float fDeltaTime)
 	}
 
 	//temp units on radar
-	for (int t = 0; t < m_tempEntitiesOnRadar.size(); ++t)
+	for (const TempEntity& temp : m_tempEntitiesOnRadar)
 	{
-		const TempEntity& temp = m_tempEntitiesOnRadar[t];
 
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(temp.m_id);
 		if (pEntity && !pEntity->IsHidden())
@@ -3123,7 +3115,7 @@ void CHUDRadar::SetTeamMate(EntityId id, bool active)
 
 	if (it != m_teamMates.end())
 	{
-		m_teamMates.erase(std::remove(m_teamMates.begin(), m_teamMates.end(), id), m_teamMates.end());
+		std::erase(m_teamMates, id);
 	}
 }
 
