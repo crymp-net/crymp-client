@@ -2097,12 +2097,17 @@ void CHUDRadar::RenderMiniMap()
 			pTempActor = m_pActorSystem->GetActor(id);
 			if (pTempActor)
 			{
-				if (IVehicle* pVehicle = pTempActor->GetLinkedVehicle())
+				IVehicle* pVehicle = pTempActor->GetLinkedVehicle();
+				if (pVehicle && !pVehicle->IsDestroyed())
 				{
 					if (!stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false))
 					{
-						MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon != MiniMapIcon::None ? 
-							m_tempEntitiesOnRadar[e].m_miniMapIcon : ChooseMiniMapIcon(pVehicle->GetEntity());
+						MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon;
+
+						if (icon == MiniMapIcon::Player)
+						{
+							icon = ChooseMiniMapIcon(pVehicle->GetEntity());
+						}
 
 						GetPosOnMap(pVehicle->GetEntity(), fX, fY);
 						numOfValues += FillUpDoubleArray(&entityValues, 
