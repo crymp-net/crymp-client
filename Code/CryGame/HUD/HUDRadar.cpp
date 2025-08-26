@@ -2125,6 +2125,11 @@ void CHUDRadar::RenderMiniMap()
 					MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon != MiniMapIcon::None ?
 						m_tempEntitiesOnRadar[e].m_miniMapIcon : ChooseMiniMapIcon(pTempActor->GetEntity());
 
+					if (icon == MiniMapIcon::DeathSkull && static_cast<CActor*>(pTempActor)->GetPhysicsProfile() != eAP_Ragdoll)
+					{
+						continue;
+					}
+
 					GetPosOnMap(pTempActor->GetEntity(), fX, fY);
 					numOfValues += FillUpDoubleArray(&entityValues, 
 						pClientActor->GetEntityId(),
@@ -2471,17 +2476,25 @@ void CHUDRadar::RenderMiniMap()
 	//draw player position
 	if (!pClientActor->GetLinkedVehicle() && pClientActor->GetSpectatorMode() == CActor::eASM_None)
 	{
+		string name(pClientActor->GetEntity()->GetName());
+		int icon = (name.find("Quarantine", 0) != string::npos) ? static_cast<int>(MiniMapIcon::TechCharger) : static_cast<int>(MiniMapIcon::Player);
+		const int faction = ESelf;
+
+		if (pClientActor->GetPhysicsProfile() == eAP_Ragdoll)
+		{
+			icon = static_cast<int>(MiniMapIcon::DeathSkull);
+		}
+
 		GetPosOnMap(pClientActor->GetEntity(), fX, fY);
 		vPlayerPos.x = fX;
 		vPlayerPos.y = fY;
-		string name(pClientActor->GetEntity()->GetName());
-		numOfValues += FillUpDoubleArray(&entityValues, 
+		numOfValues += FillUpDoubleArray(&entityValues,
 			pClientActor->GetEntityId(),
-			(name.find("Quarantine", 0) != string::npos) ? static_cast<int>(MiniMapIcon::NuclearWeapon) : static_cast<int>(MiniMapIcon::Player),
+			icon,
 			fX, 
 			fY, 
 			270.0f - RAD2DEG(pClientActor->GetEntity()->GetWorldAngles().z),
-			ESelf, 
+			faction, 
 			100, 
 			100,
 			iOnScreenObjective == pClientActor->GetEntityId(),
