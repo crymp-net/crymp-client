@@ -107,8 +107,9 @@ void CScriptBind_HUD::RegisterMethods()
 
 	SCRIPT_REG_TEMPLFUNC(SetSilhouette, "entityId, r, g, b, duration");
 	SCRIPT_REG_TEMPLFUNC(ResetSilhouette, "entityId");
-
 	SCRIPT_REG_TEMPLFUNC(ShowTutorialText, "bShow, text");
+	SCRIPT_REG_TEMPLFUNC(SelectTeamMate, "entityId, active");
+	SCRIPT_REG_TEMPLFUNC(IsTeamMateSelected, "entityId");
 
 #undef SCRIPT_REG_CLASSNAME
 }
@@ -631,5 +632,27 @@ int CScriptBind_HUD::ShowTutorialText(IFunctionHandler* pH, bool show)
 			pHUD->ShowTutorialText(widetext.c_str(), true);
 		}
 	}
+	return pH->EndFunction();
+}
+
+int CScriptBind_HUD::SelectTeamMate(IFunctionHandler* pH, ScriptHandle entityId, bool active)
+{
+	CHUD* pHUD = g_pGame->GetHUD();
+	if (pHUD)
+	{
+		pHUD->GetRadar()->SelectTeamMate((EntityId)entityId.n, active);
+	}
+
+	return pH->EndFunction();
+}
+
+int CScriptBind_HUD::IsTeamMateSelected(IFunctionHandler* pH, ScriptHandle entityId)
+{
+	CHUD* pHUD = g_pGame->GetHUD();
+	if (pHUD)
+	{
+		return pH->EndFunction(pHUD->GetRadar()->IsTeamMateSelected((EntityId)entityId.n));
+	}
+
 	return pH->EndFunction();
 }

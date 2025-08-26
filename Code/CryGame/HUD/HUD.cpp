@@ -4371,6 +4371,130 @@ void CHUD::VehicleDestroyed(EntityId id)
 
 //-----------------------------------------------------------------------------------------------------
 
+void CHUD::OnNetKill(CActor* pVictim, CActor* pShooter, EntityId shooterId, const char* weaponClassName)
+{
+	if (!pVictim || !m_pGameRules)
+		return;
+
+	const EntityId victimId = pVictim->GetEntityId();
+	const bool victimIsClient = pVictim->IsClient();
+	const bool isFpSpectatorTarget = pVictim->IsFpSpectatorTarget();
+
+	const bool ranked =
+		(GetPlayerRank(shooterId) != 0) ||
+		(GetPlayerRank(victimId) != 0);
+
+	if (pShooter && victimIsClient && gEnv->bMultiplayer)
+	{
+		if (shooterId != victimId && !m_pGameRules->IsSameTeam(shooterId, victimId))
+		{
+			GetTagNames()->AddEnemyTagName(shooterId);
+		}
+	}
+
+	if (!victimIsClient)
+	{
+		//Show victim on minimap for 5 seconds
+		GetRadar()->ShowEntityTemporarily(RadarIcon::None, MiniMapIcon::DeathSkull, victimId, 5.0f);
+	}
+
+	if (!g_pGameCVars->mp_killMessages)
+		return;
+
+	if (victimIsClient)
+	{
+		if (!pShooter || shooterId == victimId)
+		{
+			BattleLogEvent(eBLE_Warning, "@mp_BLYouDied");
+		}
+		else
+		{
+			if (pShooter && ranked)
+			{
+				BattleLogEvent(eBLE_Warning, "@mp_BLKilledYouRank",
+					pShooter->GetEntity()->GetName(),
+					GetPlayerRank(shooterId, true));
+			}
+			else
+			{
+				BattleLogEvent(eBLE_Warning, "@mp_BLKilledYou",
+					pShooter ? pShooter->GetEntity()->GetName() : weaponClassName);
+			}
+		}
+	}
+	else
+	{
+		bool display = true;
+		const bool clientShooter = pShooter ? pShooter->IsClient() : false;
+
+		if (!clientShooter)
+		{
+			display = false;
+
+			if (IActor* pClientActor = g_pGame->GetIGameFramework()->GetClientActor())
+			{
+				const float distSq = (pClientActor->GetEntity()->GetWorldPos() - pVictim->GetEntity()->GetWorldPos()).len2();
+				if (distSq <= 40.0f * 40.0f)
+				{
+					display = true;
+				}
+			}
+		}
+
+		if (!display)
+			return;
+
+		if (clientShooter)
+		{
+			if (ranked)
+			{
+				BattleLogEvent(eBLE_Information, "@mp_BLYouKilledRank",
+					pVictim->GetEntity()->GetName(),
+					GetPlayerRank(victimId, true));
+			}
+			else
+			{
+				BattleLogEvent(eBLE_Information, "@mp_BLYouKilled",
+					pVictim->GetEntity()->GetName());
+			}
+		}
+		else if (pShooter && shooterId != victimId)
+		{
+			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(shooterId);
+			if (ranked)
+			{
+				BattleLogEvent(eBLE_Information, "@mp_BLPlayerKilledRank",
+					pEntity->GetName(),
+					GetPlayerRank(shooterId, true),
+					pVictim->GetEntity()->GetName(),
+					GetPlayerRank(victimId, true));
+			}
+			else
+			{
+				BattleLogEvent(eBLE_Information, "@mp_BLPlayerKilled",
+					pEntity->GetName(),
+					pVictim->GetEntity()->GetName());
+			}
+		}
+		else
+		{
+			if (ranked)
+			{
+				BattleLogEvent(eBLE_Information, "@mp_BLPlayerDiedRank",
+					pVictim->GetEntity()->GetName(),
+					GetPlayerRank(victimId, true));
+			}
+			else
+			{
+				BattleLogEvent(eBLE_Information, "@mp_BLPlayerDied",
+					pVictim->GetEntity()->GetName());
+			}
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------------------------------
+
 void CHUD::TextMessage(const char* message)
 {
 	if (!message)

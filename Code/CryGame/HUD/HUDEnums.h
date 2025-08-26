@@ -132,7 +132,7 @@ enum class MiniMapIcon // don't change order (unless you change the flash asset)
 	Headquarter,
 	// single player only icons
 	AmmoDepot,
-	MineField,
+	DeathSkull,
 	MachineGun,
 	Canalization,
 	Tutorial,

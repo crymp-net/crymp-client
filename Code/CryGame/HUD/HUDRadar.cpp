@@ -219,6 +219,14 @@ bool CHUDRadar::IsEntityOnTempRadar(const EntityId id)
 	return false;
 }
 
+void CHUDRadar::ClearExpiredTempEntities(const float now)
+{
+	std::erase_if(m_tempEntitiesOnRadar, [now](const TempEntity& entity) -> bool {
+		const float diffTime = now - entity.m_spawnTime;
+		return diffTime > entity.m_timeLimit || diffTime < 0.0f;
+	});
+}
+
 void CHUDRadar::AddStoryEntity(EntityId id, MiniMapIcon type /* = MiniMapIcon::WayPoint */, const char* text /* = nullptr */)
 {
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
@@ -350,6 +358,9 @@ void CHUDRadar::Update(float fDeltaTime)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
+	const float now = gEnv->pTimer->GetFrameStartTime().GetSeconds();
+	ClearExpiredTempEntities(now);
+
 	if (!m_flashRadar)
 		return; //we require the flash radar now
 
@@ -371,7 +382,6 @@ void CHUDRadar::Update(float fDeltaTime)
 	ArrayFillHelper<double, FVAT_Double, NUM_ARRAY_FILL_HELPER_SIZE> entityValues(m_flashRadar->GetFlashPlayer(), "m_allValues");
 	int numOfValues = 0;
 
-	float now = gEnv->pTimer->GetFrameStartTime().GetSeconds();
 	float fRadius = fRadarDefaultRadius;
 	if (m_mapRadarRadius[m_mapId] > 2)
 		fRadius = (float)m_mapRadarRadius[m_mapId];
@@ -480,16 +490,8 @@ void CHUDRadar::Update(float fDeltaTime)
 	}
 
 	//temp units on radar
-	for (int t = 0; t < m_tempEntitiesOnRadar.size(); ++t)
+	for (const TempEntity& temp : m_tempEntitiesOnRadar)
 	{
-		TempEntity temp = m_tempEntitiesOnRadar[t];
-		float diffTime = now - temp.m_spawnTime;
-		if (diffTime > temp.m_timeLimit || diffTime < 0.0f)
-		{
-			m_tempEntitiesOnRadar.erase(m_tempEntitiesOnRadar.begin() + t);
-			--t;
-			continue;
-		}
 
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(temp.m_id);
 		if (pEntity && !pEntity->IsHidden())
@@ -2094,12 +2096,17 @@ void CHUDRadar::RenderMiniMap()
 			pTempActor = m_pActorSystem->GetActor(id);
 			if (pTempActor)
 			{
-				if (IVehicle* pVehicle = pTempActor->GetLinkedVehicle())
+				IVehicle* pVehicle = pTempActor->GetLinkedVehicle();
+				if (pVehicle && !pVehicle->IsDestroyed())
 				{
 					if (!stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false))
 					{
-						MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon != MiniMapIcon::None ? 
-							m_tempEntitiesOnRadar[e].m_miniMapIcon : ChooseMiniMapIcon(pVehicle->GetEntity());
+						MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon;
+
+						if (icon == MiniMapIcon::Player)
+						{
+							icon = ChooseMiniMapIcon(pVehicle->GetEntity());
+						}
 
 						GetPosOnMap(pVehicle->GetEntity(), fX, fY);
 						numOfValues += FillUpDoubleArray(&entityValues, 
@@ -2121,6 +2128,11 @@ void CHUDRadar::RenderMiniMap()
 				{
 					MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon != MiniMapIcon::None ?
 						m_tempEntitiesOnRadar[e].m_miniMapIcon : ChooseMiniMapIcon(pTempActor->GetEntity());
+
+					if (icon == MiniMapIcon::DeathSkull && static_cast<CActor*>(pTempActor)->GetPhysicsProfile() != eAP_Ragdoll)
+					{
+						continue;
+					}
 
 					GetPosOnMap(pTempActor->GetEntity(), fX, fY);
 					numOfValues += FillUpDoubleArray(&entityValues, 
@@ -2191,11 +2203,9 @@ void CHUDRadar::RenderMiniMap()
 
 	//draw position of teammates ...
 	{
-		std::vector<EntityId>::const_iterator it = m_teamMates.begin();
-		std::vector<EntityId>::const_iterator end = m_teamMates.end();
-		for (;it != end; ++it)
+		for (const EntityId id : m_teamMates)
 		{
-			pTempActor = m_pActorSystem->GetActor(*it);
+			pTempActor = m_pActorSystem->GetActor(id);
 			if (pTempActor && pTempActor != pClientActor)
 			{
 				if (IVehicle* pVehicle = pTempActor->GetLinkedVehicle())
@@ -2204,7 +2214,7 @@ void CHUDRadar::RenderMiniMap()
 					{
 						GetPosOnMap(pVehicle->GetEntity(), fX, fY);
 						numOfValues += FillUpDoubleArray(&entityValues, 
-							pVehicle->GetEntityId(), 
+							pTempActor->GetEntityId(),
 							static_cast<int>(ChooseMiniMapIcon(pVehicle->GetEntity())),
 							fX, 
 							fY, 
@@ -2216,6 +2226,14 @@ void CHUDRadar::RenderMiniMap()
 							iCurrentSpawnPoint == pVehicle->GetEntityId()
 						);
 						drawnVehicles[pVehicle->GetEntityId()] = true;
+					}
+					//draw teammate name if selected
+					if (gEnv->bMultiplayer)
+					{
+						if (IsTeamMateSelected(id))
+						{
+							textOnMap[id] = pTempActor->GetEntity()->GetName();
+						}
 					}
 				}
 				else
@@ -2241,14 +2259,9 @@ void CHUDRadar::RenderMiniMap()
 						//draw teammate name if selected
 						if (gEnv->bMultiplayer)
 						{
-							EntityId id = pTempActor->GetEntityId();
-							for (int i = 0; i < m_selectedTeamMates.size(); ++i)
+							if (IsTeamMateSelected(id))
 							{
-								if (m_selectedTeamMates[i] == id)
-								{
-									textOnMap[id] = pTempActor->GetEntity()->GetName();
-									break;
-								}
+								textOnMap[id] = pTempActor->GetEntity()->GetName();
 							}
 						}
 					}
@@ -2464,20 +2477,27 @@ void CHUDRadar::RenderMiniMap()
 	}
 
 	//draw player position
-
-	if (!pClientActor->GetLinkedVehicle())
+	if (!pClientActor->GetLinkedVehicle() && pClientActor->GetSpectatorMode() == CActor::eASM_None)
 	{
+		string name(pClientActor->GetEntity()->GetName());
+		int icon = (name.find("Quarantine", 0) != string::npos) ? static_cast<int>(MiniMapIcon::TechCharger) : static_cast<int>(MiniMapIcon::Player);
+		const int faction = ESelf;
+
+		if (pClientActor->GetPhysicsProfile() == eAP_Ragdoll)
+		{
+			icon = static_cast<int>(MiniMapIcon::DeathSkull);
+		}
+
 		GetPosOnMap(pClientActor->GetEntity(), fX, fY);
 		vPlayerPos.x = fX;
 		vPlayerPos.y = fY;
-		string name(pClientActor->GetEntity()->GetName());
-		numOfValues += FillUpDoubleArray(&entityValues, 
+		numOfValues += FillUpDoubleArray(&entityValues,
 			pClientActor->GetEntityId(),
-			(name.find("Quarantine", 0) != string::npos) ? static_cast<int>(MiniMapIcon::NuclearWeapon) : static_cast<int>(MiniMapIcon::Player),
+			icon,
 			fX, 
 			fY, 
 			270.0f - RAD2DEG(pClientActor->GetEntity()->GetWorldAngles().z),
-			ESelf, 
+			faction, 
 			100, 
 			100,
 			iOnScreenObjective == pClientActor->GetEntityId(),
@@ -2514,9 +2534,6 @@ void CHUDRadar::RenderMiniMap()
 	}
 
 	ComputePositioning(vPlayerPos, &entityValues);
-
-	//tell flash file that we are done ...
-	//m_flashMap->Invoke("updateObjects", "");
 
 	if (entityValues.size())
 		m_flashMap->GetFlashPlayer()->SetVariableArray(FVAT_Double, 
@@ -3100,53 +3117,48 @@ void CHUDRadar::GetMemoryStatistics(ICrySizer* s)
 
 void CHUDRadar::SetTeamMate(EntityId id, bool active)
 {
-	bool found = false;
+	const std::vector<EntityId>::iterator it = std::find(m_teamMates.begin(), m_teamMates.end(), id);
 
-	std::vector<EntityId>::iterator it = m_teamMates.begin();
-	for (; it != m_teamMates.end(); ++it)
+	if (active)
 	{
-		if (*it == id)
-		{
-			if (!active)
-			{
-				m_teamMates.erase(it);
-				return;
-			}
+		if (it != m_teamMates.end())
+			return;
 
-			found = true;
-			break;
+		if (IActor* pActor = m_pActorSystem->GetActor(id))
+		{
+			m_teamMates.push_back(id);
 		}
+		return;
 	}
 
-	if (!found && active)
-		if (IActor* pActor = m_pActorSystem->GetActor(id))
-			m_teamMates.push_back(id);
+	if (it != m_teamMates.end())
+	{
+		std::erase(m_teamMates, id);
+	}
 }
 
 void CHUDRadar::SelectTeamMate(EntityId id, bool active)
 {
-	bool found = false;
-	std::vector<EntityId>::iterator it = m_selectedTeamMates.begin();
-	for (; it != m_selectedTeamMates.end(); ++it)
+	if (active)
 	{
-		if (*it == id)
+		if (!IsTeamMateSelected(id))
 		{
-			if (!active)
+			if (m_pActorSystem->GetActor(id))
 			{
-				m_selectedTeamMates.erase(it);
-				return;
-			}
-			else
-			{
-				found = true;
-				break;
+				m_selectedTeamMates.push_back(id);
 			}
 		}
+		return;
 	}
 
-	if (!found)
-		if (IActor* pActor = m_pActorSystem->GetActor(id))
-			m_selectedTeamMates.push_back(id);
+	std::erase(m_selectedTeamMates, id);
+}
+
+bool CHUDRadar::IsTeamMateSelected(EntityId id) const noexcept
+{
+	return std::find(m_selectedTeamMates.begin(),
+		m_selectedTeamMates.end(), id)
+		!= m_selectedTeamMates.end();
 }
 
 void CHUDRadar::ScanProximity(Vec3& pos, float& radius)

@@ -134,6 +134,7 @@ public:
 	void ActorDeath(IActor* pActor);
 	void ActorRevive(IActor* pActor, EntityId vehicleId = 0);
 	void VehicleDestroyed(EntityId id);
+	void OnNetKill(CActor* pVictim, CActor* pShooter, EntityId shooterId, const char* weaponClassName);
 	void TextMessage(const char* message);
 
 	void SetSpectatorMode(int mode, EntityId old, EntityId targetId);
