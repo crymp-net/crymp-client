@@ -168,6 +168,7 @@ public:
 	void SetTeamMate(EntityId id, bool active);
 	//add/remove team mate name from miniMap (mainly for multiplayer)
 	void SelectTeamMate(EntityId id, bool active);
+	bool IsTeamMateSelected(EntityId id) const noexcept;
 	//sets a jamming entity (just using position) - set id == 0 to disable
 	void SetJammer(EntityId id, float radius = 0.0f);
 	//return jamming amount

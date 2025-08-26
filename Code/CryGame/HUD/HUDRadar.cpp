@@ -2204,11 +2204,9 @@ void CHUDRadar::RenderMiniMap()
 
 	//draw position of teammates ...
 	{
-		std::vector<EntityId>::const_iterator it = m_teamMates.begin();
-		std::vector<EntityId>::const_iterator end = m_teamMates.end();
-		for (;it != end; ++it)
+		for (const EntityId id : m_teamMates)
 		{
-			pTempActor = m_pActorSystem->GetActor(*it);
+			pTempActor = m_pActorSystem->GetActor(id);
 			if (pTempActor && pTempActor != pClientActor)
 			{
 				if (IVehicle* pVehicle = pTempActor->GetLinkedVehicle())
@@ -2233,14 +2231,9 @@ void CHUDRadar::RenderMiniMap()
 					//draw teammate name if selected
 					if (gEnv->bMultiplayer)
 					{
-						EntityId id = pTempActor->GetEntityId();
-						for (int i = 0; i < m_selectedTeamMates.size(); ++i)
+						if (IsTeamMateSelected(id))
 						{
-							if (m_selectedTeamMates[i] == id)
-							{
-								textOnMap[id] = pTempActor->GetEntity()->GetName();
-								break;
-							}
+							textOnMap[id] = pTempActor->GetEntity()->GetName();
 						}
 					}
 				}
@@ -2267,14 +2260,9 @@ void CHUDRadar::RenderMiniMap()
 						//draw teammate name if selected
 						if (gEnv->bMultiplayer)
 						{
-							EntityId id = pTempActor->GetEntityId();
-							for (int i = 0; i < m_selectedTeamMates.size(); ++i)
+							if (IsTeamMateSelected(id))
 							{
-								if (m_selectedTeamMates[i] == id)
-								{
-									textOnMap[id] = pTempActor->GetEntity()->GetName();
-									break;
-								}
+								textOnMap[id] = pTempActor->GetEntity()->GetName();
 							}
 						}
 					}
@@ -3119,53 +3107,48 @@ void CHUDRadar::GetMemoryStatistics(ICrySizer* s)
 
 void CHUDRadar::SetTeamMate(EntityId id, bool active)
 {
-	bool found = false;
+	const std::vector<EntityId>::iterator it = std::find(m_teamMates.begin(), m_teamMates.end(), id);
 
-	std::vector<EntityId>::iterator it = m_teamMates.begin();
-	for (; it != m_teamMates.end(); ++it)
+	if (active)
 	{
-		if (*it == id)
-		{
-			if (!active)
-			{
-				m_teamMates.erase(it);
-				return;
-			}
+		if (it != m_teamMates.end())
+			return;
 
-			found = true;
-			break;
+		if (IActor* pActor = m_pActorSystem->GetActor(id))
+		{
+			m_teamMates.push_back(id);
 		}
+		return;
 	}
 
-	if (!found && active)
-		if (IActor* pActor = m_pActorSystem->GetActor(id))
-			m_teamMates.push_back(id);
+	if (it != m_teamMates.end())
+	{
+		m_teamMates.erase(std::remove(m_teamMates.begin(), m_teamMates.end(), id), m_teamMates.end());
+	}
 }
 
 void CHUDRadar::SelectTeamMate(EntityId id, bool active)
 {
-	bool found = false;
-	std::vector<EntityId>::iterator it = m_selectedTeamMates.begin();
-	for (; it != m_selectedTeamMates.end(); ++it)
+	if (active)
 	{
-		if (*it == id)
+		if (!IsTeamMateSelected(id))
 		{
-			if (!active)
+			if (m_pActorSystem->GetActor(id))
 			{
-				m_selectedTeamMates.erase(it);
-				return;
-			}
-			else
-			{
-				found = true;
-				break;
+				m_selectedTeamMates.push_back(id);
 			}
 		}
+		return;
 	}
 
-	if (!found)
-		if (IActor* pActor = m_pActorSystem->GetActor(id))
-			m_selectedTeamMates.push_back(id);
+	std::erase(m_selectedTeamMates, id);
+}
+
+bool CHUDRadar::IsTeamMateSelected(EntityId id) const noexcept
+{
+	return std::find(m_selectedTeamMates.begin(),
+		m_selectedTeamMates.end(), id)
+		!= m_selectedTeamMates.end();
 }
 
 void CHUDRadar::ScanProximity(Vec3& pos, float& radius)
