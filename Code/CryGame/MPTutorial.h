@@ -179,7 +179,7 @@ public:
 	~CMPTutorial();
 
 	// IHUDListener
-	virtual void OnBuyMenuOpen(bool open, FlashRadarType buyZoneType);
+	virtual void OnBuyMenuOpen(bool open, MiniMapIcon buyZoneType);
 	virtual void OnMapOpen(bool open);
 	virtual void OnEntityAddedToRadar(EntityId id);
 	virtual void OnShowBuyMenuPage(int page);

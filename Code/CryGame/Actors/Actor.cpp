@@ -3777,7 +3777,6 @@ void CActor::NetKill(EntityId shooterId, uint16 weaponClassId, int damage, int m
 	m_pGameFramework->GetNetworkSafeClassName(weaponClassName, 128, weaponClassId);
 
 	CGameRules* pGameRules = g_pGame->GetGameRules();
-
 	pGameRules->OnKill(this, shooterId, weaponClassName, damage, material, hit_type);
 
 	m_netLastSelectablePickedUp = 0;
@@ -3789,34 +3788,18 @@ void CActor::NetKill(EntityId shooterId, uint16 weaponClassId, int damage, int m
 
 	pGameRules->OnKillMessage(GetEntityId(), shooterId, weaponClassName, damage, material, hit_type);
 
-	CHUD* pHUD = g_pGame->GetHUD();
-	if (!pHUD)
-		return;
-
 	CActor* pShooter = shooterId ? GetActor(shooterId) : nullptr;
-
-	const bool ranked = pHUD->GetPlayerRank(shooterId) != 0 || pHUD->GetPlayerRank(GetEntityId()) != 0;
 
 	if ((IsClient() || IsFpSpectatorTarget()) && gEnv->bMultiplayer)
 	{
-		// use the spectator target to store who killed us (used for the MP death cam - not quite spectator mode but similar...).
 		if (pShooter)
 		{
 			if (g_pGameCVars->g_deathCam && shooterId != GetEntityId())
 			{
-				//CryMP: new function to not cause any confusion, and possible bugs
 				SetDeathCamTarget(shooterId);
 			}
-
 			if (!IsFpSpectatorTarget())
 			{
-				// Also display the name of the enemy who shot you...
-				if (shooterId != GetEntityId() && !pGameRules->IsSameTeam(shooterId, GetEntityId()))
-				{
-					SAFE_HUD_FUNC(GetTagNames()->AddEnemyTagName(shooterId));
-				}
-
-				// ensure full body is displayed (otherwise player is headless)
 				if (CPlayer* pPlayer = CPlayer::FromActor(this))
 				{
 					pPlayer->EnableThirdPerson(true);
@@ -3825,64 +3808,11 @@ void CActor::NetKill(EntityId shooterId, uint16 weaponClassId, int damage, int m
 		}
 	}
 
-	if (!g_pGameCVars->mp_killMessages)
-		return;
 
-	if (IsClient())
+	CHUD* pHUD = g_pGame->GetHUD();
+	if (pHUD)
 	{
-		if (!pShooter || shooterId == GetEntityId())
-			pHUD->BattleLogEvent(eBLE_Warning, "@mp_BLYouDied");
-		else if (pGameRules)
-		{
-			if (pShooter && ranked)
-				pHUD->BattleLogEvent(eBLE_Warning, "@mp_BLKilledYouRank", pShooter->GetEntity()->GetName(), pHUD->GetPlayerRank(shooterId, true));
-			else
-				pHUD->BattleLogEvent(eBLE_Warning, "@mp_BLKilledYou", pShooter ? pShooter->GetEntity()->GetName() : weaponClassName);
-		}
-	}
-	else
-	{
-		bool display = true;
-		const bool clientShooter = pShooter ? pShooter->IsClient() : false;
-
-		if (!clientShooter)
-		{
-			display = false;
-
-			IActor* pClientActor = m_pGameFramework->GetClientActor();
-			if (pClientActor)
-			{
-				float distSq = (pClientActor->GetEntity()->GetWorldPos() - GetEntity()->GetWorldPos()).len2();
-				if (distSq <= 40.0f * 40.0f)
-					display = true;
-			}
-		}
-
-		if (display)
-		{
-			if (clientShooter)
-			{
-				if (ranked)
-					pHUD->BattleLogEvent(eBLE_Information, "@mp_BLYouKilledRank", GetEntity()->GetName(), pHUD->GetPlayerRank(GetEntityId(), true));
-				else
-					pHUD->BattleLogEvent(eBLE_Information, "@mp_BLYouKilled", GetEntity()->GetName());
-			}
-			else if (pShooter && shooterId != GetEntityId())
-			{
-				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(shooterId);
-				if (ranked)
-					pHUD->BattleLogEvent(eBLE_Information, "@mp_BLPlayerKilledRank", pEntity->GetName(), pHUD->GetPlayerRank(shooterId, true), GetEntity()->GetName(), pHUD->GetPlayerRank(GetEntityId(), true));
-				else
-					pHUD->BattleLogEvent(eBLE_Information, "@mp_BLPlayerKilled", pEntity->GetName(), GetEntity()->GetName());
-			}
-			else
-			{
-				if (ranked)
-					pHUD->BattleLogEvent(eBLE_Information, "@mp_BLPlayerDiedRank", GetEntity()->GetName(), pHUD->GetPlayerRank(GetEntityId(), true));
-				else
-					pHUD->BattleLogEvent(eBLE_Information, "@mp_BLPlayerDied", GetEntity()->GetName());
-			}
-		}
+		pHUD->OnNetKill(this, pShooter, shooterId, weaponClassName);
 	}
 }
 

@@ -95,6 +95,8 @@ IEntityClass* CItem::sUS_apc = 0;
 IEntityClass* CItem::sUS_tank = 0;
 IEntityClass* CItem::sUS_trolley = 0;
 IEntityClass* CItem::sUS_vtol = 0;
+IEntityClass* CItem::sAutoTurret = 0;
+IEntityClass* CItem::sAutoTurretAA = 0;
 
 //------------------------------------------------------------------------
 CItem::CItem()
@@ -267,6 +269,8 @@ bool CItem::Init(IGameObject* pGameObject)
 		sUS_tank = pRegistry->FindClass("US_tank");
 		sUS_trolley = pRegistry->FindClass("US_trolley");
 		sUS_vtol = pRegistry->FindClass("US_vtol");
+		sAutoTurret = pRegistry->FindClass("AutoTurret");
+		sAutoTurretAA = pRegistry->FindClass("AutoTurretAA");
 	}
 
 	if (!GetGameObject()->CaptureProfileManager(this))

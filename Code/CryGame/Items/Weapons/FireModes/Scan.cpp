@@ -25,8 +25,6 @@ History:
 
 //------------------------------------------------------------------------
 CScan::CScan()
-:	m_scanning(false),
-	m_scanLoopId(INVALID_SOUNDID)
 {
 }
 
@@ -81,11 +79,7 @@ void CScan::Activate(bool activate)
 
 	KillTimers();
 
-	if (m_scanLoopId != INVALID_SOUNDID)
-	{
-		m_pWeapon->StopSound(m_scanLoopId);
-		m_scanLoopId = INVALID_SOUNDID;
-	}
+	StopScanSound();
 }
 
 //------------------------------------------------------------------------
@@ -105,9 +99,11 @@ struct CScan::DelayTimer
 		int slot = pWeapon->GetStats().fp ? CItem::eIGS_FirstPerson : CItem::eIGS_ThirdPerson;
 		int id = pWeapon->GetStats().fp ? 0 : 1;
 
-		pScan->m_scanLoopId = pWeapon->PlayAction(pScan->m_scanactions.scan, 0, true, CItem::eIPAF_Default | CItem::eIPAF_CleanBlending);
+		pScan->StopScanSound();
 
-		ISound* pSound = pWeapon->GetSoundProxy()->GetSound(pScan->m_scanLoopId);
+		pScan->m_scanSoundId = pWeapon->PlayAction(pScan->m_scanactions.scan, 0, true, CItem::eIPAF_Default | CItem::eIPAF_CleanBlending);
+
+		ISound* pSound = pWeapon->GetSoundProxy()->GetSound(pScan->m_scanSoundId);
 		if (pSound)
 		{
 			pSound->SetLoopMode(true);
@@ -215,7 +211,7 @@ void CScan::StartFire()
 		{
 			m_scanning=true;
 
-			if (m_pWeapon->IsClient() && (pOwner->IsClient() || pOwner->IsFpSpectatorTarget()))
+			if (m_pWeapon->IsClient() && pOwner->IsClient())
 			{
 				ShowFlashAnimation(true);
 
@@ -247,11 +243,7 @@ void CScan::StopFire()
 
 	KillTimers();
 
-	if (m_scanLoopId != INVALID_SOUNDID)
-	{
-		m_pWeapon->StopSound(m_scanLoopId);
-		m_scanLoopId = INVALID_SOUNDID;
-	}
+	StopScanSound();
 }
 
 //------------------------------------------------------------------------
@@ -271,11 +263,12 @@ void CScan::NetStartFire()
 
 			m_pWeapon->PlayAction(m_scanactions.spin_up, 0, false, CItem::eIPAF_Default | CItem::eIPAF_CleanBlending);
 		}
-		else
-		{
-			m_scanLoopId = m_pWeapon->PlayAction(m_scanactions.scan);
-		}
-		ISound* pSound = m_pWeapon->GetSoundProxy()->GetSound(m_scanLoopId);
+
+		StopScanSound();
+
+		m_scanSoundId = m_pWeapon->PlayAction(m_scanactions.scan);
+
+		ISound* pSound = m_pWeapon->GetSoundProxy()->GetSound(m_scanSoundId);
 		if (pSound)
 		{
 			pSound->SetLoopMode(true);
@@ -289,11 +282,7 @@ void CScan::NetStopFire()
 	if (!m_pWeapon->IsClient())
 		return;
 
-	if (m_scanLoopId != INVALID_SOUNDID)
-	{
-		m_pWeapon->StopSound(m_scanLoopId);
-		m_scanLoopId = INVALID_SOUNDID;
-	}
+	StopScanSound();
 
 	m_scanning = false;
 
@@ -376,17 +365,13 @@ void CScan::OnEnterFirstPerson()
 
 	ShowFlashAnimation(true);
 
-	if (m_scanLoopId != INVALID_SOUNDID)
-	{
-		m_pWeapon->StopSound(m_scanLoopId);
-		m_scanLoopId = INVALID_SOUNDID;
-	}
+	StopScanSound();
 
 	//CryMP: We might not be First person untill next frame, so need to force FP with flag
-	m_scanLoopId = m_pWeapon->PlayAction(m_scanactions.scan, 0, true, 
+	m_scanSoundId = m_pWeapon->PlayAction(m_scanactions.scan, 0, true, 
 		CItem::eIPAF_ForceFirstPerson | CItem::eIPAF_Default | CItem::eIPAF_CleanBlending);
 
-	ISound* pSound = m_pWeapon->GetSoundProxy()->GetSound(m_scanLoopId);
+	ISound* pSound = m_pWeapon->GetSoundProxy()->GetSound(m_scanSoundId);
 	if (pSound)
 	{
 		pSound->SetLoopMode(true);
@@ -401,19 +386,25 @@ void CScan::OnEnterThirdPerson()
 
 	ShowFlashAnimation(false);
 
-	if (m_scanLoopId != INVALID_SOUNDID)
-	{
-		m_pWeapon->StopSound(m_scanLoopId);
-		m_scanLoopId = INVALID_SOUNDID;
-	}
+	StopScanSound();
 
-	m_scanLoopId = m_pWeapon->PlayAction(m_scanactions.scan, 0, true, 
+	m_scanSoundId = m_pWeapon->PlayAction(m_scanactions.scan, 0, true, 
 		CItem::eIPAF_ForceThirdPerson | CItem::eIPAF_Default | CItem::eIPAF_CleanBlending);
 
-	ISound* pSound = m_pWeapon->GetSoundProxy()->GetSound(m_scanLoopId);
+	ISound* pSound = m_pWeapon->GetSoundProxy()->GetSound(m_scanSoundId);
 	if (pSound)
 	{
 		pSound->SetLoopMode(true);
+	}
+}
+
+//------------------------------------------------------------------------
+void CScan::StopScanSound()
+{
+	if (m_scanSoundId != INVALID_SOUNDID)
+	{
+		m_pWeapon->StopSound(m_scanSoundId);
+		m_scanSoundId = INVALID_SOUNDID;
 	}
 }
 

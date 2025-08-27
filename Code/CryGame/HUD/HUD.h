@@ -134,6 +134,7 @@ public:
 	void ActorDeath(IActor* pActor);
 	void ActorRevive(IActor* pActor, EntityId vehicleId = 0);
 	void VehicleDestroyed(EntityId id);
+	void OnNetKill(CActor* pVictim, CActor* pShooter, EntityId shooterId, const char* weaponClassName);
 	void TextMessage(const char* message);
 
 	void SetSpectatorMode(int mode, EntityId old, EntityId targetId);
@@ -344,6 +345,15 @@ public:
 	void ResetScoreBoard();
   void SetVotingState(EVotingState state, int timeout, EntityId id, const char* descr);
 
+	enum class CaptureState
+	{
+		None,
+		TeamCapturing,
+		TeamUncapturing,
+		EnemyCapturing,
+		EnemyUncapturing
+	};
+
 	//RadioButtons & Chat
   	enum class RadioType
 	{
@@ -381,6 +391,7 @@ public:
 	void UpdateObjective(CHUDMissionObjective* pObjective);
 	void SetMainObjective(const char* objectiveKey, bool isGoal);
 	const char* GetMainObjective();
+	CaptureState GetCaptureState(IEntity* pEntity);
 	void AddOnScreenMissionObjective(IEntity *pEntity, int friendly);
 	void SetOnScreenObjective(EntityId pID);
 	EntityId GetOnScreenObjective() {return m_iOnScreenObjective; }
@@ -492,7 +503,7 @@ public:
 		virtual void OnEntityAddedToRadar(EntityId entityId) {};
 
 		// SNH: adding these for PowerStruggle tutorial
-		virtual void OnBuyMenuOpen(bool open, FlashRadarType buyZoneType) {};
+		virtual void OnBuyMenuOpen(bool open, MiniMapIcon buyZoneType) {};
 		virtual void OnMapOpen(bool open) {};
 		virtual void OnBuyMenuItemHover(const char* itemname) {};
 		virtual void OnShowBuyMenuPage(int page) {};

@@ -28,6 +28,8 @@ History:
 #include "WeaponSystem.h"
 #include "Projectile.h"
 #include "CryGame/Actors/Player/Player.h"
+#include "CryGame/HUD/HUD.h"
+#include "CryGame/HUD/HUDRadar.h"
 
 
 namespace
@@ -123,8 +125,7 @@ void CGunTurret::PostInit(IGameObject* pGameObject)
 {
 	CItem::PostInit(pGameObject);
 
-	if (gEnv->bServer)
-		UpdateEntityProperties();
+	UpdateEntityProperties();
 
 	SetOwnerId(GetEntityId());
 
@@ -679,7 +680,7 @@ CGunTurret::ETargetClass CGunTurret::GetTargetClass(IEntity* pTarget)const
 }
 
 //------------------------------------------------------------------------
-bool CGunTurret::IsInRange(const Vec3& pos, ETargetClass cl)const
+bool CGunTurret::IsInRange(const Vec3& pos, ETargetClass cl) const
 {
 	float r = m_turretparams.mg_range;
 	switch (cl)
@@ -688,7 +689,7 @@ bool CGunTurret::IsInRange(const Vec3& pos, ETargetClass cl)const
 		r = m_turretparams.mg_range;
 		break;
 	case eTC_Vehicle:
-		r = MAX(m_turretparams.mg_range, m_turretparams.rocket_range);
+		r = std::max(m_turretparams.mg_range, m_turretparams.rocket_range);
 		break;
 	case eTC_TACProjectile:
 		r = m_turretparams.tac_range;
@@ -1185,7 +1186,10 @@ void CGunTurret::UpdateOrientation(float deltaTime)
 		Interp(turretAngles.z, m_goalYaw, speed, deltaTime, 0.25 * speed);
 
 		if (m_turretSound == INVALID_SOUNDID && gEnv->bClient)
+		{
 			m_turretSound = PlayAction(g_pItemStrings->turret);
+			OnTurretAggressive(true);
+		}
 		changed = true;
 	}
 	else if (m_turretSound != INVALID_SOUNDID)
@@ -1391,6 +1395,11 @@ void CGunTurret::StartFire(bool sec)
 		m_fm2->StartFire();
 
 	m_fireHint = 1;
+
+	if (gEnv->bClient)
+	{
+		OnTurretAggressive();
+	}
 }
 
 //------------------------------------------------------------------------
@@ -1678,21 +1687,37 @@ void CGunTurret::ServerUpdate(SEntityUpdateContext& ctx, int update)
 //------------------------------------------------------------------------
 void CGunTurret::UpdateEntityProperties()
 {
-	bool enabled = m_turretparams.enabled;
-	GetEntityProperty("GunTurret", "bEnabled", m_turretparams.enabled);
-	if (enabled != m_turretparams.enabled)
+	if (gEnv->bServer)
 	{
-		Activate(m_turretparams.enabled);
-		GetGameObject()->ChangedNetworkState(ASPECT_STATEBITS);
+		bool enabled = m_turretparams.enabled;
+		GetEntityProperty("GunTurret", "bEnabled", m_turretparams.enabled);
+		if (enabled != m_turretparams.enabled)
+		{
+			Activate(m_turretparams.enabled);
+			GetGameObject()->ChangedNetworkState(ASPECT_STATEBITS);
+		}
+
+		GetEntityProperty("GunTurret", "bSearching", m_turretparams.searching);
+		GetEntityProperty("GunTurret", "bSurveillance", m_turretparams.surveillance);
 	}
 
-	GetEntityProperty("GunTurret", "bSearching", m_turretparams.searching);
-	GetEntityProperty("GunTurret", "bSurveillance", m_turretparams.surveillance);
-
-	const char* teamName = 0;
+	const char* teamName = nullptr;
 	GetEntityProperty("teamName", teamName);
 	if (teamName && teamName[0])
-		m_turretparams.team = g_pGame->GetGameRules()->GetTeamId(teamName);
+	{
+		CGameRules* pGameRules = g_pGame->GetGameRules();
+		if (pGameRules)
+		{
+			m_turretparams.team = pGameRules->GetTeamId(teamName);
+
+			//CryMP: Server adaptation - set teamId in mp
+			//For correct silhouette colors of binoculars tagging etc
+			if (gEnv->bServer && gEnv->bMultiplayer && m_turretparams.team)
+			{
+				pGameRules->SetTeam(m_turretparams.team, GetEntityId());
+			}
+		}
+	}
 }
 
 //------------------------------------------------------------------------
@@ -1838,4 +1863,53 @@ void    CGunTurret::DrawDebug()
 	pDebug->AddSphere(rocket, 0.2f, ColorF(0, 1, 0, 1), 1.f);
 	pDebug->AddSphere(radar, 0.2f, ColorF(0, 0, 1, 1), 1.f);
 	pDebug->AddSphere(barrel, 0.2f, ColorF(1, 0, 1, 1), 1.f);
+}
+
+//------------------------------------------------------------------------
+bool CGunTurret::IsHostileTowardsClient() const
+{
+	IActor* pClient = gEnv->pGame->GetIGameFramework()->GetClientActor();
+	if (pClient && IsTargetHostile(pClient))
+	{
+		float r = m_turretparams.mg_range;
+		if (pClient->GetLinkedVehicle())
+		{
+			r = std::max(m_turretparams.mg_range, m_turretparams.rocket_range);
+		}
+
+		//CryMP: increase default radius
+		r *= 2.0f;
+
+		const float dist = (pClient->GetEntity()->GetWorldPos() - GetWeaponPos()).len2();
+
+		return (dist < r * r);
+	}
+	return false;
+}
+
+//------------------------------------------------------------------------
+void CGunTurret::OnTurretAggressive(bool playSound)
+{
+	//CryMP: Add turret temporarily to the radar on client
+	//Triggered by sound or start firing
+	if (gEnv->bClient)
+	{
+		if (IsHostileTowardsClient())
+		{
+			if (playSound)
+			{
+				m_lastWarningSoundPlayed = gEnv->pTimer->GetCurrTime();
+			}
+
+			CHUD* pHUD = g_pGame->GetHUD();
+			if (pHUD && pHUD->GetRadar() && !pHUD->GetRadar()->IsEntityOnTempRadar(GetEntityId()))
+			{
+				pHUD->GetRadar()->ShowEntityTemporarily(RadarIcon::Eight, 
+					MiniMapIcon::None, 
+					GetEntityId(),
+					5.0f
+				); 
+			}
+		}
+	}
 }

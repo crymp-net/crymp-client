@@ -1012,6 +1012,11 @@ void CPlayerInput::GetState(SSerializedPlayerInput& input)
 			input.deltaMovement = (psl.vel - psl.velGround) / g_pGameCVars->mp_netSerializeMaxSpeed;
 			//input.deltaMovement.z = 0.0f;
 		}
+
+		if (m_filteredDeltaMovement.IsZero())
+		{
+			input.deltaMovement.zero();
+		}
 	}
 	else
 	{

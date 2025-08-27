@@ -537,6 +537,14 @@ void Client::OnLevelNotFound(const char *levelName)
 
 void Client::OnLoadingStart(ILevelInfo *pLevel)
 {
+	ICVar* pLodMin = gEnv->pConsole->GetCVar("e_lod_min");
+	if (pLodMin && pLodMin->GetIVal())
+	{
+		//CryMP: Temporary fix for invisible objects
+		pLodMin->Set(0);
+		CryLogAlways("$3[CryMP] Setting Min LOD to zero");
+	}
+	
 	gEnv->pScriptSystem->ForceGarbageCollection();
 
 	m_pServerPAK->OnLoadingStart(pLevel);
