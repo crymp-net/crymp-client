@@ -288,6 +288,12 @@ bool CProjectile::Init(IGameObject* pGameObject)
 	else
 		GetEntity()->SetSlotFlags(0, GetEntity()->GetSlotFlags(0) | ENTITY_SLOT_RENDER);
 
+	if (m_tracked) // if this is true here, it means m_tracked was serialized from spawn info
+	{
+		m_tracked = false;
+		SetTracked(true);
+	}
+
 	return true;
 }
 
