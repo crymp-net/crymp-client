@@ -636,6 +636,8 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_netAimLerpFactorCrymp", &mp_netAimLerpFactorCrymp, 42.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Set aim smoothing for other clients when mp_crymp 1 (1-50, 0:off)");
 	pConsole->Register("mp_explosiveSilhouettes", &mp_explosiveSilhouettes, 0, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Enable new indicators for explosives");
 	pConsole->Register("mp_recycleProjectiles", &mp_recycleProjectiles, 1, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Recycle projectiles");
+	pConsole->Register("mp_abandonTime", &mp_abandonTime, 10.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds after which vehicles explode");
+	pConsole->Register("mp_explosiveRemovalTime", &mp_explosiveRemovalTime, 30.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds for explosive removal after death");
 }
 
 //------------------------------------------------------------------------

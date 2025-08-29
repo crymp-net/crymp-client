@@ -4032,7 +4032,7 @@ void CPlayer::Kill()
 
 	// notify any claymores/mines that this player has died
 	//	(they will be removed 30s later)
-	RemoveAllExplosives(EXPLOSIVE_REMOVAL_TIME);
+	RemoveAllExplosives(g_pGameCVars->mp_explosiveRemovalTime * 1000.0f);
 
 	CActor::Kill();
 }
