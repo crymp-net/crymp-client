@@ -570,7 +570,7 @@ function PowerStruggle:AbandonPlayerVehicle(playerId, currentVehicleId, destroy)
 				if (destroy) then
 					lastVehicle.vehicle:Destroy();
 				else
-					lastVehicle.vehicle:StartAbandonTimer(true, 10);
+					lastVehicle.vehicle:StartAbandonTimer(true, tonumber(System.GetCVar("mp_abandonTime")));
 				end
 			end
 			lastVehicle.lastOwnerId=nil;
