@@ -361,6 +361,22 @@ namespace StringTools
 		AppendTo(result, string);
 	}
 
+	template<typename T>
+	std::wstring ToWide(const T& string)
+	{
+		std::wstring result;
+		AppendTo(result, string);
+		return result;
+	}
+
+	template<typename T>
+	std::string ToUtf8(const T& string)
+	{
+		std::string result;
+		AppendTo(result, string);
+		return result;
+	}
+
 	std::string Format(const char* format, ...);
 	std::string FormatV(const char* format, va_list args);
 

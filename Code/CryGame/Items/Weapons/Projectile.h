@@ -53,7 +53,6 @@ public:
 	virtual void PostInitClient(int channelId) {};
 	virtual void Release();
 	virtual void FullSerialize( TSerialize ser );
-	bool RemoveIfExpired();
 	virtual bool NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile, int flags );
 	virtual void PostSerialize();
 	virtual void SerializeSpawnInfo( TSerialize ser );
@@ -123,19 +122,14 @@ public:
 
 	virtual void InitWithAI( );
 
-	bool IsExpired() const
-	{
-		const float lifeTime = GetLifeTime();
-		if (lifeTime > 0.0f)
-		{
-			return (gEnv->pTimer->GetCurrTime() - m_spawnTime) > (lifeTime + 1.0f);
-		}
-		return false;
-	}
-
 	bool IsUpdated() const
 	{
 		return gEnv->pTimer->GetCurrTime() - m_lastUpdate < 0.1f;
+	}
+
+	bool IsGhost() const
+	{
+		return m_ghost;
 	}
 
 	float GetTotalLifeTime()
@@ -204,6 +198,9 @@ protected:
 
 	float m_spawnTime = 0.0f;
 	float m_lastUpdate = 0.0f;
+
+	bool m_netUpdateReceived = false;
+	bool m_ghost = false;
 };
 
 #endif

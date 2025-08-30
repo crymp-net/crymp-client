@@ -320,7 +320,7 @@ private:
 	bool IsTACBullet(IEntity* pTarget) const;
 	ETargetClass GetTargetClass(IEntity* pTarget)const;
 
-	bool IsInRange(const Vec3& pos, ETargetClass cl)const;
+	bool IsInRange(const Vec3& pos, ETargetClass cl) const;
 	bool IsTargetAimable(float angleYaw, float anglePitch) const;
 	bool IsTargetShootable(IEntity* pTarget);
   bool RayCheck(IEntity* pTarget, const Vec3& pos, const Vec3& dir) const;
@@ -397,6 +397,16 @@ private:
 
 	bool   m_destroyed;
   bool   m_canShoot;
+
+	float m_lastWarningSoundPlayed = 0.0f;
+
+ public:
+	 bool IsHostileTowardsClient() const;
+	 void OnTurretAggressive(bool playSound = false);
+	 bool IsWarningSoundPlayedRecently() const
+	 {
+		 return (m_lastWarningSoundPlayed > 0.0f && gEnv->pTimer->GetCurrTime() - m_lastWarningSoundPlayed < 2.0f);
+	 }
 };
 
 #endif // __GunTurret_H__

@@ -137,6 +137,19 @@ CWeaponSystem::CWeaponSystem(CGame *pGame, ISystem *pSystem)
 		0,
 		"Dump current ammo pool sizes for debugging"
 	);
+
+	gEnv->pConsole->AddCommand(
+		"ws_dumpGhostProjectiles",
+		[](IConsoleCmdArgs* pArgs)
+		{
+			if (g_pGame && g_pGame->GetWeaponSystem())
+			{
+				g_pGame->GetWeaponSystem()->DumpGhostProjectiles();
+			}
+		},
+		0,
+		"Dump hidden ghost projectiles"
+	);
 }
 
 //------------------------------------------------------------------------
@@ -874,6 +887,44 @@ void CWeaponSystem::DumpPoolSizes()
 	CryLogAlways("Newly Spawned: %u", allocated);
 
 	CryLogAlways("--------------------------------------------------------------------------------");
+}
+
+//------------------------------------------------------------------------
+void CWeaponSystem::DumpGhostProjectiles()
+{
+	CryLogAlways("------------------------- Ghost Projectiles ----------------------------------------");
+
+	int idx = 0;
+
+	for (const auto& [id, p] : m_projectiles)
+	{
+		if (!p || !p->IsGhost())
+			continue;
+
+		const IEntity* pEnt = p->GetEntity();
+		const char* className = (pEnt && pEnt->GetClass()) ? pEnt->GetClass()->GetName() : "<unknown>";
+
+		// resolve owner name
+		const IEntity* pOwnerEnt = gEnv->pEntitySystem->GetEntity(p->GetOwnerId());
+		const char* ownerName = pOwnerEnt ? pOwnerEnt->GetName() : "<no owner>";
+
+		CryLogAlways("[%03d] class=%-25s owner=%-21s $1remote=%d updated=%d",
+			idx,
+			className,
+			ownerName,
+			static_cast<int>(p->IsRemote()),
+			static_cast<int>(p->IsUpdated())
+		);
+
+		++idx;
+	}
+
+	if (idx == 0)
+	{
+		CryLogAlways("No ghost projectiles detected.");
+	}
+
+	CryLogAlways("------------------------------------------------------------------------------------");
 }
 
 //----------------------------------------

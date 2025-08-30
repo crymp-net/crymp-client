@@ -122,6 +122,7 @@ public:
 	bool ReturnToPool(CProjectile *pProjectile);
 	void RemoveFromPool(CProjectile *pProjectile);
 	void DumpPoolSizes();
+	void DumpGhostProjectiles();
 
 	void Serialize(TSerialize ser);
 
