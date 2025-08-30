@@ -1955,6 +1955,103 @@ void CHUDRadar::RenderMiniMap()
 		}
 	}
 
+	if (isMultiplayer)
+	{
+		//now spawn points
+		std::vector<EntityId> locations;
+		m_pGameRules->GetSpawnGroups(locations);
+		for (int i = 0; i < locations.size(); ++i)
+		{
+			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(locations[i]);
+			if (!pEntity)
+				continue;
+			if (pEntity)
+			{
+				IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(pEntity->GetId());
+				bool isVehicle = (pVehicle) ? true : false;
+				if (GetPosOnMap(pEntity, fX, fY))
+				{
+					int friendly = FriendOrFoe(isMultiplayer, team, pEntity, m_pGameRules);
+					if (isVehicle /*&& !stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false)*/)
+					{
+						if (friendly == EFriend)
+						{
+							numOfValues += FillUpDoubleArray(&entityValues,
+								pEntity->GetId(),
+								static_cast<int>(MiniMapIcon::SpawnTruck),
+								fX,
+								fY,
+								270.0f - RAD2DEG(pEntity->GetWorldAngles().z),
+								friendly,
+								100,
+								100,
+								iOnScreenObjective == locations[i],
+								iCurrentSpawnPoint == locations[i]
+							);
+							drawnVehicles[pVehicle->GetEntityId()] = true;
+						}
+					}
+					else
+					{
+						//bool underAttack = m_pHUD->IsUnderAttack(pEntity) && friendly == EFriend;
+						const CHUD::CaptureState state = m_pHUD->GetCaptureState(pEntity);
+						int color = 0; //hidden
+						if (state == CHUD::CaptureState::EnemyCapturing || state == CHUD::CaptureState::EnemyUncapturing)
+						{
+							color = 1; //red
+						}
+						else if (state == CHUD::CaptureState::TeamCapturing || state == CHUD::CaptureState::TeamUncapturing)
+						{
+							color = 2; //blue
+						}
+
+						if (friendly != 2)
+						{
+							numOfValues += FillUpDoubleArray(&entityValues,
+								pEntity->GetId(),
+								static_cast<int>(MiniMapIcon::SpawnPoint),
+								fX,
+								fY,
+								270.0f - RAD2DEG(pEntity->GetWorldAngles().z),
+								friendly,
+								100,
+								100, iOnScreenObjective == locations[i],
+								iCurrentSpawnPoint == locations[i],
+								color
+							);
+							m_possibleOnScreenObjectives.push_back(pEntity->GetId());
+						}
+						else
+						{
+							SmartScriptTable props;
+							if (pEntity->GetScriptTable() && pEntity->GetScriptTable()->GetValue("Properties", props))
+							{
+								int capturable = 0;
+								if (props->GetValue("bCapturable", capturable) && capturable)
+								{
+									numOfValues += FillUpDoubleArray(&entityValues,
+										pEntity->GetId(),
+										static_cast<int>(MiniMapIcon::SpawnPoint),
+										fX,
+										fY,
+										270.0f - RAD2DEG(pEntity->GetWorldAngles().z),
+										friendly,
+										100,
+										100,
+										iOnScreenObjective == locations[i],
+										iCurrentSpawnPoint == locations[i],
+										color
+									);
+									m_possibleOnScreenObjectives.push_back(pEntity->GetId());
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	//we need he players position later int the code
 	Vec2 vPlayerPos(0.5f, 0.5f);
 
@@ -2390,103 +2487,6 @@ void CHUDRadar::RenderMiniMap()
 		);
 		drawnVehicles[pVehicle->GetEntityId()] = true;
 		//}
-	}
-
-	if (isMultiplayer)
-	{
-		//now spawn points
-		std::vector<EntityId> locations;
-		m_pGameRules->GetSpawnGroups(locations);
-		for (int i = 0; i < locations.size(); ++i)
-		{
-			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(locations[i]);
-			if (!pEntity)
-				continue;
-			if (pEntity)
-			{
-				IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(pEntity->GetId());
-				bool isVehicle = (pVehicle) ? true : false;
-				if (GetPosOnMap(pEntity, fX, fY))
-				{
-					int friendly = FriendOrFoe(isMultiplayer, team, pEntity, m_pGameRules);
-					if (isVehicle /*&& !stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false)*/)
-					{
-						if (friendly == EFriend)
-						{
-							numOfValues += FillUpDoubleArray(&entityValues, 
-								pEntity->GetId(),
-								static_cast<int>(MiniMapIcon::SpawnTruck),
-								fX, 
-								fY,
-								270.0f - RAD2DEG(pEntity->GetWorldAngles().z), 
-								friendly, 
-								100, 
-								100, 
-								iOnScreenObjective == locations[i],
-								iCurrentSpawnPoint == locations[i]
-							);
-							drawnVehicles[pVehicle->GetEntityId()] = true;
-						}
-					}
-					else
-					{
-						//bool underAttack = m_pHUD->IsUnderAttack(pEntity) && friendly == EFriend;
-						const CHUD::CaptureState state = m_pHUD->GetCaptureState(pEntity);
-						int color = 0; //hidden
-						if (state == CHUD::CaptureState::EnemyCapturing || state == CHUD::CaptureState::EnemyUncapturing)
-						{
-							color = 1; //red
-						}
-						else if (state == CHUD::CaptureState::TeamCapturing || state == CHUD::CaptureState::TeamUncapturing)
-						{
-							color = 2; //blue
-						}
-
-						if (friendly != 2)
-						{
-							numOfValues += FillUpDoubleArray(&entityValues,
-								pEntity->GetId(), 
-								static_cast<int>(MiniMapIcon::SpawnPoint),
-								fX, 
-								fY, 
-								270.0f - RAD2DEG(pEntity->GetWorldAngles().z), 
-								friendly, 
-								100,
-								100, iOnScreenObjective == locations[i], 
-								iCurrentSpawnPoint == locations[i],
-								color
-							);
-							m_possibleOnScreenObjectives.push_back(pEntity->GetId());
-						}
-						else
-						{
-							SmartScriptTable props;
-							if (pEntity->GetScriptTable() && pEntity->GetScriptTable()->GetValue("Properties", props))
-							{
-								int capturable = 0;
-								if (props->GetValue("bCapturable", capturable) && capturable)
-								{
-									numOfValues += FillUpDoubleArray(&entityValues,
-										pEntity->GetId(), 
-										static_cast<int>(MiniMapIcon::SpawnPoint),
-										fX, 
-										fY, 
-										270.0f - RAD2DEG(pEntity->GetWorldAngles().z),
-										friendly, 
-										100, 
-										100, 
-										iOnScreenObjective == locations[i], 
-										iCurrentSpawnPoint == locations[i], 
-										color
-									);
-									m_possibleOnScreenObjectives.push_back(pEntity->GetId());
-								}
-							}
-						}
-					}
-				}
-			}
-		}
 	}
 
 	//draw player position
