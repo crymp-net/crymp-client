@@ -1342,12 +1342,10 @@ void Launcher::Run()
 		throw StringTools::ErrorFormat("Invalid name of the executable!");
 	}
 
-#ifdef CLIENT_LAUNCHER
 	if (WinAPI::CmdLine::HasArg("-mod"))
 	{
 		throw StringTools::ErrorFormat("Mods are not supported!");
 	}
-#endif
 
 	this->InitWorkingDirectory();
 
