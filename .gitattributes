@@ -1,4 +1,5 @@
 *.h    linguist-language=C++
 *.h.in linguist-language=C++
+*.cdf  linguist-language=XML
 
 ThirdParty/** linguist-vendored=true

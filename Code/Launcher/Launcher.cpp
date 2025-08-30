@@ -184,7 +184,7 @@ static ICryPak* CreateNewCryPak(ISystem* pSystem, CryPakConfig* config, bool lvl
 	// TODO: config
 	// TODO: lvlRes
 	pCryPak->SetGameFolderWritable(gameFolderWritable);
-	pCryPak->LoadInternalPak(internalPak.data(), internalPak.size());
+	pCryPak->LoadClientPak(internalPak.data(), internalPak.size());
 
 	return pCryPak;
 }
@@ -1089,15 +1089,11 @@ void Launcher::PatchEngine()
 		MemoryPatch::CrySystem::EnableServerPhysicsThread(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::HookCryWarning(m_dlls.pCrySystem, &OnCryWarning);
 
-		if (!WinAPI::CmdLine::HasArg("-oldss"))
-		{
-			ReplaceScriptSystem(m_dlls.pCrySystem);
-		}
-
 		InstallEarlyEngineInitHook(m_dlls.pCrySystem);
 
 		ReplaceCryPak(m_dlls.pCrySystem);
 		ReplaceStreamEngine(m_dlls.pCrySystem);
+		ReplaceScriptSystem(m_dlls.pCrySystem);
 		ReplaceHardwareMouse(m_dlls.pCrySystem);
 		ReplaceLocalizationManager(m_dlls.pCrySystem);
 	}
@@ -1342,12 +1338,10 @@ void Launcher::Run()
 		throw StringTools::ErrorFormat("Invalid name of the executable!");
 	}
 
-#ifdef CLIENT_LAUNCHER
 	if (WinAPI::CmdLine::HasArg("-mod"))
 	{
 		throw StringTools::ErrorFormat("Mods are not supported!");
 	}
-#endif
 
 	this->InitWorkingDirectory();
 

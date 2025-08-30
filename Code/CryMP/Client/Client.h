@@ -12,6 +12,7 @@
 
 struct IConsoleCmdArgs;
 
+class CGame;
 class Executor;
 class FileDownloader;
 class FileCache;
@@ -30,7 +31,7 @@ class DrawTools;
 class Client : public IGameFrameworkListener, public ILevelSystemListener, public IEntitySystemSink
 {
 	IGameFramework *m_pGameFramework = nullptr;
-	IGame *m_pGame = nullptr;
+	CGame *m_pGame = nullptr;
 
 	std::unique_ptr<Executor> m_pExecutor;
 	std::unique_ptr<HTTPClient> m_pHTTPClient;
