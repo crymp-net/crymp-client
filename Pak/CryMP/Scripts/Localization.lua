@@ -1394,6 +1394,47 @@ CPPAPI.AddLocalizedLabel("use_vehicle_full", {
     },
 })
 
+CPPAPI.AddLocalizedLabel("ui_A", {
+	english_text = "A",
+	languages = {
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_B", {
+	english_text = "B",
+	languages = {
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_C", {
+	english_text = "C",
+	languages = {
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_D", {
+	english_text = "D",
+	languages = {
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_F", {
+	english_text = "F",
+	languages = {
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_G", {
+	english_text = "G",
+	languages = {
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_H", {
+	english_text = "H",
+	languages = {
+	},
+})
 
 --[[
 CPPAPI.AddLocalizedLabel("template", {
