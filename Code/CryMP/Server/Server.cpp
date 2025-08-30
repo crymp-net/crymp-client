@@ -34,41 +34,22 @@ void Server::Init(IGameFramework* pGameFramework)
 
 	pGameFramework->RegisterListener(this, "crymp-server", FRAMEWORKLISTENERPRIORITY_DEFAULT);
 
-	CGame* cGame = NULL;
-
-	if (WinAPI::CmdLine::HasArg("-oldgame"))
-	{
-		void* pCryGame = WinAPI::DLL::Load("CryGame.dll");
-		if (!pCryGame)
-		{
-			throw StringTools::SysErrorFormat("Failed to load the CryGame DLL!");
-		}
-
-		auto entry = static_cast<IGame::TEntryFunction>(WinAPI::DLL::GetSymbol(pCryGame, "CreateGame"));
-		if (!entry)
-		{
-			throw StringTools::ErrorFormat("The CryGame DLL is not valid!");
-		}
-
-		this->pGame = entry(pGameFramework);
-	}
-	else
-	{
-		cGame = new CGame();
-		this->pGame = cGame;
-	}
-
 	// initialize the game
 	// mods are not supported
+	this->pGame = new CGame();
 	this->pGame->Init(pGameFramework);
 
-	if (cGame) {
-		if (WinAPI::CmdLine::HasArg("-ssm")) {
-			std::string ssm{ WinAPI::CmdLine::GetArgValue("-ssm") };
-			CryLogAlways("$6[CryMP] Detected SSM: %s", ssm.c_str());
-			if (ssm == "SafeWriting") {
-				cGame->SetSSM(new CSafeWriting(pGameFramework, pGameFramework->GetISystem()));
-			}
+	const std::string ssm(WinAPI::CmdLine::GetArgValue("-ssm"));
+	if (!ssm.empty())
+	{
+		CryLogAlways("$6[CryMP] Detected SSM: %s", ssm.c_str());
+		if (ssm == "SafeWriting")
+		{
+			this->pGame->SetSSM(new CSafeWriting(pGameFramework, pGameFramework->GetISystem()));
+		}
+		else
+		{
+			throw StringTools::ErrorFormat("Unknown SSM: %s", ssm.c_str());
 		}
 	}
 
