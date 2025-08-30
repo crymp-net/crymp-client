@@ -1089,15 +1089,11 @@ void Launcher::PatchEngine()
 		MemoryPatch::CrySystem::EnableServerPhysicsThread(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::HookCryWarning(m_dlls.pCrySystem, &OnCryWarning);
 
-		if (!WinAPI::CmdLine::HasArg("-oldss"))
-		{
-			ReplaceScriptSystem(m_dlls.pCrySystem);
-		}
-
 		InstallEarlyEngineInitHook(m_dlls.pCrySystem);
 
 		ReplaceCryPak(m_dlls.pCrySystem);
 		ReplaceStreamEngine(m_dlls.pCrySystem);
+		ReplaceScriptSystem(m_dlls.pCrySystem);
 		ReplaceHardwareMouse(m_dlls.pCrySystem);
 		ReplaceLocalizationManager(m_dlls.pCrySystem);
 	}
