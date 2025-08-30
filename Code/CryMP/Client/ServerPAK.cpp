@@ -1,5 +1,4 @@
 #include "CryCommon/CrySystem/ISystem.h"
-#include "CryCommon/CrySystem/ICryPak.h"
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 #include "CryCommon/CryScriptSystem/IScriptSystem.h"
 #include "CryCommon/CryNetwork/INetwork.h"
@@ -9,6 +8,7 @@
 #include "CryGame/Game.h"
 #include "CryGame/Items/ItemSharedParams.h"
 #include "CryGame/Items/Weapons/WeaponSystem.h"
+#include "CrySystem/CryPak.h"
 
 #include "ServerPAK.h"
 
@@ -24,7 +24,7 @@ bool ServerPAK::Load(const std::string & path)
 {
 	Unload();
 
-	const bool opened = gEnv->pCryPak->OpenPack("game\\", path.c_str());
+	const bool opened = CryPak::GetInstance().LoadServerPak(path);
 	if (opened)
 	{
 		CryLogAlways("$3[CryMP] [ServerPAK] Loaded $6%s", path.c_str());
@@ -48,7 +48,7 @@ bool ServerPAK::Unload()
 		return false;
 	}
 
-	const bool closed = gEnv->pCryPak->ClosePack(m_path.c_str());
+	const bool closed = CryPak::GetInstance().UnloadServerPak(m_path);
 	if (closed)
 	{
 		CryLogAlways("$3[CryMP] [ServerPAK] Unloaded $6%s", m_path.c_str());

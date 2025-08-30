@@ -107,8 +107,7 @@ static const int GLOBAL_SERVER_IP_KEY						=	1000;
 static const int GLOBAL_SERVER_PUBLIC_PORT_KEY	= 1001;
 static const int GLOBAL_SERVER_NAME_KEY					=	1002;
 
-class CGame :
-  public IGame, public IGameFrameworkListener
+class CGame final : public IGame, public IGameFrameworkListener
 {
 public:
   typedef bool (*BlockingConditionFunction)();

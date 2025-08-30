@@ -9,7 +9,7 @@ class FunctionRegisterer;
 
 class CSafeWriting : public ISSM {
     bool m_initialized = false;
-    std::shared_ptr<SafeWritingAPI> m_pAPI;
+    std::unique_ptr<SafeWritingAPI> m_pAPI;
     std::unique_ptr<FunctionRegisterer> m_pFR;
 public:
     CSafeWriting(IGameFramework *pFW, ISystem *pSystem);
