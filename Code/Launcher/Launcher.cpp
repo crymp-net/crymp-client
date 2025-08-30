@@ -184,7 +184,7 @@ static ICryPak* CreateNewCryPak(ISystem* pSystem, CryPakConfig* config, bool lvl
 	// TODO: config
 	// TODO: lvlRes
 	pCryPak->SetGameFolderWritable(gameFolderWritable);
-	pCryPak->LoadInternalPak(internalPak.data(), internalPak.size());
+	pCryPak->LoadClientPak(internalPak.data(), internalPak.size());
 
 	return pCryPak;
 }
