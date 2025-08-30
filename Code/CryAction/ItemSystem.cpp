@@ -16,8 +16,6 @@
 #include "ItemParamsNode.h"
 #include "ItemSystem.h"
 
-extern std::uintptr_t CRYACTION_BASE;
-
 ////////////////////////////////////////////////////////////////////////////////
 
 static char ToLower(char ch)
@@ -86,8 +84,7 @@ static std::string_view GetPathExtension(std::string_view path)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-
-ItemSystem::ItemSystem(IGameFramework* pGameFramework, ISystem* pSystem) : m_pGameFramework(pGameFramework)
+ItemSystem::ItemSystem(IGameFramework* pGameFramework) : m_pGameFramework(pGameFramework)
 {
 	this->RegisterCVars();
 
@@ -97,8 +94,6 @@ ItemSystem::ItemSystem(IGameFramework* pGameFramework, ISystem* pSystem) : m_pGa
 
 	m_pEquipmentManager = std::make_unique<EquipmentManager>(this);
 }
-
-
 
 ItemSystem::~ItemSystem()
 {

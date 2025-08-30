@@ -44,7 +44,6 @@
 #include "GameStatsConfig.h"
 #include "GameTokenSystem.h"
 #include "ItemSystem.h"
-#include "ItemSystemLegacy.h"
 #include "LevelSystem.h"
 #include "MaterialEffects.h"
 #include "MusicLogic.h"
@@ -218,7 +217,7 @@ bool GameFramework::Init(SSystemInitParams& startupParams)
 	m_pUIDraw = new UIDraw();
 	m_pLevelSystem = new LevelSystem(m_pSystem, "levels");
 	m_pActorSystem = new ActorSystem(m_pSystem, m_pEntitySystem);
-	m_pItemSystem = new ItemSystemT(this, m_pSystem);
+	m_pItemSystem = new ItemSystem(this);
 	m_pActionMapManager = new ActionMapManager(m_pSystem->GetIInput());
 	m_pViewSystem = new ViewSystem(m_pSystem);
 	m_pGameplayRecorder = new GameplayRecorder(this);

@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Aliases.h"
 #include "CryCommon/CryScriptSystem/IScriptSystem.h"
 
 struct ISystem;
 struct IGameFramework;
+
+class ItemSystem;
 
 class ScriptBind_ItemSystem : public CScriptableBase
 {
@@ -15,5 +16,5 @@ class ScriptBind_ItemSystem : public CScriptableBase
 #endif
 
 public:
-	explicit ScriptBind_ItemSystem(ISystem* pSystem, ItemSystemT* pItemSystem, IGameFramework* pGameFramework);
+	explicit ScriptBind_ItemSystem(ISystem* pSystem, ItemSystem* pItemSystem, IGameFramework* pGameFramework);
 };

@@ -95,7 +95,6 @@ add_library(Base OBJECT
 	Code/CryAction/ActorIterator.h
 	Code/CryAction/ActorSystem.cpp
 	Code/CryAction/ActorSystem.h
-	Code/CryAction/Aliases.h
 	Code/CryAction/AnimationGraphSystem.cpp
 	Code/CryAction/AnimationGraphSystem.h
 	Code/CryAction/CallbackTimer.cpp
@@ -153,8 +152,6 @@ add_library(Base OBJECT
 	Code/CryAction/ItemSystem_XMLData.cpp
 	Code/CryAction/ItemSystem.cpp
 	Code/CryAction/ItemSystem.h
-	Code/CryAction/ItemSystemLegacy.cpp
-	Code/CryAction/ItemSystemLegacy.h
 	Code/CryAction/LevelSystem.cpp
 	Code/CryAction/LevelSystem.h
 	Code/CryAction/MaterialEffects.cpp
