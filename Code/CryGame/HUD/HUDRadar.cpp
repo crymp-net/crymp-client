@@ -1853,6 +1853,7 @@ void CHUDRadar::RenderMiniMap()
 
 	//draw vehicles only once
 	std::map<EntityId, bool> drawnVehicles;
+	std::map<EntityId, bool> drawnPlayers;
 
 	EntityId iOnScreenObjective = m_pHUD->GetOnScreenObjective();
 	if (iOnScreenObjective)
@@ -1950,6 +1951,103 @@ void CHUDRadar::RenderMiniMap()
 					iCurrentSpawnPoint == m_buildingsOnRadar[i].m_id, 
 					color
 				);
+			}
+		}
+	}
+
+	if (isMultiplayer)
+	{
+		//now spawn points
+		std::vector<EntityId> locations;
+		m_pGameRules->GetSpawnGroups(locations);
+		for (int i = 0; i < locations.size(); ++i)
+		{
+			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(locations[i]);
+			if (!pEntity)
+				continue;
+			if (pEntity)
+			{
+				IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(pEntity->GetId());
+				bool isVehicle = (pVehicle) ? true : false;
+				if (GetPosOnMap(pEntity, fX, fY))
+				{
+					int friendly = FriendOrFoe(isMultiplayer, team, pEntity, m_pGameRules);
+					if (isVehicle /*&& !stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false)*/)
+					{
+						if (friendly == EFriend)
+						{
+							numOfValues += FillUpDoubleArray(&entityValues,
+								pEntity->GetId(),
+								static_cast<int>(MiniMapIcon::SpawnTruck),
+								fX,
+								fY,
+								270.0f - RAD2DEG(pEntity->GetWorldAngles().z),
+								friendly,
+								100,
+								100,
+								iOnScreenObjective == locations[i],
+								iCurrentSpawnPoint == locations[i]
+							);
+							drawnVehicles[pVehicle->GetEntityId()] = true;
+						}
+					}
+					else
+					{
+						//bool underAttack = m_pHUD->IsUnderAttack(pEntity) && friendly == EFriend;
+						const CHUD::CaptureState state = m_pHUD->GetCaptureState(pEntity);
+						int color = 0; //hidden
+						if (state == CHUD::CaptureState::EnemyCapturing || state == CHUD::CaptureState::EnemyUncapturing)
+						{
+							color = 1; //red
+						}
+						else if (state == CHUD::CaptureState::TeamCapturing || state == CHUD::CaptureState::TeamUncapturing)
+						{
+							color = 2; //blue
+						}
+
+						if (friendly != 2)
+						{
+							numOfValues += FillUpDoubleArray(&entityValues,
+								pEntity->GetId(),
+								static_cast<int>(MiniMapIcon::SpawnPoint),
+								fX,
+								fY,
+								270.0f - RAD2DEG(pEntity->GetWorldAngles().z),
+								friendly,
+								100,
+								100, iOnScreenObjective == locations[i],
+								iCurrentSpawnPoint == locations[i],
+								color
+							);
+							m_possibleOnScreenObjectives.push_back(pEntity->GetId());
+						}
+						else
+						{
+							SmartScriptTable props;
+							if (pEntity->GetScriptTable() && pEntity->GetScriptTable()->GetValue("Properties", props))
+							{
+								int capturable = 0;
+								if (props->GetValue("bCapturable", capturable) && capturable)
+								{
+									numOfValues += FillUpDoubleArray(&entityValues,
+										pEntity->GetId(),
+										static_cast<int>(MiniMapIcon::SpawnPoint),
+										fX,
+										fY,
+										270.0f - RAD2DEG(pEntity->GetWorldAngles().z),
+										friendly,
+										100,
+										100,
+										iOnScreenObjective == locations[i],
+										iCurrentSpawnPoint == locations[i],
+										color
+									);
+									m_possibleOnScreenObjectives.push_back(pEntity->GetId());
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -2088,93 +2186,6 @@ void CHUDRadar::RenderMiniMap()
 		}
 	}
 
-	//draw temporarily tagged units
-	{
-		for (int e = 0; e < m_tempEntitiesOnRadar.size(); ++e)
-		{
-			EntityId id = m_tempEntitiesOnRadar[e].m_id;
-			pTempActor = m_pActorSystem->GetActor(id);
-			if (pTempActor)
-			{
-				IVehicle* pVehicle = pTempActor->GetLinkedVehicle();
-				if (pVehicle && !pVehicle->IsDestroyed())
-				{
-					if (!stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false))
-					{
-						MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon;
-
-						if (icon == MiniMapIcon::Player)
-						{
-							icon = ChooseMiniMapIcon(pVehicle->GetEntity());
-						}
-
-						GetPosOnMap(pVehicle->GetEntity(), fX, fY);
-						numOfValues += FillUpDoubleArray(&entityValues, 
-							pVehicle->GetEntityId(),
-							static_cast<int>(icon), 
-							fX, 
-							fY,
-							270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z),
-							FriendOrFoe(isMultiplayer, team, pVehicle->GetEntity(), m_pGameRules), 
-							100, 
-							100, 
-							iOnScreenObjective == pVehicle->GetEntityId(), 
-							iCurrentSpawnPoint == pVehicle->GetEntityId()
-						);
-						drawnVehicles[pVehicle->GetEntityId()] = true;
-					}
-				}
-				else
-				{
-					MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon != MiniMapIcon::None ?
-						m_tempEntitiesOnRadar[e].m_miniMapIcon : ChooseMiniMapIcon(pTempActor->GetEntity());
-
-					if (icon == MiniMapIcon::DeathSkull && static_cast<CActor*>(pTempActor)->GetPhysicsProfile() != eAP_Ragdoll)
-					{
-						continue;
-					}
-
-					GetPosOnMap(pTempActor->GetEntity(), fX, fY);
-					numOfValues += FillUpDoubleArray(&entityValues, 
-						pClientActor->GetEntityId(),
-						static_cast<int>(icon),
-						fX, 
-						fY,
-						270.0f - RAD2DEG(pTempActor->GetEntity()->GetWorldAngles().z), 
-						FriendOrFoe(isMultiplayer, team, pTempActor->GetEntity(), m_pGameRules), 
-						100, 
-						100, 
-						iOnScreenObjective == pTempActor->GetEntityId(), 
-						iCurrentSpawnPoint == pTempActor->GetEntityId()
-					);
-				}
-			}
-			else if (IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(id))
-			{
-				if (!stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false))
-				{
-					MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon != MiniMapIcon::None ?
-						m_tempEntitiesOnRadar[e].m_miniMapIcon : ChooseMiniMapIcon(pVehicle->GetEntity());
-
-					GetPosOnMap(pVehicle->GetEntity(), fX, fY);
-					numOfValues += FillUpDoubleArray(&entityValues, 
-						pVehicle->GetEntityId(), 
-						static_cast<int>(icon),
-						fX, 
-						fY,
-						270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z),
-						FriendOrFoe(isMultiplayer, team, pVehicle->GetEntity(), m_pGameRules), 
-						100, 
-						100,
-						iOnScreenObjective == pVehicle->GetEntityId(),
-						iCurrentSpawnPoint == pVehicle->GetEntityId()
-					);
-					drawnVehicles[pVehicle->GetEntityId()] = true;
-				}
-			}
-		}
-	}
-
 	//draw story entities (icons with text)
 	{
 		for (int e = 0; e < m_storyEntitiesOnRadar.size(); ++e)
@@ -2243,10 +2254,16 @@ void CHUDRadar::RenderMiniMap()
 						spectating = (static_cast<CActor*>(pTempActor)->GetSpectatorMode() != CActor::eASM_None);
 					if (!spectating)
 					{
+						MiniMapIcon icon = MiniMapIcon::Player;
+						if (g_pGameCVars->mp_deadPlayersOnMinimap && static_cast<CActor*>(pTempActor)->GetPhysicsProfile() == eAP_Ragdoll)
+						{
+							icon = MiniMapIcon::DeathSkull;
+						}
+
 						GetPosOnMap(pTempActor->GetEntity(), fX, fY);
 						numOfValues += FillUpDoubleArray(&entityValues, 
 							pTempActor->GetEntityId(), 
-							static_cast<int>(MiniMapIcon::Player),
+							static_cast<int>(icon),
 							fX, 
 							fY, 
 							270.0f - RAD2DEG(pTempActor->GetEntity()->GetWorldAngles().z), 
@@ -2256,6 +2273,9 @@ void CHUDRadar::RenderMiniMap()
 							iOnScreenObjective == pTempActor->GetEntityId(),
 							iCurrentSpawnPoint == pTempActor->GetEntityId()
 						);
+
+						drawnPlayers[pTempActor->GetEntityId()] = true;
+
 						//draw teammate name if selected
 						if (gEnv->bMultiplayer)
 						{
@@ -2354,6 +2374,96 @@ void CHUDRadar::RenderMiniMap()
 		}
 	}
 
+	//draw temporarily tagged units
+	{
+		for (int e = 0; e < m_tempEntitiesOnRadar.size(); ++e)
+		{
+			EntityId id = m_tempEntitiesOnRadar[e].m_id;
+			pTempActor = m_pActorSystem->GetActor(id);
+			if (pTempActor)
+			{
+				IVehicle* pVehicle = pTempActor->GetLinkedVehicle();
+				if (pVehicle && !pVehicle->IsDestroyed())
+				{
+					if (!stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false))
+					{
+						MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon;
+
+						if (icon == MiniMapIcon::Player)
+						{
+							icon = ChooseMiniMapIcon(pVehicle->GetEntity());
+						}
+
+						GetPosOnMap(pVehicle->GetEntity(), fX, fY);
+						numOfValues += FillUpDoubleArray(&entityValues,
+							pVehicle->GetEntityId(),
+							static_cast<int>(icon),
+							fX,
+							fY,
+							270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z),
+							FriendOrFoe(isMultiplayer, team, pVehicle->GetEntity(), m_pGameRules),
+							100,
+							100,
+							iOnScreenObjective == pVehicle->GetEntityId(),
+							iCurrentSpawnPoint == pVehicle->GetEntityId()
+						);
+						drawnVehicles[pVehicle->GetEntityId()] = true;
+					}
+				}
+				else
+				{
+					if (!stl::find_in_map(drawnPlayers, pTempActor->GetEntityId(), false))
+					{
+						MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon != MiniMapIcon::None ?
+							m_tempEntitiesOnRadar[e].m_miniMapIcon : ChooseMiniMapIcon(pTempActor->GetEntity());
+
+						if (icon == MiniMapIcon::DeathSkull && static_cast<CActor*>(pTempActor)->GetPhysicsProfile() != eAP_Ragdoll)
+						{
+							continue;
+						}
+
+						GetPosOnMap(pTempActor->GetEntity(), fX, fY);
+						numOfValues += FillUpDoubleArray(&entityValues,
+							pClientActor->GetEntityId(),
+							static_cast<int>(icon),
+							fX,
+							fY,
+							270.0f - RAD2DEG(pTempActor->GetEntity()->GetWorldAngles().z),
+							FriendOrFoe(isMultiplayer, team, pTempActor->GetEntity(), m_pGameRules),
+							100,
+							100,
+							iOnScreenObjective == pTempActor->GetEntityId(),
+							iCurrentSpawnPoint == pTempActor->GetEntityId()
+						);
+					}
+				}
+			}
+			else if (IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(id))
+			{
+				if (!stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false))
+				{
+					MiniMapIcon icon = m_tempEntitiesOnRadar[e].m_miniMapIcon != MiniMapIcon::None ?
+						m_tempEntitiesOnRadar[e].m_miniMapIcon : ChooseMiniMapIcon(pVehicle->GetEntity());
+
+					GetPosOnMap(pVehicle->GetEntity(), fX, fY);
+					numOfValues += FillUpDoubleArray(&entityValues,
+						pVehicle->GetEntityId(),
+						static_cast<int>(icon),
+						fX,
+						fY,
+						270.0f - RAD2DEG(pVehicle->GetEntity()->GetWorldAngles().z),
+						FriendOrFoe(isMultiplayer, team, pVehicle->GetEntity(), m_pGameRules),
+						100,
+						100,
+						iOnScreenObjective == pVehicle->GetEntityId(),
+						iCurrentSpawnPoint == pVehicle->GetEntityId()
+					);
+					drawnVehicles[pVehicle->GetEntityId()] = true;
+				}
+			}
+		}
+	}
+
 	//draw player VEHICLE position
 
 	if (IVehicle* pVehicle = pClientActor->GetLinkedVehicle())
@@ -2379,111 +2489,14 @@ void CHUDRadar::RenderMiniMap()
 		//}
 	}
 
-	if (isMultiplayer)
-	{
-		//now spawn points
-		std::vector<EntityId> locations;
-		m_pGameRules->GetSpawnGroups(locations);
-		for (int i = 0; i < locations.size(); ++i)
-		{
-			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(locations[i]);
-			if (!pEntity)
-				continue;
-			if (pEntity)
-			{
-				IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(pEntity->GetId());
-				bool isVehicle = (pVehicle) ? true : false;
-				if (GetPosOnMap(pEntity, fX, fY))
-				{
-					int friendly = FriendOrFoe(isMultiplayer, team, pEntity, m_pGameRules);
-					if (isVehicle /*&& !stl::find_in_map(drawnVehicles, pVehicle->GetEntityId(), false)*/)
-					{
-						if (friendly == EFriend)
-						{
-							numOfValues += FillUpDoubleArray(&entityValues, 
-								pEntity->GetId(),
-								static_cast<int>(MiniMapIcon::SpawnTruck),
-								fX, 
-								fY,
-								270.0f - RAD2DEG(pEntity->GetWorldAngles().z), 
-								friendly, 
-								100, 
-								100, 
-								iOnScreenObjective == locations[i],
-								iCurrentSpawnPoint == locations[i]
-							);
-							drawnVehicles[pVehicle->GetEntityId()] = true;
-						}
-					}
-					else
-					{
-						//bool underAttack = m_pHUD->IsUnderAttack(pEntity) && friendly == EFriend;
-						const CHUD::CaptureState state = m_pHUD->GetCaptureState(pEntity);
-						int color = 0; //hidden
-						if (state == CHUD::CaptureState::EnemyCapturing || state == CHUD::CaptureState::EnemyUncapturing)
-						{
-							color = 1; //red
-						}
-						else if (state == CHUD::CaptureState::TeamCapturing || state == CHUD::CaptureState::TeamUncapturing)
-						{
-							color = 2; //blue
-						}
-
-						if (friendly != 2)
-						{
-							numOfValues += FillUpDoubleArray(&entityValues,
-								pEntity->GetId(), 
-								static_cast<int>(MiniMapIcon::SpawnPoint),
-								fX, 
-								fY, 
-								270.0f - RAD2DEG(pEntity->GetWorldAngles().z), 
-								friendly, 
-								100,
-								100, iOnScreenObjective == locations[i], 
-								iCurrentSpawnPoint == locations[i],
-								color
-							);
-							m_possibleOnScreenObjectives.push_back(pEntity->GetId());
-						}
-						else
-						{
-							SmartScriptTable props;
-							if (pEntity->GetScriptTable() && pEntity->GetScriptTable()->GetValue("Properties", props))
-							{
-								int capturable = 0;
-								if (props->GetValue("bCapturable", capturable) && capturable)
-								{
-									numOfValues += FillUpDoubleArray(&entityValues,
-										pEntity->GetId(), 
-										static_cast<int>(MiniMapIcon::SpawnPoint),
-										fX, 
-										fY, 
-										270.0f - RAD2DEG(pEntity->GetWorldAngles().z),
-										friendly, 
-										100, 
-										100, 
-										iOnScreenObjective == locations[i], 
-										iCurrentSpawnPoint == locations[i], 
-										color
-									);
-									m_possibleOnScreenObjectives.push_back(pEntity->GetId());
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
 	//draw player position
 	if (!pClientActor->GetLinkedVehicle() && pClientActor->GetSpectatorMode() == CActor::eASM_None)
 	{
 		string name(pClientActor->GetEntity()->GetName());
 		int icon = (name.find("Quarantine", 0) != string::npos) ? static_cast<int>(MiniMapIcon::TechCharger) : static_cast<int>(MiniMapIcon::Player);
-		const int faction = ESelf;
+		int faction = ESelf;
 
-		if (pClientActor->GetPhysicsProfile() == eAP_Ragdoll)
+		if (g_pGameCVars->mp_deadPlayersOnMinimap && pClientActor->GetPhysicsProfile() == eAP_Ragdoll)
 		{
 			icon = static_cast<int>(MiniMapIcon::DeathSkull);
 		}

@@ -471,6 +471,7 @@ struct SCVars
 	int         mp_explosiveSilhouettes;
 	int         mp_radioTagging;
 	int         mp_healthBars;
+	int         mp_deadPlayersOnMinimap;
 	int         mp_recycleProjectiles;
 	float		mp_abandonTime;
 	float		mp_explosiveRemovalTime;
