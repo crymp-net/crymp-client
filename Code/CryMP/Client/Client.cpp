@@ -16,7 +16,6 @@
 #include "CrySystem/RandomGenerator.h"
 #include "Launcher/Resources.h"
 #include "Library/StdFile.h"
-#include "Library/StringTools.h"
 #include "Library/Util.h"
 #include "Library/WinAPI.h"
 
@@ -277,29 +276,9 @@ void Client::Init(IGameFramework *pGameFramework)
 
 	m_pServerBrowser->QueryClientPublicAddress();
 
-	if (!WinAPI::CmdLine::HasArg("-oldgame"))
-	{
-		m_pGame = new CGame();
-	}
-	else
-	{
-		void* pCryGame = WinAPI::DLL::Load("CryGame.dll");
-		if (!pCryGame)
-		{
-			throw StringTools::SysErrorFormat("Failed to load the CryGame DLL!");
-		}
-
-		auto entry = static_cast<IGame::TEntryFunction>(WinAPI::DLL::GetSymbol(pCryGame, "CreateGame"));
-		if (!entry)
-		{
-			throw StringTools::ErrorFormat("The CryGame DLL is not valid!");
-		}
-
-		m_pGame = entry(pGameFramework);
-	}
-
 	// initialize the game
 	// mods are not supported
+	m_pGame = new CGame();
 	m_pGame->Init(pGameFramework);
 }
 

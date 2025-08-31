@@ -179,7 +179,7 @@ bool CryPak::OpenPack(const char* root, const char* name, unsigned int flags)
 		return true;
 	}
 
-	if (!this->OpenPakImpl(pak))
+	if (!this->OpenPakImpl(pak, Priority::NORMAL))
 	{
 		CryLogErrorAlways("%s(\"%s\", \"%s\", 0x%x): Failed!", __FUNCTION__, root, name, flags);
 		return false;
@@ -252,7 +252,7 @@ bool CryPak::OpenPacks(const char* root, const char* wildcard, unsigned int flag
 			continue;
 		}
 
-		if (!this->OpenPakImpl(pak))
+		if (!this->OpenPakImpl(pak, Priority::NORMAL))
 		{
 			CryLogErrorAlways("%s(\"%s\", \"%s\", 0x%x): Failed to open \"%s\"", __FUNCTION__, root,
 				wildcard, flags, pak->path.c_str());
@@ -1013,7 +1013,7 @@ const char* CryPak::GetModDir() const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CryPak::LoadInternalPak(const void* data, std::size_t size)
+bool CryPak::LoadClientPak(const void* data, std::size_t size)
 {
 	std::lock_guard lock(m_mutex);
 
@@ -1021,20 +1021,20 @@ void CryPak::LoadInternalPak(const void* data, std::size_t size)
 	if (!pak)
 	{
 		CryLogErrorAlways("%s: No free pak slot!", __FUNCTION__);
-		return;
+		return false;
 	}
 
 	pak->impl = ZipPak::OpenMemory(data, size);
 	if (!pak->impl)
 	{
 		CryLogErrorAlways("%s: Failed!", __FUNCTION__);
-		return;
+		return false;
 	}
 
 	pak->path.clear();
 	pak->root = "Game";
 	pak->fileHandle = {};
-	pak->priority = Priority::HIGH;
+	pak->priority = Priority::CLIENT_PAK;
 	pak->refCount = 1;
 
 	this->AddPakToTree(pak.get());
@@ -1043,6 +1043,62 @@ void CryPak::LoadInternalPak(const void* data, std::size_t size)
 
 	// release ownership
 	pak.release();
+	return true;
+}
+
+bool CryPak::LoadServerPak(std::string_view path)
+{
+	std::lock_guard lock(m_mutex);
+
+	SlotGuard<PakSlot> pak = this->GetFreePakSlot();
+	if (!pak)
+	{
+		CryLogErrorAlways("%s(\"%.*s\"): No free pak slot!", __FUNCTION__,
+			static_cast<int>(path.size()), path.data());
+		return false;
+	}
+
+	pak->path = this->AdjustFileNameImpl(path, 0);
+	pak->root = "Game";
+
+	if (this->FindLoadedPakByPath(pak->path))
+	{
+		CryLog("%s(\"%.*s\"): Already loaded", __FUNCTION__, static_cast<int>(path.size()), path.data());
+		return true;
+	}
+
+	if (!this->OpenPakImpl(pak, Priority::SERVER_PAK))
+	{
+		CryLogErrorAlways("%s(\"%.*s\"): Failed!", __FUNCTION__, static_cast<int>(path.size()), path.data());
+		return false;
+	}
+
+	CryLog("%s(\"%.*s\"): Success", __FUNCTION__, static_cast<int>(path.size()), path.data());
+
+	// release ownership
+	pak.release();
+	return true;
+}
+
+bool CryPak::UnloadServerPak(std::string_view path)
+{
+	std::lock_guard lock(m_mutex);
+
+	const std::string adjustedName = this->AdjustFileNameImpl(path, 0);
+
+	PakSlot* pak = this->FindLoadedPakByPath(adjustedName);
+	if (!pak)
+	{
+		CryLogWarningAlways("%s(\"%.*s\"): Not found!", __FUNCTION__,
+			static_cast<int>(path.size()), path.data());
+		return false;
+	}
+
+	this->CloseSlot(pak);
+
+	CryLog("%s(\"%.*s\")", __FUNCTION__, static_cast<int>(path.size()), path.data());
+
+	return true;
 }
 
 void CryPak::AddRedirect(std::string_view path, std::string_view newPath)
@@ -1112,8 +1168,9 @@ void CryPak::LogInfo()
 		{
 			const std::size_t entryCount = pak->impl->GetEntryCount();
 			const std::size_t cacheSize = pak->impl->GetCachedDataSize();
-			CryLogAlways("- $8\"%s\"$o root=$8\"%s\"$o entries=$5%zu$o cache_size=$5%zu$o",
-				pak->path.c_str(), pak->root.c_str(), entryCount, cacheSize);
+			CryLogAlways("- $8\"%s\"$o root=$8\"%s\"$o priority=$5%d$o entries=$5%zu$o cache_size=$5%zu$o",
+				pak->path.c_str(), pak->root.c_str(), static_cast<int>(pak->priority), entryCount,
+				cacheSize);
 			totalCount++;
 			totalEntryCount += entryCount;
 			totalCacheSize += cacheSize;
@@ -1311,7 +1368,7 @@ bool CryPak::OpenFindImpl(SlotGuard<FindSlot>& find)
 	return true;
 }
 
-bool CryPak::OpenPakImpl(SlotGuard<PakSlot>& pak)
+bool CryPak::OpenPakImpl(SlotGuard<PakSlot>& pak, Priority priority)
 {
 	SlotGuard<FileSlot> file = this->GetFreeFileSlot();
 	if (!file)
@@ -1352,7 +1409,7 @@ bool CryPak::OpenPakImpl(SlotGuard<PakSlot>& pak)
 	// transfer file ownership to the pak
 	pak->fileHandle = m_files.SlotToHandle(file.release());
 
-	pak->priority = Priority::NORMAL;
+	pak->priority = priority;
 	pak->refCount = 1;
 
 	this->AddPakToTree(pak.get());

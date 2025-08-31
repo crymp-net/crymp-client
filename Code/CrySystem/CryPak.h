@@ -22,7 +22,9 @@ class CryPak final : public ICryPak
 {
 	enum class Priority
 	{
-		NORMAL, HIGH
+		NORMAL,
+		CLIENT_PAK,
+		SERVER_PAK,  // highest priority
 	};
 
 	enum
@@ -256,7 +258,9 @@ public:
 	void SetGameFolderWritable(bool writable) { m_gameFolderWritable = writable; }
 	bool IsGameFolderWritable() const { return m_gameFolderWritable; }
 
-	void LoadInternalPak(const void* data, std::size_t size);
+	bool LoadClientPak(const void* data, std::size_t size);
+	bool LoadServerPak(std::string_view path);
+	bool UnloadServerPak(std::string_view path);
 
 	void AddRedirect(std::string_view path, std::string_view newPath);
 	void RemoveRedirect(std::string_view path);
@@ -277,7 +281,7 @@ private:
 
 	bool OpenFindImpl(SlotGuard<FindSlot>& find);
 
-	bool OpenPakImpl(SlotGuard<PakSlot>& pak);
+	bool OpenPakImpl(SlotGuard<PakSlot>& pak, Priority priority);
 
 	PakSlot* FindLoadedPakByPath(std::string_view pakPath);
 

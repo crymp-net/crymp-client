@@ -6,15 +6,15 @@
 
 #include "CryCommon/CryAction/IGameFramework.h"
 
+class CGame;
 class Executor;
 class HTTPClient;
-
 class ScriptBind_CPPAPI;
 
 class Server : public IGameFrameworkListener
 {
 public:
-	IGame *pGame = nullptr;
+	CGame *pGame = nullptr;
 	IGameFramework* pGameFramework = nullptr;
 
 	std::unique_ptr<Executor> pExecutor;

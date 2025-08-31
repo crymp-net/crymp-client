@@ -4392,7 +4392,7 @@ void CHUD::OnNetKill(CActor* pVictim, CActor* pShooter, EntityId shooterId, cons
 		}
 	}
 
-	if (!victimIsClient)
+	if (gEnv->bMultiplayer && g_pGameCVars->mp_deadPlayersOnMinimap && !victimIsClient && m_pGameRules->IsHostile(shooterId, victimId))
 	{
 		//Show victim on minimap for 5 seconds
 		GetRadar()->ShowEntityTemporarily(RadarIcon::None, MiniMapIcon::DeathSkull, victimId, 5.0f);

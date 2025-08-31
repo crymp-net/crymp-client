@@ -1,17 +1,17 @@
 #pragma once
+
 #include <string>
 #include <optional>
 
+#include "CryCommon/CryAction/IGameRulesSystem.h"
 #include "CryCommon/CryEntitySystem/EntityId.h"
 
 struct IActor;
-struct IGameRules;
 struct INetChannel;
-enum EChatMessageType;
 
-struct ISSM {
-public:
-    ~ISSM() = default;
+struct ISSM
+{
+    virtual ~ISSM() = default;
     virtual void OnGameRulesLoad(IGameRules * pGR) = 0;
     virtual void OnGameRulesUnload(IGameRules* pGR) = 0;
     virtual void Update(float dt) = 0;
