@@ -1,0 +1,61 @@
+<item name="C4" class="C4" category="explosive" priority="33">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="1" />
+		<param name="pose" 		value="c4" />
+		<param name="two_hand"				value="1" />
+		<param name="droppable" 	value="0" />
+		<param name="select_on_pickup" value="true" />
+	</params>
+	<ammos>
+		<ammo name="c4explosive" extra="1" amount="0" />
+	</ammos>
+	<geometry>
+		<firstperson name="objects/weapons/us/c4/c4_fp.chr" angles="0,0,0" position="0,0,0" />
+		<thirdperson name="objects/weapons/us/c4/c4_tp.cgf" />
+	</geometry>
+	<actions>
+		<action name="select">
+			<animation target="firstperson" name="select_01" />
+			<animation target="owner" name="select" />
+			<sound target="thirdperson" name="sounds/weapons:c4:select" radius="2" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_01" />
+			<animation target="owner" name="deselect" />
+			<sound target="thirdperson" name="sounds/weapons:c4:deselect" radius="2" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_01" />
+			<animation target="owner" name="idle" />
+		</action>
+
+		<action name="plant">
+			<animation target="firstperson" name="fire_01" />
+			<animation target="owner" name="plant" />
+			<sound target="thirdperson" name="sounds/weapons:c4:fire" radius="2" />
+		</action>
+
+		<action name="tick">
+			<sound target="firstperson" name="sounds/weapons:c4:arm" radius="2" />
+			<sound target="thirdperson" name="sounds/weapons:c4:arm" radius="2" />
+		</action>
+
+		<action name="pickedup">
+			<sound target="firstperson" name="sounds/weapons:c4:pickedup" radius="2" />
+			<sound target="thirdperson" name="sounds/weapons:c4:pickedup" radius="2" />
+		</action>
+	</actions>
+	
+	<firemodes>
+		<firemode type="Plant" name="Plant">
+			<plant>
+				<param name="ammo_type" value="c4explosive" />
+				<param name="clip_size" value="0" />
+				<param name="damage" value="1000" />
+				<param name="delay" value="0.1" />
+				<param name="helper" value="c4_helper" />
+			</plant>
+		</firemode>
+	</firemodes>
+</item>

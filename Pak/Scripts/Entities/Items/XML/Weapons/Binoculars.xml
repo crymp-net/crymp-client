@@ -1,0 +1,44 @@
+<item name="Binoculars" class="Binocular" category="utility" priority="0">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="0" />
+		<param name="droppable" value="0" />
+		<param name="pose" 		value="ignore" />
+		<param name="ui_weapon" 	value="1" />
+		<param name="display_name"	value="@mp_eBinoculars" />
+	</params>
+	<zoommodes>
+		<zoommode type="Scope" name="Scope" >
+			<zoom>
+				<param name="blur_amount" value="1" />
+				<param name="blur_mask" value="textures/weapons/binocular_blurmask.dds" />
+				<param name="dof_mask" value="textures/weapons/binocular_blurmask.dds" />
+				<param name="zoom_in_time" value="0.2" />
+				<param name="zoom_out_time" value="0.2" />
+				<stages>
+					<stage value="2" />
+					<stage value="4" />
+					<stage value="8" />
+				</stages>
+			</zoom>
+			<zoomSway>
+				<param name="maxX" value="0.012" />
+				<param name="maxY" value="0.015" />
+				<param name="stabilizeTime" value="1.5"/>
+				<param name="minScale" value="0.2"/>
+				<param name="strengthScale" value="0.75"/>
+				<param name="strengthScaleTime" value="0.75"/>
+				<param name="crouchScale" value="0.75"/>
+				<param name="proneScale" value="0.5"/>
+			</zoomSway>
+			<scope>
+				<param name="scope" value="scope_binoculars" />
+			</scope>
+			<viewmodes>
+				<viewmode>
+					<param name="mode" value="normal" />
+				</viewmode>
+			</viewmodes>
+		</zoommode>
+	</zoommodes>
+</item>

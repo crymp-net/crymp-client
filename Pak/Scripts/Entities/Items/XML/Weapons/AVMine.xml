@@ -1,0 +1,63 @@
+<item name="AVMine" class="AVMine" category="explosive" priority="32">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="1" />
+		<param name="pose" 		value="mine" />
+		<param name="droppable" 	value="0" />
+		<param name="two_hand"				value="1" />
+		<param name="select_on_pickup" value="true" />
+	</params>
+	<ammos>
+		<ammo name="avexplosive" extra="1" 	amount="0" />
+	</ammos>
+	<geometry>
+		<firstperson name="objects/weapons/us/at_mine/at_mine_fp.chr" angles="0,0,0" position="0,0,0" />
+		<thirdperson name="objects/weapons/us/at_mine/at_mine.cgf" />
+	</geometry>
+	<actions>
+		<action name="select">
+			<animation target="firstperson" name="select_01" />
+			<animation target="owner" name="select" />
+			<sound target="thirdperson" name="sounds/weapons:c4:select" radius="2" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_01" />
+			<animation target="owner" name="deselect" />
+			<sound target="thirdperson" name="sounds/weapons:c4:deselect" radius="2" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_01" />
+			<animation target="owner" name="idle" />
+		</action>
+
+		<action name="plant">
+			<animation target="firstperson" name="place_armed_01" />
+			<animation target="owner" name="shoot" />
+			<sound target="thirdperson" name="sounds/weapons:at_mine:at_mine_place" radius="2" />
+		</action>
+
+		<action name="tick">
+			<sound target="firstperson" name="sounds/weapons:c4:arm" radius="2" />
+			<sound target="thirdperson" name="sounds/weapons:c4:arm" radius="2" />
+		</action>
+
+		<action name="pickedup">
+			<sound target="firstperson" name="sounds/weapons:at_mine:at_mine_grab" radius="5" />
+			<sound target="thirdperson" name="sounds/weapons:at_mine:at_mine_grab" radius="5" />
+		</action>
+	</actions>
+
+	<firemodes>
+		<firemode type="Plant" name="Plant">
+			<plant>
+				<param name="ammo_type" value="avexplosive" />
+				<param name="clip_size" value="0" />
+				<param name="damage" value="1000" />
+				<param name="delay" value="1.2" />
+				<param name="simple" value="1" />
+				<param name="need_to_crouch" value ="1" />
+				<param name="place_on_ground" value="1" />
+			</plant>
+		</firemode>
+	</firemodes>
+</item>

@@ -1,0 +1,98 @@
+<item name="AutoTurretAA" class="GunTurret">
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="0" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+		<param name="mass"				value="0" />
+		<param name="rocket_firemode"	value="rockets" />
+		<param name="radar_helper" 		value="mounttoradar" />
+		<param name="barrel_helper"   value="guntoradar" />
+		<param name="fire_helper" 		value="gun" />
+		<param name="rocket_helper" 	value="rocket" />
+	</params>	
+	<turret>
+	  <search>
+	    <hints>	      
+	      <hint x="0.45" y="0"/>
+	      <hint x="-0.45" y="0"/>	      	      
+	    </hints>
+	    <light helper="searchlight" color="1,1,1" diffuse_mul="3" texture="textures/lights/alien_turret.dds" material="materials/lightbeams/lightbeam_floodlight.mtl" hdr_dyn="3" />
+	  </search>	  	  
+	  <fire>	    
+	    <hints>
+	      <hint x="1" y="6"/>
+	      <hint x="-2" y="3"/>
+	      <hint x="1" y="2"/>
+	    </hints>
+	    <param name="deviation_speed" value="1" />
+	    <param name="deviation_amount" value="0.1" />	    
+	  </fire>
+	</turret>		
+	<damagelevels>
+		<level helper="" effect="explosions.Autoturret.damage1" scale="1.0" min_health="1" max_health="90" />
+		<level helper="" effect="explosions.Autoturret.damage2" scale="1.0" min_health="1" max_health="70" />
+		<level helper="" effect="explosions.Autoturret.damage3" scale="1.0" min_health="1" max_health="60" />
+		<level helper="" effect="explosions.Autoturret.damage4" scale="1.0" min_health="1" max_health="20" />
+		<level helper="" effect="explosions.Autoturret.explode" scale="1.0" min_health="0" max_health="0" />
+	</damagelevels>	
+	<actions>
+		<action name="rapid_fire">
+			<sound target="thirdperson" name="sounds/weapons:auto_turret:fire" radius="150" sphere="2.0" static="1" />
+		</action>
+		<action name="spin_up">
+			<sound target="thirdperson" name="sounds/weapons:auto_turret:spin_up" radius="150" sphere="2.0" static="1" />
+		</action>
+		<action name="spin_down">
+			<sound target="thirdperson" name="sounds/weapons:auto_turret:spin_down" radius="150" sphere="2.0" static="1" />
+		</action>
+		<action name="lock">
+			<sound target="thirdperson" name="sounds/weapons:auto_turret:lock" radius="150" sphere="2.0" static="1" />
+		</action>
+		<action name="fire">
+			<sound target="thirdperson" name="sounds/weapons:auto_turret:fire_missile" radius="150" sphere="2.0" static="1" />
+		</action>
+		<action name="turret">
+			<sound target="thirdperson" name="sounds/weapons:auto_turret:turret" radius="150" sphere="2.0" static="1" />
+		</action>
+		<action name="cannon">
+			<sound target="thirdperson" name="sounds/weapons:auto_turret:cannon" radius="150" sphere="2.0" static="1" />
+		</action>
+	</actions>
+	<firemodes>
+		<firemode name="Rapid" type="Rapid">
+			<fire>
+				<param name="ammo_type" value="hurricanebullet" />
+				<param name="rate" value="780" />
+				<param name="damage" value="50" />
+				<param name="clip_size" value="-1" />
+				<param name="helper_tp" value="gun" />
+			</fire>
+			<tracer>
+				<param name="geometry" 	value="objects/effects/tracer_standard_new.cgf" />
+				<paran name="speed" 		value="445" />
+				<param name="frequency" value="3" />
+				<param name="helper_tp" value="gun" />
+			</tracer>				
+			<spread>
+				<param name="min" value="0.05" />
+				<param name="max" value="0.15" />
+				<param name="attack" value="0.015" />
+				<param name="decay" value="0.15" />
+			</spread>
+			<rapid>
+				<param name="min_speed" value="4.00" />
+				<param name="max_speed" value="4.00" />
+				<param name="acceleration" value="3.45" />
+				<param name="deceleration" value="-4.0" />
+				
+				<param name="barrel_attachment" value="barrel" />
+			</rapid>
+			<muzzleflash>
+				<thirdperson effect="muzzleflash.Machinegun.Turret_tp" helper="gun" light_helper="gun" />
+			</muzzleflash>
+		</firemode>
+	</firemodes>
+</item>

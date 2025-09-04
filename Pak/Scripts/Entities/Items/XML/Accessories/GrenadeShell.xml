@@ -1,0 +1,10 @@
+<item name="GrenadeShell" class="Item" invisible="1" >
+	<params>
+		<param name="giveable" value="0" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/shells/scar_gl_shell.cgf"/>
+	</geometry>
+</item>

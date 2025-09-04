@@ -188,15 +188,9 @@ bool CGame::Init(IGameFramework* pFramework)
 
 	m_pWeaponSystem = new CWeaponSystem(this, GetISystem());
 
-	string itemFolder = "scripts/entities/items/xml";
-	pFramework->GetIItemSystem()->Scan(itemFolder.c_str());
-	if (!gEnv->bClient) {
-		CryLogAlways("[CryMP] Loading XML weapon definitions");
-		m_pWeaponSystem->Scan(itemFolder.c_str());
-	} else {
-		CryLogAlways("[CryMP] Loading pre-compiled weapon definitions");
-		m_pWeaponSystem->RegisterXMLData();
-	}
+	const char* itemFolder = "Scripts/Entities/Items/XML";
+	pFramework->GetIItemSystem()->Scan(itemFolder);
+	m_pWeaponSystem->Scan(itemFolder);
 
 	m_pOptionsManager = COptionsManager::CreateOptionsManager();
 

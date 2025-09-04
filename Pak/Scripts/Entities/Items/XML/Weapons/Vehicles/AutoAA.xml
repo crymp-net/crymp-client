@@ -1,0 +1,37 @@
+<item name="AutoAA" class="VehicleWeapon" invisible="1" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ammos>
+		<ammo name="tankaa" extra="0" amount="600" />
+	</ammos>
+	<actions>
+  	<action name="fire">			
+			<sound target="firstperson" name="sounds/weapons:vehicle_asian_aaa:fire_fp" radius="250" static="1" />			
+			<sound target="thirdperson" name="sounds/weapons:vehicle_asian_aaa:fire_3rd_loop" radius="250" static="1" />
+  	</action>
+  </actions>
+	<firemodes>
+		<firemode name="Automatic" type="Automatic">
+			<fire>
+				<param name="ammo_type" value="tankaa" />
+				<param name="clip_size" value="60" />
+				<param name="rate" value="125" />
+				<param name="damage" value="70" />
+			</fire>
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Tank.AACannon" helper="" light_helper="" light_radius="10" light_time="0.01" light_color="1,1,0.8" light_diffuse_mult="8" />
+				<thirdperson effect="muzzleflash.Tank.AACannon_tp" helper="" light_helper="" light_radius="10" light_time="0.01" light_color="1,1,0.8" light_diffuse_mult="8" />
+			</muzzleflash>
+			<reject>
+				<firstperson effect="weapon_fx.shells.aacannon" helper="shells" />
+				<thirdperson effect="weapon_fx.shells.aacannon" helper="shells" />
+			</reject>			
+		</firemode>
+	</firemodes>
+</item>

@@ -1,0 +1,115 @@
+<item name="VehicleGaussMounted" class="VehicleWeapon" invisible="1" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="1" />		
+		<mount>			
+			<param name="pivot" value="weapon" />
+			<param name="left_hand_helper" value="grip_left" />
+			<param name="right_hand_helper" value="grip_right" />
+		</mount>
+	</params>	
+	<ammos>
+		<ammo name="gaussbullet" extra="0" amount="0" />
+	</ammos>
+	<geometry>
+		<firstperson name="objects/weapons/us/gauss/gauss_vehicle.chr" angles="0,0,0" position="0,0,0"/>		
+		<boneAttachments>
+			<attachment target="firstperson" name="muzzle_flash_effect" bone="weapon_term" />
+			<attachment target="firstperson" name="muzzle_flash_effect_tp" bone="weapon_term" />
+			<attachment target="firstperson" name="muzzle_flash_light" bone="weapon_term" />			
+			<attachment target="firstperson" name="overheat_effect" bone="weapon_term" />
+		</boneAttachments>
+	</geometry>
+	
+	<actions>		
+		<action name="select">
+			<animation target="firstperson" name="select_vehicle_01" camera_helper="camera_helper" />						
+			<!--<sound target="firstperson" name="sounds/weapons:heavymachinegun:select" radius="5" />-->
+			<sound target="thirdperson" name="sounds/weapons:gaussrifle:select" radius="5" />
+		</action>		
+		<action name="idle">
+			<animation target="firstperson" name="idle_vehicle_%suffix%01" camera_helper="camera_helper" />			
+		</action>		
+		<action name="fire">			
+		  <animation target="firstperson" name="fire_vehicle_%suffix%01" camera_helper="camera_helper" />
+			<sound target="firstperson" name="sounds/weapons:gaussrifle:fire%env%_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:gaussrifle:fire%env%" radius="100" static="1" />
+		</action>									  
+	  <action name="fire_cock">
+			<animation target="firstperson" name="cock_vehicle_%suffix%01" camera_helper="camera_helper" />
+			<sound target="firstperson" name="sounds/weapons:gaussrifle:fire%env%_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:gaussrifle:fire%env%" radius="100" static="1" />
+		</action>
+		<action name="cock">
+			<animation target="firstperson" name="cock_vehicle_%suffix%01" camera_helper="camera_helper" />
+		</action>
+		<action name="zoom_in">
+			<animation target="firstperson" name="zoom_in_vehicle_%suffix%01" camera_helper="camera_helper" />
+		</action>
+		<action name="zoom_out">
+			<animation target="firstperson" name="zoom_out_vehicle_%suffix%01" camera_helper="camera_helper"/>
+		</action>		
+	</actions>
+		
+	<firemodes>
+		<firemode name="Single" type="Single">
+			<fire>
+				<param name="ammo_type" value="gaussbullet" />
+				<param name="rate" value="32" />								
+				<param name="slider_layer" value="dampers" />
+				<param name="slider_layer_time" value="750" />
+				<param name="clip_size" value="-1" />
+				<param name="damage" value="500" />
+				<param name="reload_time" value="3.5" />
+				<param name="helper_tp" value="weapon_term" />			
+				<param name="hit_type" value="gaussbullet" />						
+			</fire>			
+			<spread>
+				<param name="min" value="0.0015" />
+				<param name="max" value="5.0" />
+				<param name="attack" value="3.5" />
+				<param name="decay" value="1.00" />
+			</spread>	
+			<actions>
+				<param name="fire_cock" value="fire_cock" />
+			</actions>					
+			<muzzleflash>
+				<firstperson effect="muzzleflash.SniperRifle.Sniper" time="1" helper="muzzle_flash_effect" light_helper="muzzle_flash_light" light_time="0.01" light_radius="3" light_color="0.5,0.5,1" light_diffuse_mult="8" />
+				<thirdperson effect="muzzleflash.SniperRifle.Sniper_tp" time="1" helper="muzzle_flash_effect" light_helper="muzzle_flash_light" light_time="0.01" light_radius="3" light_color="0.5,0.5,1" light_diffuse_mult="8"  />
+			</muzzleflash>
+			<!--<muzzlesmoke>
+				<firstperson effect="muzzleflash.AssaultRifle.gaussrifle_smoke" helper="muzzle_flash_effect" time="0" />
+				<thirdperson effect="muzzleflash.AssaultRifle.gaussrifle_smoke_tp" helper="muzzle_flash_effect" time="0" />
+			</muzzlesmoke>-->
+			<reject>
+				<firstperson effect="weapon_fx.shells.gaussrifle" helper="shells" />
+				<thirdperson effect="weapon_fx.shells.gaussrifle" helper="shells" />
+			</reject>				
+		</firemode>
+	</firemodes>
+	<zoommodes>
+		<zoommode name="ironsight" type="IronSight">
+			<zoom>
+				<param name="suffix" value="ironsight_" />
+				<param name="dof_mask" value="textures/weapons/ironzoom_blurmask.dds" />
+				<param name="zoom_in_time" value="0.2" />
+				<param name="zoom_out_time" value="0.2" />
+				<stages>
+					<stage value="1.4" />
+				</stages>
+			</zoom>
+			<spreadMod>
+        		  <param name="max_mod" value="0.2"/>
+        		  <param name="min_mod" value="0.00667"/>
+        		</spreadMod>
+        		<recoilMod>
+        		  <param name="max_recoil_mod" value="1.5" />
+        		  <param name="attack_mod" value="1.5" />
+        		</recoilMod>	
+		</zoommode>		
+	</zoommodes>
+</item>

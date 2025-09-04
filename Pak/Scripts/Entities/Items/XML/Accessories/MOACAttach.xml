@@ -1,0 +1,25 @@
+<item name="MOACAttach" class="Item">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/US/Alien_Weapon_Mount/moac_fp.chr"/>
+		<thirdperson name="objects/weapons/US/MOAC/moac_tp.cgf"/>
+	</geometry>
+	<actions>
+		<action name="idle">
+			<animation target="firstperson" name="idle_01" />
+		</action>
+		<action name="spin_up_moac">
+			<animation target="firstperson" name="prefire_01"/>
+		</action>
+		<action name="spin_down_moac">
+			<animation target="firstperson" name="postfire_01"/>
+		</action>		
+		<action name="fire">
+			<animation target="firstperson" name="fire_01" />
+		</action>
+	</actions>
+</item>
