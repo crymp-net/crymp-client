@@ -691,7 +691,7 @@ void CNanoSuit::Hit(int damage)
 		pMaterialEffects->ExecuteEffect(id, params);
 	}
 
-	if(damage > 10.0f && m_pOwner && m_pOwner->GetHealth() > 0)
+	if (g_pGameCVars->mp_suitHitReaction && damage > 10.0f && m_pOwner && m_pOwner->GetHealth() > 0)
 	{
 		m_defenseHitTimer = HIT_EFFECT_TIME;
 		if(gEnv->bClient)
