@@ -908,13 +908,19 @@ IMPLEMENT_RMI(CGameRules, ClSetTeam)
 	if (it != m_entityteams.end())
 		m_entityteams.erase(it);
 
-	IActor* pActor = m_pActorSystem->GetActor(params.entityId);
-	bool isplayer = pActor != 0;
+	CActor* pActor = static_cast<CActor*>(m_pActorSystem->GetActor(params.entityId));
+	const bool isplayer = pActor != nullptr;
 	if (isplayer && oldTeam)
 	{
 		TPlayerTeamIdMap::iterator pit = m_playerteams.find(oldTeam);
 		assert(pit != m_playerteams.end());
 		stl::find_and_erase(pit->second, params.entityId);
+	}
+
+	if (isplayer)
+	{
+		//CryMP: Update m_teamId so that SetActorModel uses latest info
+		pActor->NetSetTeamId(params.teamId);
 	}
 
 	if (params.teamId)
