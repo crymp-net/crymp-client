@@ -415,6 +415,57 @@ std::string LocalizationManager::LocalizeEnglish(std::string_view text) const
 	return result;
 }
 
+void LocalizationManager::LogInfo()
+{
+	CryLogAlways("----------------------------- LocalizationManager ------------------------------");
+
+	CryLogAlways("Files:");
+	for (const std::string& filename : m_filenames)
+	{
+		CryLogAlways("- $8\"%s\"$o", filename.c_str());
+	}
+	CryLogAlways("Total files: $5%zu$o", m_filenames.size());
+
+	CryLogAlways("Labels:");
+	for (const Label& label : m_language.labels)
+	{
+		CryLogAlways(
+			"- $8\"@%s\"$o"
+			" englishText=$8\"%s\"$o"
+			" englishSubtitle=$8\"%s\"$o"
+			" localizedText=$8\"%s\"$o"
+			" localizedSubtitle=$8\"%s\"$o"
+			" characterName=$8\"%s\"$o"
+			" soundEvent=$8\"%s\"$o"
+			" soundVolume=$5%g$o"
+			" soundDucking=$5%g$o"
+			" soundRadioRatio=$5%g$o"
+			" soundRadioBackground=$5%g$o"
+			" soundRadioSquelch=$5%g$o"
+			" useSubtitle=$5%s$o",
+			label.name.c_str(),
+			label.englishText.c_str(),
+			label.englishSubtitle.c_str(),
+			StringTools::ToUtf8(label.localizedText).c_str(),
+			StringTools::ToUtf8(label.localizedSubtitle).c_str(),
+			StringTools::ToUtf8(label.characterName).c_str(),
+			label.soundEvent.c_str(),
+			label.soundVolume,
+			label.soundDucking,
+			label.soundRadioRatio,
+			label.soundRadioBackground,
+			label.soundRadioSquelch,
+			label.useSubtitle ? "true" : "false"
+		);
+	}
+	CryLogAlways("Total labels: $5%zu$o", m_language.labels.size());
+
+	CryLogAlways("Language: $8\"%s\"$o prettyName=$8\"%s\"$o id=$5%u$o", m_language.name.c_str(),
+		m_language.prettyName.c_str(), m_language.id);
+
+	CryLogAlways("--------------------------------------------------------------------------------");
+}
+
 std::string_view LocalizationManager::GetLanguageFromSystem()
 {
 	static constexpr struct { char code[2 + 1]; const char* name; } LANGUAGES[] = {

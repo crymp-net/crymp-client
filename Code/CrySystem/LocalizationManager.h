@@ -66,6 +66,8 @@ public:
 	std::string Localize(std::string_view text) const;
 	std::string LocalizeEnglish(std::string_view text) const;
 
+	void LogInfo();
+
 	static std::string_view GetLanguageFromSystem();
 
 	////////////////////////////////////////////////////////////////////////////////

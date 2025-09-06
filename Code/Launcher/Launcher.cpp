@@ -1299,6 +1299,10 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 	gEnv->pConsole->AddCommand("CryPakInfo", [](IConsoleCmdArgs* args) {
 		CryPak::GetInstance().LogInfo();
 	});
+
+	gEnv->pConsole->AddCommand("LocalizationManagerInfo", [](IConsoleCmdArgs* args) {
+		LocalizationManager::GetInstance().LogInfo();
+	});
 }
 
 struct DummySystemCallback : public ISystemUserCallback
