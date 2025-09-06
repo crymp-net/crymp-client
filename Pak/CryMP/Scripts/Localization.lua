@@ -1407,6 +1407,126 @@ CPPAPI.AddLocalizedLabel("ui_F", { english_text = "F", localized_text = "F" })
 CPPAPI.AddLocalizedLabel("ui_G", { english_text = "G", localized_text = "G" })
 CPPAPI.AddLocalizedLabel("ui_H", { english_text = "H", localized_text = "H" })
 
+CPPAPI.AddLocalizedLabel("ui_radar_SE", {
+	english_text = "SE",
+	languages = {
+		czech     = { localized_text = "JV"  }, -- JIHOVÝCHOD
+		french    = { localized_text = "SE"  }, -- SUD-EST
+		german    = { localized_text = "SO"  }, -- SÜDOST
+		hungarian = { localized_text = "DK"  }, -- DÉLKELET
+		italian   = { localized_text = "SE"  }, -- SUD-EST
+		polish    = { localized_text = "SE"  }, -- POŁUDNIOWY WSCHÓD
+		russian   = { localized_text = "ЮВ"  }, -- ЮГО-ВОСТОК
+		spanish   = { localized_text = "SE"  }, -- SURESTE
+		turkish   = { localized_text = "GD"  }, -- GÜNEYDOĞU
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_radar_S", {
+	english_text = "S",
+	languages = {
+		czech     = { localized_text = "J"   }, -- JIH
+		french    = { localized_text = "S"   }, -- SUD
+		german    = { localized_text = "S"   }, -- SÜD
+		hungarian = { localized_text = "D"   }, -- DÉL
+		italian   = { localized_text = "S"   }, -- SUD
+		polish    = { localized_text = "S"   }, -- POŁUDNIE
+		russian   = { localized_text = "Ю"   }, -- ЮГ
+		spanish   = { localized_text = "S"   }, -- SUR
+		turkish   = { localized_text = "G"   }, -- GÜNEY
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_radar_SW", {
+	english_text = "SW",
+	languages = {
+		czech     = { localized_text = "JZ"  }, -- JIHOZÁPAD
+		french    = { localized_text = "SO"  }, -- SUD-OUEST
+		german    = { localized_text = "SW"  }, -- SÜDWEST
+		hungarian = { localized_text = "DNY" }, -- DÉLNYUGAT
+		italian   = { localized_text = "SO"  }, -- SUD-OVEST
+		polish    = { localized_text = "SW"  }, -- POŁUDNIOWY ZACHÓD
+		russian   = { localized_text = "ЮЗ"  }, -- ЮГО-ЗАПАД
+		spanish   = { localized_text = "SO"  }, -- SUROESTE
+		turkish   = { localized_text = "GB"  }, -- GÜNEYBATI
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_radar_NW", {
+	english_text = "NW",
+	languages = {
+		czech     = { localized_text = "SZ"  }, -- SEVEROZÁPAD
+		french    = { localized_text = "NO"  }, -- NORD-OUEST
+		german    = { localized_text = "NW"  }, -- NORDWEST
+		hungarian = { localized_text = "ÉNY" }, -- ÉSZAKNYUGAT
+		italian   = { localized_text = "NO"  }, -- NORD-OVEST
+		polish    = { localized_text = "NW"  }, -- PÓŁNOCNY ZACHÓD
+		russian   = { localized_text = "СЗ"  }, -- СЕВЕРО-ЗАПАД
+		spanish   = { localized_text = "NO"  }, -- NOROESTE
+		turkish   = { localized_text = "KB"  }, -- KUZEYBATI
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_radar_N", {
+	english_text = "N",
+	languages = {
+		czech     = { localized_text = "S"   }, -- SEVER
+		french    = { localized_text = "N"   }, -- NORD
+		german    = { localized_text = "N"   }, -- NORD
+		hungarian = { localized_text = "É"   }, -- ÉSZAK
+		italian   = { localized_text = "N"   }, -- NORD
+		polish    = { localized_text = "N"   }, -- PÓŁNOC
+		russian   = { localized_text = "С"   }, -- СЕВЕР
+		spanish   = { localized_text = "N"   }, -- NORTE
+		turkish   = { localized_text = "K"   }, -- KUZEY
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_radar_NE", {
+	english_text = "NE",
+	languages = {
+		czech     = { localized_text = "SV"  }, -- SEVEROVÝCHOD
+		french    = { localized_text = "NE"  }, -- NORD-EST
+		german    = { localized_text = "NO"  }, -- NORDOST
+		hungarian = { localized_text = "ÉK"  }, -- ÉSZAKKELET
+		italian   = { localized_text = "NE"  }, -- NORD-EST
+		polish    = { localized_text = "NE"  }, -- PÓŁNOCNY WSCHÓD
+		russian   = { localized_text = "СВ"  }, -- СЕВЕРО-ВОСТОК
+		spanish   = { localized_text = "NE"  }, -- NORESTE
+		turkish   = { localized_text = "KD"  }, -- KUZEYDOĞU
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_radar_E", {
+	english_text = "E",
+	languages = {
+		czech     = { localized_text = "V"   }, -- VÝCHOD
+		french    = { localized_text = "E"   }, -- EST
+		german    = { localized_text = "O"   }, -- OST
+		hungarian = { localized_text = "K"   }, -- KELET
+		italian   = { localized_text = "E"   }, -- EST
+		polish    = { localized_text = "E"   }, -- WSCHÓD
+		russian   = { localized_text = "В"   }, -- ВОСТОК
+		spanish   = { localized_text = "E"   }, -- ESTE
+		turkish   = { localized_text = "D"   }, -- DOĞU
+	},
+})
+
+CPPAPI.AddLocalizedLabel("ui_radar_W", {
+	english_text = "W",
+	languages = {
+		czech     = { localized_text = "Z"   }, -- ZÁPAD
+		french    = { localized_text = "O"   }, -- OUEST
+		german    = { localized_text = "W"   }, -- WEST
+		hungarian = { localized_text = "NY"  }, -- NYUGAT
+		italian   = { localized_text = "O"   }, -- OVEST
+		polish    = { localized_text = "W"   }, -- ZACHÓD
+		russian   = { localized_text = "З"   }, -- ЗАПАД
+		spanish   = { localized_text = "O"   }, -- OESTE
+		turkish   = { localized_text = "B"   }, -- BATI
+	},
+})
+
 --[[
 CPPAPI.AddLocalizedLabel("template", {
 	english_text = "",
