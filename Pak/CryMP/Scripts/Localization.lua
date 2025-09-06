@@ -1394,47 +1394,18 @@ CPPAPI.AddLocalizedLabel("use_vehicle_full", {
     },
 })
 
-CPPAPI.AddLocalizedLabel("ui_A", {
-	english_text = "A",
-	languages = {
-	},
-})
+--------------------------------------------------------------------------------
+-- Map coordinates
+--------------------------------------------------------------------------------
 
-CPPAPI.AddLocalizedLabel("ui_B", {
-	english_text = "B",
-	languages = {
-	},
-})
-
-CPPAPI.AddLocalizedLabel("ui_C", {
-	english_text = "C",
-	languages = {
-	},
-})
-
-CPPAPI.AddLocalizedLabel("ui_D", {
-	english_text = "D",
-	languages = {
-	},
-})
-
-CPPAPI.AddLocalizedLabel("ui_F", {
-	english_text = "F",
-	languages = {
-	},
-})
-
-CPPAPI.AddLocalizedLabel("ui_G", {
-	english_text = "G",
-	languages = {
-	},
-})
-
-CPPAPI.AddLocalizedLabel("ui_H", {
-	english_text = "H",
-	languages = {
-	},
-})
+CPPAPI.AddLocalizedLabel("ui_A", { english_text = "A", localized_text = "A" })
+CPPAPI.AddLocalizedLabel("ui_B", { english_text = "B", localized_text = "B" })
+CPPAPI.AddLocalizedLabel("ui_C", { english_text = "C", localized_text = "C" })
+CPPAPI.AddLocalizedLabel("ui_D", { english_text = "D", localized_text = "D" })
+CPPAPI.AddLocalizedLabel("ui_E", { english_text = "E", localized_text = "E" })  -- by default East, but unused (?)
+CPPAPI.AddLocalizedLabel("ui_F", { english_text = "F", localized_text = "F" })
+CPPAPI.AddLocalizedLabel("ui_G", { english_text = "G", localized_text = "G" })
+CPPAPI.AddLocalizedLabel("ui_H", { english_text = "H", localized_text = "H" })
 
 --[[
 CPPAPI.AddLocalizedLabel("template", {
