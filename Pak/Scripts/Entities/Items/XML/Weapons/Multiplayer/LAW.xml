@@ -9,7 +9,7 @@
 		<param name="prone_not_usable" value="1" />
 		<param name="raiseable"		value="true" />
 		<param name="raise_distance" value="0.90" />
-		<param name="auto_droppable" value="1" />
+		<param name="auto_droppable" value="0" />
 		<param name="has_first_select" value="1" />
 		<param name="display_name"	value="@mp_eML" />
 	</params>
