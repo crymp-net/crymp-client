@@ -11,6 +11,6 @@
 		<feature name="nightvision" />
 	</features>	
 	<geometry>
-		<thirdperson name="objects/default.cgf" />
+		<thirdperson name="objects/characters/attachment/squad/base_helmets/squad_nightvisiongoggles.cgf" />
 	</geometry>	
 </item>
