@@ -51,6 +51,7 @@ class ItemSystem final : public ILevelSystemListener, public IItemSystem
 
 	std::vector<EntityId> m_garbage;
 	std::vector<IItemSystemListener*> m_listeners;
+	std::vector<std::string> m_folders;
 
 	std::unique_ptr<EquipmentManager> m_pEquipmentManager;
 
@@ -62,6 +63,7 @@ class ItemSystem final : public ILevelSystemListener, public IItemSystem
 	IGameFramework* m_pGameFramework = nullptr;
 
 	bool m_reloading = false;
+	bool m_recursing = false;
 	bool m_multiplayer = false;
 
 	ICVar* m_pPrecacheCVar = nullptr;
@@ -151,18 +153,7 @@ private:
 
 	void SetSpawnName(std::string_view name);
 
-	struct ItemClassData
-	{
-		const char* name = nullptr;
-		const char* factory = nullptr;
-		const char* script = nullptr;
-		IItemParamsNode* params = nullptr;
-		bool multiplayer = false;
-		bool invisible = false;
-	};
-
-	void RegisterItemClass(const ItemClassData& item);
-	void RegisterXMLData();
+	void ScanXml(XmlNodeRef& root, const char* xmlFile);
 
 	void RegisterCVars();
 	void UnregisterCVars();

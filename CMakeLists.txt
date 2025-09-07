@@ -149,7 +149,6 @@ add_library(Base OBJECT
 	Code/CryAction/GameTokenSystem.h
 	Code/CryAction/ItemParamsNode.cpp
 	Code/CryAction/ItemParamsNode.h
-	Code/CryAction/ItemSystem_XMLData.cpp
 	Code/CryAction/ItemSystem.cpp
 	Code/CryAction/ItemSystem.h
 	Code/CryAction/LevelSystem.cpp
