@@ -24,6 +24,7 @@
 	<params>
 		<param name="triggerweight" 	value="250" />	
 		<param name="box_dimension" value="2" />
+		<param name="hitPoints" value="300" />
 		<param name="quietRemoval" value="1" />
     <param name="lifetime" value="0" />
 	</params>
