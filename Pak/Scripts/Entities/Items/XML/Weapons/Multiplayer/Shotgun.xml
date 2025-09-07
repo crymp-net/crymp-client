@@ -245,6 +245,17 @@
 			</actions>
 		</firemode>
 		<firemode name="Shotgun" type="Shotgun">	
+			<tracer>
+				<param name="geometryFP" value="objects/effects/tracer_standard_new.cgf" />
+				<param name="geometry"   value="objects/effects/tracer_standard_new.cgf" />
+				<param name="effectFP"   value="weapon_fx.tracer.standardfp" />
+				<param name="effect"     value="weapon_fx.tracer.standard" />
+				<param name="speed"      value="360" />
+				<param name="speedFP"    value="360" />
+				<param name="frequency"  value="1" />
+				<param name="helper_tp"  value="weapon_term" />
+				<param name="helper_fp"  value="weapon_term" />
+			</tracer>
 			<shotgun>
 				<param name="pellets" value="8" />
 				<param name="pelletdamage" value="16" />
@@ -256,6 +267,17 @@
 			</recoil>
 		</firemode>
 		<firemode name="Narrow" type="Shotgun">
+			<tracer>
+				<param name="geometryFP" value="objects/effects/tracer_standard_new.cgf" />
+				<param name="geometry"   value="objects/effects/tracer_standard_new.cgf" />
+				<param name="effectFP"   value="weapon_fx.tracer.standardfp" />
+				<param name="effect"     value="weapon_fx.tracer.standard" />
+				<param name="speed"      value="360" />
+				<param name="speedFP"    value="360" />
+				<param name="frequency"  value="1" />
+				<param name="helper_tp"  value="weapon_term" />
+				<param name="helper_fp"  value="weapon_term" />
+			</tracer>
 			<shotgun>
 				<param name="pellets" value="8" />
 				<param name="pelletdamage" value="14" />
