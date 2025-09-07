@@ -10,7 +10,7 @@
 	</params>
 	<geometry>
 		<firstperson name="objects/weapons/equipment/lockpick_kit/lockpick_kit_fp.chr" angles="0,0,0" />
-		<thirdperson name="objects/weapons/equipment/lockpick_kit/lockpick_kit_tp.cgf" />	
+		<thirdperson name="objects/weapons/equipment/lockpick_kit/lockpick_kit_tp.cgf" angles="-120,0,90" position="-0.04,-0.025,0.04" />
 	</geometry>
 	<actions>	
 		<action name="select">

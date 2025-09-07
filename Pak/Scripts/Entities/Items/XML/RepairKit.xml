@@ -12,7 +12,7 @@
 	</params>
 	<geometry>
 		<firstperson name="objects/weapons/equipment/repair_kit/repair_kit_fp.chr" angles="0,0,0" />
-		<thirdperson name="objects/weapons/equipment/repair_kit/repair_kit_tp.cgf" />
+		<thirdperson name="objects/weapons/equipment/repair_kit/repair_kit_tp.cgf" angles="-70,0,90" position="-0.1,0,0" />
 		
 		<boneAttachments>
 			<attachment target="firstperson" name="weapon_term" bone="weapon_term" />
