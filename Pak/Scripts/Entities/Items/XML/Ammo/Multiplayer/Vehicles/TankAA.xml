@@ -2,6 +2,7 @@
 	<flags>
 		<param name="serverspawn" value="0" />
 		<param name="predictspawn" value="0" />
+		<param name="clientonly" value="1" />
 	</flags>
 	<physics type="particle">
 		<param name="mass" value="0.0125" />

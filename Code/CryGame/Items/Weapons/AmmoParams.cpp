@@ -245,8 +245,6 @@ void SAmmoParams::LoadFlagsAndParams()
 		int flag = 0;
 		CItemParamReader reader(flagsNode);
 		reader.Read("ClientOnly", flag);
-		if (pEntityClass == gEnv->pEntitySystem->GetClassRegistry()->FindClass("tankaa")) //CryMP hack : fix Anti-Air FPS bug (TankAA.xml)
-			flag = 1;
 
 		flags |= flag ? ENTITY_FLAG_CLIENT_ONLY : 0; flag = 0;
 		reader.Read("ServerOnly", flag); flags |= flag ? ENTITY_FLAG_SERVER_ONLY : 0; flag = 0;
