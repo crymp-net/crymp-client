@@ -1,0 +1,50 @@
+<ammo name="explosivegrenadeAI" class="Projectile">
+	<geometry>
+		<firstperson name="objects/weapons/us/frag_grenade/frag_grenade_tp_inair.cgf" />
+		<thirdperson name="objects/weapons/us/frag_grenade/frag_grenade_tp_inair.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="0.35" />
+		<param name="speed" value="15" />
+		<param name="radius" value="0.125" />
+		
+		<param name="air_resistance" value="0" />		<!-- THE AI GRENADE MUST HAVE AIR RESISTANCE SET TO ZERO! -->
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, -9.8" />
+		<param name="water_gravity" value="0, 0, -9.8" />
+		
+		<param name="thrust" value="0" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="1" />
+		<param name="material" value="mat_grenade" />
+		<param name="spin_random" value="720, 720, 720" />
+		
+		<param name="single_contact" value="0" />
+		<param name="traceable" value="1" />
+	</physics>
+	<explosion>
+		<param name="pressure" value="1500" />
+		<param name="min_radius" value="1" />
+		<param name="max_radius" value="10" />
+		<param name="min_phys_radius" value="1.5" />
+		<param name="max_phys_radius" value="2.2" />
+		<param name="hole_size" value="2" />
+		<param name="terrain_hole_size" value="3" />
+		<param name="decal" value="textures/decal/explo_decal.dds" />
+		<param name="effect_scale" value="1" />
+		<param name="radialblurdist" value="30" />
+		<param name="type" value="frag" />
+	</explosion>
+	<trail>
+		<param name="effect" value="muzzleflash.LAM.grenade_white" />
+	</trail>
+	<params>
+		<param name="lifetime" value="3.5" />
+		<param name="showtime" value="0.05" />
+		<param name="aitype"	value="grenade" />
+	</params>
+</ammo>

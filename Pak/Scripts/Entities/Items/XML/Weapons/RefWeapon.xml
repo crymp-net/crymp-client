@@ -1,0 +1,44 @@
+<item name="RefWeapon" class="ReferenceWeapon" category="debug" priority="0" >
+	<params>
+		<param name="debug" 			value="1" />
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="1" />
+		<param name="pose" 				value="rifle" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/us/reference_weapon/light_objects.chr" angles="0,0,0" position="0,0,-.075" />
+		<thirdperson name="objects/weapons/us/reference_weapon/light_objects.chr" />
+	</geometry>
+	<actions>
+		<action name="select">
+			<animation target="firstperson" name="select_01" />
+			<animation target="owner" name="select" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_01" />
+			<animation target="owner" name="deselect" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_01" />
+			<animation target="owner" name="idle" />
+		</action>
+		<action name="fire">
+			<animation target="firstperson" name="fire_01" />
+			<animation target="owner" name="shoot" />
+		</action>
+	</actions>
+	<firemodes>
+		<firemode name="Automatic" type="Automatic">
+			<fire>
+			</fire>
+		</firemode>
+		<firemode type="default">
+		</firemode>
+	</firemodes>
+	<zoommodes>
+		<zoommode type="default">
+		</zoommode>
+	</zoommodes>
+	<accessories>
+	</accessories>
+</item>

@@ -1,0 +1,58 @@
+<item name="SingularityCannonWarrior" class="Weapon">
+	<params>
+		<param name="equipeable"	value="1" />
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="1" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="1" />
+		<param name="arms"			 	value="0" />
+		<mount />				
+	</params>
+	<ammos>
+		<ammo name="WarriorSingularityProjectile" extra="1000" amount="1000" />
+	</ammos>
+	<actions>	
+		<action name="spin_up">
+			<sound target="firstperson" name="Sounds/weapons:singularity_cannon_warrior:charge" radius="100" static="1" />
+			<sound target="thirdperson" name="Sounds/weapons:singularity_cannon_warrior:charge" radius="100" static="1" />
+		</action>		
+		<action name="blast">
+			<sound target="firstperson" name="Sounds/physics:explosions:singularity_warrior_explo_end" radius="100" static="1" />
+			<sound target="thirdperson" name="Sounds/physics:explosions:singularity_warrior_explo_end" radius="100" static="1" />
+		</action>		
+		<action name="fire">			
+			<sound target="firstperson" name="Sounds/weapons:singularity_cannon_warrior:fire" radius="100" static="1" />
+			<sound target="thirdperson" name="Sounds/weapons:singularity_cannon_warrior:fire" radius="100" static="1" />
+		</action>
+	</actions>
+	<firemodes>		
+		<firemode name="Charge" type="Charge">
+			<fire>
+				<param name="spin_up_time" value="3.5" />
+				<param name="ammo_type" value="WarriorSingularityProjectile" />
+				<param name="rate" value="10" />
+				<param name="damage" value="500" />				
+				<param name="offset" value="0" />								
+			</fire>
+			<charge>
+				<param name="time" value="0.1" />
+				<param name="max_charges" value="1" />
+			</charge>
+			<spread>
+				<param name="min" value="0" />
+				<param name="max" value="0" />
+				<param name="attack" value="0" />
+				<param name="decay" value="0" />
+			</spread>
+			<muzzleflash>
+				<firstperson effect="Alien_Weapons.singularity.Warrior_Singularity_Muzzle" helper="" dummy="" light_radius="10" time="0.100" />
+				<thirdperson effect="Alien_Weapons.singularity.Warrior_Singularity_Muzzle" helper="" light_helper="" light_radius="10" time="0.100" />
+			</muzzleflash>			
+			<spinup>
+				<firstperson effect="alien_weapons.singularity.Warrior_Singularity_Spinup" helper="dummy" light_radius="0" />
+				<thirdperson effect="alien_weapons.singularity.Warrior_Singularity_Spinup" helper="dummy" light_radius="0" />	
+			</spinup>	
+		</firemode>
+	</firemodes>
+</item>

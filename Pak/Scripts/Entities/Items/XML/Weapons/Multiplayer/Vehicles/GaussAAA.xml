@@ -1,0 +1,40 @@
+<item name="GaussAAA" class="VehicleWeapon" invisible="1" configuration="mp" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ammos>
+		<ammo name="gaussbullet" extra="0" amount="200" />
+	</ammos>
+	<actions>
+  	<action name="fire">			
+			<sound target="firstperson" name="sounds/weapons:vehicle_asian_tank:fire_gauss_fp" radius="200" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:vehicle_asian_tank:fire" radius="200" static="1" />
+		</action>
+  </actions>
+	<firemodes>
+		<firemode name="Automatic" type="Automatic">
+			<fire>
+				<param name="ammo_type" value="gaussbullet" />
+				<param name="rate" value="400" />				
+				<param name="damage" value="500" />				
+				<param name="barrel_count" value="4" />
+			</fire>
+			<recoil>
+			  <param name="impulse" value="13000" />				
+			</recoil>				
+		  <muzzleflash>
+				<firstperson effect="muzzleflash.Tank.cannon_gauss" time="1" helper="" light_helper="" light_time="0.01" light_diffuse_mult="8" light_radius="3" light_color="0.5,0.5,1" />
+				<thirdperson effect="muzzleflash.Tank.cannon_gauss_tp" time="1" helper="" light_helper="" light_time="0.01"  light_radius="3" light_color="0.5,0.5,1" light_diffuse_mult="8"  />
+			</muzzleflash>			
+			<!--<muzzlesmoke>
+				<firstperson effect="muzzleflash.AssaultRifle.gaussrifle_smoke" helper="" time="0" />
+				<thirdperson effect="muzzleflash.AssaultRifle.gaussrifle_smoke_tp" helper="" time="0" />
+			</muzzlesmoke>-->
+		</firemode>
+	</firemodes>
+</item>

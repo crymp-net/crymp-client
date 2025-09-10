@@ -1138,11 +1138,7 @@ void Launcher::PatchEngine()
 
 void Launcher::StartEngine()
 {
-	#ifdef SERVER_LAUNCHER
-	const bool oldAction = true;
-	#else
 	const bool oldAction = WinAPI::CmdLine::HasArg("-oldaction");
-	#endif
 
 	IGameFramework* pGameFramework = nullptr;
 
@@ -1218,6 +1214,7 @@ void Launcher::StartEngine()
 
 	StartupTime::Finish();
 	CryLogAlways("Startup finished in %.3f seconds", StartupTime::GetSeconds());
+
 #ifdef SERVER_LAUNCHER
 	if (oldAction) {
 		CryLogAlways("[CryMP] Using old CryAction");

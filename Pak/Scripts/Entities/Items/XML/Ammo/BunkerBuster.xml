@@ -1,0 +1,48 @@
+<ammo name="bunkerbuster" class="Rocket">
+	<geometry>
+		<firstperson name="objects/weapons/rockets/sidewinder/sidewinder.cgf" />
+		<thirdperson name="objects/weapons/rockets/sidewinder/sidewinder.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="0.35" />
+		<param name="speed" value="40" />
+		<param name="radius" value="0.1" />
+		
+		<param name="air_resistance" value="0.5" />
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, -1" />
+		<param name="water_gravity" value="0, 0, -1" />
+		
+		<param name="thrust" value="50" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="8" />
+		<param name="material" value="mat_metal" />
+		<param name="pierceability" value="8" />
+	
+		<param name="single_contact" value="1" />
+	</physics>
+	<explosion>
+		<param name="pressure" value="100" />
+		<param name="max_radius" value="8" />
+		<param name="hole_size" value="5" />
+		<param name="terrain_hole_size" value="5" />
+		<param name="decal" value="textures/decal/explo_decal.dds" />
+		<param name="effect" value="" />
+		<param name="effect_scale" value="1" />
+	</explosion>
+	<params>
+		<param name="lifetime" value="10" />
+		<param name="showtime" value="0.15" />
+		<param name="aitype"	value="rpg" />
+	</params>
+	
+	<trail>
+		<param name="effect" value="smoke_and_fire.weapon_stinger.FFAR" />
+		<param name="scale" value="1" />
+	</trail>	
+	
+</ammo>
