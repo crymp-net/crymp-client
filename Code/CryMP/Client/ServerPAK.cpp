@@ -29,9 +29,6 @@ bool ServerPAK::Load(const std::string & path)
 	{
 		CryLogAlways("$3[CryMP] [ServerPAK] Loaded $6%s", path.c_str());
 		m_path = path;
-
-		//Trigger a subsystem reset
-		m_bResetRequired = true;
 	}
 	else
 	{
@@ -59,24 +56,16 @@ bool ServerPAK::Unload()
 		CryLogAlways("$4[CryMP] [ServerPAK] Failed to unload $8%s", m_path.c_str());
 	}
 
-	m_bResetRequired = true;
-
 	return closed;
 }
 
 void ServerPAK::OnLoadingStart(ILevelInfo* pLevel)
 {
-	m_bResetRequired = true;
 }
 
 void ServerPAK::OnConnect()
 {
 	Unload();
-
-	if (!m_bResetRequired)
-		return;
-
-	ResetSubSystems();
 }
 
 void ServerPAK::OnDisconnect(int reason, const char* message)
@@ -152,5 +141,4 @@ void ServerPAK::ResetSubSystems()
 	}
 
 	CryLogAlways("$3[CryMP] Reset subsystems and %d scripts", counter);
-	m_bResetRequired = false;
 }
