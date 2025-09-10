@@ -186,7 +186,7 @@
 				<param name="effectFP" 		value="weapon_fx.tracer.gaussfp" />
 				<param name="effect" 		value="weapon_fx.tracer.gauss" />
 				<param name="speed" 		value="500" />
-				<param name="speedFP"   value="400" />
+				<param name="speedFP"   value="200" /> <!-- CryMP -->
 				<param name="frequency" value="1" />
 				<param name="helper_tp" value="weapon_term" />
 				<param name="helper_fp" value="weapon_term" />

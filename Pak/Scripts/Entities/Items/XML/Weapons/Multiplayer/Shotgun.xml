@@ -246,12 +246,13 @@
 		</firemode>
 		<firemode name="Shotgun" type="Shotgun">	
 			<tracer>
+				<!-- CryMP -->
 				<param name="geometryFP" value="objects/effects/tracer_standard_new.cgf" />
 				<param name="geometry"   value="objects/effects/tracer_standard_new.cgf" />
 				<param name="effectFP"   value="weapon_fx.tracer.standardfp" />
 				<param name="effect"     value="weapon_fx.tracer.standard" />
-				<param name="speed"      value="360" />
-				<param name="speedFP"    value="360" />
+				<param name="speed"      value="200" />
+				<param name="speedFP"    value="200" />
 				<param name="frequency"  value="1" />
 				<param name="helper_tp"  value="weapon_term" />
 				<param name="helper_fp"  value="weapon_term" />
@@ -268,6 +269,7 @@
 		</firemode>
 		<firemode name="Narrow" type="Shotgun">
 			<tracer>
+				<!-- CryMP -->
 				<param name="geometryFP" value="objects/effects/tracer_standard_new.cgf" />
 				<param name="geometry"   value="objects/effects/tracer_standard_new.cgf" />
 				<param name="effectFP"   value="weapon_fx.tracer.standardfp" />

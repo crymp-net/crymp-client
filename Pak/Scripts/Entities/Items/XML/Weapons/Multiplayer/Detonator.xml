@@ -8,7 +8,7 @@
 	</params>
 	<geometry>
 		<firstperson name="objects/weapons/us/detonator/detonator_fp.chr" angles="0,0,0" />
-		<thirdperson name="objects/weapons/us/detonator/detonator_tp.cgf" />
+		<thirdperson name="objects/weapons/us/detonator/detonator_tp.cgf" position="-0.08,-0.0806,0.0153" angles="17,-90,180" />
 	</geometry>
 	<actions>
 		<action name="select">

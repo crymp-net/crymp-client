@@ -216,7 +216,7 @@
 				<param name="effectFP" 		value="weapon_fx.tracer.sniperfp" />
 				<param name="effect" 		value="weapon_fx.tracer.sniper" />
 				<param name="speed" 		value="800" />
-				<param name="speedFP"   value="1200" />
+				<param name="speedFP"   value="200" />
 				<param name="frequency" value="1" />
 				<param name="helper_tp" value="weapon_term" />
 				<param name="helper_fp" value="weapon_term" />

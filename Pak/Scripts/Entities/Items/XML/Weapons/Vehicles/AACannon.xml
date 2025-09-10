@@ -61,15 +61,16 @@
 			<reject>
 				<firstperson effect="weapon_fx.shells.aacannon" helper="" offset="0,-3,0"/>
 				<thirdperson effect="weapon_fx.shells.aacannon" helper="" offset="0,-3,0"/>
-			</reject>	
+			</reject>
 			<tracer>
-				<param name="geometryFP" 	value="objects/effects/tracer_standard_new.cgf" />
-				<param name="geometry" 	value="objects/effects/tracer_standard_new.cgf" />
+				<!-- CryMP -->
+				<param name="geometry" 	value="objects/effects/tracer_standard_red_new.cgf" />
+				<param name="geometry" 	value="objects/effects/tracer_standard_red_new.cgf" />
 				<param name="speed" 		value="230" />
-				<param name="speedFP" 		value="230" />
-				<param name="frequency" value="3" />
+				<param name="speedFP"   value="300" />
+				<param name="frequency" value="1" />
 				<param name="lifetime" value="1.27" />
-			</tracer>			
+			</tracer>
 		</firemode>
 	</firemodes>
 </item>
