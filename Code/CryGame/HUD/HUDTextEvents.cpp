@@ -16,6 +16,7 @@
 #include "CryCommon/CryAction/IUIDraw.h"
 #include "CryGame/GameCVars.h"
 #include "CryGame/Menus/FlashMenuObject.h"
+#include "Library/StringTools.h"
 
 #include <array>
 
@@ -892,6 +893,23 @@ void CHUD::ShowGamepadConnected(bool active)
 	}
 }
 
+const char* GetEntityName(EntityId entityId)
+{
+	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
+	if (!pEntity)
+	{
+		return "(null)";
+	}
+
+	const char* name = pEntity->GetName();
+	if (!name)
+	{
+		return "(null)";
+	}
+
+	return name;
+}
+
 void CHUD::ObituaryMessage(EntityId targetId, EntityId shooterId, const char *weaponClassName, int material, int hit_type)
 {
 	if(!m_animKillLog.IsLoaded())
@@ -932,10 +950,15 @@ void CHUD::ObituaryMessage(EntityId targetId, EntityId shooterId, const char *we
 	const char *targetName = m_pGameRules->GetActorNameByEntityId(targetId);
 	const char *shooterName = m_pGameRules->GetActorNameByEntityId(shooterId);
 
-	wstring entity;
+	if (!targetName)
+	{
+		targetName = GetEntityName(targetId);
+	}
 
-	SUIWideString shooter(shooterName);
-	SUIWideString target(targetName);
+	if (!shooterName)
+	{
+		shooterName = GetEntityName(shooterId);
+	}
 
 	int shooterFriendly = 0;
 	int targetFriendly = 0;
@@ -1048,7 +1071,10 @@ void CHUD::ObituaryMessage(EntityId targetId, EntityId shooterId, const char *we
 
 	//CryLogAlways("$9[$3KillLog$9] %s killed by %s with `%s' [icon: %s] (mat: $1%d$9, type: $2%d$9$5%s$9) freefall %d",
 	//	targetName, shooterName, weaponClassName, iconName.c_str(), material, hit_type, falling ? " ,Falling" : "", pTarget->GetActorStats()->inFreefall);
-	
+
+	const std::wstring shooter = StringTools::ToWide(shooterName);
+	const std::wstring target = StringTools::ToWide(targetName);
+
 	if (skipShooter)
 	{
 		SFlashVarValue args[6] = { "", iconName, target.c_str(), headshot, shooterFriendly, targetFriendly };
