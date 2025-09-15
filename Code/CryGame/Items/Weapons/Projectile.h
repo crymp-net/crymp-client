@@ -26,8 +26,7 @@ History:
 #include "TracerManager.h"
 #include "Weapon.h"
 #include "AmmoParams.h"
-#include "GameCVars.h"
-
+#include "CryGame/GameCVars.h"
 
 #define MIN_DAMAGE								5
 

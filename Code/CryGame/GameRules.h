@@ -1052,7 +1052,13 @@ protected:
 
 	// Some explosion processing
 	void ProcessClientExplosionScreenFX(const ExplosionInfo &explosionInfo);
-	void ProcessExplosionMaterialFX(const ExplosionInfo &explosionInfo);
+	void ProcessExplosionMaterialFX(const ExplosionInfo& explosionInfo);
+
+	//CryMP mfx
+	bool IntersectSegWithZPlane(const Vec3& p, const Vec3& seg, float planeZ, float& tOut, Vec3& hitOut) const;
+	void PlayMFXFromExplosionInfo(const ExplosionInfo& info);
+	void OnCollisionLogged_MaterialFX(const EventPhys* pEvent);
+	IRenderNode* GetRenderNodeFromCollider(IPhysicalEntity* pCollider);
 
 	// fill source/target dependent params in m_collisionTable
 	void PrepCollision(int src, int trg, const SGameCollision& event, IEntity* pTarget);
