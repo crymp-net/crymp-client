@@ -15,11 +15,6 @@ on:
         description: CMake build type
         required: true
         type: string
-      sign:
-        description: Code signing
-        required: false
-        default: false
-        type: boolean
     outputs:
       artifact_name:
         description: Name of the resulting artifact
@@ -71,7 +66,7 @@ jobs:
           'artifact_name=CryMP-Client${{ inputs.bits }}-' + $version >> $env:GITHUB_OUTPUT
 
       - name: Sign
-        if: inputs.sign
+        if: github.repository_owner == 'crymp-net'
         run: |
           Set-Content -Path bundle.txt -Value '${{ secrets.CODE_SIGNING_PFX }}'
           certutil -decode bundle.txt bundle.pfx
