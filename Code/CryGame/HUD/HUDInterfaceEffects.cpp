@@ -29,6 +29,7 @@
 #include "CryGame/Items/Weapons/OffHand.h"
 #include "CryGame/GameActions.h"
 #include "CryCommon/CryGame/GameUtils.h"
+#include "Library/StringTools.h"
 
 void CHUD::QuickMenuSnapToMode(ENanoMode mode)
 {
@@ -1476,8 +1477,7 @@ void CHUD::UpdateVoiceChat()
 			{			
 				if(g_pGame->GetIGameFramework()->IsVoiceRecordingEnabled())
 				{
-					SUIWideString voice(pEntity->GetName());
-					m_animVoiceChat.Invoke("addVoice", voice.c_str());
+					m_animVoiceChat.Invoke("addVoice", pEntity->GetName());
 					someoneTalking = true;
 				}
 			}
@@ -1485,8 +1485,7 @@ void CHUD::UpdateVoiceChat()
 			{
 				if(pNetChannel->TimeSinceVoiceReceipt(pEntity->GetId()).GetSeconds() < 0.2f)
 				{
-					SUIWideString voice(pEntity->GetName());
-					m_animVoiceChat.Invoke("addVoice", voice.c_str());
+					m_animVoiceChat.Invoke("addVoice", pEntity->GetName());
 					someoneTalking = true;
 				}
 			}

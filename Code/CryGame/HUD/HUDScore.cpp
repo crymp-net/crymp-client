@@ -26,6 +26,7 @@ History:
 #include "GameFlashAnimation.h"
 #include "HUDCommon.h"
 #include "CryGame/Actors/Actor.h"
+#include "Library/StringTools.h"
 
 CHUDScore::ScoreEntry::ScoreEntry(EntityId id, int kills, int deaths, int ping, int teamKills, int playerScore, bool prioTeamKills)
 {
@@ -397,12 +398,13 @@ void CHUDScore::Render()
 		string strRank;
 		strRank.Format("@ui_short_rank_%d", currentRank);
 
-		SUIWideString name(pPlayer->GetName());
+		const char* playerName = pPlayer->GetName();
+		std::wstring name = StringTools::ToWide(playerName ? playerName : "(null)");
 		if (player.m_spectating)
 		{
-			name.m_string.append(L" (");
-			name.m_string.append(m_pHUD->LocalizeWithParams("@ui_SPECTATE"));
-			name.m_string.append(L")");
+			name += L" (";
+			name += m_pHUD->LocalizeWithParams("@ui_SPECTATE");
+			name += L")";
 		}
 
 		SFlashVarValue pp(0);
