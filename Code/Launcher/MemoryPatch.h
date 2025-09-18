@@ -9,7 +9,7 @@ namespace MemoryPatch
 {
 	namespace Cry3DEngine
 	{
-		void EnableBigDecalsOnDynamicObjects(void* pCryAction);
+		void EnableBigDecalsOnDynamicObjects(void* pCry3DEngine);
 		void FixGetObjectsByType(void* pCry3DEngine);
 	}
 
