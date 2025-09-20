@@ -96,15 +96,6 @@ bool CProjectile::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 			if (m_pAmmoParams->pParticleParams)
 			{
 				params.pParticle = m_pAmmoParams->pParticleParams;
-
-				/* Disabled for now
-				//CryMP: Fix for projectiles colliding with host 
-				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(g_pGame->GetWeaponSystem()->GetLastHostId());
-				if (IPhysicalEntity *pHostPhys = pEntity ? pEntity->GetPhysics() : nullptr)
-				{
-					params.pParticle->pColliderToIgnore = pHostPhys;
-				}
-				*/
 			}
 
 			GetEntity()->Physicalize(params);
@@ -515,7 +506,7 @@ void CProjectile::SetVelocity(const Vec3& pos, const Vec3& dir, const Vec3& velo
 	{
 		if (m_pAmmoParams->predictSpawn)
 		{
-			return; //CryMP: Fix initial projectile lag, this is already being done on server 
+			return; //CryMP: Fix initial projectile lag, this is already done on server 
 		}
 	}
 
@@ -1296,26 +1287,18 @@ void CProjectile::Ricochet(EventPhysCollision* pCollision)
 	}
 }
 
-
+//==================================================================
 CWeapon* CProjectile::GetWeapon()
 {
 	if (m_weaponId)
 	{
 		IItem* pItem = g_pGame->GetIGameFramework()->GetIItemSystem()->GetItem(m_weaponId);
 		if (pItem)
+		{
 			return static_cast<CWeapon*>(pItem->GetIWeapon());
+		}
 	}
-	return 0;
-}
-
-EntityId CProjectile::GetOwnerId()const
-{
-	return m_ownerId;
-}
-
-float CProjectile::GetSpeed() const
-{
-	return m_pAmmoParams->speed;
+	return nullptr;
 }
 
 //==================================================================
@@ -1397,7 +1380,7 @@ void CProjectile::SetDefaultParticleParams(pe_params_particle* pParams)
 		pParams->q0.SetIdentity();
 		pParams->surface_idx = m_pAmmoParams->pParticleParams->surface_idx;
 		pParams->flags = m_pAmmoParams->pParticleParams->flags;
-		pParams->pColliderToIgnore = NULL;
+		pParams->pColliderToIgnore = nullptr;
 		pParams->iPierceability = m_pAmmoParams->pParticleParams->iPierceability;
 	}
 	else

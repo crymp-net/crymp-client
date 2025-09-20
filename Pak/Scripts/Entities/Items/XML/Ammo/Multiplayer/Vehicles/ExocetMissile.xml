@@ -5,6 +5,7 @@
 	</geometry>
 	<flags>
 		<param name="clientonly" value="1" />
+		<param name="clexplosion_mfx" value="1" />
 	</flags>
 	<physics type="particle">
 		<param name="mass" value="20" />

@@ -476,6 +476,7 @@ struct SCVars
 	int         mp_recycleProjectiles;
 	float		mp_abandonTime;
 	float		mp_explosiveRemovalTime;
+	int         mp_explosion_mfx;
 
 	SCVars();
 	~SCVars();

@@ -39,6 +39,7 @@
 #include "MPTutorial.h"
 #include "Voting.h"
 #include "SPAnalyst.h"
+#include "CryGame/Items/Weapons/Projectile.h"
 #include "CryCommon/CryAction/IWorldQuery.h"
 
 #include "CryCommon/CryCore/StlUtils.h"
@@ -3419,8 +3420,35 @@ float CGameRules::GetRemainingStartTimer() const
 bool CGameRules::OnCollision(const SGameCollision& event)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
+
+	if (gEnv->bClient && !gEnv->bServer)
+	{
+		if (event.pSrcEntity == event.pTrgEntity)
+			return true;
+
+		if (event.pCollision->partid[0] < -1 || event.pCollision->partid[1] < -1)
+			return true;
+
+		if (event.pSrcEntity)
+		{
+			if (CProjectile* pProj = g_pGame->GetWeaponSystem()->GetProjectile(event.pSrcEntity->GetId()))
+			{
+				if (pProj->IsPlayingMfxFromClExplosion())
+				{
+					IPhysicalEntity* pPhysicalEnt = pProj->GetPhysicalEntity();
+					if (pPhysicalEnt && pPhysicalEnt->GetType() == PE_PARTICLE)
+					{
+						//CryLogAlways("$8Blocking pSrcEntity original MFX for %s", event.pSrcEntity->GetClass()->GetName());
+						return false;
+					}
+				}
+			}
+		}
+	}
+
 	// currently this function only calls server functions
 	// prevent unnecessary script callbacks on the client
+
 	if (!gEnv->bServer || !m_onCollisionFunc || IsDemoPlayback())
 		return true;
 

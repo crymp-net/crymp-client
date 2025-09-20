@@ -10,6 +10,8 @@ History:
 - 23:5:2006   9:27 : Created by Márcio Martins
 
 *************************************************************************/
+#include <cstdint>
+
 #include "CryCommon/CrySystem/ISystem.h"
 #include "ScriptBind_GameRules.h"
 #include "GameRules.h"
@@ -27,6 +29,7 @@ History:
 #include "CryCommon/CryAction/IMaterialEffects.h"
 #include "CryCommon/CryAction/IGameplayRecorder.h"
 #include "CryCommon/CryEntitySystem/EntityId.h"
+#include "CryCommon/CrySystem/IConsole.h"
 
 #include "Items/Weapons/Weapon.h"
 #include "Items/Weapons/WeaponSystem.h"
@@ -39,7 +42,10 @@ History:
 #include "Library/Util.h"
 
 #include "CryMP/Server/SSM.h"
+#include "Items/Weapons/Projectiles/Bullet.h"
+#include "CryCommon/Cry3DEngine/IFoliage.h"
 
+extern std::uintptr_t CRYACTION_BASE;
 
 //------------------------------------------------------------------------
 void CGameRules::ValidateShot(EntityId playerId, EntityId weaponId, uint16 seq, uint8 seqr)
@@ -571,8 +577,41 @@ void CGameRules::ClientExplosion(const ExplosionInfo& explosionInfo)
 		}
 	}
 
-	ProcessClientExplosionScreenFX(explosionInfo);
-	ProcessExplosionMaterialFX(explosionInfo);
+	if (gEnv->bClient)
+	{
+		ProcessClientExplosionScreenFX(explosionInfo);
+		ProcessExplosionMaterialFX(explosionInfo);
+
+		if (gEnv->bMultiplayer && !gEnv->bServer)
+		{
+			bool serverCustomParticleValid = false;
+			if (!explosionInfo.effect_class.empty())
+			{
+				if (IEntityClassRegistry* cr = gEnv->pEntitySystem->GetClassRegistry())
+				{
+					if (IEntityClass* cls = cr->FindClass(explosionInfo.effect_class.c_str()))
+					{
+						const SAmmoParams* pAmmo = g_pGame->GetWeaponSystem()->GetAmmoParams(cls);
+						if (pAmmo)
+						{
+							serverCustomParticleValid = (explosionInfo.pParticleEffect != nullptr && pAmmo->pExplosion && pAmmo->pExplosion->pParticleEffect != explosionInfo.pParticleEffect);
+						}
+					}
+				}
+			}
+
+			//CryMP: If server sets a custom valid explosion effect, don't play the original effect on top of it
+			if (!serverCustomParticleValid)
+			{
+				//CryMP: In multiplayer, play explosion FX from ClExplosion if ammo supports it
+				PlayMFXFromExplosionInfo(explosionInfo);
+			}
+			//else
+			//{
+				//CryLogAlways("Skipping MFX from explosion because server is using custom particle effect! (%s)", explosionInfo.pParticleEffect ? explosionInfo.pParticleEffect->GetName() : "nullptr");
+			//}
+		}
+	}
 
 	IEntity* pShooter = m_pEntitySystem->GetEntity(explosionInfo.shooterId);
 	if (gEnv->pAISystem && !gEnv->bMultiplayer)
@@ -752,7 +791,9 @@ void CGameRules::ProcessExplosionMaterialFX(const ExplosionInfo& explosionInfo)
 
 	string query = effectClass + "_explode";
 	if (gEnv->p3DEngine->GetWaterLevel(&explosionInfo.pos) > explosionInfo.pos.z)
+	{
 		query = query + "_underwater";
+	}
 
 	IMaterialEffects* pMaterialEffects = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
 	TMFXEffectId effectId = pMaterialEffects->GetEffectId(query.c_str(), params.trgSurfaceId);
@@ -761,8 +802,285 @@ void CGameRules::ProcessExplosionMaterialFX(const ExplosionInfo& explosionInfo)
 		effectId = pMaterialEffects->GetEffectId(query.c_str(), pMaterialEffects->GetDefaultSurfaceIndex());
 
 	if (effectId != InvalidEffectId)
+	{
 		pMaterialEffects->ExecuteEffect(effectId, params);
+	}
+	return;
 }
+
+//---------------------------------------------------
+// Helper: segment-plane (z = planeZ) intersection
+//---------------------------------------------------
+bool CGameRules::IntersectSegWithZPlane(const Vec3& p, const Vec3& seg, float planeZ, float& tOut, Vec3& hitOut) const
+{
+	const float denom = seg.z;
+	if (fabs_tpl(denom) < 1e-6f)
+		return false;
+	const float t = (planeZ - p.z) / denom;
+	if (t < 0.0f || t > 1.0f)
+		return false;
+	tOut = t;
+	hitOut = p + seg * t;
+	return true;
+}
+
+//---------------------------------------------------
+void CGameRules::PlayMFXFromExplosionInfo(const ExplosionInfo& info)
+{
+	CProjectile* pProj = g_pGame->GetWeaponSystem()->GetProjectile(info.weaponId);
+	if (!pProj || !pProj->IsPlayingMfxFromClExplosion())
+		return;
+
+	const Vec3 pos = info.pos;
+
+	Vec3 intoSurf = info.dir.GetNormalizedSafe(Vec3(0, 0, 1));
+
+	IEntity* pSrcEnt = gEnv->pEntitySystem->GetEntity(info.weaponId);
+	IPhysicalEntity* peSrc = pSrcEnt ? pSrcEnt->GetPhysics() : nullptr;
+
+	// Ammo params
+	const SAmmoParams* pAmmo = nullptr;
+	if (!info.effect_class.empty())
+	{
+		if (IEntityClassRegistry* cr = gEnv->pEntitySystem->GetClassRegistry())
+		{
+			if (IEntityClass* cls = cr->FindClass(info.effect_class.c_str()))
+			{
+				pAmmo = g_pGame->GetWeaponSystem()->GetAmmoParams(cls);
+			}
+		}
+	}
+	if (!pAmmo && pSrcEnt)
+	{
+		pAmmo = g_pGame->GetWeaponSystem()->GetAmmoParams(pSrcEnt->GetClass());
+	}
+
+	// Single forward ray probe
+	ray_hit rh; memset(&rh, 0, sizeof(rh));
+	const int objTypes = ent_all;
+	const int flags = rwi_colltype_any | rwi_stop_at_pierceable;
+
+	IPhysicalEntity* skip[1] = { peSrc };
+	const int nSkip = peSrc ? 1 : 0;
+
+	const Vec3 fwdStart = pos - intoSurf * 0.25f;
+	const Vec3 fwdSeg = intoSurf * 10.0f;
+
+	const int hits = gEnv->pPhysicalWorld->RayWorldIntersection(fwdStart, fwdSeg, objTypes, flags, &rh, 1, skip, nSkip);
+
+	// Prepare EventPhysCollision to forward to OnCollisionLogged_MaterialFX
+	EventPhysCollision c;
+	c.idCollider = 0;
+
+	// Resolve contact point surface normal 
+	const float waterLevelAcc = gEnv->p3DEngine->GetWaterLevel(&pos);
+	const bool insideWater = (pos.z < waterLevelAcc);
+	const bool waterNearby = fabs_tpl(pos.z - waterLevelAcc) < 2.0f;
+
+	Vec3 pt = pos;
+	Vec3 nrm = intoSurf; 
+	bool usedWater = false;
+
+	if (hits > 0 && rh.pCollider)
+	{
+		pt = rh.pt;
+
+		// If water is in front of the solid along the same probe, prefer it
+		if (waterNearby)
+		{
+			float tW; Vec3 hitW;
+			if (IntersectSegWithZPlane(fwdStart, fwdSeg, waterLevelAcc, tW, hitW))
+			{
+				const float segLen = fwdSeg.GetLength();
+				const float tSolid = (segLen > 1e-6f) ? (rh.dist / segLen) : 2.0f;
+				if (tW <= tSolid + 1e-4f)
+				{
+					pt = hitW; pt.z = waterLevelAcc - 0.02f;
+					nrm = Vec3(0, 0, 1);
+					usedWater = true;
+				}
+			}
+		}
+
+		if (!usedWater)
+		{
+			nrm = rh.n; // outward surface normal
+		}
+	}
+	else
+	{
+		// No solid hit; if in/near water, use water plane; else leave defaults
+		if (insideWater || waterNearby)
+		{
+			float tW; Vec3 hitW;
+			if (IntersectSegWithZPlane(fwdStart, fwdSeg, waterLevelAcc, tW, hitW))
+			{
+				pt = hitW; pt.z = waterLevelAcc - 0.02f;
+				nrm = Vec3(0, 0, 1);
+				usedWater = true;
+			}
+			else
+			{
+				pt = pos; pt.z = waterLevelAcc - 0.02f;
+				nrm = Vec3(0, 0, 1);
+				usedWater = true;
+			}
+		}
+	}
+
+	// Pass point and surface normal
+	c.pt = pt;
+	c.n = nrm;
+
+	// Set velocities for backface test: vloc[0] should be the projectile world-velocity
+	if (info.impact && info.impact_velocity.len2() > 1e-6f)
+	{
+		c.vloc[0] = info.impact_velocity; // world-space projectile velocity
+	}
+	else if (peSrc)
+	{
+		pe_status_dynamics sd;
+		c.vloc[0] = (peSrc->GetStatus(&sd) ? sd.v : info.dir * 120.0f);
+	}
+	else
+	{
+		c.vloc[0] = info.dir * 120.0f;
+	}
+
+	// Target velocity (if any) 
+	c.vloc[1] = Vec3(ZERO);
+	if (rh.pCollider)
+	{
+		pe_status_dynamics sdT;
+		if (rh.pCollider->GetStatus(&sdT))
+			c.vloc[1] = sdT.v;
+	}
+
+	// Masses & part ids
+	c.mass[0] = (pAmmo && pAmmo->mass > 0.f) ? pAmmo->mass : 0.05f;
+	c.mass[1] = 0.0f;
+	c.partid[0] = 0;
+	c.partid[1] = rh.partid;
+
+	// Materials
+	IMaterialEffects* pMFX = gEnv->pGame->GetIGameFramework()->GetIMaterialEffects();
+	const int defaultSurf = pMFX->GetDefaultSurfaceIndex();
+
+	int srcSurf = defaultSurf;
+	if (pAmmo && pAmmo->pSurfaceType)
+	{
+		const int sfid = pAmmo->pSurfaceType->GetId();
+		if (sfid > 0) srcSurf = sfid;
+	}
+	c.idmat[0] = srcSurf;
+
+	const int waterId = CBullet::GetWaterMaterialId();
+
+	// Bind target material & foreign data so decals orient correctly
+	if (usedWater)
+	{
+		c.idmat[1] = (waterId > 0) ? waterId : defaultSurf;
+		c.pEntity[1] = gEnv->pPhysicalWorld->AddGlobalArea();
+		c.iForeignData[1] = 0;
+		c.pForeignData[1] = nullptr;
+	}
+	else if (rh.pCollider)
+	{
+		c.idmat[1] = rh.surface_idx;
+		c.pEntity[1] = rh.pCollider;
+
+		if (IEntity* hitEnt = gEnv->pEntitySystem->GetEntityFromPhysics(rh.pCollider))
+		{
+			c.iForeignData[1] = PHYS_FOREIGN_ID_ENTITY;
+			c.pForeignData[1] = hitEnt;
+
+		   // --- ACTOR-FACING NORMAL FIX ---
+			if (IActor* pHitActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(hitEnt->GetId()))
+			{
+				if (nrm.Dot(intoSurf) > 0.0f)
+				{
+					nrm = -nrm;
+					c.n = nrm;
+				}
+			}
+			// --- END FIX ---
+		}
+		else
+		{
+			c.iForeignData[1] = PHYS_FOREIGN_ID_STATIC;
+			c.pForeignData[1] = GetRenderNodeFromCollider(rh.pCollider);
+		}
+	}
+	else
+	{
+		// Nothing solid and no water → use defaults; CE3 code will handle gracefully
+		c.idmat[1] = defaultSurf;
+		c.pEntity[1] = nullptr;
+		c.iForeignData[1] = 0;
+		c.pForeignData[1] = nullptr;
+	}
+
+	// Source binding
+	c.pEntity[0] = peSrc;
+	c.iForeignData[0] = pSrcEnt ? PHYS_FOREIGN_ID_ENTITY : 0;
+	c.pForeignData[0] = pSrcEnt;
+
+	c.penetration = 0.f;
+	c.normImpulse = 0.f;
+	c.radius = 0.f;
+
+	// call CActionGame::OnCollisionLogged_MaterialFX in CryAction.dll
+#ifdef BUILD_64BIT
+	reinterpret_cast<void(*)(const EventPhysCollision*)>(CRYACTION_BASE + 0x30CE20)(&c);
+#else
+	reinterpret_cast<void(*)(const EventPhysCollision*)>(CRYACTION_BASE + 0x211A70)(&c);
+#endif
+}
+
+//---------------------------------------------------
+IRenderNode* CGameRules::GetRenderNodeFromCollider(IPhysicalEntity* pCollider)
+{
+	if (!pCollider)
+		return nullptr;
+
+	pe_params_foreign_data fd;
+	if (!pCollider->GetParams(&fd))
+		return nullptr;
+
+	switch (fd.iForeignData)
+	{
+	case PHYS_FOREIGN_ID_ENTITY:
+	{
+		IEntity* pEntity = static_cast<IEntity*>(pCollider->GetForeignData(PHYS_FOREIGN_ID_ENTITY));
+		if (!pEntity)
+		{
+			pEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pCollider);
+		}
+		if (pEntity)
+		{
+			if (IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+			{
+				return pRenderProxy->GetRenderNode();
+			}
+		}
+		break;
+	}
+	case PHYS_FOREIGN_ID_STATIC:
+	case PHYS_FOREIGN_ID_TERRAIN:
+		return static_cast<IRenderNode*>(pCollider->GetForeignData(fd.iForeignData));
+
+	case PHYS_FOREIGN_ID_FOLIAGE:
+	{
+		IFoliage* pFoliage = static_cast<IFoliage*>(fd.pForeignData);
+		return pFoliage ? pFoliage->GetIRenderNode() : nullptr;
+	}
+	default:
+		break;
+	}
+
+	return nullptr;
+}
+
 //------------------------------------------------------------------------
 // RMI
 //------------------------------------------------------------------------
