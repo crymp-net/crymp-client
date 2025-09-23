@@ -21079,6 +21079,140 @@
     <Cell ss:StyleID="s34"/>
     <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default</Data></Cell>
    </Row>
+   <!--CryMP-->
+   <Row ss:AutoFitHeight="0">
+    <Cell><Data ss:Type="String">gausstankbullet</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s29"><Data ss:Type="String">collisions:bloody_flesh</Data></Cell>
+    <Cell ss:StyleID="s29"><Data ss:Type="String">collisions:bloody_alien_flesh</Data></Cell>
+    <Cell ss:StyleID="s29"><Data ss:Type="String">collisions:fire_spreading</Data></Cell>
+    <Cell ss:StyleID="s29"><Data ss:Type="String">collisions:oil_spreading</Data></Cell>
+    <Cell ss:StyleID="s29"><Data ss:Type="String">collisions:raindrop_generic</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_glass_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_glass_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_glass_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_glass_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_glass_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_glass_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_snow_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_snow_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_snow_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_snow_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_water_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_water_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_water_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_water_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_water_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_mud_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_soil_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_sand_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_sand_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_cliff_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_soil_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_soil_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_wood_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_concrete_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_soil_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_soil_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_soil_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_vegetation</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_vegetation</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_tree_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_tree_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_snow_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_snow_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_vegetation</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_soil_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_vegetation</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"/>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_alien_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_character_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_Gauss</Data></Cell>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:blank_event</Data></Cell>
+    <Cell ss:StyleID="s34"/>
+    <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default</Data></Cell>
+   </Row>
    <Row ss:AutoFitHeight="0">
     <Cell ss:StyleID="s24"><Data ss:Type="String">tank125</Data></Cell>
     <Cell><Data ss:Type="String">bulletimpacts:tank125_metal</Data></Cell>
@@ -27875,8 +28009,9 @@
     <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:rifle_nuke_explode</Data></Cell>
     <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:rifle_nuke_explode</Data></Cell>
    </Row>
+   <!--CryMP-->
    <Row ss:AutoFitHeight="0">
-    <Cell><Data ss:Type="String">a2ahomingmissile_explode</Data></Cell>
+    <Cell><Data ss:Type="String">a2ahomingmissile</Data></Cell>
     <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_vtolmissile</Data></Cell>
     <Cell ss:StyleID="s29"><Data ss:Type="String">collisions:bloody_flesh</Data></Cell>
     <Cell ss:StyleID="s29"><Data ss:Type="String">collisions:bloody_alien_flesh</Data></Cell>
@@ -28009,8 +28144,9 @@
     <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_default_vtolmissile</Data></Cell>
     <Cell ss:StyleID="s34"/>
    </Row>
+   <!--CryMP-->
    <Row ss:AutoFitHeight="0">
-    <Cell><Data ss:Type="String">rocket_explode</Data></Cell>
+    <Cell><Data ss:Type="String">rocket</Data></Cell>
     <Cell ss:StyleID="s34"><Data ss:Type="String">bulletimpacts:hit_mat_metal_law</Data></Cell>
     <Cell ss:StyleID="s29"><Data ss:Type="String">collisions:bloody_flesh</Data></Cell>
     <Cell ss:StyleID="s29"><Data ss:Type="String">collisions:bloody_alien_flesh</Data></Cell>

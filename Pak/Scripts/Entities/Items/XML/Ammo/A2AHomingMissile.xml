@@ -35,6 +35,8 @@
 		<param name="hole_size" value="5" />
 		<param name="terrain_hole_size" value="10" />
 		<param name="radialblurdist" value="30" />
+		<param name="effect" value="" />
+		<param name="effect_scale" value="1" />
 	</explosion>
 	<params>
 		<param name="lifetime" value="20" />

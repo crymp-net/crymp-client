@@ -1,4 +1,4 @@
-<ammo name="turret_rocket" class="HomingMissile">
+<ammo name="turret_rocket" class="HomingMissile" configuration="mp">
 	<geometry>
 		<firstperson name="objects/weapons/rockets/sidewinder/sidewinder.cgf" />
 		<thirdperson name="objects/weapons/rockets/sidewinder/sidewinder.cgf" />
