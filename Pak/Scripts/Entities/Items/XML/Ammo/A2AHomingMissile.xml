@@ -6,6 +6,7 @@
 	<flags>
 		<param name="serverspawn" value="1" />
 		<param name="predictspawn" value="1" />
+		<param name="clexplosion_mfx" value="1" />
 	</flags>
 	<physics type="particle">
 		<param name="mass" value="20" />
@@ -34,6 +35,8 @@
 		<param name="hole_size" value="5" />
 		<param name="terrain_hole_size" value="10" />
 		<param name="radialblurdist" value="30" />
+		<param name="effect" value="" />
+		<param name="effect_scale" value="1" />
 	</explosion>
 	<params>
 		<param name="lifetime" value="20" />

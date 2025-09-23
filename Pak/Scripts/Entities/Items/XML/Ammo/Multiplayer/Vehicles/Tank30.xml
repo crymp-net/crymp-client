@@ -6,6 +6,7 @@
 	<flags>
 		<param name="serverspawn" value="1" />
 		<param name="predictspawn" value="1" />
+		<param name="clexplosion_mfx" value="1" />
 	</flags>
 	<physics type="particle">
 		<param name="mass" value="0.25" />

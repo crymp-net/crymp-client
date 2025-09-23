@@ -1,4 +1,7 @@
 <ammo name="gausstankbullet" class="Rocket" configuration="mp">
+	<flags>
+		<param name="clientonly" value="1" />
+	</flags>
 	<physics type="particle">
 		<param name="mass" value="0.35" />
 		<param name="speed" value="10000" />
