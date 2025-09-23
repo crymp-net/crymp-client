@@ -867,7 +867,7 @@ void CWeaponSystem::DumpGhostProjectiles()
 		const IEntity* pOwnerEnt = gEnv->pEntitySystem->GetEntity(p->GetOwnerId());
 		const char* ownerName = pOwnerEnt ? pOwnerEnt->GetName() : "<no owner>";
 		IGameObject* pGameObject = p->GetGameObject();
-		const uint8_t slotEnables = pGameObject ? pGameObject->GetUpdateSlotEnables(p, eIUS_General) : 0;
+		const int slotEnables = pGameObject ? pGameObject->GetUpdateSlotEnables(p, eIUS_General) : 0;
 
 		CryLogAlways("[%03d] class=%-25s owner=%-21s $1remote=%d updated=%d",
 			idx,
