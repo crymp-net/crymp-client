@@ -26,7 +26,6 @@ History:
 #include "TracerManager.h"
 #include "Weapon.h"
 #include "AmmoParams.h"
-#include "CryGame/GameCVars.h"
 
 #define MIN_DAMAGE								5
 
@@ -112,6 +111,8 @@ public:
 	//Helper function to initialize particle params in exceptional cases
 	void SetDefaultParticleParams(pe_params_particle *pParams);
 
+	bool IsPlayingMfxFromClExplosion() const;
+
 	const SAmmoParams *GetParams() const { return m_pAmmoParams; };
 
 	void InitWithAI();
@@ -147,14 +148,6 @@ public:
 	inline float GetTotalLifeTime() const
 	{
 		return m_totalLifetime;
-	}
-	inline bool IsPlayingMfxFromClExplosion() const
-	{
-		if (m_pAmmoParams && m_pAmmoParams->clexplosion_mfx != 0)
-		{
-			return gEnv->bMultiplayer && g_pGameCVars->mp_explosion_mfx != 0;
-		}
-		return false;
 	}
 
 protected:

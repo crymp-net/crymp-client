@@ -1393,6 +1393,16 @@ void CProjectile::SetDefaultParticleParams(pe_params_particle* pParams)
 	}
 }
 
+//---------------------------------------------------------------------------------
+bool CProjectile::IsPlayingMfxFromClExplosion() const
+{
+	if (m_pAmmoParams && m_pAmmoParams->clexplosion_mfx != 0)
+	{
+		return gEnv->bMultiplayer && g_pGameCVars->mp_explosion_mfx != 0;
+	}
+	return false;
+}
+
 void CProjectile::GetMemoryStatistics(ICrySizer* s)
 {
 	s->Add(*this);
