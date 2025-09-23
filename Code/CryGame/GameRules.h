@@ -42,6 +42,7 @@ class CMPTutorial;
 
 class CShotValidator;
 
+struct SAmmoParams;
 
 #define GAMERULES_INVOKE_ON_TEAM(team, rmi, params)	\
 { \
@@ -1056,8 +1057,9 @@ protected:
 
 	//CryMP mfx
 	bool IntersectSegWithZPlane(const Vec3& p, const Vec3& seg, float planeZ, float& tOut, Vec3& hitOut) const;
-	void PlayMFXFromExplosionInfo(const ExplosionInfo& info);
-	IRenderNode* GetRenderNodeFromCollider(IPhysicalEntity* pCollider);
+	bool PlayMFXFromExplosionInfo(const ExplosionInfo& info, const SAmmoParams* pAmmo) const;
+	bool OnCollisionLogged_MaterialFX(const EventPhys* pEvent, IEntityClass* pSrcClass) const;
+	IRenderNode* GetRenderNodeFromCollider(IPhysicalEntity* pCollider) const;
 
 	// fill source/target dependent params in m_collisionTable
 	void PrepCollision(int src, int trg, const SGameCollision& event, IEntity* pTarget);

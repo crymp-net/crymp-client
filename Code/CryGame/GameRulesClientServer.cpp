@@ -580,36 +580,45 @@ void CGameRules::ClientExplosion(const ExplosionInfo& explosionInfo)
 	if (gEnv->bClient)
 	{
 		ProcessClientExplosionScreenFX(explosionInfo);
-		ProcessExplosionMaterialFX(explosionInfo);
+
+		bool mfxPlayed = false;
 
 		if (gEnv->bMultiplayer && !gEnv->bServer)
 		{
-			bool serverCustomParticleValid = false;
 			if (!explosionInfo.effect_class.empty())
 			{
 				if (IEntityClassRegistry* cr = gEnv->pEntitySystem->GetClassRegistry())
 				{
-					if (IEntityClass* cls = cr->FindClass(explosionInfo.effect_class.c_str()))
+					if (IEntityClass *pProjectileClass = cr->FindClass(explosionInfo.effect_class.c_str()))
 					{
-						const SAmmoParams* pAmmo = g_pGame->GetWeaponSystem()->GetAmmoParams(cls);
+						const SAmmoParams* pAmmo = g_pGame->GetWeaponSystem()->GetAmmoParams(pProjectileClass);
 						if (pAmmo)
 						{
-							serverCustomParticleValid = (explosionInfo.pParticleEffect != nullptr && pAmmo->pExplosion && pAmmo->pExplosion->pParticleEffect != explosionInfo.pParticleEffect);
+							const bool serverCustomParticleValid = (explosionInfo.pParticleEffect != nullptr && 
+								pAmmo->pExplosion && pAmmo->pExplosion->pParticleEffect != explosionInfo.pParticleEffect);
+
+							if (!serverCustomParticleValid)
+							{
+								//CryMP: If server sets a custom valid explosion effect, don't play the original effect on top of it
+								if (!serverCustomParticleValid)
+								{
+									//CryMP: In multiplayer, play explosion FX from ClExplosion if ammo supports it
+									mfxPlayed = PlayMFXFromExplosionInfo(explosionInfo, pAmmo);
+								}
+								//else
+								//{
+									//CryLogAlways("Skipping MFX from explosion because server is using custom particle effect! (%s)", explosionInfo.pParticleEffect ? explosionInfo.pParticleEffect->GetName() : "nullptr");
+								//}
+							}
 						}
 					}
 				}
 			}
+		}
 
-			//CryMP: If server sets a custom valid explosion effect, don't play the original effect on top of it
-			if (!serverCustomParticleValid)
-			{
-				//CryMP: In multiplayer, play explosion FX from ClExplosion if ammo supports it
-				PlayMFXFromExplosionInfo(explosionInfo);
-			}
-			//else
-			//{
-				//CryLogAlways("Skipping MFX from explosion because server is using custom particle effect! (%s)", explosionInfo.pParticleEffect ? explosionInfo.pParticleEffect->GetName() : "nullptr");
-			//}
+		if (!mfxPlayed)
+		{
+			ProcessExplosionMaterialFX(explosionInfo);
 		}
 	}
 
@@ -825,35 +834,24 @@ bool CGameRules::IntersectSegWithZPlane(const Vec3& p, const Vec3& seg, float pl
 }
 
 //---------------------------------------------------
-void CGameRules::PlayMFXFromExplosionInfo(const ExplosionInfo& info)
+bool CGameRules::PlayMFXFromExplosionInfo(const ExplosionInfo& info, const SAmmoParams* pAmmo) const
 {
-	CProjectile* pProj = g_pGame->GetWeaponSystem()->GetProjectile(info.weaponId);
-	if (!pProj || !pProj->IsPlayingMfxFromClExplosion())
-		return;
+	if (!pAmmo || pAmmo->clexplosion_mfx == 0)
+	{
+		//CryLogAlways("$8PlayMFXFromExplosionInfo: %s doesnt use mfx from cl_explosion", info.effect_class.c_str());
+		return false;
+	}
 
+	// Ammo params
+	const IEntityClass* pProjectileClass = pAmmo->pEntityClass;
+
+	bool useOriginalMFX = true;
 	const Vec3 pos = info.pos;
 
 	Vec3 intoSurf = info.dir.GetNormalizedSafe(Vec3(0, 0, 1));
 
 	IEntity* pSrcEnt = gEnv->pEntitySystem->GetEntity(info.weaponId);
 	IPhysicalEntity* peSrc = pSrcEnt ? pSrcEnt->GetPhysics() : nullptr;
-
-	// Ammo params
-	const SAmmoParams* pAmmo = nullptr;
-	if (!info.effect_class.empty())
-	{
-		if (IEntityClassRegistry* cr = gEnv->pEntitySystem->GetClassRegistry())
-		{
-			if (IEntityClass* cls = cr->FindClass(info.effect_class.c_str()))
-			{
-				pAmmo = g_pGame->GetWeaponSystem()->GetAmmoParams(cls);
-			}
-		}
-	}
-	if (!pAmmo && pSrcEnt)
-	{
-		pAmmo = g_pGame->GetWeaponSystem()->GetAmmoParams(pSrcEnt->GetClass());
-	}
 
 	// Single forward ray probe
 	ray_hit rh; memset(&rh, 0, sizeof(rh));
@@ -997,6 +995,9 @@ void CGameRules::PlayMFXFromExplosionInfo(const ExplosionInfo& info)
 		   // --- ACTOR-FACING NORMAL FIX ---
 			if (IActor* pHitActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(hitEnt->GetId()))
 			{
+				useOriginalMFX = false;
+				c.mass[0] = std::max(c.mass[0], 10.f);
+
 				if (nrm.Dot(intoSurf) > 0.0f)
 				{
 					nrm = -nrm;
@@ -1013,7 +1014,7 @@ void CGameRules::PlayMFXFromExplosionInfo(const ExplosionInfo& info)
 	}
 	else
 	{
-		// Nothing solid and no water → use defaults; CE3 code will handle gracefully
+		// Nothing solid and no water → use default
 		c.idmat[1] = defaultSurf;
 		c.pEntity[1] = nullptr;
 		c.iForeignData[1] = 0;
@@ -1029,16 +1030,27 @@ void CGameRules::PlayMFXFromExplosionInfo(const ExplosionInfo& info)
 	c.normImpulse = 0.f;
 	c.radius = 0.f;
 
-	// call CActionGame::OnCollisionLogged_MaterialFX in CryAction.dll
+	//CryMP: If pSrcEnt, call original function
+	if (pSrcEnt && useOriginalMFX)
+	{
+		// CActionGame::OnCollisionLogged_MaterialFX in CryAction.dll
 #ifdef BUILD_64BIT
-	reinterpret_cast<void(*)(const EventPhysCollision*)>(CRYACTION_BASE + 0x30CE20)(&c);
+		reinterpret_cast<void(*)(const EventPhysCollision*)>(CRYACTION_BASE + 0x30CE20)(&c);
 #else
-	reinterpret_cast<void(*)(const EventPhysCollision*)>(CRYACTION_BASE + 0x211A70)(&c);
+		reinterpret_cast<void(*)(const EventPhysCollision*)>(CRYACTION_BASE + 0x211A70)(&c);
 #endif
+	}
+	else if (pProjectileClass)
+	{
+		//CryMP: Projectile got destroyed or we hit an actor, call function with class name info to call appropriate effects 
+		OnCollisionLogged_MaterialFX((const EventPhys*)&c, const_cast<IEntityClass*>(pProjectileClass));
+	}
+
+	return true;
 }
 
 //---------------------------------------------------
-IRenderNode* CGameRules::GetRenderNodeFromCollider(IPhysicalEntity* pCollider)
+IRenderNode* CGameRules::GetRenderNodeFromCollider(IPhysicalEntity* pCollider) const
 {
 	if (!pCollider)
 		return nullptr;
@@ -1079,6 +1091,418 @@ IRenderNode* CGameRules::GetRenderNodeFromCollider(IPhysicalEntity* pCollider)
 	}
 
 	return nullptr;
+}
+
+//---------------------------------------------------
+bool CGameRules::OnCollisionLogged_MaterialFX(const EventPhys* pEvent, IEntityClass *pProjectileClass) const
+{
+	const EventPhysCollision* pCEvent = (const EventPhysCollision*)pEvent;
+
+	if ((CBullet::GetWaterMaterialId() && pCEvent->idmat[1] == CBullet::GetWaterMaterialId()) &&
+		(pCEvent->pEntity[1] == gEnv->pPhysicalWorld->AddGlobalArea() && gEnv->p3DEngine->GetVisAreaFromPos(pCEvent->pt)))
+		return false;
+
+	const auto GetEnt = [](int i, void* p) -> IEntity*
+		{
+			return (i == PHYS_FOREIGN_ID_ENTITY) ? static_cast<IEntity*>(p) : nullptr;
+		};
+
+	Vec3 dir = ZERO;
+	if (pCEvent->vloc[0].GetLengthSquared() > 1e-6f)
+	{
+		dir = pCEvent->vloc[0].GetNormalized();
+	}
+
+	bool backface = (pCEvent->n.Dot(dir) >= 0);
+
+	// track contacts info for physics sounds generation
+	//CryMP: Commented this out, we dont have SEntityCollHist
+	/*
+	Vec3 vrel, r;
+	float velImpact, velSlide2, velRoll2;
+	pe_status_dynamics sd;
+	int iop, id, i;
+	SEntityCollHist* pech = 0;
+	std::map<int, SEntityCollHist*>::iterator iter;
+
+	iop = inrange(pCEvent->mass[1], 0.0f, pCEvent->mass[0]);
+	id = gEnv->pPhysicalWorld->GetPhysicalEntityId(pCEvent->pEntity[iop]);
+	if ((iter = s_this->m_mapECH.find(id)) != s_this->m_mapECH.end())
+		pech = iter->second;
+	else if (s_this->m_pFreeCHSlot0->pnext != s_this->m_pFreeCHSlot0)
+	{
+		pech = s_this->m_pFreeCHSlot0->pnext;
+		s_this->m_pFreeCHSlot0->pnext = pech->pnext;
+		pech->pnext = 0;
+		pech->timeRolling = pech->timeNotRolling = pech->rollTimeout = pech->slideTimeout = 0;
+		pech->velImpact = pech->velSlide2 = pech->velRoll2 = 0;
+		pech->imatImpact[0] = pech->imatImpact[1] = pech->imatSlide[0] = pech->imatSlide[1] = pech->imatRoll[0] = pech->imatRoll[1] = 0;
+		pech->mass = 0;
+		s_this->m_mapECH.insert(std::pair<int, SEntityCollHist*>(id, pech));
+	}
+
+	if (pech && pCEvent->pEntity[iop]->GetStatus(&sd))
+	{
+		vrel = pCEvent->vloc[iop ^ 1] - pCEvent->vloc[iop];
+		r = pCEvent->pt - sd.centerOfMass;
+		if (sd.w.len2() > 0.01f)
+			r -= sd.w * ((r * sd.w) / sd.w.len2());
+		velImpact = fabs_tpl(vrel * pCEvent->n);
+		velSlide2 = (vrel - pCEvent->n * velImpact).len2();
+		velRoll2 = (sd.w ^ r).len2();
+		pech->mass = pCEvent->mass[iop];
+
+		i = isneg(pech->velImpact - velImpact);
+		pech->imatImpact[0] += pCEvent->idmat[iop] - pech->imatImpact[0] & -i;
+		pech->imatImpact[1] += pCEvent->idmat[iop ^ 1] - pech->imatImpact[1] & -i;
+		pech->velImpact = max(pech->velImpact, velImpact);
+
+		i = isneg(pech->velSlide2 - velSlide2);
+		pech->imatSlide[0] += pCEvent->idmat[iop] - pech->imatSlide[0] & -i;
+		pech->imatSlide[1] += pCEvent->idmat[iop ^ 1] - pech->imatSlide[1] & -i;
+		pech->velSlide2 = max(pech->velSlide2, velSlide2);
+
+		i = isneg(max(pech->velRoll2 - velRoll2, r.len2() * sqr(0.97f) - sqr(r * pCEvent->n)));
+		pech->imatRoll[0] += pCEvent->idmat[iop] - pech->imatRoll[0] & -i;
+		pech->imatSlide[1] += pCEvent->idmat[iop ^ 1] - pech->imatRoll[1] & -i;
+		pech->velRoll2 += (velRoll2 - pech->velRoll2) * i;
+	}
+	*/
+	// --- Begin Material Effects Code ---
+	// Relative velocity, adjusted to be between 0 and 1 for sound effect parameters.
+	static ICVar* mfx_Debug = gEnv->pConsole->GetCVar("mfx_Debug");
+	const int debug = mfx_Debug->GetIVal() > 0;
+
+	float adjustedRelativeVelocity = 0.0f;
+	float impactVelSquared = (pCEvent->vloc[0] - pCEvent->vloc[1]).GetLengthSquared();
+
+	// Anything faster than 15 m/s is fast enough to consider maximum speed
+	adjustedRelativeVelocity = (float)min(1.0f, impactVelSquared / (15.0f * 15.0f));
+
+	// Relative mass, also adjusted to fit into sound effect parameters.
+	// 100.0 is very heavy, the top end for the mass parameter.
+	float adjustedRelativeMass = (float)min(1.0f, fabsf(pCEvent->mass[0] - pCEvent->mass[1]) / 100.0f);
+
+	static ICVar* mfx_ParticleImpactThresh = gEnv->pConsole->GetCVar("mfx_ParticleImpactThresh");
+	const float particleImpactThresh = mfx_ParticleImpactThresh->GetFVal();
+	float partImpThresh = particleImpactThresh;
+	Vec3 vloc0Dir = pCEvent->vloc[0];
+	vloc0Dir = vloc0Dir.normalize();
+	float testSpeed = (pCEvent->vloc[0] * vloc0Dir.Dot(pCEvent->n)).GetLengthSquared();
+
+	// prevent slow objects from making too many collision events by only considering the velocity towards
+	//  the surface (prevents sliding creating tons of effects)
+	if (impactVelSquared < (25.0f * 25.0f) && testSpeed < (partImpThresh * partImpThresh))
+	{
+		impactVelSquared = 0.0f;
+	}
+
+	if (!backface && impactVelSquared > (partImpThresh * partImpThresh))
+	{
+		IEntity* pEntitySrc = GetEnt(pCEvent->iForeignData[0], pCEvent->pForeignData[0]);
+		IEntity* pEntityTrg = GetEnt(pCEvent->iForeignData[1], pCEvent->pForeignData[1]);
+
+		IMaterialEffects* pMaterialEffects = gEnv->pMaterialEffects;
+		TMFXEffectId effectId = InvalidEffectId;
+		const int defaultSurfaceIndex = pMaterialEffects->GetDefaultSurfaceIndex();
+
+		SMFXRunTimeEffectParams params;
+		params.src = pEntitySrc ? pEntitySrc->GetId() : 0;
+		params.trg = pEntityTrg ? pEntityTrg->GetId() : 0;
+		params.srcSurfaceId = pCEvent->idmat[0];
+		params.trgSurfaceId = pCEvent->idmat[1];
+		params.soundSemantic = eSoundSemantic_Physics_Collision;
+
+		if (pCEvent->iForeignData[0] == PHYS_FOREIGN_ID_STATIC)
+		{
+			params.srcRenderNode = (IRenderNode*)pCEvent->pForeignData[0];
+		}
+		if (pCEvent->iForeignData[1] == PHYS_FOREIGN_ID_STATIC)
+		{
+			params.trgRenderNode = (IRenderNode*)pCEvent->pForeignData[1];
+		}
+		if (pEntitySrc && pCEvent->idmat[0] == pMaterialEffects->GetDefaultCanopyIndex())
+		{
+			/*  //CryMP: We dont have s_this->m_treeStatus
+			SVegCollisionStatus* test = s_this->m_treeStatus[params.src];
+			if (!test)
+			{
+				IEntityRenderProxy* rp = (IEntityRenderProxy*)pEntitySrc->GetProxy(ENTITY_PROXY_RENDER);
+				if (rp)
+				{
+					IRenderNode* rn = rp->GetRenderNode();
+					if (rn)
+					{
+						effectId = pMaterialEffects->GetEffectIdByName("vegetation", "tree_impact");
+						s_this->m_treeStatus[params.src] = new SVegCollisionStatus();
+					}
+				}
+			}*/
+		}
+
+		//Prevent the same FX to be played more than once in mfx_Timeout time interval
+		/*
+		static ICVar* mfx_Timeout = gEnv->pConsole->GetCVar("mfx_Timeout");
+		float fTimeOut = mfx_Timeout->GetFVal();
+		for (int k = 0; k < MAX_CACHED_EFFECTS; k++)
+		{
+			SMFXRunTimeEffectParams& cachedParams = s_this->m_lstCachedEffects[k];
+			if (cachedParams.src == params.src && cachedParams.trg == params.trg &&
+				cachedParams.srcSurfaceId == params.srcSurfaceId && cachedParams.trgSurfaceId == params.trgSurfaceId &&
+				cachedParams.srcRenderNode == params.srcRenderNode && cachedParams.trgRenderNode == params.trgRenderNode)
+			{
+				if (GetISystem()->GetITimer()->GetCurrTime() - cachedParams.fLastTime <= fTimeOut)
+					return; // didnt timeout yet
+			}
+		}
+
+		// add it overwriting the oldest one
+		s_this->m_nEffectCounter = (s_this->m_nEffectCounter + 1) & (MAX_CACHED_EFFECTS - 1);
+		*/
+
+
+		//SMFXRunTimeEffectParams& cachedParams = s_this->m_lstCachedEffects[s_this->m_nEffectCounter]; 
+		SMFXRunTimeEffectParams cachedParams;
+		cachedParams.src = params.src;
+		cachedParams.trg = params.trg;
+		cachedParams.srcSurfaceId = params.srcSurfaceId;
+		cachedParams.trgSurfaceId = params.trgSurfaceId;
+		cachedParams.soundSemantic = params.soundSemantic;
+		cachedParams.srcRenderNode = params.srcRenderNode;
+		cachedParams.trgRenderNode = params.trgRenderNode;
+		cachedParams.fLastTime = GetISystem()->GetITimer()->GetCurrTime();
+
+		if (effectId == InvalidEffectId)
+		{
+			const char* pSrcArchetype = (pEntitySrc && pEntitySrc->GetArchetype()) ? pEntitySrc->GetArchetype()->GetName() : 0;
+			const char* pTrgArchetype = (pEntityTrg && pEntityTrg->GetArchetype()) ? pEntityTrg->GetArchetype()->GetName() : 0;
+
+			if (pEntitySrc)
+			{
+				if (pSrcArchetype)
+					effectId = pMaterialEffects->GetEffectId(pSrcArchetype, pCEvent->idmat[1]);
+				if (effectId == InvalidEffectId)
+				{
+					effectId = pMaterialEffects->GetEffectId(pEntitySrc->GetClass(), pCEvent->idmat[1]);
+				}
+			}
+			//CryMP: projectile got removed by server, use class info if provided
+			else if (pProjectileClass)
+			{
+				effectId = pMaterialEffects->GetEffectId(pProjectileClass, pCEvent->idmat[1]);
+			}
+			if (effectId == InvalidEffectId && pEntityTrg)
+			{
+				if (pTrgArchetype)
+					effectId = pMaterialEffects->GetEffectId(pTrgArchetype, pCEvent->idmat[0]);
+
+				if (effectId == InvalidEffectId)
+				{
+					effectId = pMaterialEffects->GetEffectId(pEntityTrg->GetClass(), pCEvent->idmat[0]);
+				}
+			}
+		}
+
+		if (effectId != InvalidEffectId)
+		{
+			//It's a bullet if it is a particle, has small mass and flies at high speed (>100m/s)
+			bool isBullet = pCEvent->pEntity[0] ? (pCEvent->pEntity[0]->GetType() == PE_PARTICLE && pCEvent->vloc[0].len2() > 10000.0f && pCEvent->mass[0] < 1.0f) : false;
+
+			IActor* pActor = nullptr;
+			if (isBullet)
+				pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(params.trg);
+			params.pos = pCEvent->pt;
+
+			if (isBullet && pActor && pActor->IsClient())
+			{
+				Vec3 proxyOffset(ZERO);
+				Matrix34 tm = pActor->GetEntity()->GetWorldTM();
+				tm.Invert();
+
+				IMovementController* pMV = pActor->GetMovementController();
+				if (pMV)
+				{
+					SMovementState state;
+					pMV->GetMovementState(state);
+					params.pos = state.eyePosition + (state.eyeDirection.normalize() * 1.0f);
+					params.soundProxyEntityId = params.trg;
+					params.soundProxyOffset = tm.TransformVector((state.eyePosition + (state.eyeDirection * 1.0f)) - state.pos);
+					//Do not play FX in FP
+					params.playflags = MFX_PLAY_ALL & ~MFX_PLAY_PARTICLES;
+				}
+			}
+
+			static ICVar* g_blood = gEnv->pConsole->GetCVar("g_blood");
+
+			// further, prevent ALL particle effects from playing if g_blood = 0
+			if (pActor && g_blood->GetIVal() == 0)
+			{
+				params.playflags = MFX_PLAY_ALL & ~MFX_PLAY_PARTICLES;
+			}
+
+			// Check entity links for a 'Shooter'
+			// if we find one and the local player is the shooter, we don't
+			// need a raycast for sound obstruction/occlusion
+			IEntityLink* pEntityLink = pEntitySrc ? pEntitySrc->GetEntityLinks() : 0;
+			if (pEntityLink)
+			{
+				EntityId clientActorId = g_pGame->GetIGameFramework()->GetClientActorId();
+				while (pEntityLink)
+				{
+					//Entity link is created in CProjectile::SetParams(), do we really need to check for the name (only the id perhaps)?
+					if (strcmp("Shooter", pEntityLink->name) == 0)
+					{
+						if (clientActorId == pEntityLink->entityId)
+							params.soundNoObstruction = true;
+
+						// in any case, we're done
+						break;
+					}
+					pEntityLink = pEntityLink->next;
+				}
+			}
+
+			params.decalPos = pCEvent->pt;
+			params.normal = pCEvent->n;
+			Vec3 dir0 = pCEvent->vloc[0];
+			Vec3 dir1 = pCEvent->vloc[1];
+
+			//Water, ZeroG, ... parameters
+
+			bool inWater = false, zeroG = false;
+			float waterLevel = 0.0f;
+			Vec3 gravity;
+			pe_params_buoyancy pb[4];
+			int nBuoys = gEnv->pPhysicalWorld->CheckAreas(pCEvent->pt, gravity, pb, 4);
+			for (int i = 0; i < nBuoys; i++) if (pb[i].iMedium == 0 && (pCEvent->pt - pb[i].waterPlane.origin) * pb[i].waterPlane.n < 0)
+			{
+				waterLevel = pb[i].waterPlane.origin.z;
+				break;
+			}
+			if (gravity.GetLength() < 0.0001f)
+				zeroG = true;
+
+			Vec3 pos = params.pos;
+			if (waterLevel > 0.0f)
+				inWater = (gEnv->p3DEngine->GetWaterLevel(&pos) > params.pos.z);
+
+			params.inWater = inWater;
+			params.inZeroG = zeroG;
+			params.dir[0] = dir0.normalize();
+			params.dir[1] = dir1.normalize();
+			params.src = pEntitySrc ? pEntitySrc->GetId() : 0;
+			params.trg = pEntityTrg ? pEntityTrg->GetId() : 0;
+			params.partID = pCEvent->partid[1];
+
+			float massMin = 0.0f;
+			float massMax = 500.0f;
+			float paramMin = 0.0f;
+			float paramMax = 1.0f / 3.0f;
+
+			// tiny - bullets
+			if ((pCEvent->mass[0] <= 0.1f) && pCEvent->pEntity[0] && pCEvent->pEntity[0]->GetType() == PE_PARTICLE)
+			{
+				// small
+				massMin = 0.0f;
+				massMax = 0.1f;
+				paramMin = 0.0f;
+				paramMax = 1.0f;
+			}
+			else if (pCEvent->mass[0] < 20.0f)
+			{
+				// small
+				massMin = 0.0f;
+				massMax = 20.0f;
+				paramMin = 0.0f;
+				paramMax = 1.5f / 3.0f;
+			}
+			else if (pCEvent->mass[0] < 200.0f)
+			{
+				// medium
+				massMin = 20.0f;
+				massMax = 200.0f;
+				paramMin = 1.0f / 3.0f;
+				paramMax = 2.0f / 3.0f;
+			}
+			else
+			{
+				// ultra large
+				massMin = 200.0f;
+				massMax = 2000.0f;
+				paramMin = 2.0f / 3.0f;
+				paramMax = 1.0f;
+			}
+
+			float p = min(1.0f, (pCEvent->mass[0] - massMin) / (massMax - massMin));
+			float finalparam = paramMin + (p * (paramMax - paramMin));
+
+			// need to hear bullet impacts
+			params.soundDistanceMult = pCEvent->mass[0] > 1.0f ? (finalparam * finalparam) + ((1.0f - finalparam) * .05f) : 1.0f;
+
+			params.AddSoundParam("mass", finalparam);
+			params.AddSoundParam("speed", adjustedRelativeVelocity);
+
+			pMaterialEffects->ExecuteEffect(effectId, params);
+
+			if (debug != 0)
+			{
+				pEntitySrc = GetEnt(pCEvent->iForeignData[0], pCEvent->pForeignData[0]);
+				pEntityTrg = GetEnt(pCEvent->iForeignData[1], pCEvent->pForeignData[1]);
+
+				ISurfaceTypeManager* pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
+				CryLogAlways("[$3MFX$1] Running effect for:");
+				if (pEntitySrc)
+				{
+					const char* pSrcName = pEntitySrc->GetName();
+					const char* pSrcClass = pEntitySrc->GetClass()->GetName();
+					const char* pSrcArchetype = pEntitySrc->GetArchetype() ? pEntitySrc->GetArchetype()->GetName() : "<none>";
+					CryLogAlways("      : SrcClass=%s SrcName=%s Arch=%s", pSrcClass, pSrcName, pSrcArchetype);
+				}
+				if (pEntityTrg)
+				{
+					const char* pTrgName = pEntityTrg->GetName();
+					const char* pTrgClass = pEntityTrg->GetClass()->GetName();
+					const char* pTrgArchetype = pEntityTrg->GetArchetype() ? pEntityTrg->GetArchetype()->GetName() : "<none>";
+					CryLogAlways("      : TrgClass=%s TrgName=%s Arch=%s", pTrgClass, pTrgName, pTrgArchetype);
+				}
+				CryLogAlways("      : Mat0=%s", pSurfaceTypeManager->GetSurfaceType(pCEvent->idmat[0])->GetName());
+				CryLogAlways("      : Mat1=%s", pSurfaceTypeManager->GetSurfaceType(pCEvent->idmat[1])->GetName());
+				CryLogAlways("impact-speed=%f fx-threshold=%f mass=%f speed=%f", sqrtf(impactVelSquared), partImpThresh, finalparam, adjustedRelativeVelocity);
+			}
+
+			return true;
+		}
+		else
+		{
+			if (debug != 0)
+			{
+				pEntitySrc = GetEnt(pCEvent->iForeignData[0], pCEvent->pForeignData[0]);
+				pEntityTrg = GetEnt(pCEvent->iForeignData[1], pCEvent->pForeignData[1]);
+
+				ISurfaceTypeManager* pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
+				CryLogAlways("[$8MFX$1] Couldn't find effect for any combination of:");
+				if (pEntitySrc)
+				{
+					const char* pSrcName = pEntitySrc->GetName();
+					const char* pSrcClass = pEntitySrc->GetClass()->GetName();
+					const char* pSrcArchetype = pEntitySrc->GetArchetype() ? pEntitySrc->GetArchetype()->GetName() : "<none>";
+					CryLogAlways("      : SrcClass=%s SrcName=%s Arch=%s", pSrcClass, pSrcName, pSrcArchetype);
+				}
+				if (pEntityTrg)
+				{
+					const char* pTrgName = pEntityTrg->GetName();
+					const char* pTrgClass = pEntityTrg->GetClass()->GetName();
+					const char* pTrgArchetype = pEntityTrg->GetArchetype() ? pEntityTrg->GetArchetype()->GetName() : "<none>";
+					CryLogAlways("      : TrgClass=%s TrgName=%s Arch=%s", pTrgClass, pTrgName, pTrgArchetype);
+				}
+				CryLogAlways("      : Mat0=%s", pSurfaceTypeManager->GetSurfaceType(pCEvent->idmat[0])->GetName());
+				CryLogAlways("      : Mat1=%s", pSurfaceTypeManager->GetSurfaceType(pCEvent->idmat[1])->GetName());
+			}
+		}
+	}
+
+	return false;
+	// --- End Material Effects Code ---
 }
 
 //------------------------------------------------------------------------
