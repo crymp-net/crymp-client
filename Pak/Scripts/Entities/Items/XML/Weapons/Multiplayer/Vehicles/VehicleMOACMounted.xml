@@ -1,0 +1,132 @@
+<item name="VehicleMOACMounted" class="VehicleWeapon" invisible="1" configuration="mp" >
+<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="1" />		
+		<mount>						
+			<param name="left_hand_helper" value="grip_left" />
+			<param name="right_hand_helper" value="grip_right" />
+		</mount>
+	</params>	
+	<ammos>
+		<ammo name="acmo" extra="0" amount="0" />
+	</ammos>
+	<geometry>
+		<firstperson name="objects/weapons/us/alien_weapon_mount/alien_weapon_mount_vehicle_fp.chr" angles="0,0,0" position="0,0,0"/>		
+		<boneAttachments>
+					<attachment target="firstperson" name="spinup_effect" bone="weapon_term" />
+					<attachment target="firstperson" name="spinup_light" bone="weapon_term" />
+					<attachment target="firstperson" name="muzzle_flash_effect" bone="weapon_term" />
+					<attachment target="firstperson" name="muzzle_flash_light" bone="weapon_term" />
+					<attachment target="firstperson" name="attachment_front" bone="attachment_front" />					
+		</boneAttachments>
+	</geometry>
+	<actions>
+	  <action name="select">
+			<animation target="firstperson" name="select_vehicle_01" camera_helper="camera_helper" />			
+			<sound target="thirdperson" name="sounds/weapons:moar_small:select" radius="5" />
+		</action>		
+		<action name="idle" children="1">
+			<animation target="firstperson" name="idle_vehicle_%suffix%01" camera_helper="camera_helper" />			
+		</action>				
+		<action name="fire">
+		  <sound target="firstperson" name="sounds/weapons:moac_large:fire_fp" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moac_large:fire" radius="50" static="1" />
+			<animation target="firstperson" name="fire_vehicle_%suffix%01" camera_helper="camera_helper" />			
+		</action>		
+		<action name="rapid_fire">	
+		  <sound target="firstperson" name="sounds/weapons:moac_large:fire_loop_fp" static="1" synched="1"/>
+			<sound target="thirdperson" name="sounds/weapons:moac_large:fire_loop" radius="50" static="1" synched="1"/>	  
+		</action>				
+		<action name="spin_up" children="1">
+		  <sound target="firstperson" name="sounds/weapons:moac_large:spin_up_fp" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moac_large:spin_up" radius="50" static="1" />
+			<animation target="firstperson" name="prefire_vehicle_%suffix%01" camera_helper="camera_helper" />					
+		</action>		
+		<action name="spin_down" children="1">
+		  <sound target="firstperson" name="sounds/weapons:moac_large:spin_down_fp" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moac_large:spin_down" radius="50" static="1" />
+			<animation target="firstperson" name="postfire_vehicle_%suffix%01" camera_helper="camera_helper" />			
+		</action>		
+		<action name="zoom_in">
+			<animation target="firstperson" name="zoom_in_vehicle_%suffix%01" camera_helper="camera_helper" />
+		</action>
+		<action name="zoom_out">
+			<animation target="firstperson" name="zoom_out_vehicle_%suffix%01" camera_helper="camera_helper"/>
+		</action>
+    <action name="overheating">
+      <sound target="firstperson" name="Sounds/weapons:moar_small:overfreeze" radius="5" static="0" />
+      <sound target="thirdperson" name="Sounds/weapons:moar_small:overfreeze" radius="5" static="0" />
+    </action>
+	</actions>
+	<firemodes>
+		<firemode name="Rapid" type="Rapid">
+			<fire>
+        <param name="clip_size" value="-1" />
+				<param name="spin_up_time" value="4"/>
+				<param name="ammo_type" value="acmo" />
+				<param name="rate" value="800" />
+				<param name="damage" value="160" />				
+				<param name="helper_tp" value="weapon_term" />
+				<param name="autozoom" value="true" />				
+				<param name="reload_time" value="2" />
+			</fire>
+			<spread>
+				<param name="min" value="0.035" />
+				<param name="max" value="1.30" />
+				<param name="attack" value="0.75" />
+				<param name="decay" value="0.50" />
+			</spread>
+			<rapid>
+				<param name="min_speed" value="2.55" />
+				<param name="max_speed" value="2.55" />
+				<param name="acceleration" value="2.35" />
+				<param name="deceleration" value="-3.0" />
+				<param name="camshake_rotate" value=".005,0.005,0" />
+				<param name="camshake_perShot" value="4.0" />
+			</rapid>
+      <heating>
+				<param name="overheat_time" value="6.0" /> 
+				<param name="duration" value="0.75" />
+				<param name="cooldown_time" value="2.0" />
+        <param name="helper_fp" value="muzzle_flash_effect" />
+        <param name="effect_fp" value="weapon_fx.gun.cold_steam_on_barrel" />
+        <param name="helper_tp" value="muzzle_flash_effect" />
+        <param name="effect_tp" value="weapon_fx.gun.cold_steam_on_barrel" />
+      </heating>      
+			<spinup>
+				<firstperson effect="muzzleflash.Alien.MOAC_Firing" helper="spinup_effect" light_helper="spinup_light" time="2.0" light_radius="0" scale="2.0" />
+				<thirdperson effect="muzzleflash.Alien.MOAC_Firing" helper="spinup_effect" light_helper="spinup_light" time="2.0" light_radius="3" scale="2.0" />
+			</spinup>			
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Alien.MOAC_charge" helper="muzzle_flash_effect" light_helper="muzzle_flash_light" light_radius="0" scale="1.0" />
+				<thirdperson effect="muzzleflash.Alien.MOAC_charge" helper="muzzle_flash_effect" light_helper="muzzle_flash_light" light_radius="3" scale="1.0" />
+			</muzzleflash>
+		</firemode>		
+	</firemodes>
+	<zoommodes>
+		<zoommode name="ironsight" type="IronSight">
+			<zoom>
+				<param name="suffix" value="ironsight_" />
+				<param name="dof_mask" value="textures/weapons/ironzoom_blurmask.dds" />
+				<param name="zoom_in_time" value="0.2" />
+				<param name="zoom_out_time" value="0.2" />
+				<stages>
+					<stage value="1.4" />
+				</stages>
+			</zoom>
+		</zoommode>		
+	</zoommodes>
+	<accessories>
+		<initialsetup>			
+			<accessory name="VehicleMOACAttach" />
+		</initialsetup>		
+		<accessory name="VehicleMOACAttach" exclusive="1">
+			<attach helper="attachment_front" layer="" />
+			<detach />
+		</accessory>		
+	</accessories>
+</item>

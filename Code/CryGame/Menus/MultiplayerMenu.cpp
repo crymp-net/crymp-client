@@ -534,8 +534,9 @@ struct CMultiPlayerMenu::SGSBrowser : public IServerListener
 			cType += gt;
 			if (gEnv->pSystem->GetLocalizationManager()->LocalizeLabel(cType.c_str(), m_tempWString) == false)
 			{
-				SUIWideString mode(gt);
-				m_tempWString = mode.c_str();
+				// CryStringT<wchar_t>::clear() doesn't even compile...
+				m_tempWString = L"";
+				StringTools::AppendTo(m_tempWString, gt);
 			}
 			it = m_gameTypes.insert(std::make_pair(gt, m_tempWString)).first;
 		}

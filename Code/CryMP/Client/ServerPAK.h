@@ -7,7 +7,6 @@ struct ILevelInfo;
 class ServerPAK
 {
 	std::string m_path;
-	bool m_bResetRequired = false;
 
 public:
 	ServerPAK();

@@ -27,7 +27,6 @@ History:
 #include "Weapon.h"
 #include "AmmoParams.h"
 
-
 #define MIN_DAMAGE								5
 
 class CProjectile :
@@ -104,12 +103,6 @@ public:
 
 	virtual int AttachEffect(bool attach, int id, const char *name=0, const Vec3 &offset=Vec3(0.0f,0.0f,0.0f), const Vec3 &dir=Vec3(0.0f,1.0f,0.0f), float scale=1.0f, bool bParticlePrime = true);
 
-  EntityId GetOwnerId()const;
-
-	float GetSpeed() const;
-	inline float GetLifeTime() const { return m_pAmmoParams? m_pAmmoParams->lifetime : 0.0f; }
-	bool IsPredicted() const { return m_pAmmoParams? m_pAmmoParams->predictSpawn != 0 : false; }
-
 	//IHitListener
 	virtual void OnHit(const HitInfo&);
 	virtual void OnExplosion(const ExplosionInfo&);
@@ -118,21 +111,41 @@ public:
 	//Helper function to initialize particle params in exceptional cases
 	void SetDefaultParticleParams(pe_params_particle *pParams);
 
+	bool IsPlayingMfxFromClExplosion() const;
+
 	const SAmmoParams *GetParams() const { return m_pAmmoParams; };
 
-	virtual void InitWithAI( );
+	void InitWithAI();
 
-	bool IsUpdated() const
+	inline EntityId GetOwnerId() const
 	{
-		return gEnv->pTimer->GetCurrTime() - m_lastUpdate < 0.1f;
+		return m_ownerId;
 	}
-
-	bool IsGhost() const
+	inline EntityId GetHostId() const
+	{
+		return m_hostId;
+	}
+	inline float GetSpeed() const
+	{
+		return m_pAmmoParams ? m_pAmmoParams->speed : 0.0f;
+	}
+	inline float GetLifeTime() const
+	{
+		return m_pAmmoParams ? m_pAmmoParams->lifetime : 0.0f;
+	}
+	inline bool IsPredicted() const
+	{
+		return m_pAmmoParams ? m_pAmmoParams->predictSpawn != 0 : false;
+	}
+	inline IPhysicalEntity* GetPhysicalEntity()
+	{
+		return m_pPhysicalEntity;
+	}
+	inline bool IsGhost() const
 	{
 		return m_ghost;
 	}
-
-	float GetTotalLifeTime()
+	inline float GetTotalLifeTime() const
 	{
 		return m_totalLifetime;
 	}
@@ -197,8 +210,6 @@ protected:
 	IPhysicalEntity* m_pObstructObject = nullptr;
 
 	float m_spawnTime = 0.0f;
-	float m_lastUpdate = 0.0f;
-
 	bool m_netUpdateReceived = false;
 	bool m_ghost = false;
 };

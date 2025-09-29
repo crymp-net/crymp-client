@@ -618,6 +618,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_radioTagging", &mp_radioTagging, 0, OPTIONAL_SYNC, "Enable tagging positions using radio");
 	pConsole->Register("mp_healthBars", &mp_healthBars, 0, OPTIONAL_SYNC, "Enable displaying health bars");
 	pConsole->Register("mp_deadPlayersOnMinimap", &mp_deadPlayersOnMinimap, 0, OPTIONAL_SYNC, "Display dead players on minimap");
+	pConsole->Register("mp_suitHitReaction", &mp_suitHitReaction, 0, OPTIONAL_SYNC, "Activates NanoHitReaction");
 
 	//CryMP CVars (un-synced)
 	pConsole->Register("mp_newSpectator", &mp_newSpectator, 1, VF_NOT_NET_SYNCED, "");
@@ -639,6 +640,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_recycleProjectiles", &mp_recycleProjectiles, 1, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Recycle projectiles");
 	pConsole->Register("mp_abandonTime", &mp_abandonTime, 10.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds after which vehicles explode");
 	pConsole->Register("mp_explosiveRemovalTime", &mp_explosiveRemovalTime, 30.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds for explosive removal after death");
+	pConsole->Register("mp_explosion_mfx", &mp_explosion_mfx, 1, VF_NOT_NET_SYNCED, "Enable mfx via ClExplosion rmi for server controlled missiles");
 }
 
 //------------------------------------------------------------------------

@@ -254,6 +254,8 @@ void ServerConnector::Step4_TryConnect()
 		SetLoadingDialogText("@ui_connecting_to", m_server.name.c_str());
 	}
 
+	gClient->GetServerPAK()->ResetSubSystems();
+
 	ResetCVars();
 
 	SGameStartParams params;

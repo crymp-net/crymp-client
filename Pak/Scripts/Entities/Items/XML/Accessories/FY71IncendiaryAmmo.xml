@@ -1,0 +1,15 @@
+<item name="FY71IncendiaryAmmo" class="Item" priority="132">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="attachment_gives_ammo" value="1" />
+	</params>
+	<accessoryAmmo>
+		<ammo name="incendiarybullet" amount="30" />
+	</accessoryAmmo>
+	<geometry>
+		<firstperson name="objects/weapons/asian/fy71/fy71_inc_clip_fp.cgf"/>
+		<thirdperson name="objects/weapons/asian/fy71/fy71_inc_clip_tp.cgf"/>
+	</geometry>
+</item>

@@ -1,0 +1,66 @@
+<item name="FastLightMOAR" class="Weapon" >
+	<params>
+		<param name="equipeable"	value="1" />
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="1" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="0" />
+		<param name="usable"		 	value="0" />
+		<param name="pose" 				value="rifle" />
+		<param name="mass"				value="80" />
+	</params>
+	<ai_descriptor handler="fast_light_moar" speed="20" damage_radius="10" charge_time="2.5" signal_on_shoot="0" />
+	<actions>
+    <action name="fire">
+			<sound target="firstperson" name="sounds/weapons:moar_small:fire_loop_fp" radius="50" />
+			<sound target="thirdperson" name="sounds/weapons:moar_small:fire_loop" radius="50" />
+		</action>
+		<action name="blast">
+			<sound target="firstperson" name="sounds/weapons:moar_small:fire_fp" radius="50" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moar_small:fire" radius="50" static="1" />
+		</action>
+		<action name="spin_up">
+			<animation target="owner" name="shoot" />
+			<sound target="firstperson" name="sounds/weapons:moar_small:spin_up_fp" radius="50" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moar_small:spin_up" radius="50" static="1" />
+		</action>
+		<action name="spin_down">
+			<sound target="firstperson" name="sounds/weapons:moar_small:spin_down_fp" radius="50" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:moar_small:spin_down" radius="50" static="1" />
+		</action>
+		<action name="hit">
+			<sound target="firstperson" name="sounds/physics:bullet_impact:moar_small_beam_impact" radius="50" static="1" />
+			<sound target="thirdperson" name="sounds/physics:bullet_impact:moar_small_beam_impact" radius="50" static="1" />
+		</action>
+	</actions>
+	<firemodes>
+		<firemode name="Beam" type="FreezingBeam">
+			<fire>
+				<param name="offset" value="0.15" />
+				<param name="spin_up_time" value="1.5" />
+				<param name="damage" value="5" />
+				<param name="hit_type" value="frost" />				
+			</fire>
+			<beam>
+			  <param name="tick" value="0.1" />
+			  <param name="range" value="30" />
+				<param name="hit_decal" value="materials/decals/alien_trooper_freeze.mtl" />
+				<param name="hit_decal_size" value="2" />
+				<param name="hit_decal_size_min" value="1.5" />
+				<param name="hit_decal_lifetime" value="180" />				
+				<param name="hit_effect" value="Alien_Weapons.Freeze_Beam.Trooper_MOAR_Impact" />
+			</beam>
+			<freeze>
+	      <param name="freeze_speed" value="1.5" />
+	    </freeze>
+			<effect>
+				<firstperson effect="Alien_Weapons.Freeze_Beam.Trooper_MOAR_firing" helper="beam_emitter" scale="0.06" />
+				<thirdperson effect="Alien_Weapons.Freeze_Beam.Trooper_MOAR_firing" helper="weapon_term" scale="0.06" />
+			</effect>
+			<spinup>
+				<firstperson effect="Alien_Weapons.Freeze_Beam.Trooper_MOAR_charging" helper="beam_emitter" scale="0.5" />
+				<thirdperson effect="Alien_Weapons.Freeze_Beam.Trooper_MOAR_charging" helper="weapon_term" scale="0.5" />			
+			</spinup>
+		</firemode>
+	</firemodes>
+</item>

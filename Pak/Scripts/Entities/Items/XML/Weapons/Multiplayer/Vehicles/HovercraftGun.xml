@@ -1,0 +1,153 @@
+<item name="HovercraftGun" class="VehicleWeapon" invisible="1" configuration="mp" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />		
+		<mount>			
+			<param name="pivot" value="weapon" />
+			<param name="left_hand_helper" value="" />
+			<param name="right_hand_helper" value="" />
+		</mount>
+	</params>
+	<ai_descriptor handler="instant" speed="400" damage_radius="-1" charge_time="-1" smartobject_class="MountedMG"/>
+	<ammos>
+		<ammo name="bullet" extra="0" amount="500" />
+	</ammos>
+	<geometry>
+		<firstperson name="objects/weapons/asian/shi_ten/shi_ten_vehicle.chr" angles="0,0,0" position="0,0,0"/>		
+		<boneAttachments>
+			<attachment target="firstperson" name="muzzle_flash_effect" bone="weapon_term" />
+			<attachment target="firstperson" name="muzzle_flash_effect_tp" bone="weapon_term" />
+			<attachment target="firstperson" name="muzzle_flash_light" bone="weapon_term" />			
+			<attachment target="firstperson" name="overheat_effect" bone="weapon_term" />
+		</boneAttachments>
+	</geometry>
+	
+	<actions>		
+		<action name="select">
+			<animation target="firstperson" name="" camera_helper="" />						
+			<sound target="firstperson" name="sounds/weapons:heavymachinegun:select" radius="5" />
+			<sound target="thirdperson" name="sounds/weapons:heavymachinegun:select" radius="5" />
+		</action>		
+		<action name="idle">
+			<animation target="firstperson" name="idle_vehicle_%suffix%01" camera_helper="" />			
+		</action>		
+		<action name="fire">			
+		  <animation target="firstperson" name="fire_vehicle_%suffix%01" camera_helper="" />
+			<sound target="firstperson" name="sounds/weapons:heavymachinegun:fire_fp_single%env%" radius="100" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:heavymachinegun:fire_3rd_single%env%" radius="100" static="1" />
+		</action>				
+		<action name="rapid_fire">		  
+			<sound target="firstperson" name="Sounds/weapons:heavymachinegun:fire_fp_loop" radius="100" static="1" synched="1"/>
+			<sound target="thirdperson" name="Sounds/weapons:heavymachinegun:fire_3rd_loop" radius="100" static="1" synched="1"/>
+		</action>		
+		<action name="spin_down">
+			<sound target="firstperson" name="Sounds/weapons:heavymachinegun:fire_fp_tail%env%" radius="5" static="1" />
+			<sound target="thirdperson" name="Sounds/weapons:heavymachinegun:fire_3rd_tail%env%" radius="5" static="1" />
+		</action>		
+		<action name="zoom_in">
+			<animation target="firstperson" name="zoom_in_vehicle_%suffix%01" camera_helper="" />
+		</action>
+		<action name="zoom_out">
+			<animation target="firstperson" name="zoom_out_vehicle_%suffix%01" camera_helper=""/>
+		</action>
+		<action name="overheating">
+			<sound target="firstperson" name="sounds/weapons:shiten:overheat" radius="5" static="0" />
+			<sound target="thirdperson" name="sounds/weapons:shiten:overheat" radius="5" static="0" />
+		</action>
+		<!--
+		<action name="cooldown">
+			<sound target="firstperson" name="sounds/weapons:heavymachinegun:cooldown_fp" radius="5" static="0" />
+			<sound target="thirdperson" name="sounds/weapons:heavymachinegun:cooldown_3rd" radius="5" static="0" />
+		</action>	
+		-->
+	</actions>
+		
+	<firemodes>
+		<firemode name="Rapid" type="Rapid">
+			<fire>
+				<param name="ammo_type" value="bullet" />
+				<param name="rate" value="1000" />
+				<param name="damage" value="40" />
+				<param name="autozoom" value="true" />
+				<param name="helper_fp" value="weapon_term" />
+				<param name="helper_tp" value="weapon_term" />
+				<param name="distance"    value="700" />
+			</fire>
+	    <heating>				
+				<param name="overheat_time" value="6.0" /> 
+				<param name="duration" value="2.0" />
+				<param name="cooldown_time" value="2.0" />
+				<param name="helper_fp" value="overheat_effect" />
+				<param name="effect_fp" value="weapon_fx.gun.overheat_haze" />
+				<param name="helper_tp" value="overheat_effect" />
+				<param name="effect_tp" value="weapon_fx.gun.overheat_haze" />
+			</heating>
+			<rapid>
+				<param name="min_speed" value="0.001" />
+				<param name="max_speed" value="0.001" />
+				<param name="acceleration" value="3.0" />
+				<param name="deceleration" value="-3.0" />
+								
+				<param name="camshake_rotate" value="0,0.005,0" />
+				<param name="camshake_shift" value="0,0.005,0" />
+				<param name="camshake_perShot" value="2" />
+			</rapid>
+			<recoil>
+				<param name="max_recoil"	value="2" />
+				<param name="attack" 			value="1.4" />
+				<param name="decay" 			value="0.5" />
+				<param name="maxx" 				value="0.3" />
+				<param name="maxy" 				value="0.3" />
+				<param name="randomness" 	value="0.75" />
+				<hints>
+					<hint x="0.01" 	y="0.00" />
+					<hint x="0.02" 	y="0.00" />
+					<hint x="0.15" 	y="0.15" />
+					<hint x="0.35" 	y="0.25" />					
+					<hint x="0.50" 	y="0.50" />
+					<hint x="0.85"	y="0.30" />
+					<hint x="0.50" 	y="0.45" />
+					<hint x="0.75" 	y="0.55" />
+					<hint x="1.00" 	y="0.25" />
+					<hint x="0.75" 	y="0.20" />
+					<hint x="1.00" 	y="0.20" />
+					<hint x="1.00" 	y="0.45" />
+					<hint x="1.00" 	y="1.0" />
+					<hint x="1.00" 	y="1.0" />
+					<hint x="0.75"	y="1.0" />		
+				</hints>
+			</recoil>	
+			<spread>
+				<param name="min" value="0.015" />
+				<param name="max" value="2.0" />
+				<param name="attack" value="0.95" />
+				<param name="decay" value="0.7" />
+			</spread>
+			<muzzleflash>							
+				<firstperson effect="muzzleflash.Machinegun.US50cal" helper="muzzle_flash_effect" light_helper="muzzle_flash_light" light_time="0.03" light_diffuse_mult="3" />
+				<thirdperson effect="muzzleflash.Machinegun.US50cal_tp" helper="muzzle_flash_effect_tp" light_helper="muzzle_flash_light" light_time="0.03" light_diffuse_mult="5" />
+			</muzzleflash>
+			<reject>
+				<firstperson effect="weapon_fx.shells.vehicleshiten" helper="shells" />
+				<thirdperson effect="weapon_fx.shells.vehicleshiten" helper="shells" />
+			</reject>
+		</firemode>
+	</firemodes>
+	<zoommodes>
+		<zoommode name="ironsight" type="IronSight">
+			<zoom>
+				<param name="suffix" value="ironsight_" />
+				<param name="dof_mask" value="textures/weapons/ironzoom_blurmask.dds" />
+				<param name="zoom_in_time" value="0.2" />
+				<param name="zoom_out_time" value="0.2" />
+				<stages>
+					<stage value="1.4" />
+				</stages>
+			</zoom>
+		</zoommode>		
+	</zoommodes>
+</item>

@@ -1100,6 +1100,7 @@ void Launcher::PatchEngine()
 
 	if (m_dlls.pCry3DEngine)
 	{
+		MemoryPatch::Cry3DEngine::EnableBigDecalsOnDynamicObjects(m_dlls.pCry3DEngine);
 		MemoryPatch::Cry3DEngine::FixGetObjectsByType(m_dlls.pCry3DEngine);
 
 		if (!WinAPI::CmdLine::HasArg("-oldtod"))
@@ -1138,11 +1139,7 @@ void Launcher::PatchEngine()
 
 void Launcher::StartEngine()
 {
-	#ifdef SERVER_LAUNCHER
-	const bool oldAction = true;
-	#else
 	const bool oldAction = WinAPI::CmdLine::HasArg("-oldaction");
-	#endif
 
 	IGameFramework* pGameFramework = nullptr;
 
@@ -1218,6 +1215,7 @@ void Launcher::StartEngine()
 
 	StartupTime::Finish();
 	CryLogAlways("Startup finished in %.3f seconds", StartupTime::GetSeconds());
+
 #ifdef SERVER_LAUNCHER
 	if (oldAction) {
 		CryLogAlways("[CryMP] Using old CryAction");
@@ -1298,6 +1296,10 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 
 	gEnv->pConsole->AddCommand("CryPakInfo", [](IConsoleCmdArgs* args) {
 		CryPak::GetInstance().LogInfo();
+	});
+
+	gEnv->pConsole->AddCommand("LocalizationManagerInfo", [](IConsoleCmdArgs* args) {
+		LocalizationManager::GetInstance().LogInfo();
 	});
 }
 

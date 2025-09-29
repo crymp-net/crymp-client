@@ -1,0 +1,17 @@
+<item name="AlienPowerCore" class="AmmoPickup" category="" priority="0">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="0'" />
+		<param name="droppable" 	value="0" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/equipment/alien_energy_source/alien_energy_source.cgf"/>
+		<thirdperson name="objects/weapons/equipment/alien_energy_source/alien_energy_source.cgf"/>
+	</geometry>
+	<ammopickup>
+		<param name="targetweapon" value="AlienMount" />
+	</ammopickup>
+	<ammos>
+		<ammo name="acmo" extra="0" amount="50" />
+	</ammos>
+</item>

@@ -1,0 +1,13 @@
+<item name="FlashbangGrenade" class="AmmoPickup" category="" priority="0">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="0'" />
+		<param name="droppable" 	value="0" />
+	</params>
+	<ammopickup>
+		<param name="targetweapon" value="OffHand" />
+	</ammopickup>
+	<ammos>
+		<ammo name="flashbang" extra="0" amount="1" />
+	</ammos>
+</item>

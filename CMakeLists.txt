@@ -149,7 +149,6 @@ add_library(Base OBJECT
 	Code/CryAction/GameTokenSystem.h
 	Code/CryAction/ItemParamsNode.cpp
 	Code/CryAction/ItemParamsNode.h
-	Code/CryAction/ItemSystem_XMLData.cpp
 	Code/CryAction/ItemSystem.cpp
 	Code/CryAction/ItemSystem.h
 	Code/CryAction/LevelSystem.cpp
@@ -992,7 +991,6 @@ add_library(CryGame OBJECT
 	Code/CryGame/Items/Weapons/WeaponClientServer.cpp
 	Code/CryGame/Items/Weapons/WeaponEvent.cpp
 	Code/CryGame/Items/Weapons/WeaponInput.cpp
-	Code/CryGame/Items/Weapons/WeaponSystem_XMLData.cpp
 	Code/CryGame/Items/Weapons/WeaponSystem.cpp
 	Code/CryGame/Items/Weapons/WeaponSystem.h
 	Code/CryGame/Items/Weapons/ZoomModes/IronSight.cpp

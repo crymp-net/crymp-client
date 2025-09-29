@@ -1,0 +1,38 @@
+<item name="AARocketLauncher" class="VehicleWeapon" invisible="1" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ammos>
+		<ammo name="dumbaamissile" extra="8" amount="0" />
+	</ammos>
+	<actions>
+  	<action name="fire">			
+			<sound target="firstperson" name="sounds/weapons:vehicle_asian_aaa:fire_missile_fp" radius="255" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:vehicle_asian_aaa:fire_missile" radius="255" static="1" />
+  	</action>  	
+  </actions>
+	<firemodes>
+		<firemode name="Automatic" type="Automatic">
+			<fire>
+				<param name="ammo_type" value="dumbaamissile" />
+				<param name="reload_time" value="3.0" />
+				<param name="clip_size" value="0" />
+				<param name="rate" value="60" />
+				<param name="damage" value="300" />
+				<param name="barrel_count" value="2" />
+			</fire>
+			<recoil>				
+				<param name="impulse" value="8000" />
+			</recoil>					
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Rocketlauncher.AAA"    helper="" light_helper="" light_radius="10" time="0.100" light_time="0.01" light_diffuse_mult="8" light_color="1,1,0.8" />
+				<thirdperson effect="muzzleflash.Rocketlauncher.AAA_tp" helper="" light_helper="" light_radius="10" time="0.100" light_time="0.01" light_diffuse_mult="8" light_color="1,1,0.8" />
+			</muzzleflash>
+		</firemode>
+	</firemodes>
+</item>
