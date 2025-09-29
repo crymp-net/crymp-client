@@ -1436,6 +1436,40 @@ CPPAPI.AddLocalizedLabel("ui_H", {
 	},
 })
 
+CPPAPI.AddLocalizedLabel("object_too_heavy", {
+    english_text = "You need more strength to pick this up!",
+    languages = {
+        czech = {
+            localized_text = "Potřebujete více síly, abyste to zvedli!",
+        },
+        french = {
+            localized_text = "Vous avez besoin de plus de force pour ramasser ça !",
+        },
+        german = {
+            localized_text = "Du brauchst mehr Kraft, um das aufzuheben!",
+        },
+        hungarian = {
+            localized_text = "Több erőre van szükséged, hogy ezt felemeld!",
+        },
+        italian = {
+            localized_text = "Hai bisogno di più forza per sollevarlo!",
+        },
+        polish = {
+            localized_text = "Potrzebujesz więcej siły, aby to podnieść!",
+        },
+        russian = {
+            localized_text = "Вам нужно больше силы, чтобы это поднять!",
+        },
+        spanish = {
+            localized_text = "¡Necesitas más fuerza para levantar esto!",
+        },
+        turkish = {
+            localized_text = "Bunu kaldırmak için daha fazla güce ihtiyacın var!",
+        },
+    },
+})
+
+
 --[[
 CPPAPI.AddLocalizedLabel("template", {
 	english_text = "",
