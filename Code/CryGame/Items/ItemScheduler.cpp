@@ -170,13 +170,17 @@ unsigned int CItemScheduler::TimerAction(unsigned int time, ISchedulerAction *ac
 }
 
 //------------------------------------------------------------------------
-void CItemScheduler::KillTimer(unsigned int timerId)
+void CItemScheduler::KillTimer(unsigned int timerId, bool execute /*=false*/)
 {
 	std::erase_if(m_timers,
-		[timerId](auto& timer)
+		[this, timerId, execute](auto& timer)   // capture this + execute + timerId
 		{
 			if (static_cast<unsigned int>(timer.id) == timerId)
 			{
+				if (execute)
+				{
+					timer.action->execute(m_pItem);
+				}
 				timer.action->destroy();
 				return true;
 			}
