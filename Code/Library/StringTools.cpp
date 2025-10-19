@@ -13,12 +13,12 @@ typedef void* HMODULE;
 #endif
 
 extern "C" __declspec(dllimport) DWORD __stdcall GetLastError();
-extern "C" __declspec(dllimport) DWORD __stdcall FormatMessageA(
+extern "C" __declspec(dllimport) DWORD __stdcall FormatMessageW(
 	DWORD flags,
 	const void* source,
 	DWORD message,
 	DWORD language,
-	char* buffer,
+	wchar_t* buffer,
 	DWORD bufferSize,
 	va_list* args
 );
@@ -51,10 +51,11 @@ public:
 		const DWORD message = static_cast<DWORD>(code);
 		const DWORD language = 0;
 
-		char buffer[256];
-		DWORD length = ::FormatMessageA(flags, winhttp, message, language, buffer, sizeof(buffer), nullptr);
+		const DWORD bufferSize = 128;
+		wchar_t buffer[bufferSize];
+		DWORD length = ::FormatMessageW(flags, winhttp, message, language, buffer, bufferSize, nullptr);
 
-		return std::string(buffer, length);
+		return StringTools::ToUtf8(std::wstring_view(buffer, length));
 	}
 };
 
