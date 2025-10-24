@@ -18,6 +18,11 @@ json FileCache::LoadIndex()
 		index = json::parse(file.GetHandle(), nullptr, false);  // no exceptions
 	}
 
+	if (!index.is_object())
+	{
+		index = json::object();
+	}
+
 	if (!index.contains("files") || !index["files"].is_object())
 	{
 		index["files"] = json::object();
