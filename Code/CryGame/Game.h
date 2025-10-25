@@ -290,6 +290,38 @@ protected:
 	CAdManager* m_pAdManager;
 	CHealthManager* m_pHealthManager;
 	ISSM* m_ssm = nullptr;
+
+public:
+	// Hand Grip Registry
+	struct HandGripInfo
+	{
+		std::string key;   // CGF path (preferred) OR entity class name
+		bool hasLeft = false;
+		bool hasRight = false;
+		Vec3 leftEL = Vec3(ZERO);
+		Vec3 rightEL = Vec3(ZERO);
+		Vec3 posOffset_FP = Vec3(ZERO); // additional entity offset if specified
+		Vec3 posOffset_TP = Vec3(ZERO); // additional entity offset if specified
+	};
+
+	std::vector<HandGripInfo>& GetGripRegistry() { return m_gripRegistry; }
+	const std::vector<HandGripInfo>& GetGripRegistry() const { return m_gripRegistry; }
+
+	int  FindGripIndex(std::string_view key) const;
+	void SetGripLeft(std::string_view key, const Vec3& leftEL);
+	void SetGripRight(std::string_view key, const Vec3& rightEL);
+	void SetGripHoldObjectOffset(std::string_view key, const Vec3& fpOffset, const Vec3& tpOffset);
+	bool RemoveGripByKey(std::string_view key);
+	CGame::HandGripInfo* GetGripByKey(std::string_view key);
+	CGame::HandGripInfo* GetGripByEntity(IEntity* e);
+	bool RemoveGripForEntity(IEntity* e);
+	void ClearGripRegistry();
+
+private:
+	HandGripInfo& GetOrCreateGrip(std::string_view key);
+	std::vector<HandGripInfo> m_gripRegistry;
+
+
 };
 
 extern CGame *g_pGame;
