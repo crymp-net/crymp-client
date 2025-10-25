@@ -513,6 +513,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	// weapon system
 	i_debuggun_1 = pConsole->RegisterString("i_debuggun_1", "ai_statsTarget", VF_DUMPTODISK, "Command to execute on primary DebugGun fire");
 	i_debuggun_2 = pConsole->RegisterString("i_debuggun_2", "ag_debug", VF_DUMPTODISK, "Command to execute on secondary DebugGun fire");
+	pConsole->Register("i_debug_entity", &i_debug_entity, 0, VF_NOT_NET_SYNCED, "Force debug entity id");
 
 	pConsole->Register("tracer_min_distance", &tracer_min_distance, 4.0f, 0, "Distance at which to start scaling/lengthening tracers.");
 	pConsole->Register("tracer_max_distance", &tracer_max_distance, 50.0f, 0, "Distance at which to stop scaling/lengthening tracers.");
