@@ -20,6 +20,7 @@ ScriptBind_Physics::ScriptBind_Physics(IScriptSystem *pSS)
 	SCRIPT_REG_FUNC(RayWorldIntersection);
 	SCRIPT_REG_TEMPLFUNC(RayTraceCheck, "vSrc, vTrg, hSkipEntityId1, hSkipEntityId2");
 	SCRIPT_REG_TEMPLFUNC(SamplePhysEnvironment, "vPoint, fRadius");
+	SCRIPT_REG_TEMPLFUNC(GetPhysPosAng, "entityId");
 }
 
 int ScriptBind_Physics::SimulateExplosion(IFunctionHandler *pH, SmartScriptTable explisionTable)
@@ -296,3 +297,30 @@ int ScriptBind_Physics::SamplePhysEnvironment(IFunctionHandler *pH)
 
 	return pH->EndFunction(*pObj);
 }
+
+int ScriptBind_Physics::GetPhysPosAng(IFunctionHandler* pH, ScriptHandle entityId)
+{
+	const EntityId entId = (EntityId)entityId.n;
+	IEntity* pEnt = gEnv->pEntitySystem->GetEntity(entId);
+	if (!pEnt)
+		return pH->EndFunction();
+
+	// Prefer physics pose
+	if (IPhysicalEntity* pe = pEnt->GetPhysics())
+	{
+		pe_status_pos sp; memset(&sp, 0, sizeof(sp));
+		if (pe->GetStatus(&sp))
+		{
+			// #2: physics angles (RADIANS) via Quat -> Matrix33 -> Euler XYZ
+			const Matrix33 m33(sp.q);
+			const Ang3 aRad = Ang3::GetAnglesXYZ(m33);
+
+			return pH->EndFunction(Script::SetCachedVector(sp.pos, pH, 1), Script::SetCachedVector((Vec3)aRad, pH, 2));
+		}
+	}
+
+	const Vec3 pos = pEnt->GetWorldPos();
+	const Ang3 ang = pEnt->GetWorldAngles();
+	return pH->EndFunction(Script::SetCachedVector(pos, pH, 1), Script::SetCachedVector((Vec3)ang, pH, 2));
+}
+
