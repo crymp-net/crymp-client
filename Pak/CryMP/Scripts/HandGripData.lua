@@ -194,14 +194,24 @@ CPPAPI.CreateHandGripData({
     hasL = true,
     hasR = true,
     L = {
-      x = -0.489655,
-      y = -1.085602,
-      z = 0.694336
+      x = -0.391388,
+      y = -1.392578,
+      z = 0.865723
     },
     R = {
-      x = 0.466377,
-      y = -0.897926,
-      z = 0.768799
+      x = 0.497543,
+      y = -1.354980,
+      z = 0.654175
+    },
+    posOffset_FP = {
+      x = 0.200000,
+      y = 1.000000,
+      z = 1.000000
+    },
+    posOffset_TP = {
+      x = 1.000000,
+      y = 0.000000,
+      z = 0.000000
     },
   },
   {
@@ -234,14 +244,24 @@ CPPAPI.CreateHandGripData({
     hasL = true,
     hasR = true,
     L = {
-      x = -0.582520,
-      y = -1.457222,
-      z = -0.070297
+      x = -0.323242,
+      y = -4.503036,
+      z = 0.452312
     },
     R = {
-      x = 0.434814,
-      y = -1.457184,
-      z = -0.009659
+      x = 0.297119,
+      y = -4.627319,
+      z = 0.463074
+    },
+    posOffset_FP = {
+      x = 0.500000,
+      y = 4.000000,
+      z = 2.000000
+    },
+    posOffset_TP = {
+      x = 2.000000,
+      y = -1.000000,
+      z = 0.000000
     },
   },
   {
@@ -274,14 +294,24 @@ CPPAPI.CreateHandGripData({
     hasL = true,
     hasR = true,
     L = {
-      x = -0.536011,
-      y = -1.736023,
-      z = 0.533112
+      x = -0.519054,
+      y = -3.260986,
+      z = 0.607666
     },
     R = {
-      x = 0.638916,
-      y = -1.681763,
-      z = 0.463730
+      x = 0.447567,
+      y = -3.260010,
+      z = 0.606567
+    },
+    posOffset_FP = {
+      x = 0.400000,
+      y = 3.000000,
+      z = 0.400000
+    },
+    posOffset_TP = {
+      x = 1.200000,
+      y = 0.100000,
+      z = 0.000000
     },
   },
   {
@@ -289,14 +319,24 @@ CPPAPI.CreateHandGripData({
     hasL = true,
     hasR = true,
     L = {
-      x = -0.332397,
-      y = -1.551987,
-      z = 0.504395
+      x = -0.562012,
+      y = -1.982178,
+      z = 0.520329
     },
     R = {
-      x = 0.408508,
-      y = -1.580414,
-      z = 0.499512
+      x = 0.411377,
+      y = -1.937744,
+      z = 0.520340
+    },
+    posOffset_FP = {
+      x = 0.300000,
+      y = 3.000000,
+      z = 1.000000
+    },
+    posOffset_TP = {
+      x = 1.200000,
+      y = -0.800000,
+      z = 0.000000
     },
   },
   {
@@ -313,20 +353,40 @@ CPPAPI.CreateHandGripData({
       y = -3.042938,
       z = -0.869812
     },
+    posOffset_FP = {
+      x = 0.200000,
+      y = 3.000000,
+      z = 1.800000
+    },
+    posOffset_TP = {
+      x = 1.400000,
+      y = 0.000000,
+      z = 0.000000
+    },
   },
   {
     key  = "US_hovercraft",
     hasL = true,
     hasR = true,
     L = {
-      x = -0.382866,
-      y = -3.157349,
-      z = -0.110474
+      x = -0.700928,
+      y = -2.973038,
+      z = -0.092941
     },
     R = {
-      x = 0.436478,
-      y = -3.187134,
-      z = -0.110474
+      x = 0.920654,
+      y = -2.931030,
+      z = -0.110691
+    },
+    posOffset_FP = {
+      x = 0.000000,
+      y = 4.000000,
+      z = 0.000000
+    },
+    posOffset_TP = {
+      x = 1.800000,
+      y = 0.000000,
+      z = 0.000000
     },
   },
   {
@@ -357,6 +417,11 @@ CPPAPI.CreateHandGripData({
       x = 0.300537,
       y = -0.239075,
       z = 0.324982
+    },
+    posOffset_FP = {
+      x = 0.050000,
+      y = 0.100000,
+      z = 0.200000
     },
   },
   {
@@ -674,9 +739,9 @@ CPPAPI.CreateHandGripData({
       z = 0.156990
     },
     posOffset_FP = {
-      x = 0.100000,
-      y = 0.500000,
-      z = -0.100000
+      x = 0.070000,
+      y = 0.200000,
+      z = 0.100000
     },
   },
   {
@@ -943,6 +1008,11 @@ CPPAPI.CreateHandGripData({
       y = 0.000854,
       z = 0.024170
     },
+    posOffset_FP = {
+      x = 0.000000,
+      y = 0.200000,
+      z = 0.100000
+    },
   },
   {
     key  = "objects/library/props/scientific/microscope_large.cgf",
@@ -975,8 +1045,8 @@ CPPAPI.CreateHandGripData({
     },
     posOffset_FP = {
       x = 0.100000,
-      y = 0.600000,
-      z = 0.000000
+      y = 0.200000,
+      z = 0.290000
     },
   },
   {
@@ -1097,6 +1167,271 @@ CPPAPI.CreateHandGripData({
       x = 1.000000,
       y = 0.000000,
       z = 0.000000
+    },
+  },
+  {
+    key  = "Objects/Library/storage/civil/civil_box_a.cgf",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.630737,
+      y = 0.375977,
+      z = 1.016682
+    },
+    R = {
+      x = -0.631470,
+      y = -0.325195,
+      z = 1.031719
+    },
+  },
+  {
+    key  = "Objects/Library/Props/scientific/ln_container1.cgf",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.172485,
+      y = -0.031723,
+      z = 0.226318
+    },
+    R = {
+      x = 0.166260,
+      y = -0.058807,
+      z = 0.220947
+    },
+  },
+  {
+    key  = "objects/library/storage/trashcontainers/trashbag.cgf",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.316162,
+      y = 0.027283,
+      z = 0.431152
+    },
+    R = {
+      x = 0.288086,
+      y = -0.193054,
+      z = 0.356445
+    },
+  },
+  {
+    key  = "objects/library/props/gasstation/truck_tire.cgf",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.590820,
+      y = -0.211426,
+      z = 0.100105
+    },
+    R = {
+      x = 0.539368,
+      y = -0.321045,
+      z = 0.142292
+    },
+    posOffset_FP = {
+      x = 0.200000,
+      y = 0.600000,
+      z = 0.000000
+    },
+  },
+  {
+    key  = "objects/library/props/household/fishingnet/lobstertrap.cgf",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.469116,
+      y = 0.577637,
+      z = 0.020103
+    },
+    R = {
+      x = -0.537964,
+      y = -0.627930,
+      z = 0.033226
+    },
+    posOffset_FP = {
+      x = 0.200000,
+      y = 1.000000,
+      z = 0.000000
+    },
+  },
+  {
+    key  = "US_vtol",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.720215,
+      y = -1.892822,
+      z = -2.636600
+    },
+    R = {
+      x = 0.791992,
+      y = -1.838135,
+      z = -2.632851
+    },
+    posOffset_FP = {
+      x = 0.600000,
+      y = 2.500000,
+      z = 4.000000
+    },
+    posOffset_TP = {
+      x = 3.000000,
+      y = -2.000000,
+      z = 0.000000
+    },
+  },
+  {
+    key  = "US_tank",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.753479,
+      y = -2.916504,
+      z = 0.601685
+    },
+    R = {
+      x = 0.682434,
+      y = -2.736328,
+      z = 0.610596
+    },
+    posOffset_FP = {
+      x = 0.500000,
+      y = 1.500000,
+      z = 1.000000
+    },
+    posOffset_TP = {
+      x = 1.100000,
+      y = -0.100000,
+      z = 0.000000
+    },
+  },
+  {
+    key  = "Asian_patrolboat",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.233887,
+      y = -11.665405,
+      z = -0.278907
+    },
+    R = {
+      x = 0.218262,
+      y = -11.665405,
+      z = -0.269576
+    },
+    posOffset_FP = {
+      x = 0.000000,
+      y = 12.000000,
+      z = 1.000000
+    },
+    posOffset_TP = {
+      x = 3.300000,
+      y = 4.200000,
+      z = 0.000000
+    },
+  },
+  {
+    key  = "Asian_tank",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.474457,
+      y = -3.504395,
+      z = 0.422119
+    },
+    R = {
+      x = 0.558281,
+      y = -3.538818,
+      z = 0.457275
+    },
+    posOffset_FP = {
+      x = 0.500000,
+      y = 4.000000,
+      z = 1.000000
+    },
+    posOffset_TP = {
+      x = 1.300000,
+      y = -0.500000,
+      z = 0.000000
+    },
+  },
+  {
+    key  = "Civ_speedboat",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.554932,
+      y = -3.302185,
+      z = 0.158691
+    },
+    R = {
+      x = 0.620483,
+      y = -3.117462,
+      z = 0.179199
+    },
+    posOffset_FP = {
+      x = 0.100000,
+      y = 4.000000,
+      z = 1.000000
+    },
+    posOffset_TP = {
+      x = 1.600000,
+      y = 0.000000,
+      z = 0.000000
+    },
+  },
+  {
+    key  = "Asian_apc",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.355408,
+      y = -2.143326,
+      z = 0.466309
+    },
+    R = {
+      x = 0.292023,
+      y = -2.109100,
+      z = 0.455566
+    },
+    posOffset_FP = {
+      x = 0.400000,
+      y = 2.000000,
+      z = 1.000000
+    },
+    posOffset_TP = {
+      x = 1.400000,
+      y = 0.000000,
+      z = 0.000000
+    },
+  },
+  {
+    key  = "Objects/library/props/electronic_devices/radios/fieldradio_chinese_big.cgf",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.199951,
+      y = -0.127686,
+      z = 0.147087
+    },
+    R = {
+      x = 0.199951,
+      y = -0.141113,
+      z = 0.135925
+    },
+  },
+  {
+    key  = "Objects/library/props/electronic_devices/computer_racks/flightcase_closed.cgf",
+    hasL = true,
+    hasR = true,
+    L = {
+      x = -0.485107,
+      y = 0.088379,
+      z = 0.228653
+    },
+    R = {
+      x = 0.485107,
+      y = 0.095703,
+      z = 0.242676
     },
   },
 })
