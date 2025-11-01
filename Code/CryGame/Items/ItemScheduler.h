@@ -139,6 +139,9 @@ public:
 	void Lock(bool lock);
 	bool IsLocked();
 
+	int GetActivesCount() const { return m_actives.size(); }
+	int GetTimersCount() const { return m_timers.size(); }
+
 private:
 	bool m_locked = false;
 	bool m_busy = false;

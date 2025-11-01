@@ -1252,6 +1252,12 @@ void CItem::Select(bool select)
 
 		EnableUpdate(false);
 
+		//CryMP: Enable scheduler if there are persistant timers left
+		if (GetScheduler()->GetActivesCount() > 0 || GetScheduler()->GetTimersCount() > 0)
+		{
+			EnableUpdate(true, eIUS_Scheduler);
+		}
+
 		ReleaseStaticSounds();
 		if (!m_stats.dropped) //This is done already in CItem::Drop (could cause problems with dual socom)
 			ResetAccessoriesScreen(pOwner);

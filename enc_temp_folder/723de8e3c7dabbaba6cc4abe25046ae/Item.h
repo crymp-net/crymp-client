@@ -915,7 +915,7 @@ public:
 	// misc
 	bool AttachToHand(bool attach, bool checkAttachment = false);
 	bool AttachToBack(bool attach);
-	void EnableUpdate(bool enable, int slot=-1);
+	virtual void EnableUpdate(bool enable, int slot=-1);
 	void RequireUpdate(int slot=-1);
 	void Hide(bool hide);
 	void HideArms(bool hide);
