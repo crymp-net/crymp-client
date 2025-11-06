@@ -1775,11 +1775,15 @@ void CPlayer::SetIK(const SActorFrameMovementParams& frameMovementParams)
 					}
 				}
 				else
+				{
 					pSkeletonPose->SetLookIK(true, DEG2RAD(120), frameMovementParams.lookTarget, 0);
+				}
 			}
 		}
 		else
+		{
 			pSkeletonPose->SetLookIK(false, 0, frameMovementParams.lookTarget);
+		}
 
 		Vec3 aimTarget = frameMovementParams.aimTarget;
 		bool aimEnabled = frameMovementParams.aimIK && (!GetAnimatedCharacter() || GetAnimatedCharacter()->IsLookIkAllowed());
@@ -2066,7 +2070,7 @@ void CPlayer::PostUpdateView(SViewParams& viewParams)
 		return;
 
 	Vec3 shakeVec(viewParams.currentShakeShift * 0.85f);
-	m_stats.FPWeaponPos = viewParams.position + m_stats.FPWeaponPosOffset + shakeVec;;
+	m_stats.FPWeaponPos = viewParams.position + m_stats.FPWeaponPosOffset + shakeVec;
 
 	Quat wQuat(viewParams.rotation * Quat::CreateRotationXYZ(m_stats.FPWeaponAnglesOffset * gf_PI / 180.0f));
 	wQuat *= Quat::CreateSlerp(viewParams.currentShakeQuat, IDENTITY, 0.5f);
@@ -5494,6 +5498,161 @@ void CPlayer::ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTi
 
 	CActor::ProcessBonesRotation(pCharacter, frameTime);
 }
+
+bool CPlayer::SetGrabTarget(EntityId targetId)
+{
+	m_reachNotified = false;
+
+	if (targetId == 0)
+	{
+		m_grabTargetId = 0;
+		m_reachState = ReachState::Idle;
+		return false;
+	}
+
+	IEntity* pEnt = gEnv->pEntitySystem->GetEntity(targetId);
+	if (!pEnt)
+	{
+		m_grabTargetId = 0;
+		m_reachState = ReachState::Idle;
+		return false;
+	}
+
+	m_grabTargetId = targetId;
+	m_reachState = ReachState::Reaching;
+
+	return true;
+}
+
+bool CPlayer::StartThrowPrep()
+{
+	m_grabTargetId = 0;
+	m_reachState = ReachState::ThrowPrep;
+	m_reachNotified = false;
+	return true;
+}
+
+void CPlayer::CommitThrow()
+{
+	if (m_reachState == ReachState::ThrowPrep)
+	{
+		m_reachState = ReachState::Throwing; 
+		m_reachNotified = false;
+	}
+}
+
+void CPlayer::CancelThrowPrep()
+{
+	if (m_reachState == ReachState::ThrowPrep)
+	{
+		m_reachState = ReachState::Returning;
+		m_reachNotified = false;
+	}
+}
+
+void CPlayer::CancelGrabTarget()
+{
+	m_grabTargetId = 0;
+	m_reachState = ReachState::Returning; 
+}
+
+void CPlayer::UpdateReachBend(ICharacterInstance* pCharacter, float frameTime)
+{
+	if (m_reachState == ReachState::Idle && m_reachAmount <= 0.001f)
+		return;
+
+	const float inSpeed = m_reachSpeed;
+	const float outSpeed = m_returnSpeed;
+
+	float desiredPitch = m_fixedForwardBend; 
+	switch (m_reachState)
+	{
+	case ReachState::Reaching:   desiredPitch = m_fixedForwardBend;  break;
+	case ReachState::ThrowPrep:  desiredPitch = -m_fixedBackwardBend; break; 
+	case ReachState::Throwing:   desiredPitch = -m_fixedBackwardBend; break; 
+	case ReachState::Returning:  desiredPitch = m_fixedForwardBend;  break; 
+	default: break;
+	}
+
+	float targetAmount = 0.0f;
+	float speed = outSpeed;
+
+	if (m_reachState == ReachState::Reaching || m_reachState == ReachState::ThrowPrep)
+	{
+		targetAmount = 1.0f;
+		speed = inSpeed;
+	}
+	else if (m_reachState == ReachState::Throwing || m_reachState == ReachState::Returning)
+	{
+		targetAmount = 0.0f;
+		speed = outSpeed;
+	}
+
+	bool holdAtPeak = (m_reachState == ReachState::ThrowPrep && m_reachNotified);
+
+	if (!holdAtPeak)
+	{
+		const float delta = targetAmount - m_reachAmount;
+		const float step = speed * frameTime;
+		m_reachAmount += std::clamp(delta, -step, step);
+		m_reachAmount = std::clamp(m_reachAmount, 0.0f, 1.0f);
+	}
+	else
+	{
+		m_reachAmount = 1.0f;
+	}
+
+	if (m_reachAmount > 0.0001f)
+	{
+		ApplyReachToSpine(pCharacter, desiredPitch, m_reachAmount);
+	}
+
+	if (!m_reachNotified && m_reachAmount >= 0.999f)
+	{
+		m_reachNotified = true;
+		COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass));
+		if (pOffHand)
+		{
+		}
+
+		if (m_reachState == ReachState::Reaching)
+		{
+			m_reachState = ReachState::Returning; 
+		}
+	}
+
+	if ((m_reachState == ReachState::Throwing || m_reachState == ReachState::Returning) && m_reachAmount <= 0.0001f)
+	{
+		m_reachState = ReachState::Idle;
+		m_grabTargetId = 0;
+		m_reachNotified = false;
+	}
+}
+
+
+void CPlayer::ApplyReachToSpine(ICharacterInstance* pCharacter, float bendAngle, float amount)
+{
+	if (!pCharacter) return;
+
+	ISkeletonPose* pPose = pCharacter->GetISkeletonPose();
+	if (!pPose) return;
+		
+	const int spineIds[4] = { GetBoneID(BONE_SPINE), GetBoneID(BONE_SPINE2),
+								GetBoneID(BONE_SPINE3), GetBoneID(BONE_HEAD) };
+	const float w[4] = { 1.0f, 0.35f, 0.2f, 0.05f };
+
+	const float a = bendAngle * std::clamp(amount, 0.0f, 1.0f);
+	const Vec3 axis = Vec3(0.0f, -0.5f, 1.0f).GetNormalized();
+
+	for (int i = 0; i < 4; ++i)
+	{
+		int j = spineIds[i]; if (j < 0) continue;
+		QuatT q = pPose->GetRelJointByID(j);
+		q.q *= Quat::CreateRotationAA(a * w[i], axis);
+		pPose->SetPostProcessQuat(j, q);
+	}
+}
+
 
 void CPlayer::ProcessIKLegs(ICharacterInstance* pCharacter, float frameTime)
 {

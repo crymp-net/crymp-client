@@ -625,6 +625,13 @@ public:
 	virtual float GetActorStrength() const;
 	virtual void Freeze(bool freeze);
 	virtual void ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTime);
+	bool SetGrabTarget(EntityId targetId);
+	bool StartThrowPrep();   
+	void CommitThrow();       
+	void CancelThrowPrep();   
+	void CancelGrabTarget();
+	void UpdateReachBend(ICharacterInstance* pCharacter, float frameTime);
+	void ApplyReachToSpine(ICharacterInstance* pCharacter, float bendAngle, float amount);
 	virtual void ProcessIKLegs(ICharacterInstance* pCharacter, float frameTime);
 	virtual void Landed(float fallSpeed);
 
@@ -959,6 +966,28 @@ private:
 	float m_current_mblur_amount = 0.0f;
 
 	int m_lastAttachmentCount = 0;
+
+private:
+
+	enum class ReachState : uint8
+	{
+		Idle = 0,
+		Reaching,    
+		ThrowPrep,   
+		Throwing,   
+		Returning
+	};
+
+	EntityId   m_grabTargetId = 0;
+	ReachState m_reachState = ReachState::Idle;
+
+	float m_reachAmount = 0.0f;  
+	bool  m_reachNotified = false;  
+
+	float m_reachSpeed = 4.0f;          
+	float m_returnSpeed = 2.0f;            
+	float m_fixedForwardBend = DEG2RAD(40.0f); 
+	float m_fixedBackwardBend = DEG2RAD(10.0f); 
 
 public:
 
