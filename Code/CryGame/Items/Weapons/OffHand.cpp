@@ -1533,7 +1533,13 @@ void COffHand::NetStopFire()
 	//Handle FP Spectator
 	if (m_stats.fp)
 	{
-		GetScheduler()->TimerAction(GetCurrentAnimationTime(CItem::eIGS_FirstPerson), CSchedulerAction<FinishGrenadeAction>::Create(FinishGrenadeAction(this, m_mainHand)), false);
+		GetScheduler()->TimerAction(
+			GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
+			MakeAction([this, hand = m_mainHand](CItem*) {
+				this->FinishGrenadeAction(hand);
+				}),
+			/*persistent=*/false
+		);
 	}
 }
 
