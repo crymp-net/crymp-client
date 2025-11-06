@@ -1528,37 +1528,138 @@ CPPAPI.AddLocalizedLabel("ui_radar_W", {
 })
 
 CPPAPI.AddLocalizedLabel("object_too_heavy", {
-    english_text = "You need more strength to pick this up!",
+    english_text = "This object is too heavy to pick up!",
     languages = {
         czech = {
-            localized_text = "Potřebujete více síly, abyste to zvedli!",
+            localized_text = "Tento objekt je příliš těžký na zvednutí!",
         },
         french = {
-            localized_text = "Vous avez besoin de plus de force pour ramasser ça !",
+            localized_text = "Cet objet est trop lourd à ramasser !",
         },
         german = {
-            localized_text = "Du brauchst mehr Kraft, um das aufzuheben!",
+            localized_text = "Dieses Objekt ist zu schwer zum Aufheben!",
         },
         hungarian = {
-            localized_text = "Több erőre van szükséged, hogy ezt felemeld!",
+            localized_text = "Ez a tárgy túl nehéz ahhoz, hogy felemeld!",
         },
         italian = {
-            localized_text = "Hai bisogno di più forza per sollevarlo!",
+            localized_text = "Questo oggetto è troppo pesante da sollevare!",
         },
         polish = {
-            localized_text = "Potrzebujesz więcej siły, aby to podnieść!",
+            localized_text = "Ten przedmiot jest zbyt ciężki, aby go podnieść!",
         },
         russian = {
-            localized_text = "Вам нужно больше силы, чтобы это поднять!",
+            localized_text = "Этот предмет слишком тяжёл, чтобы его поднять!",
         },
         spanish = {
-            localized_text = "¡Necesitas más fuerza para levantar esto!",
+            localized_text = "¡Este objeto es demasiado pesado para levantar!",
         },
         turkish = {
-            localized_text = "Bunu kaldırmak için daha fazla güce ihtiyacın var!",
+            localized_text = "Bu nesne kaldırmak için çok ağır!",
         },
     },
 })
+
+CPPAPI.AddLocalizedLabel("object_collision_drop", {
+    english_text = "Watch it — collisions make you drop carried vehicles.",
+    languages = {
+        czech = {
+            localized_text = "Pozor — kolize způsobí, že upustíte nesené vozidlo.",
+        },
+        french = {
+            localized_text = "Attention — les collisions vous font lâcher les véhicules transportés.",
+        },
+        german = {
+            localized_text = "Achtung — Kollisionen lassen dich getragene Fahrzeuge fallen lassen.",
+        },
+        hungarian = {
+            localized_text = "Vigyázz — az ütközések miatt elejted a szállított járművet.",
+        },
+        italian = {
+            localized_text = "Attento — le collisioni ti fanno cadere i veicoli trasportati.",
+        },
+        polish = {
+            localized_text = "Uważaj — kolizje powodują upuszczenie przenoszonych pojazdów.",
+        },
+        russian = {
+            localized_text = "Осторожно — при столкновениях вы роняете переносимые транспортные средства.",
+        },
+        spanish = {
+            localized_text = "¡Cuidado! — Las colisiones te hacen soltar los vehículos que llevas.",
+        },
+        turkish = {
+            localized_text = "Dikkat et — çarpmalar taşıdığın araçları düşürmene neden olur.",
+        },
+    },
+})
+
+CPPAPI.AddLocalizedLabel("object_cant_throw_here", {
+    english_text = "You cannot drop the object here!",
+    languages = {
+        czech = {
+            localized_text = "Zde nemůžete objekt upustit!",
+        },
+        french = {
+            localized_text = "Vous ne pouvez pas déposer l’objet ici !",
+        },
+        german = {
+            localized_text = "Du kannst das Objekt hier nicht ablegen!",
+        },
+        hungarian = {
+            localized_text = "Itt nem ejtheted le a tárgyat!",
+        },
+        italian = {
+            localized_text = "Non puoi lasciare l’oggetto qui!",
+        },
+        polish = {
+            localized_text = "Nie możesz upuścić przedmiotu w tym miejscu!",
+        },
+        russian = {
+            localized_text = "Вы не можете бросить этот объект здесь!",
+        },
+        spanish = {
+            localized_text = "¡No puedes soltar el objeto aquí!",
+        },
+        turkish = {
+            localized_text = "Bu nesneyi burada bırakamazsın!",
+        },
+    },
+})
+
+CPPAPI.AddLocalizedLabel("object_lost_destroyed", {
+    english_text = "The carried object was destroyed...",
+    languages = {
+        czech = {
+            localized_text = "Nesený objekt byl zničen...",
+        },
+        french = {
+            localized_text = "L’objet transporté a été détruit...",
+        },
+        german = {
+            localized_text = "Das getragene Objekt wurde zerstört...",
+        },
+        hungarian = {
+            localized_text = "A szállított tárgy megsemmisült...",
+        },
+        italian = {
+            localized_text = "L’oggetto trasportato è stato distrutto...",
+        },
+        polish = {
+            localized_text = "Przenoszony przedmiot został zniszczony...",
+        },
+        russian = {
+            localized_text = "Переносимый объект был уничтожен...",
+        },
+        spanish = {
+            localized_text = "El objeto transportado fue destruido...",
+        },
+        turkish = {
+            localized_text = "Taşınan nesne yok edildi...",
+        },
+    },
+})
+
+
 
 
 --[[

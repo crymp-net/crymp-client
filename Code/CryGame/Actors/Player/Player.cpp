@@ -8318,10 +8318,6 @@ void CPlayer::OnObjectEvent(ObjectEvent evnt)
 	if (!pObjectPhysics)
 		return;
 
-	pe_action_awake awake;
-	awake.bAwake = 1;
-	pObjectPhysics->Action(&awake);
-
 	if (evnt == ObjectEvent::GRAB)
 	{
 		COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass));
