@@ -1259,9 +1259,6 @@ protected:
 	int				m_teamId;
 	EntityId	m_lastItemId;
 
-	EntityId m_heldObjectId = (EntityId)0;
-	float m_heldObjectMass = 0.0f;
-
 public:
 	// Can occur only when we're not zooming out
 	int m_autoZoomInID;
@@ -1287,6 +1284,16 @@ public:
 //////////////////////////////////////////////////////////////////////////////////
 public:
 
+	enum class ObjectHoldType
+	{
+		None,
+		Actor,
+		Projectile,
+		OneHanded,
+		TwoHanded,
+		Vehicle
+	};
+
 	bool IsPlayerClass() const
 	{
 		return m_isPlayerClass;
@@ -1300,7 +1307,9 @@ public:
 	virtual bool IsTpSpectatorTarget() const { return false; }
 
 	EntityId GetHeldObjectId() const { return m_heldObjectId; }
-	void SetHeldObjectId(EntityId objectId) { m_heldObjectId = objectId; }
+	ObjectHoldType GetHeldObjectType() const { return m_heldObjectType; }
+
+	void SetHeldObjectId(EntityId objectId, ObjectHoldType type = ObjectHoldType::None);
 
 	float GetHeldObjectMass() const { return m_heldObjectMass; }
 	void SetHeldObjectMass(float mass)
@@ -1379,6 +1388,10 @@ public:
 	virtual void OnObjectEvent(ObjectEvent evnt) {};
 
 private:
+
+	ObjectHoldType m_heldObjectType = ObjectHoldType::None;
+	EntityId m_heldObjectId = (EntityId)0;
+	float m_heldObjectMass = 0.0f;
 
 	struct IKLimb
 	{

@@ -4379,6 +4379,24 @@ void CActor::NotifyInventoryAmmoChange(IEntityClass* pAmmoClass, int amount)
 		g_pGame->GetHUD()->DisplayAmmoPickup(pAmmoClass->GetName(), amount);
 }
 
+//------------------------------------------------------------------------
+void CActor::SetHeldObjectId(EntityId objectId, ObjectHoldType type)
+{
+	if (objectId)
+	{
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(objectId);
+		if (pEntity)
+		{
+			m_heldObjectId = objectId;
+			m_heldObjectType = type;
+			return;
+		}
+	}
+	m_heldObjectId = 0;
+	m_heldObjectType = ObjectHoldType::None;
+}
+
+
 void CActor::SaveNick(const std::string_view& name)
 {
 	m_playerNameClean = Util::RemoveColorCodes(name);
