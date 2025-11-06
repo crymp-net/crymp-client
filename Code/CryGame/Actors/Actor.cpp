@@ -2879,12 +2879,19 @@ void CActor::UpdateGrab(float frameTime)
 //IK stuff
 void CActor::SetIKPos(const char* pLimbName, const Vec3& goalPos, int priority)
 {
+	SetIKPos(pLimbName, goalPos, priority, 0.5f, 0.5f);
+}
+
+void CActor::SetIKPos(const char* pLimbName, const Vec3& goalPos, int priority,
+	float blendIn, float recover)
+{
 	const int limbID = GetIKLimbIndex(pLimbName);
-	if (limbID > -1)
-	{
-		Vec3 pos(goalPos);
-		m_IKLimbs[limbID].SetWPos(GetEntity(), pos, ZERO, 0.5f, 0.5f, priority);
-	}
+	if (limbID < 0) return;
+
+	blendIn = std::max(0.0f, blendIn);
+	recover = std::max(0.0f, recover);
+
+	m_IKLimbs[limbID].SetWPos(GetEntity(), goalPos, ZERO, blendIn, recover, priority);
 }
 
 void CActor::ClearIKPosBlending(const char* pLimbName)
