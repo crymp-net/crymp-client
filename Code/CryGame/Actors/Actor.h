@@ -1109,7 +1109,7 @@ public:
 
 	//Net
 	EntityId NetGetCurrentItem() const;
-	void NetSetCurrentItem(EntityId id);
+	void NetSetCurrentItem(EntityId id, bool hasWeapon);
 
 	//AI
 	Vec3 GetAIAttentionPos();
@@ -1402,6 +1402,7 @@ private:
 	std::string m_fpItemHandsModel;
 
 	EntityId m_vehicleRelinkUpdateId = 0;
+	bool m_netItemReceived = false;
 
 	enum EntitySlot
 	{

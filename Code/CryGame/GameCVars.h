@@ -453,6 +453,7 @@ struct SCVars
 	float		mp_C4StrengthThrowMult;
 	int			mp_netSerializePhysVel;
 	float       mp_netSerializeMaxSpeed;
+	int         mp_netSerializeHolsteredItems;
 	int			mp_newSpectator;
 	int			mp_usePostProcessAimDir;
 	int			mp_messageCenterColor;

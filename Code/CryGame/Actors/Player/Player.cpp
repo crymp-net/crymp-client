@@ -4964,13 +4964,13 @@ bool CPlayer::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile,
 
 		if (bReading)
 		{
-			 //CryMP: Supports net-synched holstered items
-			 NetSetCurrentItem(currentItemId);
+			//CryMP: Supports net-synched holstered items
+			NetSetCurrentItem(currentItemId, isCurrentItemValid);
 
-			 if (isCurrentItemValid && NetGetCurrentItem() == 0) // fix the case where this guy's weapon might not have been bound on this client yet
-			 {
-				 ser.FlagPartialRead();
-			 }
+			if (isCurrentItemValid && NetGetCurrentItem() == 0) // fix the case where this guy's weapon might not have been bound on this client yet
+			{
+				ser.FlagPartialRead();
+			}
 		}
 	}
 

@@ -3375,23 +3375,40 @@ EntityId CActor::NetGetCurrentItem() const
 }
 
 //------------------------------------------------------------------------
-void CActor::NetSetCurrentItem(EntityId id)
+//CryMP: When client picks up an object, weapon is holstered
+//Required for mp_pickupObjects 1 (otherwise remote players might still hold a gun while holding an object)
+//Server need the updated NetSetCurrentItem for this to work
+//------------------------------------------------------------------------
+
+void CActor::NetSetCurrentItem(EntityId itemId, bool hasWeapon)
 {
-	SelectItem(id, false);
-	if (id == 0)
+	if (itemId && !m_netItemReceived)
 	{
-		HolsterItem(true);
+		//Network bound item has been received, so we can proceed with the netholstered items
+		m_netItemReceived = true;
 	}
-	else
+	if (g_pGameCVars->mp_netSerializeHolsteredItems)
 	{
-		if (GetHolsteredItemId() == id)
+		if (GetHealth() > 0 && m_netItemReceived && itemId == 0 && !hasWeapon)
 		{
-			HolsterItem(false);
+			HolsterItem(true);
 		}
 		else
 		{
-			SelectItem(id, false);
+			const EntityId holsteredId = GetHolsteredItemId();
+			if (holsteredId && holsteredId == itemId)
+			{
+				HolsterItem(false);
+			}
+			else
+			{
+				SelectItem(itemId, false);
+			}
 		}
+	}
+	else
+	{
+		SelectItem(itemId, false);
 	}
 }
 

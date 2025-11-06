@@ -108,6 +108,7 @@ void ServerConnector::ResetCVars()
 	pGameCVars->mp_radioTagging = 0;
 	pGameCVars->mp_healthBars = 0;
 	pGameCVars->mp_deadPlayersOnMinimap = 0;
+	pGameCVars->mp_netSerializeHolsteredItems = 0;
 }
 
 void ServerConnector::Step1_RequestServerInfo()
