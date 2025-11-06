@@ -205,6 +205,8 @@ public:
 	void StartFire() override;
 	void StopFire() override;
 
+	void NetStartFire() override;
+	void NetStopFire() override;
 	bool GrabNPC();
 	void ThrowNPC(const EntityId entityId, bool kill = true/*= true*/);
 
