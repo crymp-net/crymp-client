@@ -4047,118 +4047,65 @@ void COffHand::EnableFootGroundAlignment(bool enable)
 }
 
 //==============================================================
-void COffHand::SetHeldEntityId(const EntityId entityId, const EntityId oldId /* = 0*/)
+bool COffHand::SetHeldEntityId(const EntityId entityId)
 {
+	m_heldVehicleCollisions = 0;
+
 	if (m_heldEntityId == entityId)
-		return;
-
-	const EntityId oldHeldEntityId = oldId ? oldId : m_heldEntityId;
-
-	m_heldEntityId = entityId;
-
-	const bool isOldItem = m_pItemSystem->GetItem(oldHeldEntityId) != nullptr;
-	const bool isNewItem = m_pItemSystem->GetItem(entityId) != nullptr;
-
-	if (!isOldItem)
 	{
-		if (oldHeldEntityId)
-		{
-			UpdateEntityRenderFlags(oldHeldEntityId, EntityFpViewMode::ForceDisable);
+		CryLogWarningAlways("Failed to set held entity ID %u: already holding that entity");
+		return false;
+	}
 
-			AttachObjectToHand(false, oldHeldEntityId, false);
-		}
-
-		EnableFootGroundAlignment(true);
+	// If swapping directly between two entities, drop current first
+	if (m_heldEntityId && entityId)
+	{
+		RemoveHeldEntityId(m_heldEntityId, ConstraintReset::Immediate);
 	}
 
 	CActor* pActor = GetOwnerActor();
 	if (!pActor)
-		return;
+		return false;
 
+	m_heldEntityId = entityId;
+
+	const bool isNewItem = (m_pItemSystem->GetItem(entityId) != nullptr);
+
+	// If clearing or switching to a non-item/new target, ensure actor state mirrors that
 	if (!isNewItem || !entityId)
 	{
-		pActor->SetHeldObjectId(entityId);
-	}
+		const CActor::ObjectHoldType armHoldType = DetermineObjectHoldType(entityId);
 
-	if (oldHeldEntityId && !isOldItem)
-	{
-		IEntity* pOldEntity = m_pEntitySystem->GetEntity(oldHeldEntityId);
-		if (pOldEntity)
+		pActor->SetHeldObjectId(entityId, armHoldType);
+
+		if (CPlayer *pPlayer = CPlayer::FromActor(pActor))
 		{
-			SetIgnoreCollisionsWithOwner(false, oldHeldEntityId);
-
-			if (gEnv->bMultiplayer && pActor->IsRemote())
+			if (armHoldType == CActor::ObjectHoldType::TwoHanded || armHoldType == CActor::ObjectHoldType::Vehicle)
 			{
-				pOldEntity->SetFlags(pOldEntity->GetFlags() & ~ENTITY_FLAG_CLIENT_ONLY);
-
-				if (IPhysicalEntity* pObjectPhys = pOldEntity->GetPhysics())
-				{
-					pe_status_dynamics dyn;
-					pObjectPhys->GetStatus(&dyn);
-					const float originalMass = pActor->GetHeldObjectMass();
-					if (originalMass && dyn.mass != originalMass)
-					{
-						pe_simulation_params simParams;
-						simParams.mass = originalMass;
-						if (pObjectPhys->SetParams(&simParams))
-						{
-							pe_status_dynamics dyn;
-							pObjectPhys->GetStatus(&dyn);
-						}
-					}
-				}
-
-				if (IVehicle* pVehicle = m_pGameFramework->GetIVehicleSystem()->GetVehicle(pOldEntity->GetId()))
-				{
-					//CryMP: Triggers a rephysicalization to avoid bugs caused by 0 mass
-					reinterpret_cast<IGameObjectProfileManager*>(pVehicle + 1)->SetAspectProfile(eEA_Physics, 1);
-				}
-
-				pActor->SetHeldObjectMass(0.0f);
+				pPlayer->SetExtension("c4");
+			}
+			else
+			{
+				pPlayer->SetExtension("nw");
+				pPlayer->SetInput("holding_grenade", true);
 			}
 		}
 	}
 
+	// Server: skip client-side acquisition logic below
+	if (!gEnv->bClient)
+		return true;
+
+	// If no new entity or it's an item, we're done (original behavior)
 	if (!entityId || isNewItem)
-		return;
+		return true;
 
-	IEntity* pEntity = m_pEntitySystem->GetEntity(entityId);
-	if (!pEntity)
-		return;
+	// Acquire/setup the new held entity
+	HandleNewHeldEntity(entityId, isNewItem, pActor);
 
-	SelectGrabType(pEntity);
+	if (g_pGameCVars->mp_pickupDebug)
+		CryLogAlways("Successfully set held entity ID %u", entityId);
 
-	EnableFootGroundAlignment(false);
-
-	if (!pActor->IsThirdPerson())
-	{
-		UpdateEntityRenderFlags(entityId, EntityFpViewMode::ForceActive);
-	}
-
-	if (gEnv->bMultiplayer && pActor->IsRemote()) 
-	{
-		pEntity->SetFlags(pEntity->GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
-
-		if (IPhysicalEntity* pObjectPhys = pEntity->GetPhysics())
-		{
-			pe_status_dynamics dyn;
-			if (pObjectPhys->GetStatus(&dyn))
-			{
-				pe_simulation_params simParams;
-				simParams.mass = 0.0f;
-
-				if (pObjectPhys->SetParams(&simParams))
-				{
-					pActor->SetHeldObjectMass(dyn.mass);
-				}
-			}
-		}
-	}
-
-	SetIgnoreCollisionsWithOwner(true, entityId);
-
-	if (pActor->IsThirdPerson())
-	{
-		AttachObjectToHand(true, entityId, false);
-	}
+	return true;
 }
+
