@@ -1541,6 +1541,17 @@ bool COffHand::PreExecuteAction(int requestedAction, int activationMode, bool fo
 }
 
 //==================================================================
+void COffHand::StartFire()
+{
+	CWeapon::StartFire();
+}
+
+//==================================================================
+void COffHand::StopFire()
+{
+	CWeapon::StopFire();
+}
+//==================================================================
 void COffHand::NetStartFire()
 {
 	if (GetEntity()->IsHidden()) // this is need for network triggered grenade throws to trigger updates and what not..

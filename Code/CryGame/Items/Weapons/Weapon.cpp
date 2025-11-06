@@ -1263,30 +1263,33 @@ Vec3 CWeapon::GetFiringDir(const Vec3& probableHit, const Vec3& firingPos) const
 //------------------------------------------------------------------------
 void CWeapon::StartFire()
 {
-	CActor* pOwner = GetOwnerActor();
-	if (IsDestroyed())
-		return;
-
-	if (pOwner)
+	if (GetEntity()->GetClass() != CItem::sOffHandClass) //CryMP: Skip this for Offhand..
 	{
-		bool isPlayer = pOwner->IsPlayer();
-		if ((pOwner->GetHealth() <= 0) || (!pOwner->CanFire()))
-			return;
-		//Dual socoms for AI
-		if (!gEnv->bMultiplayer && !isPlayer && IsDualWieldMaster() && FireSlave(GetOwnerId(), true))
+		CActor* pOwner = GetOwnerActor();
+		if (IsDestroyed())
 			return;
 
-		// lets stop upper-body animations (reloading, etc) - the animation length might be more than reload time
-		// to fix bug shooting with reload animation in 3rd per
-		if (!IsOwnerFP() && IsReloading())
+		if (pOwner)
 		{
-			ICharacterInstance* pCharacter = pOwner->GetEntity()->GetCharacter(0);
-			ISkeletonAnim* pSkeletonAnim = (pCharacter != NULL) ? pCharacter->GetISkeletonAnim() : NULL;
-			if (pSkeletonAnim)
+			bool isPlayer = pOwner->IsPlayer();
+			if ((pOwner->GetHealth() <= 0) || (!pOwner->CanFire()))
+				return;
+			//Dual socoms for AI
+			if (!gEnv->bMultiplayer && !isPlayer && IsDualWieldMaster() && FireSlave(GetOwnerId(), true))
+				return;
+
+			// lets stop upper-body animations (reloading, etc) - the animation length might be more than reload time
+			// to fix bug shooting with reload animation in 3rd per
+			if (!IsOwnerFP() && IsReloading())
 			{
-				pSkeletonAnim->StopAnimationInLayer(1, .1f);
-				//if (static_cast<CPlayer*>(pOwner)->IsSprinting())
-				//	pSkeletonAnim->StopAnimationInLayer(0, .1f);
+				ICharacterInstance* pCharacter = pOwner->GetEntity()->GetCharacter(0);
+				ISkeletonAnim* pSkeletonAnim = (pCharacter != NULL) ? pCharacter->GetISkeletonAnim() : NULL;
+				if (pSkeletonAnim)
+				{
+					pSkeletonAnim->StopAnimationInLayer(1, .1f);
+					//if (static_cast<CPlayer*>(pOwner)->IsSprinting())
+					//	pSkeletonAnim->StopAnimationInLayer(0, .1f);
+				}
 			}
 		}
 	}
