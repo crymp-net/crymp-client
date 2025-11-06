@@ -466,11 +466,6 @@ void COffHand::OnEnterFirstPerson()
 	{
 		AttachObjectToHand(false, m_heldEntityId, false);
 		UpdateEntityRenderFlags(m_heldEntityId, EntityFpViewMode::ForceActive);
-
-		if (m_currentState == eOHS_HOLDING_OBJECT)
-		{
-			GetOwnerActor()->HolsterItem(true);
-		}
 	}
 }
 
@@ -482,8 +477,11 @@ void COffHand::OnEnterThirdPerson()
 
 	if (m_heldEntityId)
 	{
-		AttachObjectToHand(true, m_heldEntityId, false);
-		UpdateEntityRenderFlags(m_heldEntityId, EntityFpViewMode::ForceDisable);
+		if (m_stats.fp) //Only if we were in FP	(This function is also called from Select(true) in TP
+		{
+			AttachObjectToHand(true, m_heldEntityId, false);
+			UpdateEntityRenderFlags(m_heldEntityId, EntityFpViewMode::ForceDisable);
+		}
 	}
 }
 
@@ -507,12 +505,20 @@ void COffHand::Update(SEntityUpdateContext& ctx, int slot)
 	CWeapon::Update(ctx, slot);
 
 	//CryMP
-	if (m_heldEntityId && !m_stats.fp)
+	//This has to be called for remote players when they're in thirdperson,
+	//if we are spectating the remote player in firstperson, UpdateFPView will be called from CPlayer::UpdateFpSpectatorView
+	//For local client, UpdateFPView is always called, even in thirdperson (from ItemSystem::Update)
+	if (gEnv->bClient && !m_stats.fp)
 	{
 		CActor* pActor = GetOwnerActor();
 		if (pActor && pActor->IsRemote())
 		{
-			UpdateHeldObject();
+			SharedUpdate(ctx.fFrameTime);
+
+			if (m_heldEntityId && m_currentState & (eOHS_HOLDING_OBJECT | eOHS_PICKING | eOHS_THROWING_OBJECT | eOHS_PICKING_ITEM | eOHS_MELEE))
+			{
+				UpdateHeldObject();
+			}
 		}
 	}
 }
@@ -575,6 +581,20 @@ void COffHand::CheckTimers(float frameTime)
 }
 
 //=============================================================
+void COffHand::SharedUpdate(float frameTime)
+{
+	CheckTimers(frameTime);
+
+	//CryMP: Update held items in TP mode as well
+	//CryMP: Note: this check needs to be here, otherwise no grab anims in FP 
+	if (!m_stats.fp && m_heldEntityId)
+	{
+		UpdateFPPosition(frameTime);
+		UpdateFPCharacter(frameTime);
+	}
+}
+
+//=============================================================
 //CryMP: Called always on the client, even in ThirdPerson
 //Called on other clients, if spectating them in FirstPerson
 
@@ -582,14 +602,7 @@ void COffHand::UpdateFPView(float frameTime)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
-	CheckTimers(frameTime);
-
-	//CryMP: Update held items in TP mode as well
-	if (!m_stats.fp && m_heldEntityId) //CryMP: Note: this check needs to be here, otherwise no grab anims in FP 
-	{
-		UpdateFPPosition(frameTime);
-		UpdateFPCharacter(frameTime);
-	}
+	SharedUpdate(frameTime);
 
 	if (m_stats.selected)
 	{
