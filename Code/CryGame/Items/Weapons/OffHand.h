@@ -117,41 +117,42 @@ public:
 	COffHand();
 	virtual ~COffHand();
 
-	virtual void Update(SEntityUpdateContext& ctx, int slot);
+	virtual void Update(SEntityUpdateContext& ctx, int slot) override;
 	void CheckTimers(float frameTime);
-	virtual void PostUpdate(float frameTime);
-	virtual void PostInit(IGameObject* pGameObject);
-	virtual void Reset();
+	void SharedUpdate(float frameTime);
+	virtual void PostUpdate(float frameTime) override;
+	virtual void PostInit(IGameObject* pGameObject) override;
+	virtual void Reset() override;
 
 	virtual void OnAction(EntityId actorId, const ActionId& actionId, int activationMode, float value);
 
-	virtual bool CanSelect() const;
-	virtual void Select(bool select);
-	virtual void FullSerialize(TSerialize ser);
-	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags);
-	virtual void PostSerialize();
+	virtual bool CanSelect() const override;
+	virtual void Select(bool select) override;
+	virtual void FullSerialize(TSerialize ser) override;
+	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
+	virtual void PostSerialize() override;
 
-	virtual void MeleeAttack();
+	virtual void MeleeAttack() override;
 
-	virtual void PostFilterView(struct SViewParams& viewParams);
+	virtual void PostFilterView(struct SViewParams& viewParams) override;
 
 	//Only needed because is used in CFists
-	virtual void EnterWater(bool enter) {}
+	virtual void EnterWater(bool enter) override {}
 
-	virtual void UpdateFPView(float frameTime);
+	virtual void UpdateFPView(float frameTime) override;
 
 	//AIGrenades (for AI)
-	virtual void PerformThrow(float speedScale);
+	virtual void PerformThrow(float speedScale) override;
 
 	//Memory Statistics
-	virtual void GetMemoryStatistics(ICrySizer* s) { s->Add(*this); CWeapon::GetMemoryStatistics(s); }
+	virtual void GetMemoryStatistics(ICrySizer* s) override { s->Add(*this); CWeapon::GetMemoryStatistics(s); }
 
-	void  SetOffHandState(EOffHandStates eOHS);
+	void SetOffHandState(EOffHandStates eOHS);
 	void SetMainHand(CItem* pItem);
 	void SetMainHandWeapon(CWeapon* pWeapon);
 	ILINE int  GetOffHandState() { return m_currentState; }
 	void  FinishAction(EOffHandActions eOHA);
-	virtual void Freeze(bool freeze);
+	virtual void Freeze(bool freeze) override;
 
 	bool IsHoldingEntity();
 
@@ -201,8 +202,8 @@ public:
 	void StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = false */);
 	void StartThrowObject(const EntityId entityId, int activationMode, bool isLivingEnt /*= false*/);
 
-	void NetStartFire();
-	void NetStopFire();
+	void StartFire() override;
+	void StopFire() override;
 
 	bool GrabNPC();
 	void ThrowNPC(const EntityId entityId, bool kill = true/*= true*/);
