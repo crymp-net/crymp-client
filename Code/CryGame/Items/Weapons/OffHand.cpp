@@ -49,76 +49,6 @@ namespace
 	};
 }
 
-//========================Scheduled offhand actions =======================//
-namespace
-{
-	//This class help us to select the correct action
-	class FinishOffHandAction
-	{
-	public:
-		FinishOffHandAction(EOffHandActions _eOHA, COffHand* _pOffHand)
-		{
-			eOHA = _eOHA;
-			pOffHand = _pOffHand;
-		}
-		void execute(CItem* cItem)
-		{
-			pOffHand->FinishAction(eOHA);
-		}
-
-	private:
-
-		EOffHandActions eOHA;
-		COffHand* pOffHand;
-	};
-
-	//End finish grenade action (switch/throw)
-	class FinishGrenadeAction
-	{
-	public:
-		FinishGrenadeAction(COffHand* _pOffHand, CItem* _pMainHand)
-		{
-			pOffHand = _pOffHand;
-			pMainHand = _pMainHand;
-		}
-		void execute(CItem* cItem)
-		{
-			//pOffHand->HideItem(true);
-			float timeDelay = 0.1f;	//ms
-
-			if (pMainHand && !pMainHand->IsDualWield())
-			{
-				pMainHand->ResetDualWield();		//I can reset, because if DualWield it's not possible to switch grenades (see PreExecuteAction())
-				pMainHand->PlayAction(g_pItemStrings->offhand_off, 0, false, CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
-				timeDelay = (pMainHand->GetCurrentAnimationTime(CItem::eIGS_FirstPerson) + 50) * 0.001f;
-			}
-			else if (!pOffHand->GetOwnerActor()->ShouldSwim())
-			{
-				if (pMainHand && pMainHand->IsDualWield())
-					pMainHand->Select(true);
-				else
-					pOffHand->GetOwnerActor()->HolsterItem(false);
-			}
-
-			if (pOffHand->GetOffHandState() == eOHS_SWITCHING_GRENADE)
-			{
-				int grenadeType = pOffHand->GetCurrentFireMode();
-				pOffHand->AttachGrenadeToHand(grenadeType);
-			}
-
-			pOffHand->SetOffHandState(eOHS_TRANSITIONING);
-
-			//Offhand goes back to initial state
-			pOffHand->SetResetTimer(timeDelay);
-			pOffHand->RequireUpdate(eIUS_General);
-		}
-
-	private:
-		COffHand* pOffHand;
-		CItem* pMainHand;
-	};
-}
-
 //=====================~Scheduled offhand actions======================//
 
 TActionHandler<COffHand> COffHand::s_actionHandler;
@@ -664,8 +594,8 @@ void COffHand::UpdateFPView(float frameTime)
 		}
 	}
 }
-//============================================================
 
+//============================================================
 void COffHand::UpdateCrosshairUsabilitySP()
 {
 
@@ -1633,9 +1563,14 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 		break;
 
 	case eOHA_THROW_NPC:
-		GetScheduler()->TimerAction(300, 
-			CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_RESET, this)), 
-			true);
+		GetScheduler()->TimerAction(
+			300,
+			MakeAction([this](CItem*) {
+				this->FinishAction(eOHA_RESET);
+				}),
+			/*persistent=*/true
+		);
+
 		ThrowNPC(m_heldEntityId);
 
 		SetHeldEntityId(0);
@@ -1649,10 +1584,13 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 
 	case eOHA_THROW_OBJECT:
 	{
-		// after it's thrown, wait 500ms to enable collisions again
-		GetScheduler()->TimerAction(500, 
-			CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_RESET, this)), 
-			true);
+		GetScheduler()->TimerAction( //CryMP: Timer needed for FP animations
+			500,
+			MakeAction([this](CItem*) {
+				this->FinishAction(eOHA_RESET);
+				}),
+			/*persistent=*/true
+		);
 
 		SetHeldEntityId(0);
 
@@ -1853,8 +1791,13 @@ void COffHand::StartSwitchGrenade(bool xi_switch, bool fakeSwitch)
 		m_mainHand->PlayAction(g_pItemStrings->offhand_on);
 		m_mainHand->SetActionSuffix("akimbo_");
 
-		GetScheduler()->TimerAction(m_mainHand->GetCurrentAnimationTime(eIGS_FirstPerson),
-			CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_SWITCH_GRENADE, this)), false);
+		GetScheduler()->TimerAction( 
+			m_mainHand->GetCurrentAnimationTime(eIGS_FirstPerson),
+			MakeAction([this](CItem*) {
+				this->FinishAction(eOHA_SWITCH_GRENADE);
+				}),
+			/*persistent=*/false
+		);
 
 	}
 	else
@@ -1874,7 +1817,13 @@ void COffHand::StartSwitchGrenade(bool xi_switch, bool fakeSwitch)
 			SetMainHand(nullptr);
 			SetMainHandWeapon(nullptr);
 		}
-		GetScheduler()->TimerAction(100, CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_SWITCH_GRENADE, this)), false);
+		GetScheduler()->TimerAction(
+			100,
+			MakeAction([this](CItem*) {
+				this->FinishAction(eOHA_SWITCH_GRENADE);
+				}),
+			/*persistent=*/false
+		);
 	}
 
 	//Change offhand state
@@ -1892,8 +1841,14 @@ void COffHand::EndSwitchGrenade()
 	//Play select grenade animation (and un-hide grenade geometry)
 	PlayAction(g_pItemStrings->select_grenade);
 	//HideItem(false);
-	GetScheduler()->TimerAction(GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
-		CSchedulerAction<FinishGrenadeAction>::Create(FinishGrenadeAction(this, m_mainHand)), false);
+
+	GetScheduler()->TimerAction(
+		GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
+		MakeAction([this, hand = m_mainHand](CItem*) {
+			this->FinishGrenadeAction(hand);
+			}),
+		/*persistent=*/false
+	);
 }
 
 //==============================================================================
@@ -1911,8 +1866,13 @@ void COffHand::PerformThrow(float speedScale)
 	pThrow->ThrowingGrenade(true);
 
 	// Schedule to revert back to main weapon.
-	GetScheduler()->TimerAction(2000,
-		CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_FINISH_AI_THROW_GRENADE, this)), false);
+	GetScheduler()->TimerAction(
+		2000,
+		MakeAction([this](CItem*) {
+			this->FinishAction(eOHA_FINISH_AI_THROW_GRENADE);
+			}),
+		/*persistent=*/false
+	);
 }
 
 //==============================================================================
@@ -1941,7 +1901,9 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 
 			CThrow* pThrow = static_cast<CThrow*>(m_fm);
 			pThrow->SetThrowable(throwableId, m_forceThrow,
-				CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_THROW_OBJECT, this))
+				MakeAction([this](CItem*) {
+					this->FinishAction(eOHA_THROW_OBJECT);
+					})
 			);
 		}
 		else
@@ -1950,7 +1912,9 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 
 			CThrow* pThrow = static_cast<CThrow*>(m_fm);
 			pThrow->SetThrowable(throwableId, true,
-				CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_THROW_NPC, this))
+				MakeAction([this](CItem*) {
+					this->FinishAction(eOHA_THROW_NPC);
+					})
 			);
 		}
 		m_forceThrow = false;
@@ -2022,7 +1986,13 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 
 		if (m_fm->IsFiring() && m_currentState == eOHS_THROWING_GRENADE)
 		{
-			GetScheduler()->TimerAction(GetCurrentAnimationTime(CItem::eIGS_FirstPerson), CSchedulerAction<FinishGrenadeAction>::Create(FinishGrenadeAction(this, m_mainHand)), false);
+			GetScheduler()->TimerAction(
+				GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
+				MakeAction([this, hand = m_mainHand](CItem*) {
+					this->FinishGrenadeAction(hand);
+					}),
+				/*persistent=*/false
+			);
 		}
 	}
 }
@@ -2901,7 +2871,15 @@ void COffHand::StartPickUpItem()
 	}
 
 	PlayAction(g_pItemStrings->pickup_weapon_left, 0, false, eIPAF_Default | eIPAF_RepeatLastFrame);
-	GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson) + 100, CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_PICK_ITEM, this)), false);
+
+	GetScheduler()->TimerAction(
+		GetCurrentAnimationTime(eIGS_FirstPerson) + 100,
+		MakeAction([this](CItem*) {
+			this->FinishAction(eOHA_PICK_ITEM);
+			}),
+		/*persistent=*/false
+	);
+
 	RequireUpdate(eIUS_General);
 	m_startPickUp = true;
 }
@@ -3067,8 +3045,20 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 		SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
 		PlayAction(m_grabTypes[m_grabType].pickup);
 
-		GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson),
-			CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_PICK_OBJECT, this)), false);
+		if (pPlayer->IsRemote())
+		{
+			FinishAction(eOHA_PICK_OBJECT);
+		}
+		else
+		{
+			GetScheduler()->TimerAction(
+				GetCurrentAnimationTime(eIGS_FirstPerson),
+				MakeAction([this](CItem*) {
+					this->FinishAction(eOHA_PICK_OBJECT);
+					}),
+				/*persistent=*/false
+			);
+		}
 
 		m_startPickUp = true;
 	}
@@ -3079,8 +3069,14 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 		m_grabType = GRAB_TYPE_NPC;
 		SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
 		PlayAction(m_grabTypes[m_grabType].pickup);
-		GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson),
-			CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_GRAB_NPC, this)), false);
+
+		GetScheduler()->TimerAction(
+			GetCurrentAnimationTime(eIGS_FirstPerson),
+			MakeAction([this](CItem*) {
+				this->FinishAction(eOHA_GRAB_NPC);
+				}),
+			/*persistent=*/false
+		);
 	}
 	RequireUpdate(eIUS_General);
 }
@@ -3472,7 +3468,13 @@ void COffHand::MeleeAttack()
 		m_melee->StartFire();
 		m_melee->StopFire();
 
-		GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson) + 100, CSchedulerAction<FinishOffHandAction>::Create(FinishOffHandAction(eOHA_FINISH_MELEE, this)), false);
+		GetScheduler()->TimerAction(
+			GetCurrentAnimationTime(eIGS_FirstPerson) + 100,
+			MakeAction([this](CItem*) {
+				this->FinishAction(eOHA_FINISH_MELEE);
+				}),
+			/*persistent=*/false
+		);
 	}
 }
 
