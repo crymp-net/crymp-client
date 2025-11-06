@@ -1294,7 +1294,7 @@ void CItem::Select(bool select)
 	OnSelected(select);
 }
 
-void CItem::PlaySelectAnimation(CActor *pOwner)
+void CItem::PlaySelectAnimation(CActor* pOwner, bool thirdpersonOnly)
 {
 	float speedOverride = -1.0f;
 
@@ -1307,12 +1307,18 @@ void CItem::PlaySelectAnimation(CActor *pOwner)
 
 	// only LAW has 2 different select animations
 	const ItemString& select_animation = (m_params.has_first_select && m_stats.first_selection)
-		? g_pItemStrings->first_select : g_pItemStrings->select;
+		? g_pItemStrings->first_select
+		: g_pItemStrings->select;
+
+	// Base flags
+	int flags = eIPAF_Default | eIPAF_NoBlend;
+	if (thirdpersonOnly)
+		flags |= eIPAF_ForceThirdPerson;
 
 	if (speedOverride > 0.0f)
-		PlayAction(select_animation, 0, false, eIPAF_Default | eIPAF_NoBlend, speedOverride);
+		PlayAction(select_animation, 0, false, flags, speedOverride);
 	else
-		PlayAction(select_animation, 0, false, eIPAF_Default | eIPAF_NoBlend);
+		PlayAction(select_animation, 0, false, flags);
 }
 
 //------------------------------------------------------------------------

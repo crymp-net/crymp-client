@@ -750,7 +750,7 @@ public:
 	virtual void SetHand(int hand);
 	virtual void Use(EntityId userId);
 	virtual void Select(bool select);
-	void PlaySelectAnimation(CActor* pOwner);
+	void PlaySelectAnimation(CActor* pOwner, bool thirdpersonOnly = false);
 	virtual void Drop(float impulseScale=1.0f, bool selectNext=true, bool byDeath=false);
 	virtual void PickUp(EntityId pickerId, bool sound, bool select=true, bool keepHistory=true);
 	virtual void Physicalize(bool enable, bool rigid);
