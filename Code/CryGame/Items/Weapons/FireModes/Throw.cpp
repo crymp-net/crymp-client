@@ -20,14 +20,8 @@ History:
 #include "../OffHand.h"
 #include "CryGame/GameCVars.h"
 
-
 //------------------------------------------------------------------------
 CThrow::CThrow()
-	: m_throwableId(0),
-	m_throwableAction(0),
-	m_usingGrenade(true),
-	m_forceNextThrow(false),
-	m_throw_time(0.0f)
 {
 }
 
@@ -46,7 +40,6 @@ void CThrow::Update(float frameTime, unsigned int frameId)
 	{
 		if (!m_pulling && !m_throwing && !m_thrown)
 		{
-
 			if (m_hold_timer > 0.0f)
 			{
 				m_hold_timer -= frameTime;
@@ -61,23 +54,29 @@ void CThrow::Update(float frameTime, unsigned int frameId)
 
 			m_pWeapon->HideItem(true);
 
-			if (m_throwableId)
+			IEntity* pEntity = GetHeldEntity();
+			if (pEntity)
 			{
-				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_throwableId);
-				if (pEntity)
+				if (m_throwableAction)
 				{
-					if (m_throwableAction)
-						m_throwableAction->execute(m_pWeapon);
+					m_throwableAction->execute(m_pWeapon);
+					m_throwableAction = nullptr;
+				}
 
-					IPhysicalEntity* pPE = pEntity->GetPhysics();
-					if (pPE && (pPE->GetType() == PE_RIGID || pPE->GetType() == PE_PARTICLE || pPE->GetType() == PE_WHEELEDVEHICLE)) //CryMP: support for vehicles too
-						ThrowObject(pEntity, pPE);
-					else if (pPE && (pPE->GetType() == PE_LIVING || pPE->GetType() == PE_ARTICULATED))
-						ThrowLivingEntity(pEntity, pPE);
+				IPhysicalEntity* pPE = pEntity->GetPhysics();
+				if (pPE && (pPE->GetType() == PE_RIGID || pPE->GetType() == PE_PARTICLE || pPE->GetType() == PE_WHEELEDVEHICLE)) //CryMP: support for vehicles too
+				{
+					ThrowObject(pEntity, pPE);
+				}
+				else if (pPE && (pPE->GetType() == PE_LIVING || pPE->GetType() == PE_ARTICULATED))
+				{
+					ThrowLivingEntity(pEntity, pPE);
 				}
 			}
 			else if (!m_netfiring)
+			{
 				ThrowGrenade();
+			}
 
 			m_throwing = false;
 		}
@@ -87,11 +86,18 @@ void CThrow::Update(float frameTime, unsigned int frameId)
 
 			m_pWeapon->HideItem(false);
 
-			int ammoCount = m_pWeapon->GetAmmoCount(m_fireparams.ammo_type_class);
+			const int ammoCount = m_pWeapon->GetAmmoCount(m_fireparams.ammo_type_class);
 			if (ammoCount > 0)
+			{
 				m_pWeapon->PlayAction(m_throwactions.next);
+			}
 			else if (m_throwparams.auto_select_last)
-				static_cast<CPlayer*>(m_pWeapon->GetOwnerActor())->SelectLastItem(true);
+			{
+				if (CPlayer *pPlayer = CPlayer::FromActor(m_pWeapon->GetOwnerActor()))
+				{
+					pPlayer->SelectLastItem(true);
+				}
+			}
 
 			m_firing = false;
 			m_throwing = false;
@@ -135,16 +141,17 @@ void CThrow::Activate(bool activate)
 {
 	CSingle::Activate(activate);
 
-	m_hold_timer = 0.0f;
 
 	m_thrown = false;
 	m_pulling = false;
 	m_throwing = false;
 	m_firing = false;
-	m_netfiring = false;
+	m_hold_timer = 0.0f;
+	//m_netfiring = false;
 
 	m_throwableId = 0;
-	m_throwableAction = 0;
+
+	m_throwableAction = nullptr;
 
 	CheckAmmo();
 }
@@ -167,21 +174,6 @@ bool CThrow::IsReadyToFire() const
 	return CanFire(true) && !m_firing && !m_throwing && !m_pulling && !m_thrown;
 }
 
-//------------------------------------------------------------------------
-struct CThrow::StartThrowAction
-{
-	StartThrowAction(CThrow* _throw) : pthrow(_throw) {};
-	CThrow* pthrow;
-
-	void execute(CItem* _this)
-	{
-		pthrow->m_pulling = false;
-		if (!pthrow->m_throwableId) //CryMP
-		{
-			pthrow->m_pWeapon->PlayAction(pthrow->m_throwactions.hold, 0, true, CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
-		}
-	}
-};
 
 //------------------------------------------------------------------------
 void CThrow::StartFire()
@@ -198,7 +190,7 @@ void CThrow::StartFire()
 
 		m_pWeapon->SetBusy(true);
 
-		if (m_throwableId)
+		if (IsHoldingEntity())
 		{
 			//CryMP
 			const int flags = CItem::ePlayActionFlags::eIPAF_Default & ~CItem::ePlayActionFlags::eIPAF_Animation;
@@ -209,7 +201,18 @@ void CThrow::StartFire()
 			m_pWeapon->PlayAction(m_throwactions.pull);
 		}
 
-		m_pWeapon->GetScheduler()->TimerAction(m_pWeapon->GetCurrentAnimationTime(CItem::eIGS_FirstPerson) + 1, CSchedulerAction<StartThrowAction>::Create(this), false);
+		m_pWeapon->GetScheduler()->TimerAction(m_pWeapon->GetCurrentAnimationTime(CItem::eIGS_FirstPerson) + 1,
+			MakeAction([this](CItem*) {
+				this->m_pulling = false;
+				if (!this->IsHoldingEntity()) // CryMP
+				{
+					this->m_pWeapon->PlayAction(this->m_throwactions.hold, 0, true,
+						CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
+				}
+				}),
+			/*persistent=*/false
+		);
+
 		m_pWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_throwactions.hold);
 
 		m_pWeapon->RequestStartFire();
@@ -223,7 +226,7 @@ void CThrow::StopFire()
 {
 	if (m_firing && !m_throwing && !m_thrown)
 	{
-		DoThrow();
+		DoThrow(false);
 
 		m_pWeapon->RequestStopFire();
 
@@ -239,25 +242,27 @@ void CThrow::NetStartFire()
 	m_thrown = false;
 	m_pulling = false; // false here to not override network orders
 	m_netfiring = true;
+	m_hold_timer = m_throwparams.hold_duration;
 
 	int flags = CItem::ePlayActionFlags::eIPAF_Default;
-	if (CPlayer* pPlayer = CPlayer::FromActor(m_pWeapon->GetOwnerActor()))
+	const bool isHoldingEntity = IsHoldingEntity();
+	if (isHoldingEntity)
 	{
-		if (pPlayer->GetHeldObjectId())
+		if (!m_pWeapon->GetStats().fp)
 		{
-			if (!m_pWeapon->GetStats().fp)
-			{
-				flags = flags & ~CItem::ePlayActionFlags::eIPAF_Animation;
-			}
+			flags = flags & ~CItem::ePlayActionFlags::eIPAF_Animation;
 		}
 	}
 
 	m_pWeapon->PlayAction(m_throwactions.pull, 0, false, flags);
 
-	m_pWeapon->GetScheduler()->TimerAction(m_pWeapon->GetCurrentAnimationTime(CItem::eIGS_FirstPerson) + 1, CSchedulerAction<StartThrowAction>::Create(this), false);
-	m_pWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_throwactions.hold);
+	m_pulling = false;
+	if (!isHoldingEntity) //CryMP
+	{
+		m_pWeapon->PlayAction(m_throwactions.hold, 0, true, CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
+	}
 
-	m_hold_timer = m_throwparams.hold_duration;
+	m_pWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_throwactions.hold);
 
 	m_pWeapon->RequireUpdate(eIUS_FireMode);
 }
@@ -265,10 +270,10 @@ void CThrow::NetStartFire()
 //------------------------------------------------------------------------
 void CThrow::NetStopFire()
 {
-	if (m_firing && !m_throwing && !m_thrown)
+	if (m_netfiring)
 	{
-		DoThrow();
 		m_pWeapon->RequireUpdate(eIUS_FireMode);
+		DoThrow(true);
 	}
 }
 
@@ -289,22 +294,13 @@ EntityId CThrow::GetThrowable() const
 //------------------------------------------------------------------------
 void CThrow::CheckAmmo()
 {
-	m_pWeapon->HideItem(!m_pWeapon->GetAmmoCount(m_fireparams.ammo_type_class) && m_throwparams.hide_ammo);
+	const bool hide = (m_fireparams.ammo_type_class == nullptr || m_pWeapon->GetAmmoCount(m_fireparams.ammo_type_class) <= 0) && m_throwparams.hide_ammo;
+
+
+	m_pWeapon->HideItem(hide);
 }
 
-//------------------------------------------------------------------------
-struct CThrow::ThrowAction
-{
-	ThrowAction(CThrow* _throw) : pthrow(_throw) {};
-	CThrow* pthrow;
-
-	void execute(CItem* _this)
-	{
-		pthrow->m_thrown = true;
-	}
-};
-
-void CThrow::DoThrow()
+void CThrow::DoThrow(bool netPlayer)
 {
 	m_throw_time = m_throwparams.delay;
 	m_throwing = true;
@@ -314,7 +310,8 @@ void CThrow::DoThrow()
 
 	if ((!m_pWeapon->IsWeaponLowered() && m_forceNextThrow) || m_usingGrenade)
 	{
-		if (m_throwableId)
+		const bool isHoldingEntity = IsHoldingEntity();
+		if (isHoldingEntity)
 		{
 			//CryMP:
 			int flags = CItem::ePlayActionFlags::eIPAF_Default;
@@ -328,27 +325,26 @@ void CThrow::DoThrow()
 		{
 			m_pWeapon->PlayAction(m_throwactions.throwit);
 		}
-
 	}
 	else
 	{
 		m_pWeapon->PlayAction(m_throwactions.dropit);
 		m_throwing = false;
-		DoDrop();
+
+		DoDrop(netPlayer);
+		
 		drop = true;
 	}
 	m_forceNextThrow = false;
 
 	if (CPlayer* pPlayer = CPlayer::FromActor(m_pWeapon->GetOwnerActor()))
 	{
-		pPlayer->OnObjectEvent(CActor::ObjectEvent::THROW);
-
 		if (CNanoSuit* pSuit = pPlayer->GetNanoSuit())
 		{
 			ENanoMode curMode = pSuit->GetMode();
 			if (curMode == NANOMODE_STRENGTH)
 			{
-				IEntity* pThrowable = gEnv->pEntitySystem->GetEntity(m_throwableId);
+				IEntity* pThrowable = GetHeldEntity();
 				if (pThrowable)	//set sound intensity by item mass (sound request)
 				{
 					IPhysicalEntity* pEnt(pThrowable->GetPhysics());
@@ -373,7 +369,9 @@ void CThrow::DoThrow()
 					}
 				}
 				else if (!drop)
+				{
 					pSuit->PlaySound(STRENGTH_THROW_SOUND, (pSuit->GetSlotValue(NANOSLOT_STRENGTH)) * 0.01f);
+				}
 			}
 			if (curMode == NANOMODE_CLOAK)
 			{
@@ -383,73 +381,79 @@ void CThrow::DoThrow()
 		}
 	}
 
-	m_pWeapon->GetScheduler()->TimerAction(m_pWeapon->GetCurrentAnimationTime(CItem::eIGS_FirstPerson), CSchedulerAction<ThrowAction>::Create(this), false);
+	m_pWeapon->GetScheduler()->TimerAction(m_pWeapon->GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
+		MakeAction([this](CItem*) {
+			this->m_thrown = true;
+
+			}),
+		/*persistent=*/false
+	);
+
 	m_pWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
 }
 
 //--------------------------------------
-void CThrow::DoDrop()
+void CThrow::DoDrop(bool netPlayer)
 {
-
 	m_pWeapon->HideItem(true);
-	if (m_throwableId)
+
+	IEntity* pEntity = GetHeldEntity();
+	if (pEntity)
 	{
-		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_throwableId);
-		if (pEntity)
+		IPhysicalEntity* pPE = pEntity->GetPhysics();
+		if (pPE && (pPE->GetType() == PE_RIGID || pPE->GetType() == PE_PARTICLE))
 		{
-			IPhysicalEntity* pPE = pEntity->GetPhysics();
-			if (pPE && (pPE->GetType() == PE_RIGID || pPE->GetType() == PE_PARTICLE))
+			Vec3 hit = GetProbableHit(WEAPON_HIT_RANGE);
+			Vec3 pos = GetFiringPos(hit);
+
+			CActor* pActor = m_pWeapon->GetOwnerActor();
+			IMovementController* pMC = pActor ? pActor->GetMovementController() : 0;
+			if (pMC)
 			{
-				Vec3 hit = GetProbableHit(WEAPON_HIT_RANGE);
-				Vec3 pos = GetFiringPos(hit);
+				SMovementState info;
+				pMC->GetMovementState(info);
+				float speed = 2.5f;
 
-				CActor* pActor = m_pWeapon->GetOwnerActor();
-				IMovementController* pMC = pActor ? pActor->GetMovementController() : 0;
-				if (pMC)
+				CPlayer* pPlayer = m_pWeapon->GetOwnerPlayer();
+				if (pPlayer && info.aimDirection.z < -0.1f)
 				{
-					SMovementState info;
-					pMC->GetMovementState(info);
-					float speed = 2.5f;
-
-					CPlayer* pPlayer = m_pWeapon->GetOwnerPlayer();
-					if (pPlayer && info.aimDirection.z < -0.1f)
+					if (pPlayer->GetPlayerStats()->grabbedHeavyEntity)
 					{
-						if (pPlayer->GetPlayerStats()->grabbedHeavyEntity)
-						{
-							speed = 4.0f;
-						}
+						speed = 4.0f;
 					}
-
-					if (CheckForIntersections(pPE, info.eyeDirection))
-					{
-						Matrix34 newTM = pEntity->GetWorldTM();
-						newTM.SetTranslation(newTM.GetTranslation() - (info.eyeDirection * 0.4f));
-						pEntity->SetWorldTM(newTM, ENTITY_XFORM_POS);
-
-						pe_action_set_velocity asv;
-						asv.v = (-info.eyeDirection * speed);
-						pPE->Action(&asv);
-					}
-					else
-					{
-						pe_action_set_velocity asv;
-						asv.v = (info.eyeDirection * speed);
-						pPE->Action(&asv);
-					}
-
-					SEntityEvent entityEvent;
-					entityEvent.event = ENTITY_EVENT_PICKUP;
-					entityEvent.nParam[0] = 0;
-					if (pPlayer)
-						entityEvent.nParam[1] = pPlayer->GetEntityId();
-					entityEvent.fParam[0] = speed;
-					pEntity->SendEvent(entityEvent);
 				}
+
+				if (CheckForIntersections(pPE, info.eyeDirection))
+				{
+					Matrix34 newTM = pEntity->GetWorldTM();
+					newTM.SetTranslation(newTM.GetTranslation() - (info.eyeDirection * 0.4f));
+					pEntity->SetWorldTM(newTM, ENTITY_XFORM_POS);
+
+					pe_action_set_velocity asv;
+					asv.v = (-info.eyeDirection * speed);
+					pPE->Action(&asv);
+				}
+				else
+				{
+					pe_action_set_velocity asv;
+					asv.v = (info.eyeDirection * speed);
+					pPE->Action(&asv);
+				}
+
+				SEntityEvent entityEvent;
+				entityEvent.event = ENTITY_EVENT_PICKUP;
+				entityEvent.nParam[0] = 0;
+				if (pPlayer)
+					entityEvent.nParam[1] = pPlayer->GetEntityId();
+				entityEvent.fParam[0] = speed;
+				pEntity->SendEvent(entityEvent);
 			}
 		}
-
-		if (m_throwableAction)
-			m_throwableAction->execute(m_pWeapon);
+	}
+	if (m_throwableAction)
+	{
+		m_throwableAction->execute(m_pWeapon);
+		m_throwableAction = nullptr;
 	}
 }
 
@@ -512,7 +516,7 @@ void CThrow::ThrowObject(IEntity* pEntity, IPhysicalEntity* pPE)
 	if (strengthMode)
 		speed *= m_throwparams.strenght_scale;
 
-	speed = max(2.0f, speed);
+	speed = std::max(2.0f, speed);
 
 	pe_params_pos ppos;
 	ppos.pos = pEntity->GetWorldPos();
@@ -523,11 +527,20 @@ void CThrow::ThrowObject(IEntity* pEntity, IPhysicalEntity* pPE)
 		Matrix34 newTM = pEntity->GetWorldTM();
 		newTM.SetTranslation(newTM.GetTranslation() - (dir * 0.4f));
 		pEntity->SetWorldTM(newTM, ENTITY_XFORM_POS);
+
+		if (gEnv->bMultiplayer)
+		{
+			IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
+			if (pPhysicalProxy)
+			{
+				pPhysicalProxy->AddImpulse(-1, Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f) * 1.5f, false, 1.0f);
+			}
+		}
 	}
 	else
 	{
 		pe_action_set_velocity asv;
-		asv.v = (dir * speed) + vel;
+		asv.v = (dir * speed * g_pGameCVars->mp_pickupThrowMult) + vel;
 		AABB box;
 		pEntity->GetWorldBounds(box);
 
@@ -580,7 +593,7 @@ void CThrow::ThrowLivingEntity(IEntity* pEntity, IPhysicalEntity* pPE)
 
 		{
 			pe_action_set_velocity asv;
-			asv.v = (dir * speed) + vel;
+			asv.v = (dir * speed * g_pGameCVars->mp_pickupThrowMult) + vel;
 			pPE->Action(&asv);
 			// [anton] use thread safe=1 (immediate) if the character is still a living entity at this stage, 
 			//   but will be ragdollized during the same frame
@@ -628,6 +641,36 @@ bool CThrow::CheckForIntersections(IPhysicalEntity* heldEntity, Vec3& dir)
 	}
 
 	return false;
+}
+
+//----------------------------------------------------
+bool CThrow::IsHoldingEntity() const
+{
+	//if (m_pWeapon->GetEntity()->GetClass() == CItem::sOffHandClass)
+	//{
+	//	if (COffHand* pOffHand = static_cast<COffHand*>(m_pWeapon))
+	//	{
+	//		return pOffHand->GetHeldEntityId() != 0;
+	//	}
+	//}
+	//
+	//return false;
+	return GetThrowable() != 0;
+}
+
+//----------------------------------------------------
+IEntity* CThrow::GetHeldEntity()
+{
+	//if (m_pWeapon->GetEntity()->GetClass() == CItem::sOffHandClass)
+	//{
+	//	if (COffHand* pOffHand = static_cast<COffHand*>(m_pWeapon))
+	//	{
+	//		return gEnv->pEntitySystem->GetEntity(pOffHand->GetHeldEntityId());
+	//	}
+	//}
+
+	//return nullptr;
+	return gEnv->pEntitySystem->GetEntity(GetThrowable());
 }
 
 //-----------------------------------------------------
