@@ -20,6 +20,7 @@
 #include "Player/Player.h"
 #include "Alien/Alien.h"
 #include "CryGame/GameCVars.h"
+#include "CryGame/Items/Weapons/OffHand.h"
 
 #include "CryCommon/CryAction/IGameFramework.h"
 #include "CryCommon/CryAction/IVehicleSystem.h"

@@ -809,8 +809,6 @@ void COffHand::UpdateHeldObject()
 	if (!pPlayer)
 		return;
 
-	{
-		SetHeldEntityId(0);
 
 	const EntityId entityId = m_heldEntityId;
 
@@ -1733,6 +1731,38 @@ void COffHand::Freeze(bool freeze)
 		FinishAction(eOHA_RESET);
 		CancelAction();
 	}
+}
+
+void COffHand::LogOffHandState(EOffHandStates eOHS)
+{
+	// -- Current State Bitmask --
+	string stateBits;
+	struct StateFlagInfo { int flag; const char* name; };
+	const StateFlagInfo flags[] = {
+		{ eOHS_INIT_STATE,        "Init" },
+		{ eOHS_SWITCHING_GRENADE, "SwitchingGrenade" },
+		{ eOHS_HOLDING_GRENADE,   "HoldingGrenade" },
+		{ eOHS_THROWING_GRENADE,  "ThrowingGrenade" },
+		{ eOHS_PICKING,           "Picking" },
+		{ eOHS_PICKING_ITEM,      "PickingItem" },
+		{ eOHS_PICKING_ITEM2,     "PickingItem2" },
+		{ eOHS_HOLDING_OBJECT,    "HoldingObject" },
+		{ eOHS_THROWING_OBJECT,   "ThrowingObject" },
+		{ eOHS_GRABBING_NPC,      "GrabbingNPC" },
+		{ eOHS_HOLDING_NPC,       "HoldingNPC" },
+		{ eOHS_THROWING_NPC,      "ThrowingNPC" },
+		{ eOHS_TRANSITIONING,     "Transitioning" },
+		{ eOHS_MELEE,             "Melee" }
+	};
+	for (const auto& f : flags)
+	{
+		if (eOHS & f.flag)
+		{
+			if (!stateBits.empty()) stateBits += "|";
+			stateBits += f.name;
+		}
+	}
+	CryLogAlways("SetOffHandState: $6%s", stateBits.c_str());
 }
 
 //==============================================================================
@@ -2798,6 +2828,87 @@ Matrix34 COffHand::GetHoldOffset(IEntity* pEntity)
 
 	holdOffset.SetIdentity();
 	return holdOffset;
+}
+
+//=========================================================================================
+bool COffHand::IsGrabTypeTwoHanded(const EntityId entityId) const noexcept
+{
+	IEntity* pEntity = m_pEntitySystem->GetEntity(entityId);
+	if (!pEntity)
+		return false;
+
+	// Emulate original index-based mapping:
+	// start at ONE_HANDED and ++ per entry in m_grabTypes
+	uint32 grabType = GRAB_TYPE_ONE_HANDED;
+
+	for (const auto& gt : m_grabTypes)
+	{
+		SEntitySlotInfo slotInfo{};
+		const int slotCount = pEntity->GetSlotCount();
+
+		for (int n = 0; n < slotCount; ++n)
+		{
+			if (!pEntity->IsSlotValid(n))
+				continue;
+
+			const bool ok = pEntity->GetSlotInfo(n, slotInfo) && (pEntity->GetSlotFlags(n) & ENTITY_SLOT_RENDER);
+			if (!ok)
+				continue;
+
+			if (slotInfo.pStatObj)
+			{
+				const char* geoName = slotInfo.pStatObj->GetGeoName();
+
+				for (int j = 0; j < 2; ++j)
+				{
+					string helper;
+					if (j == 0)
+					{
+						helper.reserve((geoName ? strlen(geoName) : 0) + 1 + gt.helper.length());
+						if (geoName) helper.append(geoName);
+						helper.push_back('_');
+						helper.append(gt.helper.c_str());
+					}
+					else
+					{
+						helper = gt.helper.c_str();
+					}
+
+					if (slotInfo.pStatObj->GetParentObject())
+					{
+						if (IStatObj::SSubObject* pSubObj =
+							slotInfo.pStatObj->GetParentObject()->FindSubObject(helper.c_str()))
+						{
+							return (grabType == GRAB_TYPE_TWO_HANDED);
+						}
+					}
+					else
+					{
+						if (IStatObj::SSubObject* pSubObj =
+							slotInfo.pStatObj->FindSubObject(helper.c_str()))
+						{
+							return (grabType == GRAB_TYPE_TWO_HANDED);
+						}
+					}
+				}
+			}
+			else if (slotInfo.pCharacter)
+			{
+				if (IAttachmentManager* pAM = slotInfo.pCharacter->GetIAttachmentManager())
+				{
+					if (IAttachment* pAttachment = pAM->GetInterfaceByName(gt.helper.c_str()))
+					{
+						return (grabType == GRAB_TYPE_TWO_HANDED);
+					}
+				}
+			}
+		}
+
+		++grabType;
+	}
+
+	// If no predefined helper matched, mirror original fallback: default to TWO_HANDED
+	return true;
 }
 
 //========================================================================================================

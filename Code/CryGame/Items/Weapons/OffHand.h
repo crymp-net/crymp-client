@@ -153,6 +153,8 @@ public:
 	void FinishAction(EOffHandActions eOHA);
 	virtual void Freeze(bool freeze) override;
 
+	void LogOffHandState(EOffHandStates eOHS);
+
 	bool IsHoldingEntity();
 
 	void OnBeginCutScene();
@@ -168,6 +170,7 @@ public:
 	virtual bool ReadItemParams(const IItemParamsNode* root);
 
 	void SelectGrabType(IEntity* pEntity);
+	bool IsGrabTypeTwoHanded(const EntityId entityId) const noexcept;
 
 	Matrix34 GetHoldOffset(IEntity* pEntity);
 
