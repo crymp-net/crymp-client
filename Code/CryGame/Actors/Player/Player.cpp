@@ -1201,38 +1201,61 @@ void CPlayer::UpdateHeldObjectIK()
 	if (!pent)
 		return;
 
-	// Get character orientation and position
-	QuatT rootBoneWorldRot = GetAnimatedCharacter()->GetAnimLocation();
-	Vec3 playerPos = rootBoneWorldRot.t;
-	Vec3 characterRight = rootBoneWorldRot.q.GetColumn0(); // player's right direction
-
-	// Get object center (center of mass if available)
-	Vec3 objectPos;
+	// Quick one-hand path
 	pe_status_dynamics dyn;
+	Vec3 objectPos = Vec3(ZERO);
 	if (pent->GetStatus(&dyn))
 		objectPos = dyn.centerOfMass;
 	else
 		objectPos = pObject->GetWorldPos();
 
-	if (!pOffHand->IsTwoHandMode())
+	const bool twoHand = pOffHand->IsTwoHandMode();
+
+	if (!twoHand)
 	{
 		if (IActor* pActor = m_pGameFramework->GetIActorSystem()->GetActor(objectId))
 		{
 			Vec3 neckPos;
 			if (pOffHand->GetGrabbedActorNeckWorldPos(pObject, neckPos))
 			{
-				objectPos = neckPos;
+				SetIKPos("leftArm", neckPos, 1.0f);
+				return;
 			}
 		}
-		SetIKPos("leftArm", objectPos, 1);
-		return;
 	}
 
-	// Estimate object width
-	AABB bbox;
-	pObject->GetLocalBounds(bbox);
-	float halfWidth = (bbox.max.x - bbox.min.x) * 0.5f;
-	float extraOffset = 0.5f; // ensures rays start outside object bounds
+	if (!m_handGripsValid)
+		return;
+
+	Matrix34 objW = pObject->GetWorldTM(); 
+	Matrix34 attW = objW;              
+
+	if (!IsRemote())
+	{
+		if (ICharacterInstance* ch = GetEntity()->GetCharacter(0))
+		{
+			if (IAttachmentManager* am = ch->GetIAttachmentManager())
+			{
+				if (IAttachment* a = am->GetInterfaceByName("held_object_attachment"))
+				{
+					const QuatT attMR = a->GetAttModelRelative(); 
+					const Matrix34 ownerW = GetEntity()->GetWorldTM();
+					attW = ownerW * Matrix34(attMR);
+					objW = attW;
+				}
+			}
+		}
+	}
+
+	Vec3 leftWorld = objW.TransformPoint(m_lefthandGrip);
+	Vec3 rightWorld = objW.TransformPoint(m_righthandGrip);
+
+	SetIKPos("leftArm", leftWorld, 1.0f);
+	if (twoHand)
+	{
+		SetIKPos("rightArm", rightWorld, 1.0f);
+	}
+
 
 	// Ray origins: outside object on left/right, aiming toward center
 	Vec3 leftOrigin = objectPos - characterRight * (halfWidth + extraOffset);

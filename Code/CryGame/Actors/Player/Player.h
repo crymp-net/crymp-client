@@ -967,6 +967,10 @@ private:
 
 	int m_lastAttachmentCount = 0;
 
+	Vec3 m_lefthandGrip = Vec3(ZERO);
+	Vec3 m_righthandGrip = Vec3(ZERO);
+	bool m_handGripsValid = false;
+
 private:
 
 	enum class ReachState : uint8
@@ -990,6 +994,23 @@ private:
 	float m_fixedBackwardBend = DEG2RAD(10.0f); 
 
 public:
+
+	void SetArmIKLocal(const Vec3& leftHand, const Vec3& rightHand)
+	{
+		m_lefthandGrip = leftHand;
+		m_righthandGrip = rightHand;
+		m_handGripsValid = true;
+	}
+
+	void SetArmIKLocalInvalid()
+	{
+		m_handGripsValid = false;
+	}
+
+	bool IsLeftRightHandGripValid() const 
+	{	
+		return m_handGripsValid; 
+	}
 
 	// Member variables
 	bool m_camoState = false;
