@@ -100,7 +100,6 @@ enum EOffHandSounds
 
 class COffHand : public CWeapon
 {
-
 	struct SGrabType
 	{
 		ItemString	helper;
@@ -124,7 +123,7 @@ public:
 	virtual void PostInit(IGameObject* pGameObject) override;
 	virtual void Reset() override;
 
-	virtual void OnAction(EntityId actorId, const ActionId& actionId, int activationMode, float value);
+	virtual void OnAction(EntityId actorId, const ActionId& actionId, int activationMode, float value) override;
 
 	virtual bool CanSelect() const override;
 	virtual void Select(bool select) override;
@@ -151,7 +150,7 @@ public:
 	void SetMainHand(CItem* pItem);
 	void SetMainHandWeapon(CWeapon* pWeapon);
 	ILINE int  GetOffHandState() { return m_currentState; }
-	void  FinishAction(EOffHandActions eOHA);
+	void FinishAction(EOffHandActions eOHA);
 	virtual void Freeze(bool freeze) override;
 
 	bool IsHoldingEntity();
@@ -168,7 +167,7 @@ public:
 
 	virtual bool ReadItemParams(const IItemParamsNode* root);
 
-	void	SelectGrabType(IEntity* pEntity);
+	void SelectGrabType(IEntity* pEntity);
 
 	Matrix34 GetHoldOffset(IEntity* pEntity);
 
@@ -323,13 +322,33 @@ private:
 		Broken
 	};
 
+	enum ConstraintReset
+	{
+		Skip = 1 << 0,
+		Immediate = 1 << 1,
+		Delayed = 1 << 2,
+		SkipIfDelayTimerActive = 1 << 3,
+	};
+
 	ConstraintStatus m_constraintStatus = ConstraintStatus::Inactive;
+	float m_lastTooHeavyMessage = 0.0f;
+	unsigned int m_timerEnableCollisions = 0;
+	bool m_footAlignmentEnabled = true;
+	int m_heldVehicleCollisions = 0;
+
+	struct SGripHitLocal
+	{
+		bool ok = false;
+		Vec3 leftLocal = ZERO;  
+		Vec3 rightLocal = ZERO; 
+		float widthWS = 0.0f;
+	};
 
 public:
 
 	bool IsTwoHandMode() const
 	{
-		return m_grabType == 1; //GRAB_TYPE_TWO_HANDED;
+		return m_grabType == GRAB_TYPE_TWO_HANDED;
 	}
 	bool Request_PickUpObject_MP();
 	bool PickUpObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId);
@@ -338,6 +357,23 @@ public:
 	void UpdateEntityRenderFlags(const EntityId entityId, EntityFpViewMode mode = EntityFpViewMode::Default);
 	void EnableFootGroundAlignment(bool enable);
 	bool SetHeldEntityId(const EntityId entityId);
+	bool RemoveHeldEntityId(const EntityId oldId, ConstraintReset constraintReset = ConstraintReset::Immediate);
+	void HandleNewHeldEntity(const EntityId entityId, const bool isNewItem, CActor* pActor);
+	void HandleOldHeldEntity(const EntityId oldHeldEntityId, const bool isOldItem, ConstraintReset constraintReset, CActor* pActor);
+	void AwakeEntityPhysics(IEntity* pEntity);
+	SGripHitLocal ComputeGripHitsLocal(CActor* pOwner, IEntity* pObject, bool isTwoHand);
+	bool GetPredefinedGripHandPos(IEntity* pEnt, Vec3& outLeftEL, Vec3& outRightEL);
+	void GetPredefinedPosOffset(IEntity* pEnt, Vec3& fpPosOffset, Vec3& tpPosOffset);
+	bool IsTimerEnableCollisionsActive();
+	CActor::ObjectHoldType DetermineObjectHoldType(const EntityId entityId) const;
+	void OnReachReady();
+	void OnHeldObjectCollision(CPlayer* pClientActor, const EventPhysCollision* pCollision, IEntity *pTargetEnt);
+	void OnPlayerRevive(CPlayer* pPlayer);
+	void OnPlayerDied(CPlayer* pPlayer);
+	void ReAttachObjectToHand();
+	void FinishGrenadeAction(CItem* pMainHand);
+	void PerformThrowAction_Press(EntityId throwableId, bool isLivingEnt);
+	void PerformThrowAction_Release(EntityId throwableId, bool isLivingEnt);
 };
 
 #endif

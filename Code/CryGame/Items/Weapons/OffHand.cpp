@@ -3975,6 +3975,9 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 //==============================================================
 void COffHand::UpdateEntityRenderFlags(const EntityId entityId, EntityFpViewMode mode)
 {
+	if (!gEnv->bClient)
+		return;
+
 	IEntity* pEntity = m_pEntitySystem->GetEntity(entityId);
 	if (!pEntity)
 		return;
@@ -4041,6 +4044,7 @@ void COffHand::EnableFootGroundAlignment(bool enable)
 			if (ISkeletonPose* pSkeletonPose = pCharacter->GetISkeletonPose())
 			{
 				pSkeletonPose->EnableFootGroundAlignment(enable);
+				m_footAlignmentEnabled = enable;
 			}
 		}
 	}
@@ -4057,7 +4061,6 @@ bool COffHand::SetHeldEntityId(const EntityId entityId)
 		return false;
 	}
 
-	// If swapping directly between two entities, drop current first
 	if (m_heldEntityId && entityId)
 	{
 		RemoveHeldEntityId(m_heldEntityId, ConstraintReset::Immediate);
@@ -4071,7 +4074,6 @@ bool COffHand::SetHeldEntityId(const EntityId entityId)
 
 	const bool isNewItem = (m_pItemSystem->GetItem(entityId) != nullptr);
 
-	// If clearing or switching to a non-item/new target, ensure actor state mirrors that
 	if (!isNewItem || !entityId)
 	{
 		const CActor::ObjectHoldType armHoldType = DetermineObjectHoldType(entityId);
@@ -4092,20 +4094,574 @@ bool COffHand::SetHeldEntityId(const EntityId entityId)
 		}
 	}
 
-	// Server: skip client-side acquisition logic below
 	if (!gEnv->bClient)
 		return true;
 
-	// If no new entity or it's an item, we're done (original behavior)
 	if (!entityId || isNewItem)
 		return true;
 
-	// Acquire/setup the new held entity
 	HandleNewHeldEntity(entityId, isNewItem, pActor);
-
-	if (g_pGameCVars->mp_pickupDebug)
-		CryLogAlways("Successfully set held entity ID %u", entityId);
 
 	return true;
 }
 
+//==============================================================
+bool COffHand::RemoveHeldEntityId(const EntityId oldId /* = 0*/, ConstraintReset constraintReset /* = ConstraintReset::Immediate*/)
+{
+	const EntityId oldHeldEntityId = oldId ? oldId : m_heldEntityId;
+	if (!oldHeldEntityId)
+	{
+		return false;
+	}
+
+	m_heldEntityId = 0;
+
+	CActor* pActor = GetOwnerActor();
+	if (pActor)
+	{
+		pActor->SetHeldObjectId(0);
+	}
+
+	if (!gEnv->bClient)
+		return true;
+
+	const bool isOldItem = (m_pItemSystem->GetItem(oldHeldEntityId) != nullptr);
+
+	HandleOldHeldEntity(oldHeldEntityId, isOldItem, constraintReset, pActor);
+
+	return true;
+}
+
+//==============================================================
+void COffHand::HandleNewHeldEntity(const EntityId entityId, const bool isNewItem, CActor* pActor)
+{
+	IEntity* pEntity = m_pEntitySystem->GetEntity(entityId);
+	if (!pEntity || !pActor)
+		return;
+
+	SelectGrabType(pEntity);
+
+	EnableFootGroundAlignment(false);
+
+	if (!pActor->IsThirdPerson())
+	{
+		UpdateEntityRenderFlags(entityId, EntityFpViewMode::ForceActive);
+	}
+
+	// Remote client in MP: mark client-only and zero mass while storing original mass on actor
+	if (gEnv->bClient && gEnv->bMultiplayer && pActor->IsRemote())
+	{
+		pEntity->SetFlags(pEntity->GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
+
+		if (IPhysicalEntity* pObjectPhys = pEntity->GetPhysics())
+		{
+			pe_status_dynamics dyn;
+			if (pObjectPhys->GetStatus(&dyn))
+			{
+				pe_simulation_params simParams;
+				simParams.mass = 0.0f;
+
+				if (pObjectPhys->SetParams(&simParams))
+				{
+					pActor->SetHeldObjectMass(dyn.mass);
+				}
+			}
+		}
+	}
+
+	SetIgnoreCollisionsWithOwner(true, entityId);
+
+	if (pActor->IsThirdPerson())
+	{
+		if (CPlayer *pPlayer = CPlayer::FromActor(pActor))
+		{
+			const bool ok = pPlayer->SetGrabTarget(entityId);
+		}
+	}
+}
+
+//==============================================================
+void COffHand::HandleOldHeldEntity(const EntityId oldHeldEntityId, const bool isOldItem, ConstraintReset constraintReset, CActor* pActor)
+{
+	if (!isOldItem)
+	{
+		if (oldHeldEntityId)
+		{
+			UpdateEntityRenderFlags(oldHeldEntityId, EntityFpViewMode::ForceDisable);
+			AttachObjectToHand(false, oldHeldEntityId, false);
+		}
+		EnableFootGroundAlignment(true);
+	}
+
+	if (!oldHeldEntityId || isOldItem)
+		return;
+
+	if (IEntity* pOldEntity = m_pEntitySystem->GetEntity(oldHeldEntityId))
+	{
+		const bool skip = (constraintReset & ConstraintReset::SkipIfDelayTimerActive) && IsTimerEnableCollisionsActive();
+		if (!skip)
+		{
+			if (constraintReset & ConstraintReset::Immediate)
+			{
+				SetIgnoreCollisionsWithOwner(false, oldHeldEntityId);
+			}
+			else if (constraintReset & ConstraintReset::Delayed)
+			{
+				m_timerEnableCollisions = GetScheduler()->TimerAction(
+					500,
+					MakeAction([this, id = oldHeldEntityId](CItem* /*cItem*/) {
+						SetIgnoreCollisionsWithOwner(false, id);
+						}),
+					/*persistent=*/false
+				);
+			}
+		}
+
+		// Remote client in MP: restore mass, clear client-only, rephys vehicles, clear cached mass
+		if (gEnv->bClient && gEnv->bMultiplayer && pActor && pActor->IsRemote())
+		{
+			if (IPhysicalEntity* pObjectPhys = pOldEntity->GetPhysics())
+			{
+				pe_status_dynamics dyn;
+				pObjectPhys->GetStatus(&dyn);
+
+				const float originalMass = pActor->GetHeldObjectMass();
+				if (originalMass > 0.0f && dyn.mass != originalMass)
+				{
+					pe_simulation_params simParams;
+					simParams.mass = originalMass;
+					if (pObjectPhys->SetParams(&simParams))
+					{
+						pe_status_dynamics tmp;
+						pObjectPhys->GetStatus(&tmp);
+					}
+				}
+			}
+
+			pOldEntity->SetFlags(pOldEntity->GetFlags() & ~ENTITY_FLAG_CLIENT_ONLY);
+			
+			if (IVehicle* pVehicle = m_pGameFramework->GetIVehicleSystem()->GetVehicle(pOldEntity->GetId()))
+			{
+				// CryMP: trigger rephysicalization to avoid bugs caused by 0 mass
+				reinterpret_cast<IGameObjectProfileManager*>(pVehicle + 1)->SetAspectProfile(eEA_Physics, 1);
+			}
+
+			pActor->SetHeldObjectMass(0.0f);
+		}
+	}
+}
+
+//==============================================================
+void COffHand::AwakeEntityPhysics(IEntity* pEntity)
+{
+	if (!pEntity)
+		return;
+
+	IPhysicalEntity* pPhysics = pEntity->GetPhysics();
+	if (pPhysics)
+	{
+		pe_action_awake actionAwake;
+		actionAwake.bAwake = 1;
+		pPhysics->Action(&actionAwake);
+	}
+}
+
+//==============================================================
+COffHand::SGripHitLocal COffHand::ComputeGripHitsLocal(CActor* pOwner, IEntity* pObject, bool isTwoHand)
+{
+	SGripHitLocal out;
+	if (!pOwner || !pObject)
+		return out;
+
+	const float extraMargin = 0.25f;
+	const float ttlSeconds = 2.0f;
+
+	IPhysicalEntity* pPE = pObject->GetPhysics();
+	if (!pPE)
+	{
+		return out;
+	}
+
+	AABB wbox; pObject->GetWorldBounds(wbox);
+	Vec3 center = (wbox.min + wbox.max) * 0.5f;
+
+	pe_status_dynamics sd;
+	if (pPE->GetStatus(&sd))
+		center = sd.centerOfMass;
+
+	const Vec3 ext = (wbox.max - wbox.min) * 0.5f;
+	const float radius = max(ext.len(), 0.05f);
+	const float d = radius + extraMargin;
+
+	const Matrix34 playerW = pOwner->GetEntity()->GetWorldTM();
+	Vec3 playerRight = playerW.GetColumn0(); playerRight.NormalizeSafe(Vec3(1, 0, 0));
+
+	const Vec3 leftWS = center - playerRight * d;
+	const Vec3 rightWS = center + playerRight * d;
+
+	auto rayOne = [&](const Vec3& from, const Vec3& to, ray_hit& hit)->bool
+		{
+			const Vec3 rayVec = to - from;
+			if (rayVec.GetLengthSquared() < 1e-6f)
+				return false;
+
+			const int result = gEnv->pPhysicalWorld->RayTraceEntity(pPE, from, rayVec, &hit, nullptr);
+			return (result > 0);
+		};
+
+	ray_hit hitLR = {}, hitRL = {};
+	const bool okLR = rayOne(leftWS, rightWS, hitLR);
+	const bool okRL = isTwoHand ? rayOne(rightWS, leftWS, hitRL) : false;
+
+	if (isTwoHand)
+	{
+		if (!(okLR && okRL))
+		{
+			return out;
+		}
+	}
+	else
+	{
+		if (!okLR)
+		{
+			return out;
+		}
+	}
+
+	const float inset = 0.01f;
+	const Vec3 leftInsetWS = okLR ? (hitLR.pt + hitLR.n * (-inset)) : leftWS;
+	const Vec3 rightInsetWS = (isTwoHand && okRL) ? (hitRL.pt + hitRL.n * (-inset)) : rightWS;
+
+	const Matrix34 objW = pObject->GetWorldTM();
+	const Matrix34 objInv = objW.GetInvertedFast();
+
+	out.leftLocal = objInv.TransformPoint(leftInsetWS);
+	if (isTwoHand)
+		out.rightLocal = objInv.TransformPoint(rightInsetWS);
+
+	out.ok = true;
+
+	return out;
+}
+
+//==============================================================
+bool COffHand::GetPredefinedGripHandPos(IEntity* pEnt, Vec3& outLeftEL, Vec3& outRightEL)
+{
+	if (!pEnt)
+		return false;
+
+	const CGame::HandGripInfo* info = g_pGame->GetGripByEntity(pEnt);
+	if (!info)
+		return false;
+
+	bool any = false;
+
+	if (info->hasLeft)
+	{
+		outLeftEL = info->leftEL;
+		any = true;
+	}
+
+	if (info->hasRight)
+	{
+		outRightEL = info->rightEL;
+		any = true;
+	}
+
+	return any; // true if at least one hand is defined
+}
+
+//==============================================================
+void COffHand::GetPredefinedPosOffset(IEntity* pEnt, Vec3& fpPosOffset, Vec3& tpPosOffset)
+{
+	if (!pEnt)
+		return;
+
+	const CGame::HandGripInfo* info = g_pGame->GetGripByEntity(pEnt);
+	if (!info)
+		return;
+
+	fpPosOffset = info->posOffset_FP;
+	tpPosOffset = info->posOffset_TP;
+}
+
+//==============================================================
+bool COffHand::IsTimerEnableCollisionsActive()
+{
+	return m_timerEnableCollisions && GetScheduler()->IsTimerActive(m_timerEnableCollisions);
+}
+
+//==============================================================
+CActor::ObjectHoldType COffHand::DetermineObjectHoldType(const EntityId entityId) const
+{
+	if (m_pActorSystem->GetActor(entityId))
+	{
+		return CActor::ObjectHoldType::Actor;
+	}
+	else if (m_pGameFramework->GetIVehicleSystem()->GetVehicle(entityId))
+	{
+		return CActor::ObjectHoldType::Vehicle;
+	}
+	else if (g_pGame->GetWeaponSystem()->GetProjectile(entityId))
+	{
+		return CActor::ObjectHoldType::Projectile;
+	}
+	else
+	{
+		if (IsGrabTypeTwoHanded(entityId))
+		{
+			return CActor::ObjectHoldType::TwoHanded;
+		}
+		else
+		{
+			return CActor::ObjectHoldType::OneHanded;
+		}
+	}
+	return CActor::ObjectHoldType::None;
+}
+
+//==============================================================
+void COffHand::OnReachReady()
+{
+	AttachObjectToHand(true, m_heldEntityId, false);
+}
+
+//==============================================================
+void COffHand::OnHeldObjectCollision(CPlayer* pClientActor, const EventPhysCollision* pCollision, IEntity* pTargetEnt)
+{
+	if (!pClientActor || !m_heldEntityId)
+		return;
+
+	const int maxCollisions = g_pGameCVars->mp_pickupMaxVehicleCollisions;
+	if (!maxCollisions)
+		return;
+
+	IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(m_heldEntityId);
+	if (pVehicle)
+	{
+		++m_heldVehicleCollisions;
+		if (m_heldVehicleCollisions > maxCollisions)
+		{
+			if (CHUD *pHUD = g_pGame->GetHUD())
+			{
+				LogOffHandState((EOffHandStates)m_currentState);
+				pHUD->DisplayBigOverlayFlashMessage("@object_collision_drop", 2.0f, 400, 400, Col_Goldenrod);
+			}
+			FinishAction(eOHA_RESET);
+		}
+	}
+}
+
+//==============================================================
+void COffHand::OnPlayerRevive(CPlayer* pPlayer)
+{
+	FinishAction(eOHA_RESET);
+}
+
+//==============================================================
+void COffHand::OnPlayerDied(CPlayer* pPlayer)
+{
+	FinishAction(eOHA_RESET);
+}
+
+//==============================================================
+void COffHand::ReAttachObjectToHand()
+{
+	if (m_heldEntityId && !m_stats.fp)
+	{
+		AttachObjectToHand(false, m_heldEntityId, false);
+		AttachObjectToHand(true, m_heldEntityId, false);
+	}
+}
+
+//==============================================================================
+void COffHand::FinishGrenadeAction(CItem* pMainHand)
+{
+	//HideItem(true);
+	float timeDelay = 0.1f;	//ms
+
+	if (pMainHand && !pMainHand->IsDualWield())
+	{
+		pMainHand->ResetDualWield();		//I can reset, because if DualWield it's not possible to switch grenades (see PreExecuteAction())
+		pMainHand->PlayAction(g_pItemStrings->offhand_off, 0, false, CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
+		timeDelay = (pMainHand->GetCurrentAnimationTime(CItem::eIGS_FirstPerson) + 50) * 0.001f;
+	}
+	else if (GetOwnerActor() && !GetOwnerActor()->ShouldSwim())
+	{
+		if (pMainHand && pMainHand->IsDualWield())
+		{
+			pMainHand->Select(true);
+		}
+		else
+		{
+			GetOwnerActor()->HolsterItem(false);
+		}
+	}
+
+	if (GetOffHandState() == eOHS_SWITCHING_GRENADE)
+	{
+		const int grenadeType = GetCurrentFireMode();
+		AttachGrenadeToHand(grenadeType);
+	}
+
+	SetOffHandState(eOHS_TRANSITIONING);
+
+	//Offhand goes back to initial state
+	SetResetTimer(timeDelay);
+	RequireUpdate(eIUS_General);
+}
+
+//==============================================================================
+void COffHand::PerformThrowAction_Press(EntityId throwableId, bool isLivingEnt /*=false*/)
+{
+	if (!m_fm)
+		return;
+
+	if (!throwableId)
+	{
+		SetOffHandState(eOHS_HOLDING_GRENADE);
+	}
+
+	if (throwableId)
+	{
+		if (!isLivingEnt)
+		{
+			if (CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor()))
+			{
+				pPlayer->NotifyObjectGrabbed(false, throwableId, false);
+			}
+
+			SetOffHandState(eOHS_THROWING_OBJECT);
+
+			CThrow* pThrow = static_cast<CThrow*>(m_fm);
+			pThrow->SetThrowable(
+				throwableId,
+				m_forceThrow,
+				MakeAction([this](CItem*) {
+					this->FinishAction(eOHA_THROW_OBJECT);
+					})
+			);
+		}
+		else
+		{
+			SetOffHandState(eOHS_THROWING_NPC);
+
+			CThrow* pThrow = static_cast<CThrow*>(m_fm);
+			pThrow->SetThrowable(
+				throwableId,
+				true,
+				MakeAction([this](CItem*) {
+					this->FinishAction(eOHA_THROW_NPC);
+					})
+			);
+		}
+
+		m_forceThrow = false;
+
+		// enable leg IK again
+		EnableFootGroundAlignment(true);
+	}
+
+	if (!m_fm->IsFiring() && m_nextThrowTimer <= 0.0f)
+	{
+		if (m_currentState == eOHS_HOLDING_GRENADE)
+		{
+			AttachGrenadeToHand(GetCurrentFireMode(), m_stats.fp);
+		}
+
+		StartFire();
+		SetBusy(false);
+
+		if (m_mainHand && m_fm->IsFiring())
+		{
+			if (!(m_currentState & (eOHS_THROWING_NPC | eOHS_THROWING_OBJECT)))
+			{
+				if (m_mainHandWeapon && m_mainHandWeapon->IsWeaponRaised())
+				{
+					m_mainHandWeapon->RaiseWeapon(false, true);
+					m_mainHandWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
+				}
+
+				m_mainHand->PlayAction(g_pItemStrings->offhand_on);
+				m_mainHand->SetActionSuffix("akimbo_");
+			}
+		}
+
+		if (!throwableId)
+		{
+			if (m_mainHandWeapon && m_mainHandWeapon->GetEntity()->GetClass() == CItem::sFistsClass)
+			{
+				CFists* pFists = static_cast<CFists*>(m_mainHandWeapon);
+				pFists->RequestAnimState(CFists::eFAS_FIGHT);
+			}
+		}
+	}
+}
+
+//===============================================================================
+void COffHand::PerformThrowAction_Release(EntityId throwableId, bool isLivingEnt /*=false*/)
+{
+	if (!m_fm)
+		return;
+
+	if (m_nextThrowTimer > 0.0f)
+		return;
+
+	CThrow* pThrow = static_cast<CThrow*>(m_fm);
+
+	if (m_currentState != eOHS_HOLDING_GRENADE)
+	{
+		if (gEnv->bMultiplayer)
+		{
+			IEntity* pEntity = m_pEntitySystem->GetEntity(m_heldEntityId);
+			if (pEntity && pEntity->GetPhysics())
+			{
+				Vec3 hit = pThrow->GetProbableHit(WEAPON_HIT_RANGE);
+				Vec3 pos = pThrow->GetFiringPos(hit);
+				Vec3 dir = pThrow->GetFiringDir(hit, pos);
+
+				if (pThrow->CheckForIntersections(pEntity->GetPhysics(), dir))
+				{
+					if (isLivingEnt)
+						SetOffHandState(eOHS_HOLDING_NPC);
+					else
+						SetOffHandState(eOHS_HOLDING_OBJECT);
+
+					if (CHUD* pHUD = g_pGame->GetHUD())
+					{
+						pHUD->DisplayBigOverlayFlashMessage("@object_cant_throw_here", 2.0f, 400, 400, Col_Goldenrod);
+					}
+					return;
+				}
+			}
+		}
+
+		pThrow->ThrowingGrenade(false);
+	}
+	else if (m_currentState == eOHS_HOLDING_GRENADE)
+	{
+		SetOffHandState(eOHS_THROWING_GRENADE);
+
+		pThrow->ThrowingGrenade(true);
+	}
+	else
+	{
+		CancelAction();
+		return;
+	}
+
+	m_nextThrowTimer = 60.0f / m_fm->GetFireRate();
+
+	StopFire();
+
+	if (m_fm->IsFiring() && m_currentState == eOHS_THROWING_GRENADE)
+	{
+		GetScheduler()->TimerAction(
+			GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
+			MakeAction([this, hand = m_mainHand](CItem*) {
+				this->FinishGrenadeAction(hand);
+				}),
+			/*persistent=*/false
+		);
+	}
+}
