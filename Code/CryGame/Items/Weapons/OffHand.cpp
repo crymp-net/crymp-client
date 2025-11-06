@@ -802,19 +802,27 @@ void COffHand::UpdateCrosshairUsabilityMP()
 //=============================================================
 void COffHand::UpdateHeldObject()
 {
+	if (!gEnv->bClient)
+		return;
+
 	CActor* pPlayer = GetOwnerActor();
 	if (!pPlayer)
 		return;
 
-	IEntity* pEntity = m_pEntitySystem->GetEntity(m_heldEntityId);
-	if (!pEntity)
 	{
 		SetHeldEntityId(0);
 
+	const EntityId entityId = m_heldEntityId;
+
+	IEntity* pEntity = m_pEntitySystem->GetEntity(entityId);
+	if (!pEntity)
+	{
 		FinishAction(eOHA_RESET);
 
 		return;
 	}
+
+	AwakeEntityPhysics(pEntity);
 
 	if (m_constraintStatus == ConstraintStatus::WaitForPhysicsUpdate || m_constraintStatus == ConstraintStatus::Active)
 	{
@@ -839,38 +847,54 @@ void COffHand::UpdateHeldObject()
 				//means a boid that died in player hands (and now it's a ragdoll,which could cause collision issues)
 				if (!pPE->GetStatus(&state))
 				{
-					if (m_currentState & (eOHS_HOLDING_OBJECT | eOHS_THROWING_OBJECT | eOHS_HOLDING_NPC | eOHS_THROWING_NPC)) //CryMP: don't release untill we're actually holding it
+					m_constraintStatus = ConstraintStatus::Broken;
+
+					if (CHUD* pHUD = g_pGame->GetHUD())
 					{
-						if (pPlayer->IsClient())
-						{
-							if (m_mainHand && m_mainHand->IsBusy())
-							{
-								m_mainHand->SetBusy(false);
-							}
-
-							if (m_currentState != eOHS_THROWING_OBJECT)
-							{
-								if (m_currentState == eOHS_MELEE)
-								{
-									GetScheduler()->Reset();
-								}
-
-								SetOffHandState(eOHS_HOLDING_OBJECT);
-
-								OnAction(GetOwnerId(), ActionId("use"), eAAM_OnPress, 0.0f);
-								OnAction(GetOwnerId(), ActionId("use"), eAAM_OnRelease, 0.0f);
-							}
-							else
-							{
-								OnAction(GetOwnerId(), ActionId("use"), eAAM_OnRelease, 0.0f);
-							}
-							m_constraintId = 0;
-							m_constraintStatus = ConstraintStatus::Broken;
-						}
-						return;
+						pHUD->DisplayBigOverlayFlashMessage("@object_lost_destroyed", 2.0f, 400, 400, Col_Goldenrod);
 					}
 				}
 			}
+		}
+	}
+
+	if (m_constraintStatus == ConstraintStatus::Broken)
+	{
+		if (m_currentState & (eOHS_HOLDING_OBJECT | eOHS_THROWING_OBJECT | eOHS_HOLDING_NPC | eOHS_THROWING_NPC)) //CryMP: don't release untill we're actually holding it
+		{
+			if (pPlayer->IsClient())
+			{
+				if (m_mainHand && m_mainHand->IsBusy())
+				{
+					m_mainHand->SetBusy(false);
+				}
+
+				if (m_currentState != eOHS_THROWING_OBJECT)
+				{
+					if (m_currentState == eOHS_MELEE)
+					{
+						GetScheduler()->Reset();
+					}
+
+					SetOffHandState(eOHS_HOLDING_OBJECT);
+
+					OnAction(GetOwnerId(), ActionId("use"), eAAM_OnPress, 0.0f);
+					OnAction(GetOwnerId(), ActionId("use"), eAAM_OnRelease, 0.0f);
+				}
+				else
+				{
+					OnAction(GetOwnerId(), ActionId("use"), eAAM_OnRelease, 0.0f);
+				}
+				m_constraintId = 0;
+			}
+			return;
+		}
+
+		if (pPlayer->IsRemote())
+		{
+			FinishAction(eOHA_RESET);
+
+			return;
 		}
 	}
 
@@ -879,15 +903,30 @@ void COffHand::UpdateHeldObject()
 		return;
 	}
 
-	//Update entity WorldTM 
-	int id = eIGS_FirstPerson;
+	const int id = eIGS_FirstPerson;
 
-	Matrix34 finalMatrix(Matrix34(GetSlotHelperRotation(id, "item_attachment", true)));
+	Matrix34 baseRot = Matrix34(GetSlotHelperRotation(id, "item_attachment", true));
 
+	Matrix34 finalMatrix = baseRot;
 	finalMatrix.Scale(m_holdScale);
 
 	Vec3 pos = GetSlotHelperPos(id, "item_attachment", true);
 
+	// Predefined offsets
+	Vec3 fpPosOffset(ZERO), tpPosOffset(ZERO);
+	GetPredefinedPosOffset(pEntity, fpPosOffset, tpPosOffset);
+
+	// Apply fpPosOffset in *camera space* (x→right, y→forward, z→up), using unscaled axes
+	if (!fpPosOffset.IsZero(0.0001f))
+	{
+		const Vec3 viewRight = baseRot.GetColumn0().GetNormalizedSafe(Vec3(1, 0, 0));
+		const Vec3 viewFwd = baseRot.GetColumn1().GetNormalizedSafe(Vec3(0, 1, 0));
+		const Vec3 viewUp = baseRot.GetColumn2().GetNormalizedSafe(Vec3(0, 0, 1));
+
+		pos += viewRight * fpPosOffset.x
+			+ viewFwd * fpPosOffset.y
+			+ viewUp * fpPosOffset.z;
+	}
 	finalMatrix.SetTranslation(pos);
 
 	finalMatrix = finalMatrix * m_holdOffset;
@@ -913,11 +952,11 @@ void COffHand::UpdateHeldObject()
 	if (gEnv->bMultiplayer && !gEnv->bServer)
 	{
 		/*INetChannel* pClientChannel = m_pGameFramework->GetClientChannel();
-		if (pClientChannel && m_pGameFramework->GetNetContext()->RemoteContextHasAuthority(pClientChannel, m_heldEntityId))
+		if (pClientChannel && m_pGameFramework->GetNetContext()->RemoteContextHasAuthority(pClientChannel, entityId))
 		{
 			hasAuthority = true;
 		}*/
-		if (pPlayer->GetHeldObjectId() == m_heldEntityId)
+		if (pPlayer->GetHeldObjectId() == entityId)
 		{
 			hasAuthority = true;
 		}
