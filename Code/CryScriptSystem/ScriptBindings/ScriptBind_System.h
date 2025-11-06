@@ -27,7 +27,6 @@ public:
 	int ShowConsole(IFunctionHandler *pH);
 	int IsMultiplayer(IFunctionHandler *pH);
 	int GetEntity(IFunctionHandler *pH);
-	int GetEntityFromPhysicsId(IFunctionHandler* pH);
 	int GetEntityClass(IFunctionHandler *pH);
 	int GetEntities(IFunctionHandler *pH);
 	int GetEntitiesByClass(IFunctionHandler *pH, const char *EntityClass);

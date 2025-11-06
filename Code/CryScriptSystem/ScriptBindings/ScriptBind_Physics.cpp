@@ -21,6 +21,8 @@ ScriptBind_Physics::ScriptBind_Physics(IScriptSystem *pSS)
 	SCRIPT_REG_TEMPLFUNC(RayTraceCheck, "vSrc, vTrg, hSkipEntityId1, hSkipEntityId2");
 	SCRIPT_REG_TEMPLFUNC(SamplePhysEnvironment, "vPoint, fRadius");
 	SCRIPT_REG_TEMPLFUNC(GetPhysPosAng, "entityId");
+	SCRIPT_REG_FUNC(GetEntityFromPhysicsId);
+	SCRIPT_REG_FUNC(GetPhysicsIdFromEntity);
 }
 
 int ScriptBind_Physics::SimulateExplosion(IFunctionHandler *pH, SmartScriptTable explisionTable)
@@ -323,4 +325,83 @@ int ScriptBind_Physics::GetPhysPosAng(IFunctionHandler* pH, ScriptHandle entityI
 	const Ang3 ang = pEnt->GetWorldAngles();
 	return pH->EndFunction(Script::SetCachedVector(pos, pH, 1), Script::SetCachedVector((Vec3)ang, pH, 2));
 }
+
+int ScriptBind_Physics::GetEntityFromPhysicsId(IFunctionHandler* pH)
+{
+	if (pH->GetParamCount() < 1 || pH->GetParamType(1) != svtNumber)
+	{
+		CryLogAlways("[GetEntityFromPhysicsId] invalid arg: need number at param 1");
+		return pH->EndFunction();
+	}
+
+	int physId = 0;
+	pH->GetParam(1, physId);
+
+	IPhysicalEntity* pPE = gEnv->pPhysicalWorld->GetPhysicalEntityById(physId);
+	if (!pPE)
+	{
+		CryLogAlways("[GetEntityFromPhysicsId] no physical entity for physId=%d", physId);
+		return pH->EndFunction();
+	}
+
+	IEntity* pEnt = gEnv->pEntitySystem->GetEntityFromPhysics(pPE);
+	if (!pEnt)
+	{
+		CryLogAlways("[GetEntityFromPhysicsId] no IEntity for physId=%d (pPE=%p)", physId, pPE);
+		return pH->EndFunction();
+	}
+
+	if (IScriptTable* pObj = pEnt->GetScriptTable())
+	{
+		return pH->EndFunction(pObj);
+	}
+
+	CryLogAlways("[GetEntityFromPhysicsId] entity has no ScriptTable: %s[%u] (physId=%d)",
+		pEnt->GetName(), pEnt->GetId(), physId);
+	return pH->EndFunction();
+}
+
+int ScriptBind_Physics::GetPhysicsIdFromEntity(IFunctionHandler* pH)
+{
+	if (pH->GetParamCount() < 1)
+		return pH->EndFunction();
+
+	IEntity* pEnt = nullptr;
+
+	// entity table?
+	if (pH->GetParamType(1) == svtObject)
+	{
+		IScriptTable* pObj = nullptr;
+		if (pH->GetParam(1, pObj) && pObj)
+		{
+			ScriptHandle sh;
+			if (pObj->GetValue("id", sh))
+				pEnt = gEnv->pEntitySystem->GetEntity((EntityId)sh.n);
+		}
+	}
+	// number?
+	else if (pH->GetParamType(1) == svtNumber)
+	{
+		EntityId eID = 0; pH->GetParam(1, eID);
+		pEnt = gEnv->pEntitySystem->GetEntity(eID);
+	}
+	// ScriptHandle?
+	else
+	{
+		ScriptHandle sh;
+		if (pH->GetParam(1, sh))
+			pEnt = gEnv->pEntitySystem->GetEntity((EntityId)sh.n);
+	}
+
+	if (!pEnt)
+		return pH->EndFunction();
+
+	IPhysicalEntity* pPE = pEnt->GetPhysics();
+	if (!pPE)
+		pH->EndFunction();
+
+	const int physId = gEnv->pPhysicalWorld->GetPhysicalEntityId(pPE);
+	return pH->EndFunction(physId);
+}
+
 

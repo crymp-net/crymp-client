@@ -61,7 +61,6 @@ ScriptBind_System::ScriptBind_System(IScriptSystem *pSS)
 	SCRIPT_REG_FUNC(GetUserName);
 	SCRIPT_REG_FUNC(DrawLabel);
 	SCRIPT_REG_FUNC(GetEntity);
-	SCRIPT_REG_FUNC(GetEntityFromPhysicsId);
 	SCRIPT_REG_FUNC(GetEntityClass);
 	SCRIPT_REG_FUNC(GetEntities);
 	SCRIPT_REG_TEMPLFUNC(GetEntitiesInSphere, "center, radius");
@@ -364,42 +363,6 @@ int ScriptBind_System::GetEntity(IFunctionHandler *pH)
 
 	return pH->EndFunction();
 }
-
-int ScriptBind_System::GetEntityFromPhysicsId(IFunctionHandler* pH)
-{
-	if (pH->GetParamCount() < 1 || pH->GetParamType(1) != svtNumber)
-	{
-		CryLogAlways("[GetEntityFromPhysicsId] invalid arg: need number at param 1");
-		return pH->EndFunction(); 
-	}
-
-	int physId = 0;
-	pH->GetParam(1, physId);
-
-	IPhysicalEntity* pPE = gEnv->pPhysicalWorld->GetPhysicalEntityById(physId);
-	if (!pPE)
-	{
-		CryLogAlways("[GetEntityFromPhysicsId] no physical entity for physId=%d", physId);
-		return pH->EndFunction(); 
-	}
-
-	IEntity* pEnt = gEnv->pEntitySystem->GetEntityFromPhysics(pPE);
-	if (!pEnt)
-	{
-		CryLogAlways("[GetEntityFromPhysicsId] no IEntity for physId=%d (pPE=%p)", physId, pPE);
-		return pH->EndFunction(); 
-	}
-
-	if (IScriptTable* pObj = pEnt->GetScriptTable())
-	{
-		return pH->EndFunction(pObj);
-	}
-
-	CryLogAlways("[GetEntityFromPhysicsId] entity has no ScriptTable: %s[%u] (physId=%d)",
-		pEnt->GetName(), pEnt->GetId(), physId);
-	return pH->EndFunction(); 
-}
-
 
 int ScriptBind_System::GetEntityClass(IFunctionHandler *pH)
 {
