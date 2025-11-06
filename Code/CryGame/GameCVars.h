@@ -383,6 +383,7 @@ struct SCVars
 
 	ICVar*i_debuggun_1;
 	ICVar*i_debuggun_2;
+	int i_debug_entity;
 
 	float	tracer_min_distance;
 	float	tracer_max_distance;
@@ -441,6 +442,9 @@ struct SCVars
 	int			mp_flyMode;
 	int			mp_pickupObjects;
 	int			mp_pickupVehicles;
+	float       mp_pickupMassLimit;
+	float       mp_pickupThrowMult;
+	int         mp_pickupMaxVehicleCollisions;
 	int			mp_weaponsOnBack;
 	int	        mp_thirdPerson;
 	int			mp_animationGrenadeSwitch;

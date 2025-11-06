@@ -604,6 +604,9 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_flyMode", &mp_flyMode, 0, OPTIONAL_SYNC, "Enable FlyMode", OnChangeFlyMode);
 	pConsole->Register("mp_pickupObjects", &mp_pickupObjects, 0, OPTIONAL_SYNC, "Allow pickup and throw objects in DX10");
 	pConsole->Register("mp_pickupVehicles", &mp_pickupVehicles, 0, OPTIONAL_SYNC, "Allow pickup and throw vehicles (requires mp_pickupObjects 1)");
+	pConsole->Register("mp_pickupMassLimit", &mp_pickupMassLimit, 0.0f, OPTIONAL_SYNC, "Specify maximum weight possible to pickup, 0 = all objects allowed");
+	pConsole->Register("mp_pickupThrowMult", &mp_pickupThrowMult, 1.0f, OPTIONAL_SYNC, "Throw multiplier for objects");
+	pConsole->Register("mp_pickupMaxVehicleCollisions", &mp_pickupMaxVehicleCollisions, 0, OPTIONAL_SYNC, "Maximum vehicle collisions untill throwing object");
 	pConsole->Register("mp_weaponsOnBack", &mp_weaponsOnBack, 0, OPTIONAL_SYNC, "Attach weapons to back as in SP");
 	pConsole->Register("mp_thirdPerson", &mp_thirdPerson, 1, OPTIONAL_SYNC, "Allow ThirdPerson mode (F1)", OnChangeThirdPerson);
 	pConsole->Register("mp_animationGrenadeSwitch", &mp_animationGrenadeSwitch, 0, OPTIONAL_SYNC, "Enable FP animations for grenade switching");
