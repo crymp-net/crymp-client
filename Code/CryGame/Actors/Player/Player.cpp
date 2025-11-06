@@ -1257,23 +1257,10 @@ void CPlayer::UpdateHeldObjectIK()
 	}
 
 
-	// Ray origins: outside object on left/right, aiming toward center
-	Vec3 leftOrigin = objectPos - characterRight * (halfWidth + extraOffset);
-	Vec3 rightOrigin = objectPos + characterRight * (halfWidth + extraOffset);
 
-	Vec3 leftDir = (objectPos - leftOrigin).GetNormalized();
-	Vec3 rightDir = (objectPos - rightOrigin).GetNormalized();
-	float rayLength = (leftOrigin - objectPos).GetLength() + 0.1f;
 
-	ray_hit leftHit, rightHit;
-	bool leftHitOk = gEnv->pPhysicalWorld->RayTraceEntity(pent, leftOrigin, leftDir * rayLength, &leftHit);
-	bool rightHitOk = gEnv->pPhysicalWorld->RayTraceEntity(pent, rightOrigin, rightDir * rayLength, &rightHit);
 
-	Vec3 leftTarget = leftHitOk ? leftHit.pt : leftOrigin;
-	Vec3 rightTarget = rightHitOk ? rightHit.pt : rightOrigin;
 
-	SetIKPos("leftArm", leftTarget, 1);
-	SetIKPos("rightArm", rightTarget, 1);
 }
 
 void CPlayer::UpdateParachuteMorph(float frameTime)
@@ -1682,7 +1669,6 @@ void CPlayer::PrePhysicsUpdate()
 					else
 						SetStance(frameMovementParams.stance);
 				}
-
 			}
 			else
 			{
