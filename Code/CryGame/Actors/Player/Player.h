@@ -613,6 +613,8 @@ public:
 	virtual void PostPhysicalize();
 	virtual void CameraShake(float angle, float shift, float duration, float frequency, Vec3 pos, int ID, const char* source = "");
 	virtual bool CreateCodeEvent(SmartScriptTable& rTable);
+	void SetExtension(const char* extension);
+	void SetInput(const char* action, bool looping = false);
 	ILINE virtual void VectorToLocal(Vec3& v) { v = m_clientViewMatrix.GetInverted() * v; }
 	ILINE virtual Matrix34 GetViewMatrix() const { return m_clientViewMatrix; }
 	virtual void AddAngularImpulse(const Ang3& angular, float deceleration, float duration);

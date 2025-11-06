@@ -5275,6 +5275,31 @@ bool CPlayer::CreateCodeEvent(SmartScriptTable& rTable)
 		return CActor::CreateCodeEvent(rTable);
 }
 
+void CPlayer::SetExtension(const char* extension)
+{
+	if (extension == nullptr || strcmp(extension, "ignore") != 0)
+	{
+		if (extension && extension[0])
+			strncpy(m_params.animationAppendix, extension, 32);
+		else
+			strcpy(m_params.animationAppendix, "nw");
+
+		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput(m_inputItem, m_params.animationAppendix);
+	}
+}
+
+void CPlayer::SetInput(const char* action, bool looping)
+{
+	if (looping)
+	{
+		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput("Action", action);
+	}
+	else
+	{
+		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput("Signal", action);
+	}
+}
+
 void CPlayer::PlayAction(const char* action, const char* extension, bool looping)
 {
 	if (!m_pAnimatedCharacter)
