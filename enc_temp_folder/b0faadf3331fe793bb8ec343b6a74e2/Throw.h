@@ -136,7 +136,7 @@ private:
 	void   ThrowObject(IEntity* pEntity, IPhysicalEntity* pPE);
 	void   ThrowLivingEntity(IEntity* pEntity, IPhysicalEntity* pPE);
 
-	bool    m_usingGrenade = true;
+	bool    m_usingGrenade = false;
 	bool    m_usingObject = false;
 	bool	m_thrown = false;
 	bool	m_pulling = false;
