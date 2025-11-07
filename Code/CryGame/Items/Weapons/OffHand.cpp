@@ -2208,7 +2208,6 @@ int COffHand::CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity 
 	{
 		//Prevent pick up message while can not pick up
 		IItem* pItem = pActor->GetCurrentItem(false);
-		CWeapon* pMainWeapon = pItem ? static_cast<CWeapon*>(pItem->GetIWeapon()) : NULL;
 		CWeapon* pMainWeapon = pItem ? static_cast<CWeapon*>(pItem->GetIWeapon()) : nullptr;
 		if (pMainWeapon)
 		{
