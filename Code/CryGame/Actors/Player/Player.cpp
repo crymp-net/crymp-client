@@ -4097,6 +4097,11 @@ void CPlayer::Revive(ReasonForRevive reason)
 	{
 		ResetFPView();
 	}
+
+	if (COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass)))
+	{
+		pOffHand->OnPlayerRevive(this);
+	}
 }
 
 void CPlayer::Kill()
@@ -4117,6 +4122,11 @@ void CPlayer::Kill()
 	RemoveAllExplosives(g_pGameCVars->mp_explosiveRemovalTime * 1000.0f);
 
 	CActor::Kill();
+
+	if (COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass)))
+	{
+		pOffHand->OnPlayerDied(this);
+	}
 }
 
 #if 0 // AlexL 14.03.2007: no more bootable materials for now. and scriptable doesn't provide custom params anyway (after optimization)
@@ -5318,7 +5328,14 @@ void CPlayer::PlayAction(const char* action, const char* extension, bool looping
 	if (!m_pAnimatedCharacter)
 		return;
 
-	if (strcmp(action, "use_lockpick") && !strcmp(extension, "lockpick")) //CryMP: A bit hacky, but use lockpick pose only when actually using it
+	bool skipAction = false;
+	const ObjectHoldType holdType = GetHeldObjectType();
+
+	if (holdType != ObjectHoldType::None)
+	{
+		return;
+	}
+	else if (strcmp(action, "use_lockpick") && !strcmp(extension, "lockpick")) //CryMP: A bit hacky, but use lockpick pose only when actually using it
 	{
 		extension = "claymore";
 	}
@@ -5332,6 +5349,9 @@ void CPlayer::PlayAction(const char* action, const char* extension, bool looping
 
 		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput(m_inputItem, m_params.animationAppendix);
 	}
+
+	if (skipAction)
+		return;
 
 	if (looping)
 		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput("Action", action);
@@ -5490,7 +5510,10 @@ float CPlayer::GetActorStrength() const
 
 void CPlayer::ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTime)
 {
-	CWeapon *pWeapon = GetCurrentWeapon(true);
+	if (m_stats.isFrozen.Value() || m_stats.isRagDoll || !pCharacter)
+		return;
+
+	CWeapon* pWeapon = GetCurrentWeapon(true);
 	if (pWeapon && pWeapon->IsMounted())
 	{
 		//CryMP: Fetch the IK pos data at the ideal time
@@ -5498,9 +5521,10 @@ void CPlayer::ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTi
 	}
 	else
 	{
-		if (gEnv->bClient)
+		if (gEnv->bClient && !m_linkStats.GetLinked())
 		{
 			UpdateParachuteIK();
+			UpdateReachBend(pCharacter, frameTime);
 			UpdateHeldObjectIK();
 		}
 	}
@@ -5622,6 +5646,7 @@ void CPlayer::UpdateReachBend(ICharacterInstance* pCharacter, float frameTime)
 		COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass));
 		if (pOffHand)
 		{
+			pOffHand->OnReachReady();
 		}
 
 		if (m_reachState == ReachState::Reaching)
