@@ -3930,20 +3930,11 @@ bool COffHand::Request_PickUpObject_MP()
 		const bool bClientEntity = (pObject->GetFlags() & ENTITY_FLAG_CLIENT_ONLY);
 		if (!bClientEntity)
 		{
-			//Start throw animation for all clients
-			/*if (m_fm)
-			{
-				m_fm->StartFire();
-			}
-			else
-			{
-				CryLogWarningAlways("COffHand: owner %s has no firemode", pOwner->GetEntity()->GetName());
-			}*/
-
 			RequestFireMode(GetFireModeIdx(m_grabTypes[m_grabType].throwFM.c_str())); //CryMP: added this here, early enough 
 
-			//CryMP: Might need a small timer to guarantee firemode is accepted before pickupitem rmi
-			pOwner->GetGameObject()->InvokeRMI(CPlayer::SvRequestPickUpItem(), CPlayer::ItemIdParam(objectId), eRMI_ToServer);
+			pOwner->GetGameObject()->InvokeRMI(CPlayer::SvRequestPickUpItem(), 
+				CPlayer::ItemIdParam(objectId), eRMI_ToServer);
+
 			return true;
 		}
 	}
@@ -4007,18 +3998,18 @@ bool COffHand::ThrowObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId, 
 	return true;
 }
 
-//==============================================================
+
 void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObject)
 {
+	if (!gEnv->bClient)
+		return;
+
 	CActor* pOwner = GetOwnerActor();
 	if (!pOwner)
 		return;
 
+	const EntityId ownerId = pOwner->GetEntityId();
 	IEntity* pObject = m_pEntitySystem->GetEntity(objectId);
-
-	const bool fpMode = !pOwner->IsThirdPerson() && !attach && !throwObject;
-
-	//CryLogAlways("AttachObjectToHand: m_stats.fp %d, throwObject %d, %s, objectId=%d", m_stats.fp, throwObject, attach ? "attached" : "de-tached", objectId);
 
 	ICharacterInstance* pOwnerCharacter = pOwner->GetEntity()->GetCharacter(0);
 	IAttachmentManager* pAttachmentManager = pOwnerCharacter ? pOwnerCharacter->GetIAttachmentManager() : nullptr;
@@ -4032,13 +4023,19 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 
 	if (attach && pObject)
 	{
-		if (!pAttachment)
-		{
-			pAttachment = pAttachmentManager->CreateAttachment(attachmentName, CA_BONE, "Bip01 Head");
-		}
-
 		if (pAttachment)
 		{
+			if (pAttachment->GetIAttachmentObject() && pAttachment->GetIAttachmentObject()->GetAttachmentType() == IAttachmentObject::eAttachment_Entity)
+			{
+				CEntityAttachment* pCurrent = static_cast<CEntityAttachment*>(pAttachment->GetIAttachmentObject());
+				if (pCurrent && pCurrent->GetEntityId() == objectId)
+				{
+					return;
+				}
+			}
+
+			IPhysicalEntity* pPhysEnt = pObject->GetPhysics();
+
 			// Attach the entity to the left hand
 			CEntityAttachment* pEntityAttachment = new CEntityAttachment();
 			pEntityAttachment->SetEntityId(objectId);
@@ -4050,73 +4047,137 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 
 			QuatT offset;
 			offset.t = Vec3(ZERO);
+
 			const bool isVehicle = g_pGame->GetIGameFramework()->GetIVehicleSystem()->IsVehicleClass(pObject->GetClass()->GetName());
 			const bool isActor = !isVehicle && g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(objectId) != nullptr;
-
 			if (isActor)
 			{
 				isTwoHand = false;
 			}
 
-			if (isTwoHand && !isVehicle && !isActor)
+			Matrix34 holdMatrix = GetHoldOffset(pObject);
+
+			// ----------------------------
+			// Rotation setup 
+			// ----------------------------
+			Quat rotationOffset = Quat(Matrix33(holdMatrix));
+			if (ISkeletonPose* pSkeletonPose = pOwnerCharacter ? pOwnerCharacter->GetISkeletonPose() : nullptr)
+			{
+				Quat rollQuaternion = Quat::CreateRotationXYZ(Ang3(DEG2RAD(60), DEG2RAD(90), DEG2RAD(50)));
+				rotationOffset = rollQuaternion * rotationOffset;
+
+				if (isActor)
+				{
+					rotationOffset = Quat::CreateRotationX(DEG2RAD(180)) * rotationOffset;
+				}
+
+				rotationOffset.Normalize();
+			}
+
+			// ---------------------------------------------------------
+			// POSITION OFFSET
+			// ---------------------------------------------------------
+			Vec3 positionOffset = Vec3(ZERO);
+
+			if (isTwoHand)
 			{
 				Vec3 vOffset = Vec3(ZERO);
+
 				AABB bbox;
 				pObject->GetLocalBounds(bbox);
 
-				const float lengthX = fabs(bbox.max.x - bbox.min.x);
-				const float lengthY = fabs(bbox.max.y - bbox.min.y);
-				const float lengthZ = fabs(bbox.max.z - bbox.min.z);
+				const float lengthX = fabsf(bbox.max.x - bbox.min.x);
+				const float lengthY = fabsf(bbox.max.y - bbox.min.y);
+				// const float lengthZ = fabsf(bbox.max.z - bbox.min.z);
 
 				vOffset.y = 0.5f + (std::max(lengthY, lengthX) * 0.2f);
-				vOffset.x -= lengthZ * 0.25f;
 
-				offset.t = vOffset;  // Offset position
-			}
-			else if (!isTwoHand)
-			{
-				offset.t = Vec3(-0.4f, 0.7f, 0.0f);
-			}
+				Vec3 P_local = 0.5f * (bbox.min + bbox.max); // visual center
 
-			Matrix34 holdMatrix = GetHoldOffset(pObject);
-
-			QuatT holdOffset;
-			holdOffset.q = Quat(Matrix33(holdMatrix));
-			holdOffset.t = offset.t;
-
-			Quat worldRotation = holdOffset.q;
-			Vec3 worldPosition = holdOffset.t;
-
-			ISkeletonPose* pSkeletonPose = pOwnerCharacter->GetISkeletonPose();
-			if (pSkeletonPose)
-			{
-				const int headJointId = pSkeletonPose->GetJointIDByName("eye_left_bone");
-				if (headJointId > -1)
+				if (pPhysEnt)
 				{
-					Quat headRotation = pSkeletonPose->GetAbsJointByID(headJointId).q;
-					Vec3 eyeDirection = headRotation.GetColumn1().GetNormalized();
-					Quat rollQuaternion = Quat::CreateRotationAA(DEG2RAD(95), eyeDirection);
-
-					worldRotation = rollQuaternion * worldRotation;
-
-					if (isActor)
+					pe_status_dynamics sd;
+					if (pPhysEnt->GetStatus(&sd))
 					{
-						worldRotation = Quat::CreateRotationX(DEG2RAD(180)) * worldRotation;
+						const Matrix34 objWMInv = pObject->GetWorldTM().GetInverted();
+						P_local = objWMInv.TransformPoint(sd.centerOfMass);
 					}
 				}
+
+				const Quat R = rotationOffset;
+
+				const float kComHeightX = 0.0f;   
+				const float kCenterSideZ = 0.0f;    
+
+				const Vec3 desiredLocalPoint(kComHeightX, vOffset.y, kCenterSideZ);
+				Vec3 newPosOffset = desiredLocalPoint - (R * P_local);
+
+				positionOffset = newPosOffset;
+			}
+			else
+			{
+				// One-hand default
+				positionOffset = Vec3(-0.4f, 0.7f, 0.0f);
 			}
 
-			Matrix34 worldMatrix = Matrix34(worldRotation);
-			worldMatrix.SetTranslation(worldPosition);
+			Vec3 fpPosOffset = Vec3(ZERO);
+			Vec3 tpPosOffset = Vec3(ZERO);
+			GetPredefinedPosOffset(pObject, fpPosOffset, tpPosOffset);
 
-			pAttachment->SetAttRelativeDefault(QuatT(worldRotation, worldPosition));
+			positionOffset += tpPosOffset;
 
-			IAnimationGraphState* pGraphState = pOwner->GetAnimationGraphState();
-			if (pGraphState)
+			// Apply final (rotation + position)
+			pAttachment->SetAttRelativeDefault(QuatT(rotationOffset, positionOffset));
+
+			// ----------------
+			// IK scheduling
+			// ----------------
+
+			if (CPlayer* pPlayer = CPlayer::FromActor(pOwner))
 			{
-				const auto inputId = pGraphState->GetInputId("PseudoSpeed");
-				pGraphState->SetInput(inputId, 0.0f);
-				pGraphState->Update();
+				pPlayer->SetArmIKLocalInvalid();
+			}
+
+			Vec3 left = Vec3(ZERO);
+			Vec3 right = Vec3(ZERO);
+
+			if (!GetPredefinedGripHandPos(pObject, left, right))
+			{
+				GetScheduler()->TimerAction(
+					200, //needs to be called with a delay because of raycasts
+					MakeAction([this, ownerId, objectId, isTwoHand](CItem* /*unused*/) {
+
+						CActor* pOwner = this->GetOwnerActor();
+						IEntity* pObject = gEnv->pEntitySystem->GetEntity(objectId);
+						if (!pOwner || !pObject)
+							return;
+
+						SGripHitLocal rayGrips =
+							ComputeGripHitsLocal(pOwner, pObject, isTwoHand);
+
+						if (!rayGrips.ok)
+						{
+							//CryLogAlways("[AttachGrip] Ray grips failed; keeping previous grips.");
+							return;
+						}
+
+						Vec3 left = rayGrips.leftLocal;
+						Vec3 right = rayGrips.rightLocal;
+
+						if (CPlayer* pPlayer = CPlayer::FromActor(pOwner))
+						{
+							pPlayer->SetArmIKLocal(left, right);
+						}
+						}),
+					false
+				);
+			}
+			else
+			{
+				if (CPlayer* pPlayer = CPlayer::FromActor(pOwner))
+				{
+					pPlayer->SetArmIKLocal(left, right);
+				}
 			}
 		}
 	}
@@ -4125,7 +4186,6 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 		if (pAttachment)
 		{
 			pAttachment->ClearBinding();
-			pAttachmentManager->RemoveAttachmentByName(attachmentName); //Need to remove always, or will be misaligned
 		}
 	}
 }
