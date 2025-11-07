@@ -73,7 +73,7 @@ COffHand::~COffHand()
 {
 	if (m_heldEntityId)
 	{
-		SetHeldEntityId(0);
+		RemoveHeldEntityId(m_heldEntityId); //restore collisions immediately
 	}
 }
 
@@ -111,8 +111,6 @@ void COffHand::Reset()
 			ThrowNPC(m_heldEntityId, false);
 		}
 	}
-
-	SetHeldEntityId(0);
 
 	m_nextThrowTimer = -1.0f;
 	m_lastFireModeId = 0;
@@ -925,6 +923,7 @@ void COffHand::UpdateHeldObject()
 			+ viewFwd * fpPosOffset.y
 			+ viewUp * fpPosOffset.z;
 	}
+
 	finalMatrix.SetTranslation(pos);
 
 	finalMatrix = finalMatrix * m_holdOffset;
@@ -1616,7 +1615,7 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 
 		ThrowNPC(m_heldEntityId);
 
-		SetHeldEntityId(0);
+		RemoveHeldEntityId(m_heldEntityId, ConstraintReset::Delayed);
 
 		SetOffHandState(eOHS_TRANSITIONING);
 		break;
@@ -1635,7 +1634,38 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 			/*persistent=*/true
 		);
 
-		SetHeldEntityId(0);
+		CActor* pActor = GetOwnerActor();
+		const EntityId playerId = pActor ? pActor->GetEntityId() : 0;
+		const bool isTwoHand = IsTwoHandMode();
+
+		GetScheduler()->TimerAction(
+			150,
+			MakeAction([this, playerId, isTwoHand](CItem* /*unused*/) {
+				CPlayer* pPlayer = CPlayer::FromActorId(playerId);
+				if (pPlayer)
+				{
+					if (pPlayer->IsThirdPerson())
+					{
+						if (isTwoHand)
+						{
+
+							pPlayer->SetExtension("c4");
+							pPlayer->SetInput("plant", false);
+						}
+						else
+						{
+							pPlayer->SetExtension("nw");
+							pPlayer->SetInput("holding_grenade");
+							pPlayer->SetInput("throw_grenade");
+						}
+					}
+				}
+				}),
+			/*persistent=*/true
+		);
+
+		// after it's thrown, wait 500ms to enable collisions again
+		RemoveHeldEntityId(m_heldEntityId, ConstraintReset::Delayed);
 
 		IEntity* pEntity = m_pEntitySystem->GetEntity(m_heldEntityId);
 		if (pEntity)
@@ -1654,45 +1684,85 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 		//Reset main weapon status and reset offhand
 	{
 		CActor* pActor = GetOwnerActor();
-		if (m_prevMainHandId && !pActor->IsSwimming())
+		if (pActor)
 		{
-			pActor->SelectItem(m_prevMainHandId, false);
-			SetMainHand(static_cast<CItem*>(pActor->GetCurrentItem()));
-			SetMainHandWeapon(static_cast<CWeapon*>(m_mainHand ? m_mainHand->GetIWeapon() : nullptr));
-		}
+			const EntityId playerId = pActor->GetEntityId();
+			if (m_prevMainHandId && !pActor->IsSwimming())
+			{
+				pActor->SelectItem(m_prevMainHandId, false);
+				SetMainHand(static_cast<CItem*>(pActor->GetCurrentItem()));
+				SetMainHandWeapon(static_cast<CWeapon*>(m_mainHand ? m_mainHand->GetIWeapon() : nullptr));
+			}
 
-		if (pActor->IsClient())
-		{
-			RequestFireMode(m_lastFireModeId); //Works for MP as well
-		}
+			if (pActor->IsClient())
+			{
+				RequestFireMode(m_lastFireModeId); //Works for MP as well
+			}
 
-		float timeDelay = 0.1f;
-		if (!m_mainHand)
-		{
-			SActorStats* pStats = pActor->GetActorStats();
-			if (!pActor->ShouldSwim() && !m_bCutscenePlaying && (pStats && !pStats->inFreefall.Value()))
-				pActor->HolsterItem(false);
-		}
-		else if (!m_mainHandIsDualWield && !m_prevMainHandId)
-		{
-			m_mainHand->ResetDualWield();
-			m_mainHand->PlayAction(g_pItemStrings->offhand_off, 0, false, CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
-			timeDelay = (m_mainHand->GetCurrentAnimationTime(CItem::eIGS_FirstPerson) + 50) * 0.001f;
-		}
-		else if (m_mainHandIsDualWield)
-		{
-			m_mainHand->Select(true);
-		}
-		SetResetTimer(timeDelay);
-		RequireUpdate(eIUS_General);
-		m_prevMainHandId = 0;
+			float timeDelay = 0.1f;
+			if (!m_mainHand)
+			{
+				SActorStats* pStats = pActor->GetActorStats();
+				if (!pActor->ShouldSwim() && !m_bCutscenePlaying && (pStats && !pStats->inFreefall.Value()))
+				{
+					pActor->HolsterItem(false);
+				}
+			}
+			else if (!m_mainHandIsDualWield && !m_prevMainHandId)
+			{
+				m_mainHand->ResetDualWield();
+				m_mainHand->PlayAction(g_pItemStrings->offhand_off, 0, false, CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
+				timeDelay = (m_mainHand->GetCurrentAnimationTime(CItem::eIGS_FirstPerson) + 50) * 0.001f;
+			}
+			else if (m_mainHandIsDualWield)
+			{
+				m_mainHand->Select(true);
+			}
+			if (pActor->IsRemote())
+			{
+				SetOffHandState(eOHS_INIT_STATE);
+			}
+			else
+			{
+				SetResetTimer(timeDelay);
+			}
 
-		//turn off collision with thrown objects
-		//if (m_heldEntityId)
-		//	SetIgnoreCollisionsWithOwner(false, m_heldEntityId);
+			RequireUpdate(eIUS_General);
+			m_prevMainHandId = 0;
 
-		SetHeldEntityId(0);
+			const EntityId entityId = m_heldEntityId;
 
+			RemoveHeldEntityId(m_heldEntityId, static_cast<ConstraintReset>(SkipIfDelayTimerActive | Immediate));
+
+			if (CPlayer* pPlayer = CPlayer::FromActor(pActor))
+			{
+				pPlayer->SetArmIKLocalInvalid();
+
+				//CryMP: Checks if ReachState::ThrowPrep active, resets bend if so 
+				pPlayer->CommitThrow();
+			}
+
+			GetScheduler()->TimerAction(
+				1000,
+				MakeAction([this, playerId, entityId](CItem* /*unused*/) {
+					CPlayer* pPlayer = CPlayer::FromActorId(playerId);
+					if (pPlayer)
+					{
+						CItem* pItem = static_cast<CItem*>(pPlayer->GetCurrentItem());
+						if (pItem)
+						{
+							pItem->PlaySelectAnimation(pPlayer, true);
+						}
+					}
+					IEntity* pObject = m_pEntitySystem->GetEntity(entityId);
+					if (pObject)
+					{
+						AwakeEntityPhysics(pObject);
+					}
+					}),
+				/*persistent=*/true
+			);
+		}
 	}
 
 	break;
@@ -1729,7 +1799,6 @@ void COffHand::Freeze(bool freeze)
 	if (!freeze && m_currentState == eOHS_HOLDING_GRENADE)
 	{
 		FinishAction(eOHA_RESET);
-		CancelAction();
 	}
 }
 
@@ -1776,7 +1845,9 @@ void COffHand::SetOffHandState(EOffHandStates eOHS)
 		SetMainHandWeapon(nullptr);
 
 		m_preHeldEntityId = 0;
-		SetHeldEntityId(0);
+		
+		RemoveHeldEntityId(m_heldEntityId, static_cast<ConstraintReset>(SkipIfDelayTimerActive | Immediate));
+
 		m_mainHandIsDualWield = false;
 		Select(false);
 	}
@@ -2091,6 +2162,7 @@ int COffHand::CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity 
 	}
 
 	EStance playerStance = pActor->GetStance();
+	const bool isRemote = pActor->IsRemote();
 
 	if (!getEntityInfo)
 	{
@@ -2378,13 +2450,7 @@ void COffHand::OnLookAtEntityChanged(IEntity* pEntity)
 		//CryMP: Fix missing Enter vehicle HUD display
 		//Usually a punch solves it, the following awake code fixes it
 		//The bugged vehicles have submergedFraction 1.0
-		IPhysicalEntity* pPhysics = pEntity->GetPhysics();
-		if (pPhysics)
-		{
-			pe_action_awake actionAwake;
-			actionAwake.bAwake = 1;
-			pPhysics->Action(&actionAwake);
-		}
+		AwakeEntityPhysics(pEntity);
 	}
 }
 
@@ -2578,6 +2644,7 @@ void COffHand::SetIgnoreCollisionsWithOwner(bool activate, EntityId entityId /*=
 	if (pPE->GetType() == PE_PARTICLE)
 	{
 		m_constraintId = 0;
+		m_constraintStatus = ConstraintStatus::Inactive;
 		return;
 	}
 
@@ -2607,6 +2674,7 @@ void COffHand::SetIgnoreCollisionsWithOwner(bool activate, EntityId entityId /*=
 		ic.pBuddy = pActor->GetEntity()->GetPhysics();
 		ic.pt[0].Set(0, 0, 0);
 		m_constraintId = pPE->Action(&ic);
+		m_constraintStatus = ConstraintStatus::WaitForPhysicsUpdate;
 	}
 	else
 	{
@@ -2614,6 +2682,7 @@ void COffHand::SetIgnoreCollisionsWithOwner(bool activate, EntityId entityId /*=
 		up.bRemove = true;
 		up.idConstraint = m_constraintId;
 		m_constraintId = 0;
+		m_constraintStatus = ConstraintStatus::Inactive;
 		pPE->Action(&up);
 	}
 }
@@ -3960,11 +4029,9 @@ bool COffHand::PickUpObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId)
 		}
 	}
 
-	SetHeldEntityId(synchedObjectId);
+	StartPickUpObject(synchedObjectId, false); 
 
-	StartPickUpObject(synchedObjectId, false); //fixme , false);
-
-	if (pPlayer->IsRemote())
+	if (gEnv->bClient && pPlayer->IsRemote())
 	{
 		EnableUpdate(true, eIUS_General);
 	}
