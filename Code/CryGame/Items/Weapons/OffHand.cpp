@@ -1510,6 +1510,15 @@ bool COffHand::PreExecuteAction(int requestedAction, int activationMode, bool fo
 void COffHand::StartFire()
 {
 	CWeapon::StartFire();
+
+	if (m_heldEntityId)
+	{
+		CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor());
+		if (pPlayer)
+		{
+			pPlayer->StartThrowPrep();
+		}
+	}
 }
 
 //==================================================================
@@ -1517,6 +1526,7 @@ void COffHand::StopFire()
 {
 	CWeapon::StopFire();
 }
+
 //==================================================================
 void COffHand::NetStartFire()
 {
@@ -1532,7 +1542,18 @@ void COffHand::NetStartFire()
 
 	CWeapon::NetStartFire();
 
-	AttachGrenadeToHand(GetCurrentFireMode(), m_stats.fp, true);
+	if (m_heldEntityId)
+	{
+		CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor());
+		if (pPlayer)
+		{
+			pPlayer->StartThrowPrep();
+		}
+	}
+	else
+	{
+		AttachGrenadeToHand(GetCurrentFireMode(), m_stats.fp, true);
+	}
 
 	//Handle FP Spectator
 	if (m_stats.fp)
@@ -1566,8 +1587,20 @@ void COffHand::NetStopFire()
 
 	AttachGrenadeToHand(GetCurrentFireMode(), m_stats.fp, false);
 
-	//Handle FP Spectator
-	if (m_stats.fp)
+	if (m_heldEntityId)
+	{
+		CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor());
+		if (pPlayer)
+		{
+			pPlayer->OnObjectEvent(CActor::ObjectEvent::THROW);
+		}
+
+		if (m_mainHand && !m_mainHand->IsDualWield() && g_pGameCVars->mp_buyPageKeepTime != 170)
+		{
+			m_mainHand->PlayAction(g_pItemStrings->offhand_off, 0, false, CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
+		}
+	}
+	else
 	{
 		GetScheduler()->TimerAction(
 			GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
@@ -2144,7 +2177,7 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 }
 
 //===============================================================================
-int COffHand::CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity /*=NULL*/, bool getEntityInfo /*= false*/)
+int COffHand::CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity /*=nullptr*/, bool getEntityInfo /*= false*/)
 {
 	if (!pActor || (!pActor->IsClient() && !pActor->IsFpSpectatorTarget())) //CryMP Fp Spec enable pickup HUD 
 		return OH_NO_GRAB;
@@ -2162,13 +2195,14 @@ int COffHand::CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity 
 	}
 
 	EStance playerStance = pActor->GetStance();
-	const bool isRemote = pActor->IsRemote();
+	const bool isFpSpectatorTarget = pActor->IsFpSpectatorTarget();
 
 	if (!getEntityInfo)
 	{
 		//Prevent pick up message while can not pick up
 		IItem* pItem = pActor->GetCurrentItem(false);
 		CWeapon* pMainWeapon = pItem ? static_cast<CWeapon*>(pItem->GetIWeapon()) : NULL;
+		CWeapon* pMainWeapon = pItem ? static_cast<CWeapon*>(pItem->GetIWeapon()) : nullptr;
 		if (pMainWeapon)
 		{
 			if (pMainWeapon->IsBusy() || pMainWeapon->IsModifying() || pMainWeapon->IsReloading())
@@ -2232,8 +2266,12 @@ int COffHand::CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity 
 			SelectGrabType(pEntity);
 			m_crosshairId = pEntity->GetId();
 
-			if (getEntityInfo)
+			IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(entityId);
+
+			if (getEntityInfo && !isFpSpectatorTarget)
+			{
 				m_preHeldEntityId = pEntity->GetId();
+			}
 
 			//1.- Player can grab some NPCs
 			//Let the actor decide if it can be grabbed
@@ -2312,8 +2350,27 @@ int COffHand::CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity 
 			if (g_pGameCVars->mp_pickupVehicles || !gEnv->bMultiplayer)
 			{
 				//CryMP: Crouch to pickup vehicles :D
-				if (playerStance == STANCE_CROUCH && m_pVehicleSystem->GetVehicle(entityId))
+				if (playerStance == STANCE_CROUCH && pVehicle)
 				{
+					// CryMP: Mass limit for pickups
+					if (g_pGameCVars->mp_pickupMassLimit > 0.0f)
+					{
+						pe_status_dynamics dyn;
+						if (pPhysicalEntity->GetStatus(&dyn))
+						{
+							if (dyn.mass > g_pGameCVars->mp_pickupMassLimit)
+							{
+								if (g_pGame->GetHUD() && gEnv->pTimer->GetCurrTime() - m_lastTooHeavyMessage > 2.0f)
+								{
+									g_pGame->GetHUD()->DisplayBigOverlayFlashMessage("@object_too_heavy", 2.0f, 400, 400, Col_Goldenrod);
+
+									m_lastTooHeavyMessage = gEnv->pTimer->GetCurrTime();
+								}
+
+								return OH_NO_GRAB;
+							}
+						}
+					}
 					//Don't allow to pickup while in vehicle, or in air
 					if (!pActor->GetLinkedVehicle() && pActor->GetActorStats() && pActor->GetActorStats()->onGround > 0.0f)
 					{
@@ -2414,8 +2471,10 @@ int COffHand::CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity 
 				return false;
 			}
 
-			if (getEntityInfo)
+			if (getEntityInfo && !isFpSpectatorTarget)
+			{
 				m_preHeldEntityId = 0;
+			}
 
 			return OH_NO_GRAB;//CheckItemsInProximity(info.eyePosition, info.eyeDirection, getEntityInfo);
 		}
@@ -2433,7 +2492,10 @@ int COffHand::CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity 
 				{
 					m_grabType = GRAB_TYPE_ONE_HANDED;
 					m_pRockRN = pRenderNode;
-					m_preHeldEntityId = 0;
+					if (!isFpSpectatorTarget)
+					{
+						m_preHeldEntityId = 0;
+					}
 				}
 				return OH_GRAB_OBJECT;
 			}
@@ -2564,7 +2626,6 @@ bool COffHand::PerformPickUp()
 
 	if (pEntity)
 	{
-
 		if (!setHeld)
 		{
 			m_heldEntityId = 0;
@@ -2608,7 +2669,7 @@ bool COffHand::PerformPickUp()
 			}
 
 			//CryMP
-			if (pActor && pActor->IsRemote())
+			if (pActor->IsRemote())
 			{
 				if (!IsSelected())
 				{
@@ -2618,8 +2679,6 @@ bool COffHand::PerformPickUp()
 		}
 
 		SetDefaultIdleAnimation(eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
-
-		m_constraintStatus = ConstraintStatus::WaitForPhysicsUpdate;
 
 		return true;
 	}
@@ -3197,7 +3256,9 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 			return;
 		}
 
-		pPlayer->SetHeldObjectId(entityId); //For ik arms
+		const CActor::ObjectHoldType armHoldType = DetermineObjectHoldType(entityId);
+
+		pPlayer->SetHeldObjectId(entityId, armHoldType);
 	}
 
 	//Unzoom weapon if neccesary
