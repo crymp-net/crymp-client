@@ -1085,6 +1085,14 @@ public:
 			return nullptr;
 	}
 
+	static CPlayer* FromActorId(const EntityId actorId)
+	{
+		if (!actorId)
+			return nullptr;
+
+		return FromIActor(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId));
+	}
+
 	static CNanoSuit* GetNanoSuit(CActor* pActor)
 	{
 		if (!pActor)
