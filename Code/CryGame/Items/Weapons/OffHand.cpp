@@ -1293,7 +1293,14 @@ bool COffHand::ProcessOffHandActions(EOffHandActions eOHA, int input, int activa
 	{
 		if (!m_fm->OutOfAmmo() && GetFireModeIdx(m_fm->GetName()) < MAX_GRENADE_TYPES)
 		{
-			PerformThrow(activationMode, 0, GetCurrentFireMode());
+			if (activationMode == eAAM_OnPress)
+			{
+				PerformThrowAction_Press(0, false);
+			}
+			else if (activationMode == eAAM_OnRelease)
+			{
+				PerformThrowAction_Release(0, false);
+			}
 		}
 	}
 	else if (eOHA == eOHA_MELEE_ATTACK)
@@ -3353,6 +3360,7 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 		SetOffHandState(eOHS_GRABBING_NPC);
 
 		m_grabType = GRAB_TYPE_NPC;
+
 		SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
 		PlayAction(m_grabTypes[m_grabType].pickup);
 
@@ -3377,11 +3385,6 @@ void COffHand::StartThrowObject(const EntityId entityId, int activationMode, boo
 	if (!pActor)
 		return;
 
-	if (!gEnv->bMultiplayer)
-	{
-		pActor->SetHeldObjectId(0); //Disable ik arms
-	}
-
 	if (!gEnv->bMultiplayer && activationMode == eAAM_OnPress) //CryMP: moved this to request pickup action for MultiPlayer
 	{
 		if (GetCurrentFireMode() < MAX_GRENADE_TYPES)
@@ -3394,7 +3397,14 @@ void COffHand::StartThrowObject(const EntityId entityId, int activationMode, boo
 		}
 	}
 
-	PerformThrow(activationMode, entityId, m_lastFireModeId, isLivingEnt);
+	if (activationMode == eAAM_OnPress)
+	{
+		PerformThrowAction_Press(entityId, isLivingEnt);
+	}
+	else if (activationMode == eAAM_OnRelease)
+	{
+		PerformThrowAction_Release(entityId, isLivingEnt);
+	}
 
 	if (m_mainHandWeapon)
 	{
