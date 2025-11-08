@@ -314,20 +314,24 @@ void COffHand::PostPostSerialize()
 			{
 				SelectGrabType(m_pEntitySystem->GetEntity(m_heldEntityId));
 
+				const EntityId backupId = m_heldEntityId;
+
 				//If holding an object or NPC
 				if (m_currentState & (eOHS_HOLDING_OBJECT | eOHS_PICKING | eOHS_THROWING_OBJECT | eOHS_MELEE))
 				{
 					//Do grabbing again
-					SetOffHandState(eOHS_INIT_STATE);
-					m_preHeldEntityId = m_heldEntityId;
+					SetOffHandState(eOHS_INIT_STATE); //CryMP: This will set m_heldEntityId to 0
+
+					m_preHeldEntityId = backupId;
 					PreExecuteAction(eOHA_USE, eAAM_OnPress, true);
 
-					StartPickUpObject(m_heldEntityId, false);
+					StartPickUpObject(m_preHeldEntityId, false);
 				}
 				else if (m_currentState & (eOHS_HOLDING_NPC | eOHS_GRABBING_NPC | eOHS_THROWING_NPC))
 				{
 					//Do grabbing again
-					SetOffHandState(eOHS_INIT_STATE);
+					SetOffHandState(eOHS_INIT_STATE); //CryMP: This will set m_heldEntityId to 0
+
 					CActor* pActor = static_cast<CActor*>(m_pActorSystem->GetActor(m_heldEntityId));
 					bool isDead = false;
 					if (pActor && ((pActor->GetActorStats() && pActor->GetActorStats()->isRagDoll) || pActor->GetHealth() <= 0))
@@ -341,10 +345,10 @@ void COffHand::PostPostSerialize()
 					}
 					else
 					{
-						m_preHeldEntityId = m_heldEntityId;
+						m_preHeldEntityId = backupId;
 						PreExecuteAction(eOHA_USE, eAAM_OnPress, true);
 
-						StartPickUpObject(m_heldEntityId, true);
+						StartPickUpObject(m_preHeldEntityId, true);
 						if (pActor)
 						{
 							pActor->GetAnimatedCharacter()->ForceRefreshPhysicalColliderMode();
