@@ -4782,6 +4782,9 @@ CActor::ObjectHoldType COffHand::DetermineObjectHoldType(const EntityId entityId
 //==============================================================
 void COffHand::OnReachReady()
 {
+	if (m_stats.fp)
+		return;
+
 	AttachObjectToHand(true, m_heldEntityId, false);
 }
 
