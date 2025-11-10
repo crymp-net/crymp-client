@@ -180,7 +180,7 @@ public:
 
 	void SetIgnoreCollisionsWithOwner(bool activate, EntityId entityId = 0);
 	void DrawNear(bool drawNear, EntityId entityId = 0);
-	bool PerformPickUp();
+	bool PerformPickUp(EntityId entityId);
 	int  CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity = NULL, bool getEntityInfo = false);
 	void OnLookAtEntityChanged(IEntity* pEntity);
 	int  CheckItemsInProximity(Vec3 pos, Vec3 dir, bool getEntityInfo);
@@ -267,7 +267,6 @@ private:
 
 	// Usage state
 	float m_range = OFFHAND_RANGE;
-	float m_pickingTimer = -1.0f;
 	float m_resetTimer = -1.0f;
 	int m_usable = false;
 

@@ -114,7 +114,6 @@ void COffHand::Reset()
 
 	m_nextThrowTimer = -1.0f;
 	m_lastFireModeId = 0;
-	m_pickingTimer = -1.0f;
 	m_preHeldEntityId = 0;
 	m_constraintId = 0;
 	m_resetTimer = -1.0f;
@@ -491,16 +490,6 @@ void COffHand::CheckTimers(float frameTime)
 		}
 	}
 
-	if (m_pickingTimer >= 0.0f)
-	{
-		m_pickingTimer -= frameTime;
-
-		if (m_pickingTimer < 0.0f)
-		{
-			PerformPickUp();
-		}
-
-	}
 	if (m_killTimeOut >= 0.0f)
 	{
 		m_killTimeOut -= frameTime;
@@ -2608,32 +2597,20 @@ int COffHand::CheckItemsInProximity(Vec3 pos, Vec3 dir, bool getEntityInfo)
 }
 
 //==========================================================================================
-bool COffHand::PerformPickUp()
+bool COffHand::PerformPickUp(EntityId entityId)
 {
-	bool setHeld = false;
-
 	//If we are here, we must have the entity ID
-	if (m_preHeldEntityId)
-	{
-		//CryMP: Remote players don't use m_preHeldEntityId
-		m_heldEntityId = 0; //forces SetHeldEntityId 
-		SetHeldEntityId(m_preHeldEntityId);
-		m_preHeldEntityId = 0;
-		setHeld = true;
-	}
-	m_startPickUp = false;
-	IEntity* pEntity = NULL;
+	if (!entityId)
+		return false;
 
-	if (m_heldEntityId)
-	{
-		pEntity = m_pEntitySystem->GetEntity(m_heldEntityId);
-	}
-	else if (m_pRockRN)
+	m_startPickUp = false;
+	IEntity* pEntity = nullptr;
+
+	if (m_pRockRN)
 	{
 		SetHeldEntityId(SpawnRockProjectile(m_pRockRN));
-		setHeld = true;
 
-		m_pRockRN = NULL;
+		m_pRockRN = nullptr;
 		if (!m_heldEntityId)
 			return false;
 
@@ -2641,15 +2618,14 @@ bool COffHand::PerformPickUp()
 		SelectGrabType(pEntity);
 		m_grabType = GRAB_TYPE_ONE_HANDED; //Force for now
 	}
+	else 
+	{
+		SetHeldEntityId(entityId);
+		pEntity = m_pEntitySystem->GetEntity(m_heldEntityId);
+	}
 
 	if (pEntity)
 	{
-		if (!setHeld)
-		{
-			m_heldEntityId = 0;
-			SetHeldEntityId(pEntity->GetId());
-		}
-
 		CActor* pActor = GetOwnerActor();
 		// Send event to entity.
 		SEntityEvent entityEvent;
@@ -3142,7 +3118,14 @@ void COffHand::StartPickUpItem()
 	//Everything seems ok, start the action...
 	SetOffHandState(eOHS_PICKING_ITEM);
 
-	m_pickingTimer = 0.3f;
+	GetScheduler()->TimerAction(
+		300,
+		MakeAction([this, id = m_preHeldEntityId](CItem*) {
+			this->PerformPickUp(id);
+			}),
+		/*persistent=*/false
+	);
+
 	m_mainHandIsDualWield = false;
 	pPlayer->NeedToCrouch(pPreHeldEntity->GetWorldPos());
 
@@ -3342,27 +3325,31 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 	{
 		SetOffHandState(eOHS_PICKING);
 
-		m_pickingTimer = 0.3f;
+		if (!m_preHeldEntityId)
+		{
+			m_preHeldEntityId = entityId;
+		}
 
 		//PerformPickUp();
 
 		SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
 		PlayAction(m_grabTypes[m_grabType].pickup);
 
-		if (pPlayer->IsRemote())
-		{
-			FinishAction(eOHA_PICK_OBJECT);
-		}
-		else
-		{
-			GetScheduler()->TimerAction(
-				GetCurrentAnimationTime(eIGS_FirstPerson),
-				MakeAction([this](CItem*) {
-					this->FinishAction(eOHA_PICK_OBJECT);
-					}),
-				/*persistent=*/false
-			);
-		}
+		GetScheduler()->TimerAction(
+			300,
+			MakeAction([this, id = entityId](CItem*) {
+				this->PerformPickUp(id);
+				}),
+			/*persistent=*/false
+		);
+
+		GetScheduler()->TimerAction(
+			GetCurrentAnimationTime(eIGS_FirstPerson),
+			MakeAction([this](CItem*) {
+				this->FinishAction(eOHA_PICK_OBJECT);
+				}),
+			/*persistent=*/false
+		);
 
 		m_startPickUp = true;
 	}
