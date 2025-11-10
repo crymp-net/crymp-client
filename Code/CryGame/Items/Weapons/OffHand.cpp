@@ -3235,14 +3235,32 @@ void COffHand::EndPickUpItem()
 }
 
 //=======================================================================================
-void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = false */)
+void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = false */, bool fromOnReachReadyCallback /* = false */)
 {
 	//Grab NPCs-----------------
+	CActor* pHeldActor = nullptr;
 	if (isLivingEnt)
 	{
-		if (!GrabNPC())
+		pHeldActor = CanGrabNPC(entityId);
+		if (!pHeldActor)
 		{
 			CancelAction();
+			return;
+		}
+		else if (!m_stats.fp)
+		{
+			//CryMP: If we are in thirdperson, set grab target and wait for OnReachReady callback
+			if (!fromOnReachReadyCallback)
+			{
+				if (CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor()))
+				{
+					if (!pPlayer->IsGrabTargetSet(entityId))
+					{
+						pPlayer->SetGrabTarget(entityId);
+					}
+					return;
+				}
+			}
 		}
 	}
 	//-----------------------
@@ -3333,7 +3351,6 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 			m_preHeldEntityId = entityId;
 		}
 
-		//PerformPickUp();
 
 		SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
 		PlayAction(m_grabTypes[m_grabType].pickup);
@@ -3364,6 +3381,8 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 
 		SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
 		PlayAction(m_grabTypes[m_grabType].pickup);
+
+		PerformGrabNPC(pHeldActor);
 
 		GetScheduler()->TimerAction(
 			GetCurrentAnimationTime(eIGS_FirstPerson),
@@ -3418,26 +3437,37 @@ void COffHand::StartThrowObject(const EntityId entityId, int activationMode, boo
 }
 
 //==========================================================================================
-bool COffHand::GrabNPC()
+CActor* COffHand::CanGrabNPC(const EntityId grabActorId)
 {
+	if (!grabActorId)
+		return nullptr;
+
 	CActor* pActor = GetOwnerActor();
 
-	if (!pActor)
-		return false;
-
 	//Do not grab in prone
-	if (pActor->GetStance() == STANCE_PRONE)
-		return false;
+	if (!pActor || pActor->GetStance() == STANCE_PRONE)
+		return nullptr;
 
 	//Get actor
-	CActor* pHeldActor = static_cast<CActor*>(m_pActorSystem->GetActor(m_preHeldEntityId));
-
+	CActor* pHeldActor = static_cast<CActor*>(m_pActorSystem->GetActor(grabActorId));
 	if (!pHeldActor)
-		return false;
+		return nullptr;
 
 	IEntity* pEntity = pHeldActor->GetEntity();
 	if (!pEntity->GetCharacter(0))
+		return nullptr;
+
+	return pHeldActor;
+}
+
+//==========================================================================================
+bool COffHand::PerformGrabNPC(CActor* pHeldActor)
+{
+	CActor* pActor = GetOwnerActor();
+	if (!pActor || !pHeldActor)
 		return false;
+
+	IEntity* pHeldActorEnt = pHeldActor->GetEntity();
 
 	//The NPC holster his weapon
 	bool mounted = false;
@@ -3465,7 +3495,7 @@ bool COffHand::GrabNPC()
 		if (strcmp(value, "grabStruggleFP") != 0)
 		{
 			// this is needed to make sure the transition is super fast
-			if (ICharacterInstance* pCharacter = pEntity->GetCharacter(0))
+			if (ICharacterInstance* pCharacter = pHeldActorEnt->GetCharacter(0))
 				if (ISkeletonAnim* pSkeletonAnim = pCharacter->GetISkeletonAnim())
 					pSkeletonAnim->StopAnimationsAllLayers();
 		}
@@ -3475,7 +3505,9 @@ bool COffHand::GrabNPC()
 		pAGState->SetInput(actionInputID, "grabStruggleFP");
 	}
 	if (SActorStats* pStats = pActor->GetActorStats())
+	{
 		pStats->grabbedTimer = 0.0f;
+	}
 
 	// this needs to be done before sending signal "OnFallAndPlay" to make sure
 	// in case AG state was FallAndPlay we leave it before AI is disabled
@@ -3487,7 +3519,7 @@ bool COffHand::GrabNPC()
 
 	if (IAISystem* pAISystem = gEnv->pAISystem)
 	{
-		IAIActor* pAIActor = CastToIAIActorSafe(pEntity->GetAI());
+		IAIActor* pAIActor = CastToIAIActorSafe(pHeldActorEnt->GetAI());
 		if (pAIActor)
 		{
 			IAISignalExtraData* pEData = pAISystem->CreateSignalExtraData();
@@ -4531,7 +4563,10 @@ void COffHand::HandleNewHeldEntity(const EntityId entityId, const bool isNewItem
 	{
 		if (CPlayer *pPlayer = CPlayer::FromActor(pActor))
 		{
-			const bool ok = pPlayer->SetGrabTarget(entityId);
+			if (!pPlayer->IsGrabTargetSet(entityId))
+			{
+				pPlayer->SetGrabTarget(entityId);
+			}
 		}
 	}
 }
@@ -4777,12 +4812,20 @@ CActor::ObjectHoldType COffHand::DetermineObjectHoldType(const EntityId entityId
 }
 
 //==============================================================
-void COffHand::OnReachReady()
+void COffHand::OnThirdPersonBendReady(const EntityId targetId, bool reaching)
 {
 	if (m_stats.fp)
 		return;
 
-	AttachObjectToHand(true, m_heldEntityId, false);
+	if (!reaching)
+		return;
+
+	if (m_pActorSystem->GetActor(targetId))
+	{
+		StartPickUpObject(targetId, true, true);
+	}
+
+	AttachObjectToHand(true, targetId, false);
 }
 
 //==============================================================

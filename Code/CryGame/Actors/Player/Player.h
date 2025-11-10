@@ -626,6 +626,10 @@ public:
 	virtual void Freeze(bool freeze);
 	virtual void ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTime);
 	bool SetGrabTarget(EntityId targetId);
+	bool IsGrabTargetSet(EntityId targetId) const
+	{
+		return !m_reachNotified && m_grabTargetId && m_grabTargetId != targetId;
+	}
 	bool StartThrowPrep();   
 	void CommitThrow();       
 	void CancelThrowPrep();   

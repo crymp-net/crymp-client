@@ -5646,7 +5646,7 @@ void CPlayer::UpdateReachBend(ICharacterInstance* pCharacter, float frameTime)
 		COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass));
 		if (pOffHand)
 		{
-			pOffHand->OnReachReady();
+			pOffHand->OnThirdPersonBendReady(m_grabTargetId, m_reachState == ReachState::Reaching);
 		}
 
 		if (m_reachState == ReachState::Reaching)

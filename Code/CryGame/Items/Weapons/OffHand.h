@@ -201,7 +201,7 @@ public:
 	void StartPickUpItem();
 	void EndPickUpItem();
 
-	void StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = false */);
+	void StartPickUpObject(const EntityId entityId, bool isLivingEnt = false/* = false */, bool fromOnReachReadyCallback = false /* = false */);
 	void StartThrowObject(const EntityId entityId, int activationMode, bool isLivingEnt /*= false*/);
 
 	void StartFire() override;
@@ -209,7 +209,9 @@ public:
 
 	void NetStartFire() override;
 	void NetStopFire() override;
-	bool GrabNPC();
+
+	CActor* CanGrabNPC(const EntityId grabActorId);
+	bool PerformGrabNPC(CActor *pHeldActor);
 	void ThrowNPC(const EntityId entityId, bool kill = true/*= true*/);
 
 	//Special stuff for grabbed NPCs
@@ -368,7 +370,7 @@ public:
 	void GetPredefinedPosOffset(IEntity* pEnt, Vec3& fpPosOffset, Vec3& tpPosOffset);
 	bool IsTimerEnableCollisionsActive();
 	CActor::ObjectHoldType DetermineObjectHoldType(const EntityId entityId) const;
-	void OnReachReady();
+	void OnThirdPersonBendReady(const EntityId targetId, bool reaching);
 	void OnHeldObjectCollision(CPlayer* pClientActor, const EventPhysCollision* pCollision, IEntity *pTargetEnt);
 	void OnPlayerRevive(CPlayer* pPlayer);
 	void OnPlayerDied(CPlayer* pPlayer);
