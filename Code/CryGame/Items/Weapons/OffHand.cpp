@@ -1762,6 +1762,14 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 			{
 				m_mainHand->Select(true);
 			}
+
+			//CryMP: Fixes instant change to relaxed state after throwing NPC 
+			if (m_mainHandWeapon && m_mainHandWeapon->GetEntity()->GetClass() == CItem::sFistsClass)
+			{
+				CFists* pFists = static_cast<CFists*>(m_mainHandWeapon);
+				pFists->RequestAnimState(CFists::eFAS_FIGHT);
+			}
+
 			if (pActor->IsRemote())
 			{
 				SetOffHandState(eOHS_INIT_STATE);
