@@ -2599,8 +2599,7 @@ int COffHand::CheckItemsInProximity(Vec3 pos, Vec3 dir, bool getEntityInfo)
 //==========================================================================================
 bool COffHand::PerformPickUp(EntityId entityId)
 {
-	//If we are here, we must have the entity ID
-	if (!entityId)
+	if (!entityId && !m_pRockRN)
 		return false;
 
 	m_startPickUp = false;
@@ -2608,7 +2607,11 @@ bool COffHand::PerformPickUp(EntityId entityId)
 
 	if (m_pRockRN)
 	{
-		SetHeldEntityId(SpawnRockProjectile(m_pRockRN));
+		EntityId rockId = SpawnRockProjectile(m_pRockRN);
+		if (!rockId)
+			return false;
+
+		SetHeldEntityId(rockId);
 
 		m_pRockRN = nullptr;
 		if (!m_heldEntityId)
@@ -2618,7 +2621,7 @@ bool COffHand::PerformPickUp(EntityId entityId)
 		SelectGrabType(pEntity);
 		m_grabType = GRAB_TYPE_ONE_HANDED; //Force for now
 	}
-	else 
+	else
 	{
 		SetHeldEntityId(entityId);
 		pEntity = m_pEntitySystem->GetEntity(m_heldEntityId);
@@ -3883,7 +3886,6 @@ EntityId COffHand::SpawnRockProjectile(IRenderNode* pRenderNode)
 {
 	Matrix34 statObjMtx;
 	IStatObj* pStatObj = pRenderNode->GetEntityStatObj(0, 0, &statObjMtx);
-	assert(pStatObj);
 	if (!pStatObj)
 		return 0;
 
@@ -3895,12 +3897,12 @@ EntityId COffHand::SpawnRockProjectile(IRenderNode* pRenderNode)
 	IEntityClass* pClass = m_pEntitySystem->GetClassRegistry()->FindClass("rock");
 	if (!pClass)
 		return 0;
+
 	CProjectile* pRock = g_pGame->GetWeaponSystem()->SpawnAmmo(pClass);
-	assert(pRock);
 	if (!pRock)
 		return 0;
+
 	IEntity* pEntity = pRock->GetEntity();
-	assert(pEntity);
 	if (!pEntity)
 		return 0;
 
