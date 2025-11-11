@@ -2120,7 +2120,7 @@ void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMI
 				AttachGrenadeToHand(GetCurrentFireMode(), m_stats.fp);
 			}
 
-			m_fm->StartFire();
+			StartFire(); //m_fm->StartFire();
 
 			SetBusy(false);
 
@@ -4031,8 +4031,12 @@ void COffHand::AttachGrenadeToHand(int grenade, bool fp /*=true*/, bool attach /
 			{
 				//If not it means we need to attach
 				int slot = eIGS_Aux0;
-				if ((grenade == 1) || (grenade == 2))
+				if (grenade == 1)
 					slot = eIGS_Aux1;
+				else if (grenade == 2)
+					slot = eIGS_OwnerLooped;
+				else if (grenade == 3)
+					slot = eIGS_Owner;
 
 				if (IStatObj* pStatObj = GetEntity()->GetStatObj(slot))
 				{
