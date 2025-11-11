@@ -4149,11 +4149,14 @@ bool COffHand::PickUpObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId)
 //==============================================================
 bool COffHand::ThrowObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId, bool stealingObject) //Called from CPlayer.cpp
 {
+	if (!pPlayer)
+		return false;
+
 	IEntity* pObject = m_pEntitySystem->GetEntity(synchedObjectId);
 	if (!pObject)
 		return false;
 
-	SetHeldEntityId(0);
+	const EntityId playerId = pPlayer->GetEntityId();
 
 	if (stealingObject)
 	{
@@ -4162,11 +4165,11 @@ bool COffHand::ThrowObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId, 
 	else
 	{
 		pPlayer->PlayAnimation("combat_plantUB_c4_01", 1.0f, false, true, 1);
-	}
-
-	if (pPlayer->IsRemote())
-	{
-		EnableUpdate(false, eIUS_General);
+		if (pPlayer->IsRemote())
+		{
+			//CryMP: This will call eOHA_RESET on a timer
+			FinishAction(eOHA_THROW_OBJECT);
+		}
 	}
 
 	return true;
