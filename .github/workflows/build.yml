@@ -51,7 +51,7 @@ jobs:
       - name: Sign
         if: github.repository_owner == 'crymp-net'
         run: |
-          Get-ChildItem | Where-Object { $_.Extension -eq '.exe' } | ForEach-Object {
+          Get-ChildItem -Path '${{ env.BUILD_DIR }}' | Where-Object { $_.Extension -eq '.exe' } | ForEach-Object {
             $checksum = (Get-FileHash -Path $_.FullName -Algorithm SHA256).Hash.ToLower()
             $timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()
             $hmac = New-Object System.Security.Cryptography.HMACSHA256
@@ -64,8 +64,9 @@ jobs:
               timestamp = $timestamp
               token = [System.Convert]::ToHexString($token).ToLower()
             }
+            Write-Output "Signing $_"
             Invoke-WebRequest -Uri $uri -Method Post -Form $form -OutFile signed.exe
-            Move-Item -Path signed.exe -Destination $_.Name -Force
+            Move-Item -Path signed.exe -Destination $_.FullName -Force
           }
 
       - name: Upload
