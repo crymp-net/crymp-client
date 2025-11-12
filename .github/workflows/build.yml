@@ -51,13 +51,22 @@ jobs:
       - name: Sign
         if: github.repository_owner == 'crymp-net'
         run: |
-          Set-Content -Path bundle.txt -Value '${{ secrets.CODE_SIGNING_PFX }}'
-          certutil -decode bundle.txt bundle.pfx
-          & 'C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe' `
-            sign /fd SHA256 /f bundle.pfx /p '${{ secrets.CODE_SIGNING_PFX_PASSWORD }}' `
-            /tr 'http://timestamp.digicert.com' /td SHA256 `
-            (Get-Item (Join-Path $env:BUILD_DIR '*.exe')).FullName
-          Remove-Item bundle.*
+          Get-ChildItem | Where-Object { $_.Extension -eq '.exe' } | ForEach-Object {
+            $checksum = (Get-FileHash -Path $_.FullName -Algorithm SHA256).Hash.ToLower()
+            $timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()
+            $hmac = New-Object System.Security.Cryptography.HMACSHA256
+            $hmac.key = [Text.Encoding]::ASCII.GetBytes('${{ secrets.CODE_SIGNING_API_KEY }}')
+            $token = $hmac.ComputeHash([Text.Encoding]::ASCII.GetBytes("${checksum}:${timestamp}"))
+            $uri = 'https://prophet.comrade.one/api/v1/sign'
+            $form = @{
+              exe = Get-Item -Path $_.FullName
+              checksum = $checksum
+              timestamp = $timestamp
+              token = [System.Convert]::ToHexString($token).ToLower()
+            }
+            Invoke-WebRequest -Uri $uri -Method Post -Form $form -OutFile signed.exe
+            Move-Item -Path signed.exe -Destination $_.Name -Force
+          }
 
       - name: Upload
         uses: actions/upload-artifact@v4
