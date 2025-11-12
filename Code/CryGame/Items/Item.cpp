@@ -2637,8 +2637,10 @@ void CItem::Hide(bool hide)
 {
 	GetEntity()->SetFlags(GetEntity()->GetFlags() & ~ENTITY_FLAG_UPDATE_HIDDEN);
 
-	if ((hide && m_stats.fp) || IsServer())
+	if ((hide && (m_stats.fp || GetEntity()->GetClass() == sOffHandClass)) || IsServer())
+	{
 		GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_UPDATE_HIDDEN);
+	}
 
 	GetEntity()->Hide(hide);
 }
