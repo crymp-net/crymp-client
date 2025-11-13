@@ -39,8 +39,8 @@ void Server::Init(IGameFramework* pGameFramework)
 
 	const std::string serverPak(WinAPI::CmdLine::GetArgValue("-pak"));
 	if (!serverPak.empty()) {
-		CryLogAlways("$6[CryMP] Loading server pak: %s", serverPak.c_str());
-		m_pServerPAK->Load(serverPak.c_str());
+        const bool success = CryPak::GetInstance().LoadServerPak(serverPak);
+        CryLogAlways("$6[CryMP] Loading server pak '%s' %s", serverPak.c_str(), success ? "succeeded" : "failed");
 	}
 
 	// initialize the game
