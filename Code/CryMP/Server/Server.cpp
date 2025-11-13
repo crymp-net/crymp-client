@@ -15,7 +15,6 @@
 #include "Server.h"
 
 #include "CryMP/Common/ScriptBind_CPPAPI.h"
-#include "CryMP/Common/ServerPAK.h"
 
 #include "CryMP/Server/SSM.h"
 #include "CryMP/Server/SafeWriting/SafeWriting.h"
