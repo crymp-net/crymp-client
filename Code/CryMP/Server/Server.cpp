@@ -7,6 +7,8 @@
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryGame/Game.h"
 #include "CrySystem/Logger.h"
+#include "CrySystem/CryPak.h"
+
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
