@@ -9,6 +9,7 @@
 class CGame;
 class Executor;
 class HTTPClient;
+class ServerPAK;
 class ScriptBind_CPPAPI;
 
 class Server : public IGameFrameworkListener
@@ -19,6 +20,7 @@ public:
 
 	std::unique_ptr<Executor> pExecutor;
 	std::unique_ptr<HTTPClient> pHttpClient;
+	std::unique_ptr<ServerPAK> m_pServerPAK;
 
 	std::unique_ptr<ScriptBind_CPPAPI> m_pScriptBind_CPPAPI;
 
@@ -29,6 +31,8 @@ public:
 	void UpdateLoop();
 	
 	void HttpRequest(HTTPClientRequest&& request);
+
+	ServerPAK* GetServerPAK() const { return m_pServerPAK.get(); }
 
 private:
 	// IGameFrameworkListener

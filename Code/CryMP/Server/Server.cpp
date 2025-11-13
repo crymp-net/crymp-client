@@ -13,6 +13,7 @@
 #include "Server.h"
 
 #include "CryMP/Common/ScriptBind_CPPAPI.h"
+#include "CryMP/Common/ServerPAK.h"
 
 #include "CryMP/Server/SSM.h"
 #include "CryMP/Server/SafeWriting/SafeWriting.h"
@@ -31,8 +32,16 @@ void Server::Init(IGameFramework* pGameFramework)
 
 	this->pExecutor = std::make_unique<Executor>();
 	this->pHttpClient = std::make_unique<HTTPClient>(*this->pExecutor);
+	this->m_pServerPAK = std::make_unique<ServerPAK>();
 
 	pGameFramework->RegisterListener(this, "crymp-server", FRAMEWORKLISTENERPRIORITY_DEFAULT);
+
+
+	const std::string serverPak(WinAPI::CmdLine::GetArgValue("-pak"));
+	if (!serverPak.empty()) {
+		CryLogAlways("$6[CryMP] Loading server pak: %s", serverPak.c_str());
+		m_pServerPAK->Load(serverPak.c_str());
+	}
 
 	// initialize the game
 	// mods are not supported

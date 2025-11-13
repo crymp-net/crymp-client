@@ -533,14 +533,14 @@ add_library(Base OBJECT
 	Code/CryMP/Client/ServerConnector.h
 	Code/CryMP/Client/ServerInfo.cpp
 	Code/CryMP/Client/ServerInfo.h
-	Code/CryMP/Client/ServerPAK.cpp
-	Code/CryMP/Client/ServerPAK.h
 	Code/CryMP/Client/SpeedAggregator.cpp
 	Code/CryMP/Client/SpeedAggregator.h
 	Code/CryMP/Client/WeatherSystem.cpp
 	Code/CryMP/Client/WeatherSystem.h
 	Code/CryMP/Common/Executor.cpp
 	Code/CryMP/Common/Executor.h
+	Code/CryMP/Common/ServerPAK.cpp
+	Code/CryMP/Common/ServerPAK.h
 	Code/CryMP/Common/GSMasterHook.cpp
 	Code/CryMP/Common/GSMasterHook.h
 	Code/CryMP/Common/HTTP.cpp
