@@ -445,9 +445,7 @@ void ScriptSystem::Update()
 	SetGlobalValue("_frametime", frameTime);
 	SetGlobalValue("_aitick", aiTickCount);
 
-	if (gEnv->bClient) {
-		LuaGarbageCollectStep();
-	}
+	LuaGarbageCollectStep();
 
 	m_timers.Update();
 }
