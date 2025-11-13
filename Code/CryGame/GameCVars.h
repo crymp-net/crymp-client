@@ -478,6 +478,8 @@ struct SCVars
 	float		mp_explosiveRemovalTime;
 	int         mp_explosion_mfx;
 
+	int			ads;
+
 	SCVars();
 	~SCVars();
 
