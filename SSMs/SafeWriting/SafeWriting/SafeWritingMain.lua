@@ -702,18 +702,8 @@ function SafeWriting:OnTimerTick()
     if not se then
         SetError("Failed to load Settings.lua", true)
     end
-    local last = GARBAGELAST or (_time - 150)
 
     local ver = DetectGameVer()
-
-    if _time - last >= 60 then
-        local before = collectgarbage("count")
-        collectgarbage("collect")
-        local removed = before - collectgarbage("count")
-        TOTALREMOVED = (TOTALREMOVED or 0) + removed
-        TIMESREMOVED = (TIMESREMOVED or 0) + 1
-        GARBAGELAST = _time
-    end
     local master = se.AllowMasterServer
     if type(master) == "number" then
         if master == Yes or master == Maybe then

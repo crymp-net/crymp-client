@@ -15,7 +15,7 @@
 #include "Client.h"
 #include "MapDownloader.h"
 #include "FileCache.h"
-#include "ServerPAK.h"
+#include "CryMP/Common/ServerPAK.h"
 
 using json = nlohmann::json;
 

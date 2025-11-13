@@ -7,6 +7,8 @@
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryGame/Game.h"
 #include "CrySystem/Logger.h"
+#include "CrySystem/CryPak.h"
+
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
@@ -33,6 +35,13 @@ void Server::Init(IGameFramework* pGameFramework)
 	this->pHttpClient = std::make_unique<HTTPClient>(*this->pExecutor);
 
 	pGameFramework->RegisterListener(this, "crymp-server", FRAMEWORKLISTENERPRIORITY_DEFAULT);
+
+
+	const std::string serverPak(WinAPI::CmdLine::GetArgValue("-pak"));
+	if (!serverPak.empty()) {
+        const bool success = CryPak::GetInstance().LoadServerPak(serverPak);
+        CryLogAlways("$6[CryMP] Loading server pak '%s' %s", serverPak.c_str(), success ? "succeeded" : "failed");
+	}
 
 	// initialize the game
 	// mods are not supported
