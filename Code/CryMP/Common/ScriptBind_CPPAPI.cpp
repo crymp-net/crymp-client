@@ -517,11 +517,12 @@ int ScriptBind_CPPAPI::GetVars(IFunctionHandler* pH)
 	return pH->EndFunction(vars);
 }
 
-int ScriptBind_CPPAPI::SetProfile(IFunctionHandler* pH, const char* type, const char* profileId, const char* token) {
+int ScriptBind_CPPAPI::SetProfile(IFunctionHandler* pH, const char* type, const char* profileId, const char* token, float playedTime) {
 	std::string strType{ type };
 	SProfileInfo info{
 		.id = profileId,
-		.token = token
+		.token = token,
+		.playedTime = playedTime
 	};
 	if (info.id.length() == 0 || info.token.length() == 0) {
 		auto it = m_profiles.find(strType);
