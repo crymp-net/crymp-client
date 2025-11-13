@@ -34,7 +34,6 @@ void Server::Init(IGameFramework* pGameFramework)
 
 	this->pExecutor = std::make_unique<Executor>();
 	this->pHttpClient = std::make_unique<HTTPClient>(*this->pExecutor);
-	this->m_pServerPAK = std::make_unique<ServerPAK>();
 
 	pGameFramework->RegisterListener(this, "crymp-server", FRAMEWORKLISTENERPRIORITY_DEFAULT);
 
