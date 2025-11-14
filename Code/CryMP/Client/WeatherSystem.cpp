@@ -24,7 +24,7 @@ CWeatherSystem::CWeatherSystem() {
 	m_time = 0;
 	m_lastUpdate = -1000.0f;
 
-	if (!tod_hooked) {
+	if (!tod_hooked && gEnv->bClient) {
 		ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
 		void** pTODVtable = *reinterpret_cast<void***>(pTOD);
 
@@ -541,8 +541,7 @@ void CWeatherSystem::TODUpdate(bool interpolate, bool force) {
 	// as otherwise setting these would be really cumbersome given that
 	// i.e. sky color is orange in morning, but blue during the day
 	if (interpolate) {
-		ITimeOfDay::SVariableInfo info;
-		float x, y, z;
+		float x = 0.0f, y = 0.0f, z = 0.0f;
 
 		// 2103 = Sun color
 		auto it = self->m_activeValues.find(WEATHER_ENV_NAMESPACE + 3);
