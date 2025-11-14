@@ -53,7 +53,7 @@ void Server::Init(IGameFramework* pGameFramework)
 		maxPlayers->SetOnChangeCallback([](ICVar* cvar) -> void {
 			int value = cvar->GetIVal();
 			if (value < 2) {
-				cvar->Set(value);
+				cvar->Set(2);
 			}
 		});
 	}
