@@ -1553,6 +1553,90 @@ if not SafeWritingGameRules.UpdatePings then
                         end
                 end
         end
+        SafeWritingGameRules.Work = function(self, playerId, amount, frameTime)
+	        local work=self.works[playerId];
+	        if (work and work.active) then
+		        --Log("%s doing '%s' work on %s for %.3fs...", EntityName(playerId), work.type, EntityName(work.entityId), frameTime);
+		
+		        local entity=System.GetEntity(work.entityId);
+		        if (entity) then
+			        local workamount=amount*frameTime;
+			        if (work.type=="repair") then
+				        if (not self.repairHit) then
+					        self.repairHit={
+						        typeId	=self.game:GetHitTypeId("repair"),
+						        type		="repair",
+						        material=0,
+						        materialId=0,
+						        dir			=g_Vectors.up,
+						        radius	=0,
+						        partId	=-1,
+					        };
+				        end
+				
+				        local hit=self.repairHit;
+				        hit.shooter=System.GetEntity(playerId);
+				        hit.shooterId=playerId;
+				        hit.target=entity;
+				        hit.targetId=work.entityId;
+				        hit.pos=entity:GetWorldPos(hit.pos);
+				        hit.damage=workamount;
+
+				        work.amount=work.amount+workamount;
+
+                        MakePluginEvent("OnWork", {work=work, hit=hit})
+
+				        if (entity.vehicle) then
+					        entity.Server.OnHit(entity, hit);
+					        work.complete=entity.vehicle:GetRepairableDamage()<=0; -- keep working?
+					
+					        local progress=math.floor(0.5+(1.0-entity.vehicle:GetRepairableDamage())*100)
+					        self.onClient:ClStepWorking(self.game:GetChannelId(playerId), progress);
+					
+					        return (not work.complete);
+				        elseif (entity.item and (entity.class=="AutoTurret" or entity.class=="AutoTurretAA") and (not entity.item:IsDestroyed())) then
+					        entity.Server.OnHit(entity, hit);
+					        work.complete=entity.item:GetHealth()>=entity.item:GetMaxHealth();
+
+					        local progress=math.floor(0.5+(100*entity.item:GetHealth()/entity.item:GetMaxHealth()));
+					        self.onClient:ClStepWorking(self.game:GetChannelId(playerId), progress);
+					
+					        return (not work.complete);
+				        end
+			        elseif (work.type=="lockpick") then
+				        work.amount=work.amount+workamount;
+				
+				        if (work.amount>100) then
+					        self.game:SetTeam(self.game:GetTeam(playerId), entity.id);
+					        entity.vehicle:SetOwnerId(NULL_ENTITY);
+					        work.complete=true;
+				        end
+				
+				        self.onClient:ClStepWorking(self.game:GetChannelId(playerId), math.floor(work.amount+0.5));
+			
+				        return (not work.complete);
+			        elseif (work.type=="disarm") then
+				        if (entity.CanDisarm and entity:CanDisarm(playerId)) then
+					        work.amount=work.amount+(100/4)*frameTime;
+					
+					        if (work.amount>100) then
+						        if (self.OnDisarmed) then
+							        self:OnDisarmed(work.entityId, playerId);
+						        end
+						        System.RemoveEntity(work.entityId);
+						        work.complete=true;
+					        end
+
+					        self.onClient:ClStepWorking(self.game:GetChannelId(playerId), math.floor(work.amount+0.5));
+					
+					        return (not work.complete);
+				        end
+			        end
+		        end
+	        end
+
+	        return false;
+        end
 end
 
 function IsSafeWritingGameRulesLoaded()
