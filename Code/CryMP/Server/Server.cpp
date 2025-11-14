@@ -48,6 +48,16 @@ void Server::Init(IGameFramework* pGameFramework)
 	this->pGame = new CGame();
 	this->pGame->Init(pGameFramework);
 
+	if (ICVar* maxPlayers = gEnv->pConsole->GetCVar("sv_maxplayers")) {
+		// this overrides max 32 players cap
+		maxPlayers->SetOnChangeCallback([](ICVar* cvar) -> void {
+			int value = cvar->GetIVal();
+			if (value < 2) {
+				cvar->Set(value);
+			}
+		});
+	}
+
 	const std::string ssm(WinAPI::CmdLine::GetArgValue("-ssm"));
 	if (!ssm.empty())
 	{
