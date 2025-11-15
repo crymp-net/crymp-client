@@ -13,6 +13,7 @@
 #include "Library/WinAPI.h"
 
 #include "WeatherSystem.h"
+#include "Cry3DEngine/TimeOfDay.h"
 
 bool CWeatherSystem::tod_hooked = false;
 
@@ -88,6 +89,19 @@ void CWeatherSystem::Update(float frameTime) {
 		int changed = 0;
 		ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
 		if (pTOD) {
+
+			string todPath;
+			if (pSSS->GetGlobalValue(WEATHER_TOD_PATH_ID, todPath))
+			{
+				if (todPath != m_lastTodXmlPath)
+				{
+					TimeOfDay* pTODImpl = static_cast<TimeOfDay*>(pTOD);
+					pTODImpl->LoadCustomSettings(todPath);
+
+					m_lastTodXmlPath = todPath;
+				}
+			}
+
 			int count = pTOD->GetVariableCount();
 			for (int i = 0; i < count; i++) {
 				string value;
