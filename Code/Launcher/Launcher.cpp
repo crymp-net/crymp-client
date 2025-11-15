@@ -1103,10 +1103,7 @@ void Launcher::PatchEngine()
 		MemoryPatch::Cry3DEngine::EnableBigDecalsOnDynamicObjects(m_dlls.pCry3DEngine);
 		MemoryPatch::Cry3DEngine::FixGetObjectsByType(m_dlls.pCry3DEngine);
 
-		if (!WinAPI::CmdLine::HasArg("-oldtod"))
-		{
-			ReplaceTimeOfDay(m_dlls.pCry3DEngine);
-		}
+		ReplaceTimeOfDay(m_dlls.pCry3DEngine);
 	}
 
 	const char* GAME_WINDOW_NAME = "CryMP Client " CRYMP_VERSION_STRING;
