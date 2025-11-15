@@ -44,6 +44,7 @@ public:
 	int GetLP(IFunctionHandler* pH);
 	int GetNumVars(IFunctionHandler* pH);
 	int GetVars(IFunctionHandler* pH);
+	int HasNetworkConnectivity(IFunctionHandler* pH);
 
 	int SetProfile(IFunctionHandler* pH, const char *type, const char* profileId, const char *token, float playedTime);
 	std::optional<SProfileInfo> GetProfile(const std::string& type);
