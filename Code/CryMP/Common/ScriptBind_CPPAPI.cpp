@@ -5,6 +5,7 @@
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 #include "CryCommon/CryAction/IVehicleSystem.h"
 #include "CryCommon/CryMath/Cry_Camera.h"
+#include "CryCommon/CryNetwork/INetwork.h"
 #include "CrySystem/LocalizationManager.h"
 #include "CrySystem/RandomGenerator.h"
 #include "Library/StringTools.h"
@@ -63,6 +64,7 @@ ScriptBind_CPPAPI::ScriptBind_CPPAPI()
 	SCRIPT_REG_FUNC(GetLP);
 	SCRIPT_REG_FUNC(GetNumVars);
 	SCRIPT_REG_FUNC(GetVars);
+	SCRIPT_REG_FUNC(HasNetworkConnectivity);
 	SCRIPT_REG_TEMPLFUNC(SetProfile, "type, profileId, token");
 
 	// Localization
@@ -519,11 +521,17 @@ int ScriptBind_CPPAPI::GetVars(IFunctionHandler* pH)
 	return pH->EndFunction(vars);
 }
 
-int ScriptBind_CPPAPI::SetProfile(IFunctionHandler* pH, const char* type, const char* profileId, const char* token) {
+int ScriptBind_CPPAPI::HasNetworkConnectivity(IFunctionHandler* pH)
+{
+	return pH->EndFunction(gEnv->pNetwork->HasNetworkConnectivity());
+}
+
+int ScriptBind_CPPAPI::SetProfile(IFunctionHandler* pH, const char* type, const char* profileId, const char* token, float playedTime) {
 	std::string strType{ type };
 	SProfileInfo info{
 		.id = profileId,
-		.token = token
+		.token = token,
+		.playedTime = playedTime
 	};
 	if (info.id.length() == 0 || info.token.length() == 0) {
 		auto it = m_profiles.find(strType);

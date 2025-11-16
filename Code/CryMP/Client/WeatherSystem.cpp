@@ -13,6 +13,7 @@
 #include "Library/WinAPI.h"
 
 #include "WeatherSystem.h"
+#include "Cry3DEngine/TimeOfDay.h"
 
 bool CWeatherSystem::tod_hooked = false;
 
@@ -24,7 +25,7 @@ CWeatherSystem::CWeatherSystem() {
 	m_time = 0;
 	m_lastUpdate = -1000.0f;
 
-	if (!tod_hooked) {
+	if (!tod_hooked && gEnv->bClient) {
 		ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
 		void** pTODVtable = *reinterpret_cast<void***>(pTOD);
 
@@ -88,6 +89,19 @@ void CWeatherSystem::Update(float frameTime) {
 		int changed = 0;
 		ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
 		if (pTOD) {
+
+			string todPath;
+			if (pSSS->GetGlobalValue(WEATHER_TOD_PATH_ID, todPath))
+			{
+				if (todPath != m_lastTodXmlPath)
+				{
+					TimeOfDay* pTODImpl = static_cast<TimeOfDay*>(pTOD);
+					pTODImpl->LoadCustomSettings(todPath);
+
+					m_lastTodXmlPath = todPath;
+				}
+			}
+
 			int count = pTOD->GetVariableCount();
 			for (int i = 0; i < count; i++) {
 				string value;
@@ -541,8 +555,7 @@ void CWeatherSystem::TODUpdate(bool interpolate, bool force) {
 	// as otherwise setting these would be really cumbersome given that
 	// i.e. sky color is orange in morning, but blue during the day
 	if (interpolate) {
-		ITimeOfDay::SVariableInfo info;
-		float x, y, z;
+		float x = 0.0f, y = 0.0f, z = 0.0f;
 
 		// 2103 = Sun color
 		auto it = self->m_activeValues.find(WEATHER_ENV_NAMESPACE + 3);

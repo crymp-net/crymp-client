@@ -274,6 +274,9 @@ void TimeOfDay::GetAdvancedInfo(SAdvancedInfo& advancedInfo)
 
 void TimeOfDay::Update(bool interpolate, bool forceUpdate)
 {
+	if (!gEnv->bClient) //CryMP: For Dedicated server this can be skipped
+		return;
+
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_3DENGINE);
 
 	if (interpolate)
@@ -560,6 +563,8 @@ void TimeOfDay::Serialize(XmlNodeRef& node, bool loading)
 {
 	if (loading)
 	{
+		m_defaultLevelSettings = node;
+
 		node->getAttr("Time", m_currentTime);
 		node->getAttr("TimeStart", m_startTime);
 		node->getAttr("TimeEnd", m_endTime);
@@ -933,4 +938,38 @@ Vec3 TimeOfDay::CalculateSunDirection(const Vec3& sunRotation) const
 	sunDirection.y = -oldZ;
 
 	return sunDirection;
+}
+
+void TimeOfDay::LoadCustomSettings(string xmlPath)
+{
+	if (xmlPath.empty())
+	{
+		RestoreLevelDefaults();
+		return;
+	}
+	XmlNodeRef node = gEnv->pSystem->LoadXmlFile(xmlPath.c_str());
+	if (!node)
+	{
+		CryLogWarningAlways("Failed to load custom ToD settings from '%s'", xmlPath.c_str());
+		return;
+	}
+	for (int i = 0; i < node->getChildCount(); i++)
+	{
+		this->DeserializeVariable(node->getChild(i));
+	}
+	Update();
+	CryLog("$3[CryMP] Loaded custom ToD settings from '%s'", xmlPath.c_str());
+}
+
+void TimeOfDay::RestoreLevelDefaults()
+{
+	if (!m_defaultLevelSettings)
+		return;
+
+	for (int i = 0; i < m_defaultLevelSettings->getChildCount(); i++)
+	{
+		this->DeserializeVariable(m_defaultLevelSettings->getChild(i));
+	}
+	Update();
+	CryLog("$3[CryMP] Restored default ToD xml settings");
 }

@@ -128,6 +128,8 @@ private:
 	ITimer* m_timer = nullptr;
 	ITimer** m_someOtherTimer = nullptr;
 
+	XmlNodeRef m_defaultLevelSettings = nullptr;
+
 public:
 	explicit TimeOfDay(void* pCry3DEngine);
 	~TimeOfDay();
@@ -165,6 +167,13 @@ public:
 	void NetSerialize(TSerialize ser, float lag, std::uint32_t flags) override;
 
 	////////////////////////////////////////////////////////////////////////////////
+
+	bool IsPaused() const 
+	{ 
+		return m_paused; 
+	}
+	void LoadCustomSettings(string xmlPath);
+	void RestoreLevelDefaults();
 
 private:
 	void InitVariables();
