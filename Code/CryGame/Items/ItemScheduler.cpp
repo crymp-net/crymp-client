@@ -120,7 +120,13 @@ void CItemScheduler::Update(float frameTime)
 	}
 
 	if (m_timers.empty() && m_schedule.empty())
+	{
 		m_pItem->EnableUpdate(false, eIUS_Scheduler);
+	}
+	else
+	{
+		m_pItem->RequireUpdate(eIUS_Scheduler);
+	}
 }
 
 //------------------------------------------------------------------------
