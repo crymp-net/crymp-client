@@ -147,8 +147,8 @@ public:
 	virtual void GetMemoryStatistics(ICrySizer* s) override { s->Add(*this); CWeapon::GetMemoryStatistics(s); }
 
 	void SetOffHandState(EOffHandStates eOHS);
-	void SetMainHand(CItem* pItem);
 	void SetMainHandWeapon(CWeapon* pWeapon);
+	CWeapon* GetMainHandWeapon() const;
 	ILINE int  GetOffHandState() { return m_currentState; }
 	void FinishAction(EOffHandActions eOHA);
 	virtual void Freeze(bool freeze) override;
@@ -194,9 +194,6 @@ public:
 
 	void StartSwitchGrenade(bool xi_switch = false, bool fakeSwitch = false);
 	void EndSwitchGrenade();
-
-	//Offhand (for Player)
-	void PerformThrow(int activationMode, EntityId throwableId, int oldFMId = -1, bool isLivingEnt = false);
 
 	void StartPickUpItem();
 	void EndPickUpItem();
@@ -279,7 +276,6 @@ private:
 
 	// Weapon/main hand state
 	int m_currentState = eOHS_INIT_STATE;
-	CItem* m_mainHand = nullptr;
 	CWeapon* m_mainHandWeapon = nullptr;
 	EntityId m_prevMainHandId = 0;
 	bool m_mainHandIsDualWield = false;
@@ -339,6 +335,7 @@ private:
 	unsigned int m_timerEnableCollisions = 0;
 	bool m_footAlignmentEnabled = true;
 	int m_heldVehicleCollisions = 0;
+	float m_heldEntityMassBackup = 0.0f;
 
 	struct SGripHitLocal
 	{
@@ -375,9 +372,10 @@ public:
 	void OnPlayerRevive(CPlayer* pPlayer);
 	void OnPlayerDied(CPlayer* pPlayer);
 	void ReAttachObjectToHand();
-	void FinishGrenadeAction(CItem* pMainHand);
+	void FinishGrenadeAction(CWeapon* pMainHandWeapon);
 	void PerformThrowAction_Press(EntityId throwableId, bool isLivingEnt);
 	void PerformThrowAction_Release(EntityId throwableId, bool isLivingEnt);
+	void DebugLogInfo();
 };
 
 #endif

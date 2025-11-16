@@ -1255,12 +1255,6 @@ void CPlayer::UpdateHeldObjectIK()
 	{
 		SetIKPos("rightArm", rightWorld, 1.0f);
 	}
-
-
-
-
-
-
 }
 
 void CPlayer::UpdateParachuteMorph(float frameTime)
@@ -5534,6 +5528,9 @@ void CPlayer::ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTi
 
 bool CPlayer::SetGrabTarget(EntityId targetId)
 {
+	if (!gEnv->bClient)
+		return false;
+
 	m_reachNotified = false;
 
 	if (targetId == 0)
@@ -5559,6 +5556,9 @@ bool CPlayer::SetGrabTarget(EntityId targetId)
 
 bool CPlayer::StartThrowPrep()
 {
+	if (!gEnv->bClient)
+		return false;
+
 	m_grabTargetId = 0;
 	m_reachState = ReachState::ThrowPrep;
 	m_reachNotified = false;
@@ -5567,6 +5567,9 @@ bool CPlayer::StartThrowPrep()
 
 void CPlayer::CommitThrow()
 {
+	if (!gEnv->bClient)
+		return;
+
 	if (m_reachState == ReachState::ThrowPrep)
 	{
 		m_reachState = ReachState::Throwing; 
@@ -5663,7 +5666,6 @@ void CPlayer::UpdateReachBend(ICharacterInstance* pCharacter, float frameTime)
 	}
 }
 
-
 void CPlayer::ApplyReachToSpine(ICharacterInstance* pCharacter, float bendAngle, float amount)
 {
 	if (!pCharacter) return;
@@ -5686,7 +5688,6 @@ void CPlayer::ApplyReachToSpine(ICharacterInstance* pCharacter, float bendAngle,
 		pPose->SetPostProcessQuat(j, q);
 	}
 }
-
 
 void CPlayer::ProcessIKLegs(ICharacterInstance* pCharacter, float frameTime)
 {
@@ -8524,18 +8525,8 @@ void CPlayer::UpdateModelChangeInVehicle()
 	}
 }
 
-void CPlayer::OnObjectEvent(ObjectEvent evnt)
+void CPlayer::OnObjectEvent(ObjectEvent evnt, const EntityId objectId)
 {
-	IEntity* pObject = gEnv->pEntitySystem->GetEntity(GetHeldObjectId());
-	if (!pObject)
-		return;
-
-	const EntityId objectId = pObject->GetId();
-
-	IPhysicalEntity* pObjectPhysics = pObject->GetPhysics();
-	if (!pObjectPhysics)
-		return;
-
 	if (evnt == ObjectEvent::GRAB)
 	{
 		COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass));
@@ -8544,7 +8535,7 @@ void CPlayer::OnObjectEvent(ObjectEvent evnt)
 			pOffHand->PickUpObject_MP(this, objectId);
 		}
 	}
-	else
+	else if (evnt == ObjectEvent::THROW)
 	{
 		COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass));
 		if (pOffHand)

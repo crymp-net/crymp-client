@@ -1064,7 +1064,7 @@ public:
 	Vec3 GetNetAimDirSmooth() const { return m_netAimDirSmooth; }
 
 
-	void OnObjectEvent(ObjectEvent evnt) override;
+	void OnObjectEvent(ObjectEvent evnt, const EntityId objectId) override;
 	void PlayAnimation(const char* animationName, float speed = 1.0f, bool loop = false, bool noBlend = false, int layerID = 0);
 
 	static CPlayer* FromIActor(IActor* pActor)

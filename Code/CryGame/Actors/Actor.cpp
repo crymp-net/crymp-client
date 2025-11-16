@@ -3624,14 +3624,14 @@ IMPLEMENT_RMI(CActor, SvRequestPickUpItem)
 		//Here is server handler (add this code to server, to add support for it)
 		if (gEnv->bMultiplayer && m_pGameFramework->IsImmersiveMPEnabled())
 		{
-			auto* pObject = gEnv->pEntitySystem->GetEntity(params.itemId);
+			IEntity* pObject = gEnv->pEntitySystem->GetEntity(params.itemId);
 			if (pObject)
 			{
 				if (IGameObject* pGameObject = m_pGameFramework->GetGameObject(params.itemId))
 				{
 					m_pGameFramework->GetNetContext()->DelegateAuthority(params.itemId, pNetChannel);
-					SetHeldObjectId(params.itemId);
-					OnObjectEvent(ObjectEvent::GRAB);
+
+					OnObjectEvent(ObjectEvent::GRAB, params.itemId);
 
 					GetGameObject()->InvokeRMIWithDependentObject(CActor::ClPickUp(), CActor::PickItemParams(params.itemId, false, false), eRMI_ToAllClients | eRMI_NoLocalCalls, params.itemId);
 				}
@@ -4239,12 +4239,7 @@ IMPLEMENT_RMI(CActor, ClPickUp)
 		//Here is client handler
 		if (gEnv->bMultiplayer && m_pGameFramework->IsImmersiveMPEnabled() && g_pGameCVars->mp_pickupObjects)
 		{
-			IEntity* pObject = gEnv->pEntitySystem->GetEntity(params.itemId);
-			if (pObject)
-			{
-				SetHeldObjectId(params.itemId);
-				OnObjectEvent(ObjectEvent::GRAB);
-			}
+			OnObjectEvent(ObjectEvent::GRAB, params.itemId);
 		}
 		return true;
 	}

@@ -1312,12 +1312,6 @@ public:
 
 	void SetHeldObjectId(EntityId objectId, ObjectHoldType type = ObjectHoldType::None);
 
-	float GetHeldObjectMass() const { return m_heldObjectMass; }
-	void SetHeldObjectMass(float mass)
-	{
-		m_heldObjectMass = mass; 
-	}
-
 	void SaveNick(const std::string_view& name);
 
 	bool IsGhostPit();
@@ -1386,13 +1380,12 @@ public:
 		THROW
 	};
 
-	virtual void OnObjectEvent(ObjectEvent evnt) {};
+	virtual void OnObjectEvent(ObjectEvent evnt, const EntityId objectId) {};
 
 private:
 
 	ObjectHoldType m_heldObjectType = ObjectHoldType::None;
 	EntityId m_heldObjectId = (EntityId)0;
-	float m_heldObjectMass = 0.0f;
 
 	struct IKLimb
 	{

@@ -365,10 +365,10 @@ void COffHand::PostPostSerialize()
 
 	if (needsReset)
 	{
-		SetMainHand(static_cast<CItem*>(GetOwnerActor()->GetCurrentItem()));
-		SetMainHandWeapon(m_mainHand ? static_cast<CWeapon*>(m_mainHand->GetIWeapon()) : nullptr);
+		CWeapon *pCurrentWeapon = GetOwnerActor()->GetCurrentWeapon(false);
+		SetMainHandWeapon(pCurrentWeapon);
 
-		m_mainHandIsDualWield = m_mainHand ? m_mainHand->IsDualWield() : false;
+		m_mainHandIsDualWield = pCurrentWeapon ? pCurrentWeapon->IsDualWield() : false;
 		
 		SetOffHandState(eOHS_TRANSITIONING);
 		FinishAction(eOHA_RESET);
@@ -439,16 +439,20 @@ void COffHand::Update(SEntityUpdateContext& ctx, int slot)
 	//This has to be called for remote players when they're in thirdperson,
 	//if we are spectating the remote player in firstperson, UpdateFPView will be called from CPlayer::UpdateFpSpectatorView
 	//For local client, UpdateFPView is always called, even in thirdperson (from ItemSystem::Update)
-	if (gEnv->bClient && !m_stats.fp)
-	{
-		CActor* pActor = GetOwnerActor();
-		if (pActor && pActor->IsRemote())
-		{
-			SharedUpdate(ctx.fFrameTime);
 
-			if (m_heldEntityId && m_currentState & (eOHS_HOLDING_OBJECT | eOHS_PICKING | eOHS_THROWING_OBJECT | eOHS_PICKING_ITEM | eOHS_MELEE))
+	if (slot == eIUS_General)
+	{
+		if (gEnv->bClient && !m_stats.fp)
+		{
+			CActor* pActor = GetOwnerActor();
+			if (pActor && pActor->IsRemote())
 			{
-				UpdateHeldObject();
+				SharedUpdate(ctx.fFrameTime);
+
+				if (m_heldEntityId && m_currentState & (eOHS_HOLDING_OBJECT | eOHS_PICKING | eOHS_THROWING_OBJECT | eOHS_PICKING_ITEM | eOHS_MELEE))
+				{
+					UpdateHeldObject();
+				}
 			}
 		}
 	}
@@ -507,7 +511,7 @@ void COffHand::SharedUpdate(float frameTime)
 	CheckTimers(frameTime);
 
 	//CryMP: Update held items in TP mode as well
-	//CryMP: Note: this check needs to be here, otherwise no grab anims in FP 
+	//Note: this check needs to be here, otherwise no grab anims in FP 
 	if (!m_stats.fp && m_heldEntityId)
 	{
 		UpdateFPPosition(frameTime);
@@ -575,7 +579,9 @@ void COffHand::UpdateFPView(float frameTime)
 		UpdateHeldObject();
 
 		if (m_grabType == GRAB_TYPE_TWO_HANDED)
+		{
 			UpdateWeaponLowering(frameTime);
+		}
 		else if (CActor* pActor = GetOwnerActor())
 		{
 			if (CWeapon* pWeapon = pActor->GetCurrentWeapon(false))
@@ -800,7 +806,6 @@ void COffHand::UpdateHeldObject()
 	if (!pPlayer)
 		return;
 
-
 	const EntityId entityId = m_heldEntityId;
 
 	IEntity* pEntity = m_pEntitySystem->GetEntity(entityId);
@@ -853,9 +858,9 @@ void COffHand::UpdateHeldObject()
 		{
 			if (pPlayer->IsClient())
 			{
-				if (m_mainHand && m_mainHand->IsBusy())
+				if (GetMainHandWeapon() && GetMainHandWeapon()->IsBusy())
 				{
-					m_mainHand->SetBusy(false);
+					GetMainHandWeapon()->SetBusy(false);
 				}
 
 				if (m_currentState != eOHS_THROWING_OBJECT)
@@ -990,8 +995,10 @@ void COffHand::UpdateGrabbedNPCState()
 		//Actor died while grabbed
 		if ((pActor->GetHealth() <= 0 && !m_npcWasDead) || pActor->IsFallen() || (pStats->isRagDoll))
 		{
-			if (m_mainHand && m_mainHand->IsBusy())
-				m_mainHand->SetBusy(false);
+			if (GetMainHandWeapon() && GetMainHandWeapon()->IsBusy())
+			{
+				GetMainHandWeapon()->SetBusy(false);
+			}
 			//Already throwing (do nothing)
 			if (m_currentState & (eOHS_GRABBING_NPC | eOHS_HOLDING_NPC))
 			{
@@ -1011,7 +1018,6 @@ void COffHand::UpdateGrabbedNPCState()
 
 		}
 	}
-
 }
 
 //============================================================
@@ -1038,7 +1044,6 @@ void COffHand::PostUpdate(float frameTime)
 		//UpdateGrabbedNPCState();
 		UpdateGrabbedNPCWorldPos(pEntity, NULL);
 	}
-
 }
 
 //============================================================
@@ -1474,32 +1479,29 @@ bool COffHand::PreExecuteAction(int requestedAction, int activationMode, bool fo
 				SetBusy(false);
 			}
 		}
-		SetMainHand(pMain);
-		SetMainHandWeapon(pMainWeapon);
 
+		SetMainHandWeapon(pMainWeapon);
 		m_mainHandIsDualWield = false;
 
 		if (requestedAction == eOHA_THROW_GRENADE)
 		{
-			if (m_mainHand && m_mainHand->TwoHandMode() == 1)
+			if (GetMainHandWeapon() && GetMainHandWeapon()->TwoHandMode() == 1)
 			{
 				GetOwnerActor()->HolsterItem(true);
 
-				SetMainHand(nullptr);
 				SetMainHandWeapon(nullptr);
 			}
-			else if (m_mainHand && m_mainHand->IsDualWield() && m_mainHand->GetDualWieldSlave())
+			else if (GetMainHandWeapon() && GetMainHandWeapon()->IsDualWield() && GetMainHandWeapon()->GetDualWieldSlave())
 			{
-				SetMainHand(static_cast<CItem*>(m_mainHand->GetDualWieldSlave()));
+				SetMainHandWeapon(static_cast<CWeapon*>(GetMainHandWeapon()->GetDualWieldSlave()->GetIWeapon()));
 
 				m_mainHandIsDualWield = true;
-				m_mainHand->Select(false);
+				GetMainHandWeapon()->Select(false);
 			}
 		}
 	}
 	else if (requestedAction == eOHA_REINIT_WEAPON)
 	{
-		SetMainHand(pMain);
 		SetMainHandWeapon(pMainWeapon);
 	}
 
@@ -1542,6 +1544,9 @@ void COffHand::NetStartFire()
 
 	CWeapon::NetStartFire();
 
+	if (!gEnv->bClient)
+		return;
+
 	if (m_heldEntityId)
 	{
 		CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor());
@@ -1556,25 +1561,27 @@ void COffHand::NetStartFire()
 	}
 
 	//Handle FP Spectator
-	if (m_stats.fp)
+	if (m_stats.fp && GetOwnerActor())
 	{
-		SetMainHand(static_cast<CItem*>(GetOwnerActor()->GetCurrentItem()));
-		if (m_mainHand)
+		CWeapon *pMainWeapon = GetOwnerActor()->GetCurrentWeapon(false);
+		SetMainHandWeapon(pMainWeapon);
+		
+		if (pMainWeapon)
 		{
 			//if (!(m_currentState & (eOHS_THROWING_NPC | eOHS_THROWING_OBJECT)))
 			{
-				if (m_mainHandWeapon && m_mainHandWeapon->IsWeaponRaised())
+				if (pMainWeapon->IsWeaponRaised())
 				{
-					m_mainHandWeapon->RaiseWeapon(false, true);
-					m_mainHandWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
+					pMainWeapon->RaiseWeapon(false, true);
+					pMainWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
 				}
-				m_mainHand->PlayAction(g_pItemStrings->offhand_on);
-				m_mainHand->SetActionSuffix("akimbo_");
+				pMainWeapon->PlayAction(g_pItemStrings->offhand_on);
+				pMainWeapon->SetActionSuffix("akimbo_");
 			}
 		}
-		if (m_mainHandWeapon && m_mainHandWeapon->GetEntity()->GetClass() == CItem::sFistsClass)
+		if (pMainWeapon && pMainWeapon->GetEntity()->GetClass() == CItem::sFistsClass)
 		{
-			CFists* pFists = static_cast<CFists*>(m_mainHandWeapon);
+			CFists* pFists = static_cast<CFists*>(pMainWeapon);
 			pFists->RequestAnimState(CFists::eFAS_FIGHT);
 		}
 	}
@@ -1585,6 +1592,16 @@ void COffHand::NetStopFire()
 {
 	CWeapon::NetStopFire();
 
+	if (!gEnv->bClient)
+	{
+		CActor* pOwner = GetOwnerActor();
+		if (pOwner && pOwner->GetHeldObjectId())
+		{
+			pOwner->OnObjectEvent(CActor::ObjectEvent::THROW, pOwner->GetHeldObjectId());
+		}
+		return;
+	}
+
 	AttachGrenadeToHand(GetCurrentFireMode(), m_stats.fp, false);
 
 	if (m_heldEntityId)
@@ -1592,19 +1609,19 @@ void COffHand::NetStopFire()
 		CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor());
 		if (pPlayer)
 		{
-			pPlayer->OnObjectEvent(CActor::ObjectEvent::THROW);
+			pPlayer->OnObjectEvent(CActor::ObjectEvent::THROW, m_heldEntityId);
 		}
 
-		if (m_mainHand && !m_mainHand->IsDualWield() && g_pGameCVars->mp_buyPageKeepTime != 170)
+		if (GetMainHandWeapon() && !GetMainHandWeapon()->IsDualWield())
 		{
-			m_mainHand->PlayAction(g_pItemStrings->offhand_off, 0, false, CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
+			GetMainHandWeapon()->PlayAction(g_pItemStrings->offhand_off, 0, false, CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
 		}
 	}
 	else
 	{
 		GetScheduler()->TimerAction(
 			GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
-			MakeAction([this, hand = m_mainHand](CItem*) {
+			MakeAction([this, hand = GetMainHandWeapon()](CItem*) {
 				this->FinishGrenadeAction(hand);
 				}),
 			/*persistent=*/false
@@ -1659,21 +1676,13 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 
 	case eOHA_THROW_OBJECT:
 	{
-		GetScheduler()->TimerAction( //CryMP: Timer needed for FP animations
-			500,
-			MakeAction([this](CItem*) {
-				this->FinishAction(eOHA_RESET);
-				}),
-			/*persistent=*/true
-		);
-
 		CActor* pActor = GetOwnerActor();
 		const EntityId playerId = pActor ? pActor->GetEntityId() : 0;
 		const bool isTwoHand = IsTwoHandMode();
 
 		GetScheduler()->TimerAction(
 			150,
-			MakeAction([this, playerId, isTwoHand](CItem* /*unused*/) {
+			MakeAction([this, playerId, isTwoHand](CItem*) {
 				CPlayer* pPlayer = CPlayer::FromActorId(playerId);
 				if (pPlayer)
 				{
@@ -1681,7 +1690,6 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 					{
 						if (isTwoHand)
 						{
-
 							pPlayer->SetExtension("c4");
 							pPlayer->SetInput("plant", false);
 						}
@@ -1693,6 +1701,14 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 						}
 					}
 				}
+				}),
+			/*persistent=*/true
+		);
+
+		GetScheduler()->TimerAction( //CryMP: Timer needed for FP animations
+			500,
+			MakeAction([this](CItem*) {
+				this->FinishAction(eOHA_RESET);
 				}),
 			/*persistent=*/true
 		);
@@ -1716,24 +1732,37 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 	case eOHA_RESET:
 		//Reset main weapon status and reset offhand
 	{
+		// enable leg IK again
+		EnableFootGroundAlignment(true);
+
 		CActor* pActor = GetOwnerActor();
 		if (pActor)
 		{
+			const EntityId entityId = m_heldEntityId;
+
 			const EntityId playerId = pActor->GetEntityId();
 			if (m_prevMainHandId && !pActor->IsSwimming())
 			{
 				pActor->SelectItem(m_prevMainHandId, false);
-				SetMainHand(static_cast<CItem*>(pActor->GetCurrentItem()));
-				SetMainHandWeapon(static_cast<CWeapon*>(m_mainHand ? m_mainHand->GetIWeapon() : nullptr));
+				CWeapon* pCurrentWeapon = pActor->GetCurrentWeapon(false);
+				SetMainHandWeapon(pCurrentWeapon);
 			}
 
 			if (pActor->IsClient())
 			{
 				RequestFireMode(m_lastFireModeId); //Works for MP as well
+
+				if (gEnv->bMultiplayer && entityId)
+				{
+					RequestStopFire();
+				}
 			}
 
 			float timeDelay = 0.1f;
-			if (!m_mainHand)
+
+			CWeapon *pMainWeapon = GetMainHandWeapon();
+
+			if (!pMainWeapon)
 			{
 				SActorStats* pStats = pActor->GetActorStats();
 				if (!pActor->ShouldSwim() && !m_bCutscenePlaying && (pStats && !pStats->inFreefall.Value()))
@@ -1743,35 +1772,26 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 			}
 			else if (!m_mainHandIsDualWield && !m_prevMainHandId)
 			{
-				m_mainHand->ResetDualWield();
-				m_mainHand->PlayAction(g_pItemStrings->offhand_off, 0, false, CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
-				timeDelay = (m_mainHand->GetCurrentAnimationTime(CItem::eIGS_FirstPerson) + 50) * 0.001f;
+				pMainWeapon->ResetDualWield();
+				pMainWeapon->PlayAction(g_pItemStrings->offhand_off, 0, false, CItem::eIPAF_Default | CItem::eIPAF_NoBlend);
+				timeDelay = (pMainWeapon->GetCurrentAnimationTime(CItem::eIGS_FirstPerson) + 50) * 0.001f;
 			}
 			else if (m_mainHandIsDualWield)
 			{
-				m_mainHand->Select(true);
+				pMainWeapon->Select(true);
 			}
 
 			//CryMP: Fixes instant change to relaxed state after throwing NPC 
-			if (m_mainHandWeapon && m_mainHandWeapon->GetEntity()->GetClass() == CItem::sFistsClass)
+			if (pMainWeapon && pMainWeapon->GetEntity()->GetClass() == CItem::sFistsClass)
 			{
-				CFists* pFists = static_cast<CFists*>(m_mainHandWeapon);
+				CFists* pFists = static_cast<CFists*>(pMainWeapon);
 				pFists->RequestAnimState(CFists::eFAS_FIGHT);
 			}
 
-			if (pActor->IsRemote())
-			{
-				SetOffHandState(eOHS_INIT_STATE);
-			}
-			else
-			{
-				SetResetTimer(timeDelay);
-			}
+			SetResetTimer(timeDelay);
 
 			RequireUpdate(eIUS_General);
 			m_prevMainHandId = 0;
-
-			const EntityId entityId = m_heldEntityId;
 
 			RemoveHeldEntityId(m_heldEntityId, static_cast<ConstraintReset>(SkipIfDelayTimerActive | Immediate));
 
@@ -1782,27 +1802,6 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 				//CryMP: Checks if ReachState::ThrowPrep active, resets bend if so 
 				pPlayer->CommitThrow();
 			}
-
-			GetScheduler()->TimerAction(
-				1000,
-				MakeAction([this, playerId, entityId](CItem* /*unused*/) {
-					CPlayer* pPlayer = CPlayer::FromActorId(playerId);
-					if (pPlayer)
-					{
-						CItem* pItem = static_cast<CItem*>(pPlayer->GetCurrentItem());
-						if (pItem)
-						{
-							pItem->PlaySelectAnimation(pPlayer, true);
-						}
-					}
-					IEntity* pObject = m_pEntitySystem->GetEntity(entityId);
-					if (pObject)
-					{
-						AwakeEntityPhysics(pObject);
-					}
-					}),
-				/*persistent=*/true
-			);
 		}
 	}
 
@@ -1843,6 +1842,7 @@ void COffHand::Freeze(bool freeze)
 	}
 }
 
+//==============================================================================
 void COffHand::LogOffHandState(EOffHandStates eOHS)
 {
 	// -- Current State Bitmask --
@@ -1872,7 +1872,8 @@ void COffHand::LogOffHandState(EOffHandStates eOHS)
 			stateBits += f.name;
 		}
 	}
-	CryLogAlways("SetOffHandState: $6%s", stateBits.c_str());
+
+	CryLogAlways("%s OffHandState: $6%s", stateBits.c_str(), (GetOwnerActor() ? GetOwnerActor()->IsClient() : false) ? "$3[Client]$1" : "$8[Remote]$1");
 }
 
 //==============================================================================
@@ -1882,7 +1883,6 @@ void COffHand::SetOffHandState(EOffHandStates eOHS)
 
 	if (eOHS & eOHS_INIT_STATE)
 	{
-		SetMainHand(nullptr);
 		SetMainHandWeapon(nullptr);
 
 		m_preHeldEntityId = 0;
@@ -1895,15 +1895,15 @@ void COffHand::SetOffHandState(EOffHandStates eOHS)
 }
 
 //==============================================================================
-void COffHand::SetMainHand(CItem *pItem)
-{
-	m_mainHand = pItem;
-}
-
-//==============================================================================
 void COffHand::SetMainHandWeapon(CWeapon* pWeapon)
 {
 	m_mainHandWeapon = pWeapon;
+}
+
+//==============================================================================
+CWeapon* COffHand::GetMainHandWeapon() const
+{
+	return m_mainHandWeapon;
 }
 
 //==============================================================================
@@ -1949,37 +1949,39 @@ void COffHand::StartSwitchGrenade(bool xi_switch, bool fakeSwitch)
 		return;
 	}
 
+	CWeapon* pMainWeapon = GetMainHandWeapon();
+
 	//Unzoom weapon if neccesary
-	if (m_mainHandWeapon && (m_mainHandWeapon->IsZoomed() || m_mainHandWeapon->IsZooming()))
+	if (pMainWeapon && (pMainWeapon->IsZoomed() || pMainWeapon->IsZooming()))
 	{
-		m_mainHandWeapon->ExitZoom();
-		m_mainHandWeapon->ExitViewmodes();
+		pMainWeapon->ExitZoom();
+		pMainWeapon->ExitViewmodes();
 	}
 
 	m_mainHandIsDualWield = false;
 
 	//A new grenade type/fire mode was chosen
-	if (m_mainHand && (m_mainHand->TwoHandMode() != 1) && !m_mainHand->IsDualWield())
+	if (pMainWeapon && (pMainWeapon->TwoHandMode() != 1) && !pMainWeapon->IsDualWield())
 	{
 
-		if (m_mainHandWeapon && m_mainHandWeapon->GetEntity()->GetClass() == CItem::sFistsClass)
+		if (pMainWeapon->GetEntity()->GetClass() == CItem::sFistsClass)
 		{
-			CFists* pFists = static_cast<CFists*>(m_mainHandWeapon);
+			CFists* pFists = static_cast<CFists*>(pMainWeapon);
 			pFists->RequestAnimState(CFists::eFAS_FIGHT);
 		}
 
-		if (m_mainHandWeapon && m_mainHandWeapon->IsWeaponRaised())
+		if (pMainWeapon->IsWeaponRaised())
 		{
-			m_mainHandWeapon->RaiseWeapon(false, true);
-			m_mainHandWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
+			pMainWeapon->RaiseWeapon(false, true);
+			pMainWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
 		}
 
 		//Play deselect left hand on main item
-		m_mainHand->PlayAction(g_pItemStrings->offhand_on);
-		m_mainHand->SetActionSuffix("akimbo_");
+		pMainWeapon->PlayAction(g_pItemStrings->offhand_on);
+		pMainWeapon->SetActionSuffix("akimbo_");
 
 		GetScheduler()->TimerAction( 
-			m_mainHand->GetCurrentAnimationTime(eIGS_FirstPerson),
+			pMainWeapon->GetCurrentAnimationTime(eIGS_FirstPerson),
 			MakeAction([this](CItem*) {
 				this->FinishAction(eOHA_SWITCH_GRENADE);
 				}),
@@ -1990,18 +1992,17 @@ void COffHand::StartSwitchGrenade(bool xi_switch, bool fakeSwitch)
 	else
 	{
 		//No main item or holstered (wait 100ms)
-		if (m_mainHand && m_mainHand->IsDualWield() && m_mainHand->GetDualWieldSlave())
+		if (pMainWeapon && pMainWeapon->IsDualWield() && pMainWeapon->GetDualWieldSlave())
 		{
-			SetMainHand(static_cast<CItem*>(m_mainHand->GetDualWieldSlave()));
+			SetMainHandWeapon(static_cast<CWeapon*>(pMainWeapon->GetDualWieldSlave()->GetIWeapon()));
 
-			m_mainHand->Select(false);
+			pMainWeapon->Select(false);
 			m_mainHandIsDualWield = true;
 		}
 		else
 		{
 			GetOwnerActor()->HolsterItem(true);
 
-			SetMainHand(nullptr);
 			SetMainHandWeapon(nullptr);
 		}
 		GetScheduler()->TimerAction(
@@ -2031,7 +2032,7 @@ void COffHand::EndSwitchGrenade()
 
 	GetScheduler()->TimerAction(
 		GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
-		MakeAction([this, hand = m_mainHand](CItem*) {
+		MakeAction([this, hand = GetMainHandWeapon()](CItem*) {
 			this->FinishGrenadeAction(hand);
 			}),
 		/*persistent=*/false
@@ -2060,128 +2061,6 @@ void COffHand::PerformThrow(float speedScale)
 			}),
 		/*persistent=*/false
 	);
-}
-
-//==============================================================================
-void COffHand::PerformThrow(int activationMode, EntityId throwableId, int oldFMId /* = 0 */, bool isLivingEnt /*=false*/)
-{
-	if (!m_fm)
-		return;
-
-	if (!throwableId and activationMode == eAAM_OnPress)
-	{
-		SetOffHandState(eOHS_HOLDING_GRENADE);
-	}
-
-	//Throw objects...
-	if (throwableId && activationMode == eAAM_OnPress)
-	{
-		if (!isLivingEnt)
-		{
-			CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor());
-			if (pPlayer)
-			{
-				pPlayer->NotifyObjectGrabbed(false, throwableId, false);
-			}
-
-			SetOffHandState(eOHS_THROWING_OBJECT);
-
-			CThrow* pThrow = static_cast<CThrow*>(m_fm);
-			pThrow->SetThrowable(throwableId, m_forceThrow,
-				MakeAction([this](CItem*) {
-					this->FinishAction(eOHA_THROW_OBJECT);
-					})
-			);
-		}
-		else
-		{
-			SetOffHandState(eOHS_THROWING_NPC);
-
-			CThrow* pThrow = static_cast<CThrow*>(m_fm);
-			pThrow->SetThrowable(throwableId, true,
-				MakeAction([this](CItem*) {
-					this->FinishAction(eOHA_THROW_NPC);
-					})
-			);
-		}
-		m_forceThrow = false;
-
-		// enable leg IK again
-		EnableFootGroundAlignment(true);
-	}
-	//--------------------------
-
-	if (activationMode == eAAM_OnPress)
-	{
-		if (!m_fm->IsFiring() && m_nextThrowTimer < 0.0f)
-		{
-			if (m_currentState == eOHS_HOLDING_GRENADE)
-			{
-				AttachGrenadeToHand(GetCurrentFireMode(), m_stats.fp);
-			}
-
-			StartFire(); //m_fm->StartFire();
-
-			SetBusy(false);
-
-			if (m_mainHand && m_fm->IsFiring())
-			{
-				if (!(m_currentState & (eOHS_THROWING_NPC | eOHS_THROWING_OBJECT)))
-				{
-					if (m_mainHandWeapon && m_mainHandWeapon->IsWeaponRaised())
-					{
-						m_mainHandWeapon->RaiseWeapon(false, true);
-						m_mainHandWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
-					}
-
-					m_mainHand->PlayAction(g_pItemStrings->offhand_on);
-					m_mainHand->SetActionSuffix("akimbo_");
-				}
-			}
-			if (!throwableId)
-			{
-				if (m_mainHandWeapon && m_mainHandWeapon->GetEntity()->GetClass() == CItem::sFistsClass)
-				{
-					CFists* pFists = static_cast<CFists*>(m_mainHandWeapon);
-					pFists->RequestAnimState(CFists::eFAS_FIGHT);
-				}
-			}
-		}
-
-	}
-	else if (activationMode == eAAM_OnRelease && m_nextThrowTimer <= 0.0f)
-	{
-		CThrow* pThrow = static_cast<CThrow*>(m_fm);
-		if (m_currentState != eOHS_HOLDING_GRENADE)
-		{
-			pThrow->ThrowingGrenade(false);
-		}
-		else if (m_currentState == eOHS_HOLDING_GRENADE)
-		{
-			SetOffHandState(eOHS_THROWING_GRENADE);
-		}
-		else
-		{
-			CancelAction();
-			return;
-		}
-
-		m_nextThrowTimer = 60.0f / m_fm->GetFireRate();
-
-		m_fm->StopFire();
-		pThrow->ThrowingGrenade(true);
-
-		if (m_fm->IsFiring() && m_currentState == eOHS_THROWING_GRENADE)
-		{
-			GetScheduler()->TimerAction(
-				GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
-				MakeAction([this, hand = m_mainHand](CItem*) {
-					this->FinishGrenadeAction(hand);
-					}),
-				/*persistent=*/false
-			);
-		}
-	}
 }
 
 //===============================================================================
@@ -2664,18 +2543,17 @@ bool COffHand::PerformPickUp(EntityId entityId)
 					pPlayer->NotifyObjectGrabbed(true, m_heldEntityId, false, (m_grabType == GRAB_TYPE_TWO_HANDED));
 				}
 			}
-
-			//CryMP
-			if (pActor->IsRemote())
-			{
-				if (!IsSelected())
-				{
-					Select(true);
-				}
-			}
 		}
 
 		SetDefaultIdleAnimation(eIGS_FirstPerson, m_grabTypes[m_grabType].idle);
+
+		if (!g_pGameCVars->mp_netSerializeHolsteredItems && m_grabType == GRAB_TYPE_TWO_HANDED)
+		{
+			if (pActor && pActor->IsRemote())
+			{
+				pActor->HolsterItem(true);
+			}
+		}
 
 		return true;
 	}
@@ -3105,17 +2983,50 @@ void COffHand::StartPickUpItem()
 		return;
 	}
 
+	SetIgnoreCollisionsWithOwner(true, m_preHeldEntityId);
+
+	pPlayer->NeedToCrouch(pPreHeldEntity->GetWorldPos());
+
+	CWeapon *pMainWeapon = GetMainHandWeapon();
+
 	//Unzoom weapon if neccesary
-	if (m_mainHandWeapon && (m_mainHandWeapon->IsZoomed() || m_mainHandWeapon->IsZooming()))
+	if (pMainWeapon && (pMainWeapon->IsZoomed() || pMainWeapon->IsZooming()))
 	{
-		m_mainHandWeapon->ExitZoom();
-		m_mainHandWeapon->ExitViewmodes();
+		pMainWeapon->ExitZoom();
+		pMainWeapon->ExitViewmodes();
 	}
 
-	if (m_mainHandWeapon && m_mainHandWeapon->IsWeaponRaised())
+	if (pMainWeapon && pMainWeapon->IsWeaponRaised())
 	{
-		m_mainHandWeapon->RaiseWeapon(false, true);
-		m_mainHandWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
+		pMainWeapon->RaiseWeapon(false, true);
+		pMainWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
+	}
+
+	m_mainHandIsDualWield = false;
+
+	if (pMainWeapon && (pMainWeapon->TwoHandMode() == 1 || drop_success))
+	{
+		GetOwnerActor()->HolsterItem(true);
+
+		SetMainHandWeapon(nullptr);
+	}
+	else
+	{
+		if (pMainWeapon)
+		{
+			if (pMainWeapon->IsDualWield() && pMainWeapon->GetDualWieldSlave())
+			{
+				SetMainHandWeapon(static_cast<CWeapon*>(pMainWeapon->GetDualWieldSlave()->GetIWeapon()));
+
+				pMainWeapon->Select(false);
+				m_mainHandIsDualWield = true;
+			}
+			else
+			{
+				pMainWeapon->PlayAction(g_pItemStrings->offhand_on);
+				pMainWeapon->SetActionSuffix("akimbo_");
+			}
+		}
 	}
 
 	//Everything seems ok, start the action...
@@ -3128,35 +3039,6 @@ void COffHand::StartPickUpItem()
 			}),
 		/*persistent=*/false
 	);
-
-	m_mainHandIsDualWield = false;
-	pPlayer->NeedToCrouch(pPreHeldEntity->GetWorldPos());
-
-	if (m_mainHand && (m_mainHand->TwoHandMode() == 1 || drop_success))
-	{
-		GetOwnerActor()->HolsterItem(true);
-
-		SetMainHand(nullptr);
-		SetMainHandWeapon(nullptr);
-	}
-	else
-	{
-		if (m_mainHand)
-		{
-			if (m_mainHand->IsDualWield() && m_mainHand->GetDualWieldSlave())
-			{
-				SetMainHand(static_cast<CItem*>(m_mainHand->GetDualWieldSlave()));
-
-				m_mainHand->Select(false);
-				m_mainHandIsDualWield = true;
-			}
-			else
-			{
-				m_mainHand->PlayAction(g_pItemStrings->offhand_on);
-				m_mainHand->SetActionSuffix("akimbo_");
-			}
-		}
-	}
 
 	PlayAction(g_pItemStrings->pickup_weapon_left, 0, false, eIPAF_Default | eIPAF_RepeatLastFrame);
 
@@ -3175,34 +3057,37 @@ void COffHand::StartPickUpItem()
 //=========================================================================================================
 void COffHand::EndPickUpItem()
 {
-	IFireMode* pReloadFM = 0;
+	IFireMode* pReloadFM = nullptr;
 	EntityId prevWeaponId = 0;
-	if (m_mainHandWeapon && IsServer() && m_mainHand)
+
+	CWeapon* pMainWeapon = GetMainHandWeapon();
+
+	if (pMainWeapon && IsServer())
 	{
-		prevWeaponId = m_mainHand->GetEntityId();
-		pReloadFM = m_mainHandWeapon->GetFireMode(m_mainHandWeapon->GetCurrentFireMode());
+		prevWeaponId = pMainWeapon->GetEntityId();
+		pReloadFM = pMainWeapon->GetFireMode(pMainWeapon->GetCurrentFireMode());
 		if (pReloadFM)
 		{
 			int fmAmmo = pReloadFM->GetAmmoCount();
 			int invAmmo = GetInventoryAmmoCount(pReloadFM->GetAmmoType());
 			if (pReloadFM && (pReloadFM->GetAmmoCount() != 0 || GetInventoryAmmoCount(pReloadFM->GetAmmoType()) != 0))
 			{
-				pReloadFM = 0;
+				pReloadFM = nullptr;
 			}
 		}
 	}
 
 	//Restore main weapon
-	if (m_mainHand)
+	if (pMainWeapon)
 	{
 		if (m_mainHandIsDualWield)
 		{
-			m_mainHand->Select(true);
+			pMainWeapon->Select(true);
 		}
 		else
 		{
-			m_mainHand->ResetDualWield();
-			m_mainHand->PlayAction(g_pItemStrings->offhand_off, 0, false, eIPAF_Default | eIPAF_NoBlend);
+			pMainWeapon->ResetDualWield();
+			pMainWeapon->PlayAction(g_pItemStrings->offhand_off, 0, false, eIPAF_Default | eIPAF_NoBlend);
 		}
 	}
 	else
@@ -3283,59 +3168,63 @@ void COffHand::StartPickUpObject(const EntityId entityId, bool isLivingEnt /* = 
 		pPlayer->SetHeldObjectId(entityId, armHoldType);
 	}
 
+	CWeapon *pMainHandWeapon = GetMainHandWeapon();
+
 	//Unzoom weapon if neccesary
-	if (m_mainHandWeapon && (m_mainHandWeapon->IsZoomed() || m_mainHandWeapon->IsZooming()))
+	if (pMainHandWeapon && (pMainHandWeapon->IsZoomed() || pMainHandWeapon->IsZooming()))
 	{
-		m_mainHandWeapon->ExitZoom();
-		m_mainHandWeapon->ExitViewmodes();
+		pMainHandWeapon->ExitZoom();
+		pMainHandWeapon->ExitViewmodes();
 	}
 
 	// if two handed or dual wield we use the fists as the mainhand weapon
-	if (m_mainHand && (m_grabTypes[m_grabType].twoHanded || m_mainHand->TwoHandMode() >= 1))
+	if (pMainHandWeapon && (m_grabTypes[m_grabType].twoHanded || pMainHandWeapon->TwoHandMode() >= 1))
 	{
 		if (m_grabTypes[m_grabType].twoHanded)
 		{
 			GetOwnerActor()->HolsterItem(true);
-			
-			SetMainHand(nullptr);
+
 			SetMainHandWeapon(nullptr);
+			pMainHandWeapon = nullptr;
 		}
 		else
 		{
-			m_prevMainHandId = m_mainHand->GetEntityId();
+			m_prevMainHandId = pMainHandWeapon->GetEntityId();
 			GetOwnerActor()->SelectItemByName("Fists", false);
 
-			SetMainHand(GetActorItem(GetOwnerActor()));
-			SetMainHandWeapon(static_cast<CWeapon*>(m_mainHand ? m_mainHand->GetIWeapon() : nullptr));
+			CItem* pFists = GetActorItem(GetOwnerActor());
+			SetMainHandWeapon(static_cast<CWeapon*>(pFists ? pFists->GetIWeapon() : nullptr));
+
+			pMainHandWeapon = GetMainHandWeapon();
 		}
 	}
 
-	if (m_mainHand)
+	if (pMainHandWeapon)
 	{
 
-		if (m_mainHandWeapon && m_mainHandWeapon->IsWeaponRaised())
+		if (pMainHandWeapon && pMainHandWeapon->IsWeaponRaised())
 		{
-			m_mainHandWeapon->RaiseWeapon(false, true);
-			m_mainHandWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
+			pMainHandWeapon->RaiseWeapon(false, true);
+			pMainHandWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
 		}
 
-		if (m_mainHand->IsDualWield() && m_mainHand->GetDualWieldSlave())
+		if (pMainHandWeapon->IsDualWield() && pMainHandWeapon->GetDualWieldSlave())
 		{
-			SetMainHand(static_cast<CItem*>(m_mainHand->GetDualWieldSlave()));
+			SetMainHandWeapon(static_cast<CWeapon*>(pMainHandWeapon->GetDualWieldSlave()->GetIWeapon()));
 
-			m_mainHand->Select(false);
+			pMainHandWeapon->Select(false);
 			m_mainHandIsDualWield = true;
 		}
 		else
 		{
-			m_mainHand->PlayAction(g_pItemStrings->offhand_on);
-			m_mainHand->SetActionSuffix("akimbo_");
+			pMainHandWeapon->PlayAction(g_pItemStrings->offhand_on);
+			pMainHandWeapon->SetActionSuffix("akimbo_");
 		}
 
 
-		if (m_mainHandWeapon && pPlayer->IsClient())
+		if (pMainHandWeapon && pPlayer->IsClient())
 		{
-			IFireMode* pFireMode = m_mainHandWeapon->GetFireMode(m_mainHandWeapon->GetCurrentFireMode());
+			IFireMode* pFireMode = pMainHandWeapon->GetFireMode(pMainHandWeapon->GetCurrentFireMode());
 			if (pFireMode)
 			{
 				pFireMode->SetRecoilMultiplier(1.5f);		//Increase recoil for the weapon
@@ -3426,9 +3315,10 @@ void COffHand::StartThrowObject(const EntityId entityId, int activationMode, boo
 		PerformThrowAction_Release(entityId, isLivingEnt);
 	}
 
-	if (m_mainHandWeapon)
+	CWeapon *pMainHandWeapon = GetMainHandWeapon();
+	if (pMainHandWeapon)
 	{
-		IFireMode* pFireMode = m_mainHandWeapon->GetFireMode(m_mainHandWeapon->GetCurrentFireMode());
+		IFireMode* pFireMode = pMainHandWeapon->GetFireMode(pMainHandWeapon->GetCurrentFireMode());
 		if (pFireMode)
 		{
 			pFireMode->SetRecoilMultiplier(1.0f);		//Restore normal recoil for the weapon
@@ -4078,31 +3968,6 @@ bool COffHand::Request_PickUpObject_MP()
 			return false;
 		}
 
-		//Check if someone else is carrying the object already
-		const int count = m_pActorSystem->GetActorCount();
-		if (count > 1)
-		{
-			IActorIteratorPtr pIter = m_pActorSystem->CreateActorIterator();
-			while (IActor* pActor = pIter->Next())
-			{
-				if (pActor == pOwner)
-					continue;
-
-				CPlayer* pOwnerPlayer = CPlayer::FromIActor(pActor);
-
-				if (pOwnerPlayer && pOwnerPlayer->GetHeldObjectId() == objectId)
-				{
-					COffHand* pOffHand = static_cast<COffHand*>(pOwnerPlayer->GetItemByClass(CItem::sOffHandClass));
-					if (pOffHand)
-					{
-						//stolen object event
-						pOffHand->ThrowObject_MP(pOwnerPlayer, objectId, true);
-					}
-					break;
-				}
-			}
-		}
-
 		const bool bClientEntity = (pObject->GetFlags() & ENTITY_FLAG_CLIENT_ONLY);
 		if (!bClientEntity)
 		{
@@ -4120,27 +3985,60 @@ bool COffHand::Request_PickUpObject_MP()
 //==============================================================
 bool COffHand::PickUpObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId) //Called from CPlayer.cpp
 {
+	if (!pPlayer)
+		return false;
+
 	IEntity* pObject = m_pEntitySystem->GetEntity(synchedObjectId);
 	if (!pObject)
 		return false;
 
-	//CryMP: Remote player stole our object
-	CPlayer* pClientPlayer = static_cast<CPlayer*>(m_pGameFramework->GetClientActor());
-	if (pClientPlayer && pClientPlayer != pPlayer && pClientPlayer->GetHeldObjectId() == synchedObjectId)
+	//Check if someone else is carrying the object already 
+	const int count = m_pActorSystem->GetActorCount();
+	if (count > 1)
 	{
-		COffHand* pClientOffHand = static_cast<COffHand*>(pClientPlayer->GetWeaponByClass(CItem::sOffHandClass));
-		if (pClientOffHand)
+		IActorIteratorPtr pIter = m_pActorSystem->CreateActorIterator();
+		while (IActor* pActor = pIter->Next())
 		{
-			//Will take care of resets 
-			pClientOffHand->ThrowObject_MP(pClientPlayer, synchedObjectId, true);
+			CPlayer* pOwnerPlayer = CPlayer::FromIActor(pActor);
+			if (pOwnerPlayer)
+			{
+				if (pOwnerPlayer->IsClient() && pOwnerPlayer == pPlayer)
+				{
+					continue;
+				}
+				else
+				{
+					if (pOwnerPlayer->GetHeldObjectId() == synchedObjectId)
+					{
+						COffHand* pOffHand = static_cast<COffHand*>(pOwnerPlayer->GetItemByClass(CItem::sOffHandClass));
+						if (pOffHand)
+						{
+							//stolen object event
+							pOffHand->ThrowObject_MP(pOwnerPlayer, synchedObjectId, true);
+						}
+					}
+				}
+			}
 		}
+	}
+
+	if (!gEnv->bClient)
+	{
+		if (CActor* pActor = GetOwnerActor())
+		{
+			pActor->SetHeldObjectId(synchedObjectId);
+		}
+		return true;
 	}
 
 	StartPickUpObject(synchedObjectId, false); 
 
 	if (gEnv->bClient && pPlayer->IsRemote())
 	{
-		EnableUpdate(true, eIUS_General);
+		if (!IsSelected())
+		{
+			Select(true); //CryMP: Starts updates
+		}
 	}
 
 	return true;
@@ -4152,9 +4050,14 @@ bool COffHand::ThrowObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId, 
 	if (!pPlayer)
 		return false;
 
-	IEntity* pObject = m_pEntitySystem->GetEntity(synchedObjectId);
-	if (!pObject)
-		return false;
+	if (!gEnv->bClient)
+	{
+		if (CActor* pActor = GetOwnerActor())
+		{
+			pActor->SetHeldObjectId(0);
+		}
+		return true;
+	}
 
 	const EntityId playerId = pPlayer->GetEntityId();
 
@@ -4164,13 +4067,26 @@ bool COffHand::ThrowObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId, 
 	}
 	else
 	{
-		pPlayer->PlayAnimation("combat_plantUB_c4_01", 1.0f, false, true, 1);
+		//pPlayer->PlayAnimation("combat_plantUB_c4_01", 1.0f, false, true, 1);
 		if (pPlayer->IsRemote())
 		{
 			//CryMP: This will call eOHA_RESET on a timer
 			FinishAction(eOHA_THROW_OBJECT);
 		}
 	}
+
+	//CryMP: Small bump to the object in mp after 1 sec
+	GetScheduler()->TimerAction(
+		1000,
+		MakeAction([this, eId = synchedObjectId](CItem*) {
+			IEntity* pObject = m_pEntitySystem->GetEntity(eId);
+			if (pObject)
+			{
+				AwakeEntityPhysics(pObject);
+			}
+			}),
+		/*persistent=*/true
+	);
 
 	return true;
 }
@@ -4293,8 +4209,19 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 			}
 			else
 			{
-				// One-hand default
-				positionOffset = Vec3(-0.4f, 0.7f, 0.0f);
+				if (m_grabbedNPCSpecies == eGCT_HUMAN)
+				{
+					positionOffset = Vec3(-0.2f, 0.7f, 0.0f);
+				}
+				else if (m_grabbedNPCSpecies == eGCT_TROOPER || m_grabbedNPCSpecies == eGCT_ALIEN)
+				{
+					positionOffset = Vec3(0.25f, 0.7f, 0.0f);
+				}
+				else
+				{
+					// One-hand default
+					positionOffset = Vec3(-0.4f, 0.7f, 0.0f);
+				}
 			}
 
 			Vec3 fpPosOffset = Vec3(ZERO);
@@ -4322,15 +4249,15 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 			{
 				GetScheduler()->TimerAction(
 					200, //needs to be called with a delay because of raycasts
-					MakeAction([this, ownerId, objectId, isTwoHand](CItem* /*unused*/) {
+					MakeAction([this, obId = objectId, two = isTwoHand](CItem* /*unused*/) {
 
 						CActor* pOwner = this->GetOwnerActor();
-						IEntity* pObject = gEnv->pEntitySystem->GetEntity(objectId);
+						IEntity* pObject = gEnv->pEntitySystem->GetEntity(obId);
 						if (!pOwner || !pObject)
 							return;
 
 						SGripHitLocal rayGrips =
-							ComputeGripHitsLocal(pOwner, pObject, isTwoHand);
+							ComputeGripHitsLocal(pOwner, pObject, two);
 
 						if (!rayGrips.ok)
 						{
@@ -4493,7 +4420,9 @@ bool COffHand::SetHeldEntityId(const EntityId entityId)
 		return true;
 
 	if (!entityId || isNewItem)
+	{
 		return true;
+	}
 
 	HandleNewHeldEntity(entityId, isNewItem, pActor);
 
@@ -4503,6 +4432,12 @@ bool COffHand::SetHeldEntityId(const EntityId entityId)
 //==============================================================
 bool COffHand::RemoveHeldEntityId(const EntityId oldId /* = 0*/, ConstraintReset constraintReset /* = ConstraintReset::Immediate*/)
 {
+	CActor* pActor = GetOwnerActor();
+	if (pActor)
+	{
+		pActor->SetHeldObjectId(0);
+	}
+
 	const EntityId oldHeldEntityId = oldId ? oldId : m_heldEntityId;
 	if (!oldHeldEntityId)
 	{
@@ -4510,12 +4445,6 @@ bool COffHand::RemoveHeldEntityId(const EntityId oldId /* = 0*/, ConstraintReset
 	}
 
 	m_heldEntityId = 0;
-
-	CActor* pActor = GetOwnerActor();
-	if (pActor)
-	{
-		pActor->SetHeldObjectId(0);
-	}
 
 	if (!gEnv->bClient)
 		return true;
@@ -4546,7 +4475,7 @@ void COffHand::HandleNewHeldEntity(const EntityId entityId, const bool isNewItem
 	// Remote client in MP: mark client-only and zero mass while storing original mass on actor
 	if (gEnv->bClient && gEnv->bMultiplayer && pActor->IsRemote())
 	{
-		pEntity->SetFlags(pEntity->GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
+		//pEntity->SetFlags(pEntity->GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
 
 		if (IPhysicalEntity* pObjectPhys = pEntity->GetPhysics())
 		{
@@ -4556,9 +4485,14 @@ void COffHand::HandleNewHeldEntity(const EntityId entityId, const bool isNewItem
 				pe_simulation_params simParams;
 				simParams.mass = 0.0f;
 
-				if (pObjectPhys->SetParams(&simParams))
+				const int success = pObjectPhys->SetParams(&simParams);
+				if (success)
 				{
-					pActor->SetHeldObjectMass(dyn.mass);
+					m_heldEntityMassBackup = dyn.mass;
+				}
+				else
+				{
+					CryLogWarningAlways("Failed to set mass to 0 on object '%s'", pEntity->GetName());
 				}
 			}
 		}
@@ -4588,7 +4522,6 @@ void COffHand::HandleOldHeldEntity(const EntityId oldHeldEntityId, const bool is
 			UpdateEntityRenderFlags(oldHeldEntityId, EntityFpViewMode::ForceDisable);
 			AttachObjectToHand(false, oldHeldEntityId, false);
 		}
-		EnableFootGroundAlignment(true);
 	}
 
 	if (!oldHeldEntityId || isOldItem)
@@ -4614,37 +4547,37 @@ void COffHand::HandleOldHeldEntity(const EntityId oldHeldEntityId, const bool is
 				);
 			}
 		}
-
+	
 		// Remote client in MP: restore mass, clear client-only, rephys vehicles, clear cached mass
-		if (gEnv->bClient && gEnv->bMultiplayer && pActor && pActor->IsRemote())
+		if (gEnv->bClient && gEnv->bMultiplayer && (!pActor || pActor->IsRemote())) //No actor: Actor disconnected
 		{
+			//pOldEntity->SetFlags(pOldEntity->GetFlags() & ~ENTITY_FLAG_CLIENT_ONLY);
+
 			if (IPhysicalEntity* pObjectPhys = pOldEntity->GetPhysics())
 			{
 				pe_status_dynamics dyn;
 				pObjectPhys->GetStatus(&dyn);
 
-				const float originalMass = pActor->GetHeldObjectMass();
+				const float originalMass = m_heldEntityMassBackup;
 				if (originalMass > 0.0f && dyn.mass != originalMass)
 				{
 					pe_simulation_params simParams;
 					simParams.mass = originalMass;
-					if (pObjectPhys->SetParams(&simParams))
+					
+					const int success = pObjectPhys->SetParams(&simParams);
+					if (success == 0)
 					{
-						pe_status_dynamics tmp;
-						pObjectPhys->GetStatus(&tmp);
+						CryLogWarningAlways("Failed to restore mass on object '%s'", pOldEntity->GetName());
 					}
+					m_heldEntityMassBackup = 0.0f;
 				}
 			}
-
-			pOldEntity->SetFlags(pOldEntity->GetFlags() & ~ENTITY_FLAG_CLIENT_ONLY);
 			
 			if (IVehicle* pVehicle = m_pGameFramework->GetIVehicleSystem()->GetVehicle(pOldEntity->GetId()))
 			{
 				// CryMP: trigger rephysicalization to avoid bugs caused by 0 mass
 				reinterpret_cast<IGameObjectProfileManager*>(pVehicle + 1)->SetAspectProfile(eEA_Physics, 1);
 			}
-
-			pActor->SetHeldObjectMass(0.0f);
 		}
 	}
 }
@@ -4686,6 +4619,13 @@ COffHand::SGripHitLocal COffHand::ComputeGripHitsLocal(CActor* pOwner, IEntity* 
 	pe_status_dynamics sd;
 	if (pPE->GetStatus(&sd))
 		center = sd.centerOfMass;
+
+
+	if (g_pGame->GetWeaponSystem()->GetProjectile(pObject->GetId()))
+	{
+		out.ok = true;
+		return out;
+	}
 
 	const Vec3 ext = (wbox.max - wbox.min) * 0.5f;
 	const float radius = max(ext.len(), 0.05f);
@@ -4853,9 +4793,22 @@ void COffHand::OnHeldObjectCollision(CPlayer* pClientActor, const EventPhysColli
 		{
 			if (CHUD *pHUD = g_pGame->GetHUD())
 			{
-				LogOffHandState((EOffHandStates)m_currentState);
 				pHUD->DisplayBigOverlayFlashMessage("@object_collision_drop", 2.0f, 400, 400, Col_Goldenrod);
 			}
+
+			IVehicle* pCarriedVehicle = m_pVehicleSystem->GetVehicle(m_heldEntityId);
+			Vec3 pos = ZERO;
+			if (pCarriedVehicle && pCarriedVehicle->GetExitPositionForActor(pClientActor, pos, true))
+			{
+				const Ang3 angles = pCarriedVehicle->GetEntity()->GetWorldAngles(); // face same direction as vehicle.
+
+				if (pos.GetDistance(pClientActor->GetEntity()->GetWorldPos()) < 30.f)
+				{
+					//CryMP: Teleport to safe exit pos near vehicle, to avoid vehicle falling on top of client
+					pClientActor->GetEntity()->SetWorldTM(Matrix34::Create(Vec3(1, 1, 1), Quat(angles), pos));
+				}
+			}
+
 			FinishAction(eOHA_RESET);
 		}
 	}
@@ -4884,7 +4837,7 @@ void COffHand::ReAttachObjectToHand()
 }
 
 //==============================================================================
-void COffHand::FinishGrenadeAction(CItem* pMainHand)
+void COffHand::FinishGrenadeAction(CWeapon* pMainHand)
 {
 	//HideItem(true);
 	float timeDelay = 0.1f;	//ms
@@ -4935,9 +4888,25 @@ void COffHand::PerformThrowAction_Press(EntityId throwableId, bool isLivingEnt /
 	{
 		if (!isLivingEnt)
 		{
-			if (CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor()))
+			if (CPlayer* pClientActor = CPlayer::FromActor(GetOwnerActor()))
 			{
-				pPlayer->NotifyObjectGrabbed(false, throwableId, false);
+				pClientActor->NotifyObjectGrabbed(false, throwableId, false);
+
+				//if (!m_forceThrow)
+				//{
+				//	IVehicle* pCarriedVehicle = m_pVehicleSystem->GetVehicle(throwableId);
+				//	Vec3 pos = ZERO;
+				//	if (pCarriedVehicle && pCarriedVehicle->GetExitPositionForActor(pClientActor, pos, true))
+				//	{
+				//		const Ang3 angles = pCarriedVehicle->GetEntity()->GetWorldAngles(); // face same direction as vehicle.
+
+				//		if (pos.GetDistance(pClientActor->GetEntity()->GetWorldPos()) < 30.f)
+				//		{
+				//			CryLogAlways("$3Teleporting to safe loc");
+				//			pClientActor->GetEntity()->SetWorldTM(Matrix34::Create(Vec3(1, 1, 1), Quat(angles), pos));
+				//		}
+				//	}
+				//}
 			}
 
 			SetOffHandState(eOHS_THROWING_OBJECT);
@@ -4966,9 +4935,6 @@ void COffHand::PerformThrowAction_Press(EntityId throwableId, bool isLivingEnt /
 		}
 
 		m_forceThrow = false;
-
-		// enable leg IK again
-		EnableFootGroundAlignment(true);
 	}
 
 	if (!m_fm->IsFiring() && m_nextThrowTimer <= 0.0f)
@@ -4981,26 +4947,28 @@ void COffHand::PerformThrowAction_Press(EntityId throwableId, bool isLivingEnt /
 		StartFire();
 		SetBusy(false);
 
-		if (m_mainHand && m_fm->IsFiring())
+		CWeapon *pMainHandWeapon = GetMainHandWeapon();
+
+		if (pMainHandWeapon && m_fm->IsFiring())
 		{
 			if (!(m_currentState & (eOHS_THROWING_NPC | eOHS_THROWING_OBJECT)))
 			{
-				if (m_mainHandWeapon && m_mainHandWeapon->IsWeaponRaised())
+				if (pMainHandWeapon->IsWeaponRaised())
 				{
-					m_mainHandWeapon->RaiseWeapon(false, true);
-					m_mainHandWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
+					pMainHandWeapon->RaiseWeapon(false, true);
+					pMainHandWeapon->SetDefaultIdleAnimation(CItem::eIGS_FirstPerson, g_pItemStrings->idle);
 				}
 
-				m_mainHand->PlayAction(g_pItemStrings->offhand_on);
-				m_mainHand->SetActionSuffix("akimbo_");
+				pMainHandWeapon->PlayAction(g_pItemStrings->offhand_on);
+				pMainHandWeapon->SetActionSuffix("akimbo_");
 			}
 		}
 
 		if (!throwableId)
 		{
-			if (m_mainHandWeapon && m_mainHandWeapon->GetEntity()->GetClass() == CItem::sFistsClass)
+			if (pMainHandWeapon && pMainHandWeapon->GetEntity()->GetClass() == CItem::sFistsClass)
 			{
-				CFists* pFists = static_cast<CFists*>(m_mainHandWeapon);
+				CFists* pFists = static_cast<CFists*>(pMainHandWeapon);
 				pFists->RequestAnimState(CFists::eFAS_FIGHT);
 			}
 		}
@@ -5059,6 +5027,25 @@ void COffHand::PerformThrowAction_Release(EntityId throwableId, bool isLivingEnt
 		return;
 	}
 
+	if (gEnv->bMultiplayer)
+	{
+		if (throwableId)
+		{
+			//CryMP: Small bump to the object in mp after 1 sec
+			GetScheduler()->TimerAction(
+				1000,
+				MakeAction([this, eId = throwableId](CItem* /*unused*/) {
+					IEntity* pObject = m_pEntitySystem->GetEntity(eId);
+					if (pObject)
+					{
+						AwakeEntityPhysics(pObject);
+					}
+					}),
+				/*persistent=*/true
+			);
+		}
+	}
+
 	m_nextThrowTimer = 60.0f / m_fm->GetFireRate();
 
 	StopFire();
@@ -5067,10 +5054,227 @@ void COffHand::PerformThrowAction_Release(EntityId throwableId, bool isLivingEnt
 	{
 		GetScheduler()->TimerAction(
 			GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
-			MakeAction([this, hand = m_mainHand](CItem*) {
+			MakeAction([this, hand = GetMainHandWeapon()](CItem*) {
 				this->FinishGrenadeAction(hand);
 				}),
 			/*persistent=*/false
 		);
 	}
 }
+
+//===============================================================================
+void COffHand::DebugLogInfo()
+{
+	IEntity* pEntity = GetEntity();
+	CActor* pOwnerActor = GetOwnerActor();
+	if (!pOwnerActor)
+		return;
+
+	const char* itemName = pEntity ? pEntity->GetName() : "<no entity>";
+
+	// -- Owner --
+	const char* ownerName = "<no owner>";
+	if (pOwnerActor)
+	{
+		if (IEntity* pOwnerEntity = pOwnerActor->GetEntity())
+			ownerName = pOwnerEntity->GetName();
+	}
+
+	// -- Grab Type --
+	const char* grabStr = "Unknown";
+	switch (m_grabType)
+	{
+	case GRAB_TYPE_ONE_HANDED: grabStr = "1-Hand"; break;
+	case GRAB_TYPE_TWO_HANDED: grabStr = "2-Hand"; break;
+	case GRAB_TYPE_NPC:        grabStr = "NPC"; break;
+	default: break;
+	}
+
+	// -- Held Entity --
+	EntityId heldId = m_heldEntityId;
+	if (!heldId)
+	{
+		if (CPlayer* pPlayer = CPlayer::FromActor(GetOwnerActor()))
+		{
+			heldId = pPlayer->GetHeldObjectId();
+		}
+	}
+
+	IEntity* pHeld = gEnv->pEntitySystem->GetEntity(heldId);
+
+	float mass = -1.f;
+	if (pHeld)
+	{
+		if (IPhysicalEntity* pPhys = pHeld->GetPhysics())
+		{
+			pe_status_dynamics dyn;
+			if (pPhys->GetStatus(&dyn))
+			{
+				mass = dyn.mass;
+			}
+		}
+	}
+
+	// -- Current State Bitmask --
+	string stateBits;
+	struct StateFlagInfo { int flag; const char* name; };
+	const StateFlagInfo flags[] = {
+		{ eOHS_INIT_STATE,        "Init" },
+		{ eOHS_SWITCHING_GRENADE, "SwitchingGrenade" },
+		{ eOHS_HOLDING_GRENADE,   "HoldingGrenade" },
+		{ eOHS_THROWING_GRENADE,  "ThrowingGrenade" },
+		{ eOHS_PICKING,           "Picking" },
+		{ eOHS_PICKING_ITEM,      "PickingItem" },
+		{ eOHS_PICKING_ITEM2,     "PickingItem2" },
+		{ eOHS_HOLDING_OBJECT,    "HoldingObject" },
+		{ eOHS_THROWING_OBJECT,   "ThrowingObject" },
+		{ eOHS_GRABBING_NPC,      "GrabbingNPC" },
+		{ eOHS_HOLDING_NPC,       "HoldingNPC" },
+		{ eOHS_THROWING_NPC,      "ThrowingNPC" },
+		{ eOHS_TRANSITIONING,     "Transitioning" },
+		{ eOHS_MELEE,             "Melee" }
+	};
+
+	for (const auto& f : flags)
+	{
+		if (m_currentState & f.flag)
+		{
+			if (!stateBits.empty()) stateBits += "|";
+			stateBits += f.name;
+		}
+	}
+
+	// -- Game Object Update Status --
+	IGameObject* pGameObject = GetGameObject();
+	uint8_t slotEnables = pGameObject->GetUpdateSlotEnables(this, eIUS_General);
+	uint8_t slotEnables2 = pGameObject->GetUpdateSlotEnables(this, eIUS_Scheduler);
+
+	// -- Fire Mode Index --
+	int fireMode = GetCurrentFireMode();
+
+	IGameObject* pActorObject = pOwnerActor->GetGameObject();
+	uint8_t playerUpdating = pActorObject->GetUpdateSlotEnables(this, eIUS_General);
+
+	// -- Final Output --
+	CryLogAlways("$9[OffHand] Owner=$5%s$9 (Updating:%s%s$9), Item=%s, Grab=%s, Mode=%d, Timer=%s%.2f$9, Update=%s%s",
+		ownerName, playerUpdating ? "$3" : "$9", playerUpdating ? "Yes" : "No", itemName, grabStr, fireMode,
+		m_nextThrowTimer > 0.0f ? "$3" : "$9", m_nextThrowTimer,
+		slotEnables ? "$3" : "$9", slotEnables ? "Yes" : "No");
+
+	CryLogAlways("$9           StateFlags: $6%s", stateBits.c_str());
+
+	CryLogAlways("$9           FireMode Handle: $3%p", GetActiveFireMode());
+
+	if (m_resetTimer > 0.0f)
+		CryLogAlways("$9           ResetTimer: %f", m_resetTimer);
+
+	CryLogAlways("$9           OffHand selected: %s", IsSelected() ? "$5Yes" : "$8No");
+
+	if (GetScheduler()->GetTimersCount() > 0 || GetScheduler()->GetActivesCount() > 0)
+		CryLogAlways("$9           Scheduler: Actives %d - Timers %d", GetScheduler()->GetActivesCount(), GetScheduler()->GetTimersCount());
+
+	CryLogAlways("$9           Scheduler Update: $1%d", slotEnables2);
+
+	if (pHeld)
+	{
+		CryLogAlways("$9           Holding: %s (%d), Mass=$1%.2f", pHeld->GetName(), heldId, mass);
+
+		if (IPhysicalEntity* pPhys = pHeld->GetPhysics())
+		{
+			pe_status_nparts snp;
+			const int nParts = pPhys->GetStatus(&snp); // CE2: returns number of parts directly
+			CryLogAlways("$9           Physics parts: $6%d", nParts);
+
+			for (int i = 0; i < nParts; ++i)
+			{
+				pe_params_part pp;
+				pp.ipart = i;
+				if (!pPhys->GetParams(&pp))
+				{
+					CryLogAlways("$9           Part %d: $4<GetParams failed>", i);
+					continue;
+				}
+
+				const phys_geometry* pPG = pp.pPhysGeomProxy ? pp.pPhysGeomProxy : pp.pPhysGeom;
+				const char* label = pp.pPhysGeomProxy ? "proxy" : "geom";
+
+				const int gtype = (pPG && pPG->pGeom) ? pPG->pGeom->GetType() : -1;
+				const char* typeStr = "unknown";
+
+				switch (gtype)
+				{
+				case GEOM_TRIMESH:    typeStr = "trimesh";    break;
+				case GEOM_HEIGHTFIELD:typeStr = "heightfield"; break;
+				case GEOM_CYLINDER:   typeStr = "cylinder";   break;
+				case GEOM_CAPSULE:    typeStr = "capsule";    break;
+				case GEOM_RAY:        typeStr = "ray";        break;
+				case GEOM_SPHERE:     typeStr = "sphere";     break;
+				case GEOM_BOX:        typeStr = "box";        break;
+				case GEOM_VOXELGRID:  typeStr = "voxelgrid";  break;
+				default:              typeStr = "unknown";    break;
+				}
+
+				CryLogAlways("$9           Part %d: %s: $6%s", i, label, typeStr);
+			}
+		}
+		else
+		{
+			CryLogAlways("$9           Physics: None");
+		}
+	}
+	else
+	{
+		CryLogAlways("$9           Holding: None");
+	}
+
+	auto* pHolster = pOwnerActor->GetHolsteredItem();
+	if (pHolster)
+	{
+		CryLogAlways("$9           Holstered: $5%s$9",
+			pHolster->GetEntity()->GetName());
+	}
+	auto* pCurr = pOwnerActor->GetCurrentItem();
+	if (pCurr)
+	{
+		CryLogAlways("$9           Item: $5%s$9",
+			pCurr->GetEntity()->GetName());
+	}
+	CryLogAlways("$9           %s", GetEntity()->IsHidden() ? "OffHand Entity Hidden" : "OffHand Entity $3Visible");
+	CryLogAlways("$9--------------------------------------------");
+	//CryLogAlways("$9           Character Master: %s", IsFirstPersonCharacterMasterHidden() ? "Hidden" : "$3Visible$9");
+	//CryLogAlways("$9           Hands: %d", m_stats.hand);
+	//const ItemString& attachment = GetParams().attachment[m_stats.hand];
+	//CryLogAlways("$9           Attachment Name: %s (%s)", attachment.c_str(), IsCharacterAttachmentHidden(eIGS_FirstPerson, attachment.c_str()) ? "Hidden" : "$3Visible$9");
+	//CryLogAlways("$9           %s", IsArmsHidden() ? "FP Arms Hidden" : "FP Arms $3Visible");
+
+	// -- Constraint Status --
+	const char* constraintStr = "Inactive";
+	const char* constraintClr = "$9"; // gray
+
+	switch (m_constraintStatus)
+	{
+	case ConstraintStatus::Inactive:
+		constraintStr = "Inactive";
+		constraintClr = "$9"; // gray
+		break;
+	case ConstraintStatus::WaitForPhysicsUpdate:
+		constraintStr = "WaitingForPhys";
+		constraintClr = "$3"; // yellow/orange
+		break;
+	case ConstraintStatus::Active:
+		constraintStr = "Active";
+		constraintClr = "$5"; // green
+		break;
+	case ConstraintStatus::Broken:
+		constraintStr = "Broken";
+		constraintClr = "$4"; // red
+		break;
+	default:
+		break;
+	}
+
+	CryLogAlways("$9           Constraint: %s%s$9", constraintClr, constraintStr);
+
+	CryLogAlways("$9           Foot Alignment: %s", m_footAlignmentEnabled ? "$1Enabled" : "Disabled");
+}
+
