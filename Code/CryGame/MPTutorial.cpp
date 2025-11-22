@@ -170,7 +170,7 @@ void CMPTutorial::InitEntityClasses()
 	m_pSUVClass = classReg->FindClass("Civ_car1");
 }
 
-void CMPTutorial::OnBuyMenuOpen(bool open, FlashRadarType buyZoneType)
+void CMPTutorial::OnBuyMenuOpen(bool open, MiniMapIcon buyZoneType)
 {
 	if(!m_enabled)
 		return;
@@ -197,30 +197,30 @@ void CMPTutorial::OnBuyMenuOpen(bool open, FlashRadarType buyZoneType)
 		bool showPrompt = false;
 		switch(buyZoneType)
 		{
-			case ELTV:				// this seems to be the default value, and occurs when players are at spawn points.
-			case EHeadquarter:
-			case EHeadquarter2:
-			case EBarracks:
+			case MiniMapIcon::LTV:				// this seems to be the default value, and occurs when players are at spawn points.
+			case MiniMapIcon::Headquarter:
+			case MiniMapIcon::Headquarter2:
+			case MiniMapIcon::Barracks:
 				TriggerEvent(eTE_BarracksTwo);
 				break;
 
-			case EFactoryVehicle:
+			case MiniMapIcon::FactoryVehicle:
 				showPrompt = TriggerEvent(eTE_VehicleBuyMenu);
 				break;
 
-			case EFactoryAir:
+			case MiniMapIcon::FactoryAir:
 				showPrompt = TriggerEvent(eTE_AirBuyMenu);
 				break;
 
-			case EFactoryPrototype:
+			case MiniMapIcon::FactoryPrototype:
 				showPrompt = TriggerEvent(eTE_PrototypeBuyMenu);
 				break;
 
-			case EFactorySea:
+			case MiniMapIcon::FactorySea:
 				showPrompt = TriggerEvent(eTE_NavalBuyMenu);
 				break;
 
-			case EFactoryTank:
+			case MiniMapIcon::FactoryTank:
 				showPrompt = TriggerEvent(eTE_WarBuyMenu);
 				break;
 
@@ -238,10 +238,10 @@ void CMPTutorial::OnBuyMenuOpen(bool open, FlashRadarType buyZoneType)
 	}
 	else
 	{
-		if(buyZoneType == EBarracks
-			|| buyZoneType == EHeadquarter
-			|| buyZoneType == EHeadquarter2
-			|| buyZoneType == ELTV)
+		if(buyZoneType == MiniMapIcon::Barracks
+			|| buyZoneType == MiniMapIcon::Headquarter
+			|| buyZoneType == MiniMapIcon::Headquarter2
+			|| buyZoneType == MiniMapIcon::LTV)
 			TriggerEvent(eTE_CloseBarracksBuyMenu);
 		else
 			TriggerEvent(eTE_CloseBuyMenu);

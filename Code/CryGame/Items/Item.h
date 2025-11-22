@@ -1393,6 +1393,8 @@ public:
 	static IEntityClass*    sUS_tank;
 	static IEntityClass*    sUS_trolley;
 	static IEntityClass*	sUS_vtol;
+	static IEntityClass*    sAutoTurret;
+	static IEntityClass*    sAutoTurretAA;
 
 	void ForceReselect()
 	{

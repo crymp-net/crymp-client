@@ -72,18 +72,27 @@ public:
 		}
 	};
 
-	struct TempRadarEntity : public RadarEntity
+	struct TempEntity : public RadarEntity
 	{
-		FlashRadarType m_type;
-		float			m_spawnTime;
-		float			m_timeLimit;
-		string		m_text;
-		TempRadarEntity() : RadarEntity()
-		{}
-		TempRadarEntity(EntityId id, FlashRadarType type, float timeLimit = 0.0f, const char* text = NULL) : RadarEntity(id), m_type(type), m_timeLimit(timeLimit)
+		RadarIcon   m_radarIcon = RadarIcon::None;
+		MiniMapIcon m_miniMapIcon = MiniMapIcon::None;
+		float       m_spawnTime = 0.0f;
+		float       m_timeLimit = 0.0f;
+		string      m_text;
+
+		TempEntity() : RadarEntity() {}
+
+		TempEntity(EntityId id, RadarIcon type, MiniMapIcon icon, float timeLimit = 0.0f, const char* text = nullptr)
+			: RadarEntity(id)
+			, m_radarIcon(type)
+			, m_miniMapIcon(icon)
+			, m_timeLimit(timeLimit)
 		{
 			m_spawnTime = gEnv->pTimer->GetFrameStartTime().GetSeconds();
-			m_text = text;
+			if (text)
+			{
+				m_text = text;
+			}
 		}
 	};
 
@@ -115,7 +124,7 @@ public:
 	//add entity temporarily to the radar
 	void AddEntityTemporarily(EntityId id, float time = 10.0f);
 	//add story entity to the minimap
-	void AddStoryEntity(EntityId id, FlashRadarType type = EWayPoint, const char* text = NULL);
+	void AddStoryEntity(EntityId id, MiniMapIcon type = MiniMapIcon::WayPoint, const char* text = nullptr);
 	void RemoveStoryEntity(EntityId id);
 	//show a single sound at entity(id) on radar
 	void ShowSoundOnRadar(Vec3 pos, float intensity);
@@ -159,6 +168,7 @@ public:
 	void SetTeamMate(EntityId id, bool active);
 	//add/remove team mate name from miniMap (mainly for multiplayer)
 	void SelectTeamMate(EntityId id, bool active);
+	bool IsTeamMateSelected(EntityId id) const noexcept;
 	//sets a jamming entity (just using position) - set id == 0 to disable
 	void SetJammer(EntityId id, float radius = 0.0f);
 	//return jamming amount
@@ -185,14 +195,42 @@ public:
 	ILINE float GetStealthValue() const { return m_fLastStealthValue; }
 
 	//show an entity on the radar for a short time only (default is one second)
-	void ShowEntityTemporarily(FlashRadarType type, EntityId id, float timeLimit = 1.0f);
+	void ShowEntityTemporarily(RadarIcon radarIcon, MiniMapIcon miniMapIcon, EntityId id, float timeLimit = 1.0f);
+	bool IsEntityOnTempRadar(const EntityId id);
+	void ClearExpiredTempEntities(const float now);
 
 	void Serialize(TSerialize ser);
 
 	//entity classes for comparison
-	IEntityClass *m_pVTOL, *m_pHeli, *m_pHunter, *m_pWarrior, *m_pAlien, *m_pTrooper, *m_pGrunt, *m_pPlayerClass,
-		*m_pScout, *m_pTankUS, *m_pTankA, *m_pLTVUS, *m_pLTVA, *m_pAAA, *m_pTruck, *m_pAPCUS, *m_pAPCA, *m_pBoatCiv,
-		*m_pHover, *m_pBoatUS, *m_pBoatA, *m_pCarCiv, *m_pParachute;
+	IEntityClass* m_pVTOL = nullptr;
+	IEntityClass* m_pHeli = nullptr;
+	IEntityClass* m_pHunter = nullptr;
+	IEntityClass* m_pWarrior = nullptr;
+	IEntityClass* m_pAlien = nullptr;
+	IEntityClass* m_pTrooper = nullptr;
+	IEntityClass* m_pGrunt = nullptr;
+	IEntityClass* m_pPlayerClass = nullptr;
+	IEntityClass* m_pScout = nullptr;
+	IEntityClass* m_pTankUS = nullptr;
+	IEntityClass* m_pTankA = nullptr;
+	IEntityClass* m_pLTVUS = nullptr;
+	IEntityClass* m_pLTVA = nullptr;
+	IEntityClass* m_pAAA = nullptr;
+	IEntityClass* m_pTruck = nullptr;
+	IEntityClass* m_pAPCUS = nullptr;
+	IEntityClass* m_pAPCA = nullptr;
+	IEntityClass* m_pBoatCiv = nullptr;
+	IEntityClass* m_pHover = nullptr;
+	IEntityClass* m_pBoatUS = nullptr;
+	IEntityClass* m_pBoatA = nullptr;
+	IEntityClass* m_pCarCiv = nullptr;
+	IEntityClass* m_pParachute = nullptr;
+	IEntityClass* m_pAutoTurret = nullptr;
+	IEntityClass* m_pAutoTurretAA = nullptr;
+
+	//chooses the right icon for a given vehicle or building entity (class)
+	MiniMapIcon ChooseMiniMapIcon(IEntity* pEntity);
+	RadarIcon ChooseRadarIcon(IEntity* pEntity);
 
 private:
 
@@ -223,9 +261,12 @@ private:
 	bool					CheckObjectMultiplayer(EntityId id);	// additional checks to see if this object is worth looking at in MP.
 
 	//activate minimap rendering
-	ILINE void SetRenderMapOverlay(bool bActive) {	m_renderMiniMap = bActive;}
+	ILINE void SetRenderMiniMap(bool bActive) 
+	{	
+		m_renderMiniMap = bActive;
+	}
 	//renders player position, AI positions and structures on the overview map (should be replaced in flash)
-	void RenderMapOverlay();
+	void RenderMiniMap();
 	//get an entity's position on the minimap
 	bool GetPosOnMap(float inX, float inY, float &outX, float &outY, bool flashCoordinates = true);
 	bool GetPosOnMap(IEntity *pEntity, float &outX, float &outY, bool flashCoordinates = true);
@@ -233,10 +274,8 @@ private:
 	void LoadMiniMap(const char* mapPath);
 	//computes the dimension of the minimap according to the current screen resolution
 	void ComputeMiniMapResolution();
-	//chooses the right icon for a given vehicle or building entity (class)
-	FlashRadarType ChooseType(IEntity* pEntity, bool radarOnly = false);
 	//chooses the right icon for a given synched entity type (ammo trucks, tac tanks ... special mp units)
-	FlashRadarType GetSynchedEntityType(int type);
+	MiniMapIcon GetSynchedEntityType(int type);
 	//return whether the entity is friend or foe to the player
 	FlashRadarFaction	FriendOrFoe(bool multiplayer, int playerTeam, IEntity *entity, CGameRules *pGameRules);
 	//helper function to write (flash-) icon data to a double stream (implicitly casting for readability)
@@ -255,7 +294,7 @@ private:
 	IVehicleSystem *m_pVehicleSystem;
 	CHUD *m_pHUD = nullptr;
 	CGameRules* m_pGameRules = nullptr;
-	IActor* m_pClientActor = nullptr;
+	CPlayer* m_pClientActor = nullptr;
 
 	//helpers for Radar scanning
 	EntityId	m_lookAtObjectID;
@@ -322,9 +361,9 @@ private:
 	EntityId	m_taggedEntities[NUM_TAGGED_ENTITIES];
 	int				m_taggedPointer;
 	//temporarily added entities
-	std::vector<TempRadarEntity> m_tempEntitiesOnRadar;
+	std::vector<TempEntity> m_tempEntitiesOnRadar;
 	//special story (SP only) entities
-	std::vector<TempRadarEntity> m_storyEntitiesOnRadar;
+	std::vector<TempEntity> m_storyEntitiesOnRadar;
 	//entities on the normal radar
 	std::deque<RadarEntity>		m_entitiesOnRadar;
 	std::vector<RadarSound>		m_soundsOnRadar;

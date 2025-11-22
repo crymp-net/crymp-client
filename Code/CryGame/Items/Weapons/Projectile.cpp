@@ -31,48 +31,38 @@ History:
 
 //------------------------------------------------------------------------
 CProjectile::CProjectile()
-	: m_whizSoundId(INVALID_SOUNDID),
-	m_trailSoundId(INVALID_SOUNDID),
-	m_trailEffectId(-1),
-	m_trailUnderWaterId(-1),
-	m_pPhysicalEntity(0),
-	m_pAmmoParams(0),
-	m_destroying(false),
-	m_tracked(false),
-	m_remote(false),
-	m_totalLifetime(0.0f),
-	m_scaledEffectval(0.0f),
-	m_obstructObject(0),
-	m_hitTypeId(0),
-	m_scaledEffectSignaled(false),
-	m_hitListener(false),
-	m_hitPoints(-1),
-	m_noBulletHits(false),
-	m_initial_pos(ZERO),
-	m_initial_dir(ZERO),
-	m_initial_vel(ZERO),
-	m_seq(0)
 {
 }
 
 //------------------------------------------------------------------------
 CProjectile::~CProjectile()
 {
-	SetTracked(false);
-	EndScaledEffect(m_pAmmoParams->pScaledEffect);
-
 	GetGameObject()->ReleaseProfileManager(this);
-	GetGameObject()->EnablePhysicsEvent(false, eEPE_OnCollisionLogged);
 
-	if (m_obstructObject)
-		gEnv->pPhysicalWorld->DestroyPhysicalEntity(m_obstructObject);
+	Destroy();
 
 	if (m_hitListener)
+	{
 		if (CGameRules* pGameRules = g_pGame->GetGameRules())
+		{
 			pGameRules->RemoveHitListener(this);
+		}
+	}
 
 	if (g_pGame)
+	{
 		g_pGame->GetWeaponSystem()->RemoveProjectile(this);
+	}
+}
+
+//------------------------------------------------------------------------
+void CProjectile::DestroyObstructObject()
+{
+	if (m_pObstructObject)
+	{
+		gEnv->pPhysicalWorld->DestroyPhysicalEntity(m_pObstructObject);
+		m_pObstructObject = nullptr;
+	}
 }
 
 //------------------------------------------------------------------------
@@ -106,15 +96,6 @@ bool CProjectile::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 			if (m_pAmmoParams->pParticleParams)
 			{
 				params.pParticle = m_pAmmoParams->pParticleParams;
-
-				/* Disabled for now
-				//CryMP: Fix for projectiles colliding with host 
-				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(g_pGame->GetWeaponSystem()->GetLastHostId());
-				if (IPhysicalEntity *pHostPhys = pEntity ? pEntity->GetPhysics() : nullptr)
-				{
-					params.pParticle->pColliderToIgnore = pHostPhys;
-				}
-				*/
 			}
 
 			GetEntity()->Physicalize(params);
@@ -224,7 +205,7 @@ bool CProjectile::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 prof
 		{
 			Vec3 pos = GetEntity()->GetWorldPos();
 			Quat ori = GetEntity()->GetWorldRotation();
-			ser.Value("pos", pos, /* 'wrld' */ 0x77726C64);
+			ser.Value("pos", pos, 'wrld');
 			ser.Value("ori", ori, 'ori1');
 			if (ser.IsReading())
 				GetEntity()->SetWorldTM(Matrix34::Create(Vec3(1, 1, 1), ori, pos));
@@ -246,6 +227,11 @@ bool CProjectile::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 prof
 		else if (!pEPP)
 		{
 			return false;
+		}
+
+		if (!m_netUpdateReceived && ser.IsReading())
+		{
+			m_netUpdateReceived = true;
 		}
 
 		pEPP->SerializeTyped(ser, type, pflags);
@@ -270,8 +256,6 @@ bool CProjectile::Init(IGameObject* pGameObject)
 			if (!GetGameObject()->BindToNetwork())
 				return false;
 
-	GetGameObject()->EnablePhysicsEvent(true, eEPE_OnCollisionLogged);
-
 	LoadGeometry();
 	Physicalize();
 
@@ -295,30 +279,42 @@ bool CProjectile::Init(IGameObject* pGameObject)
 	else
 		GetEntity()->SetSlotFlags(0, GetEntity()->GetSlotFlags(0) | ENTITY_SLOT_RENDER);
 
-	// Only for bullets
-	m_hitPoints = m_pAmmoParams->hitPoints;
-	m_hitListener = false;
-
-	if (gEnv->bServer) //CryMP: Server only (on client calls empty OnExplosion())
-	{
-		if (m_hitPoints > 0)
-		{
-			//Only projectiles with hit points are hit listeners
-			g_pGame->GetGameRules()->AddHitListener(this);
-			m_hitListener = true;
-			m_noBulletHits = m_pAmmoParams->noBulletHits;
-		}
-	}
-
 	if (m_tracked) // if this is true here, it means m_tracked was serialized from spawn info
 	{
 		m_tracked = false;
 		SetTracked(true);
 	}
 
-	m_spawnTime = gEnv->pTimer->GetCurrTime();
-
 	return true;
+}
+
+//---------------------------------------------------------------------
+////If the projectile is in a pool, this function will be called when this projectile is about to be "re-spawn"
+void CProjectile::ReInitFromPool()
+{
+	const float lifetime = m_pAmmoParams->lifetime;
+	if (lifetime > 0.0f)
+		GetEntity()->SetTimer(ePTIMER_LIFETIME, (int)(lifetime*1000.0f));
+
+	const float showtime = m_pAmmoParams->showtime;
+	if (showtime > 0.0f)
+	{
+		GetEntity()->SetSlotFlags(0, GetEntity()->GetSlotFlags(0)&(~ENTITY_SLOT_RENDER));
+		GetEntity()->SetTimer(ePTIMER_SHOWTIME, (int)(showtime*1000.0f));
+	}
+	else
+		GetEntity()->SetSlotFlags(0, GetEntity()->GetSlotFlags(0)|ENTITY_SLOT_RENDER);
+
+	DestroyObstructObject();
+
+	//Reset some members
+	m_remote=false;
+	m_totalLifetime=0.0f;
+	m_scaledEffectval=0.0f;
+	m_scaledEffectSignaled=false;
+	m_hitListener=false;
+	m_hitPoints=-1;
+	m_noBulletHits=false;
 }
 
 //------------------------------------------------------------------------
@@ -375,31 +371,9 @@ void CProjectile::FullSerialize(TSerialize ser)
 }
 
 //------------------------------------------------------------------------
-bool CProjectile::RemoveIfExpired()
-{
-	if (IsExpired())
-	{
-		gEnv->pEntitySystem->RemoveEntity(GetEntity()->GetId());
-		return true;
-	}
-	return false;
-}
-
-//------------------------------------------------------------------------
 void CProjectile::Update(SEntityUpdateContext& ctx, int updateSlot)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
-
-	//CryMP begin: Check for dead projectiles
-	if (gEnv->bMultiplayer)
-	{
-		m_lastUpdate = ctx.fCurrTime;
-		if (RemoveIfExpired())
-		{
-			m_spawnTime = ctx.fCurrTime;
-		}
-	}
-	//CryMP end
 
 	if (updateSlot != 0)
 		return;
@@ -435,7 +409,7 @@ void CProjectile::HandleEvent(const SGameObjectEvent& event)
 	{
 		EventPhysCollision* pCollision = (EventPhysCollision*)event.ptr;
 
-		IEntity* pCollidee = pCollision->iForeignData[0] == PHYS_FOREIGN_ID_ENTITY ? (IEntity*)pCollision->pForeignData[0] : 0;
+//		IEntity *pCollidee = pCollision->iForeignData[0]==PHYS_FOREIGN_ID_ENTITY ? (IEntity*)pCollision->pForeignData[0]:0;
 
 		const SCollisionParams* pCollisionParams = m_pAmmoParams->pCollision;
 		if (pCollisionParams)
@@ -450,7 +424,7 @@ void CProjectile::HandleEvent(const SGameObjectEvent& event)
 				pSound->SetPosition(pCollision->pt);
 				pSound->Play();
 			}
-
+/*
 			IStatObj* statObj = 0;
 			if (pCollision->iForeignData[1] == PHYS_FOREIGN_ID_STATIC)
 			{
@@ -458,6 +432,7 @@ void CProjectile::HandleEvent(const SGameObjectEvent& event)
 				if (pRN && pRN->GetEntityStatObj(0))
 					statObj = pRN->GetEntityStatObj(0);
 			}
+*/
 		}
 
 		// add battledust for bulletimpact
@@ -531,7 +506,7 @@ void CProjectile::SetVelocity(const Vec3& pos, const Vec3& dir, const Vec3& velo
 	{
 		if (m_pAmmoParams->predictSpawn)
 		{
-			return; //CryMP: Fix initial projectile lag, this is already being done on server 
+			return; //CryMP: Fix initial projectile lag, this is already done on server 
 		}
 	}
 
@@ -599,6 +574,28 @@ void CProjectile::SetParams(EntityId ownerId, EntityId hostId, EntityId weaponId
 //------------------------------------------------------------------------
 void CProjectile::Launch(const Vec3& pos, const Vec3& dir, const Vec3& velocity, float speedScale)
 {
+	m_destroying = false;
+
+	GetGameObject()->EnablePhysicsEvent(true, eEPE_OnCollisionLogged);
+
+	// Only for bullets
+	m_hitPoints = m_pAmmoParams->hitPoints;
+
+	if (!m_hitListener) //CryMP: Might have been added inside AVMine.cpp / Claymore.cpp already
+	{
+		if (m_hitPoints > 0)
+		{
+			//Only projectiles with hit points are hit listeners
+			if (CGameRules* pGameRules = g_pGame->GetGameRules())
+			{
+				pGameRules->AddHitListener(this);
+			}
+
+			m_hitListener = true;
+			m_noBulletHits = m_pAmmoParams->noBulletHits;
+		}
+	}
+
 	Matrix34 worldTM = Matrix34(Matrix33::CreateRotationVDir(dir.GetNormalizedSafe()));
 	worldTM.SetTranslation(pos);
 	GetEntity()->SetWorldTM(worldTM);
@@ -683,12 +680,52 @@ void CProjectile::Launch(const Vec3& pos, const Vec3& dir, const Vec3& velocity,
 //------------------------------------------------------------------------
 void CProjectile::Destroy()
 {
+	if (m_destroying)
+		return;
+
 	m_destroying = true;
 
-	if ((GetEntity()->GetFlags() & ENTITY_FLAG_CLIENT_ONLY) || gEnv->bServer)
-		gEnv->pEntitySystem->RemoveEntity(GetEntity()->GetId());
+	EndScaledEffect(m_pAmmoParams->pScaledEffect);
+
+	GetGameObject()->EnablePhysicsEvent(false, eEPE_OnCollisionLogged);
+
+	DestroyObstructObject();
+
+	if (m_hitListener)
+	{
+		if (CGameRules* pGameRules = g_pGame->GetGameRules())
+		{
+			pGameRules->RemoveHitListener(this);
+			m_hitListener = false;
+		}
+	}
 
 	WhizSound(false, ZERO, ZERO);
+
+	bool returnToPoolOK = true;
+
+	const bool reusable = g_pGameCVars->mp_recycleProjectiles && m_pAmmoParams->flags & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY);
+	if (reusable)
+	{
+		returnToPoolOK = g_pGame->GetWeaponSystem()->ReturnToPool(this);
+	}
+
+	if (!reusable || !returnToPoolOK)
+	{
+		if ((GetEntity()->GetFlags() & ENTITY_FLAG_CLIENT_ONLY) || gEnv->bServer)
+		{
+			gEnv->pEntitySystem->RemoveEntity(GetEntity()->GetId());
+		}
+		else
+		{
+			if (gEnv->bClient && !m_netUpdateReceived)
+			{
+				m_ghost = true;
+				GetEntity()->Hide(true);
+				GetEntity()->SetWorldTM(IDENTITY);
+			}
+		}
+	}
 }
 
 //------------------------------------------------------------------------
@@ -1091,13 +1128,13 @@ void CProjectile::ScaledEffect(const SScaledEffectParams* pScaledEffect)
 			fadeOutAmt = max(fadeOutAmt, 0.0f);
 		}
 
-		if (!m_obstructObject && pScaledEffect->aiObstructionRadius != 0.0f)
+		if (!m_pObstructObject && pScaledEffect->aiObstructionRadius != 0.0f)
 		{
 			pe_params_pos pos;
 			pos.scale = 0.1f;
 			pos.pos = GetEntity()->GetWorldPos() + Vec3(0, 0, pScaledEffect->aiObstructionRadius / 4 * pos.scale);
-			m_obstructObject = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_STATIC, &pos);
-			if (m_obstructObject)
+			m_pObstructObject = gEnv->pPhysicalWorld->CreatePhysicalEntity(PE_STATIC, &pos);
+			if (m_pObstructObject)
 			{
 				primitives::sphere sphere;
 				sphere.center = Vec3(0, 0, 0);
@@ -1108,7 +1145,7 @@ void CProjectile::ScaledEffect(const SScaledEffectParams* pScaledEffect)
 				pe_geomparams params;
 				params.flags = geom_colltype14;
 				geometry->nRefCount = 0; // automatically delete geometry
-				m_obstructObject->AddGeometry(geometry, &params);
+				m_pObstructObject->AddGeometry(geometry, &params);
 			}
 		}
 		else
@@ -1116,7 +1153,7 @@ void CProjectile::ScaledEffect(const SScaledEffectParams* pScaledEffect)
 			pe_params_pos pos;
 			pos.scale = 0.1f + min(fadeInAmt, fadeOutAmt) * 0.9f;
 			pos.pos = GetEntity()->GetWorldPos() + Vec3(0, 0, pScaledEffect->aiObstructionRadius / 4.0f * pos.scale);
-			m_obstructObject->SetParams(&pos);
+			m_pObstructObject->SetParams(&pos);
 
 			// Signal the AI
 			if (gEnv->pAISystem && !m_scaledEffectSignaled && m_totalLifetime > (pScaledEffect->delay + pScaledEffect->fadeInTime))
@@ -1193,12 +1230,12 @@ void CProjectile::Ricochet(EventPhysCollision* pCollision)
 		return;
 
 	float b = 0, f = 0;
-	unsigned int matPierceability = 0;
+	uint32 matPierceability=0;
 	if (!gEnv->pPhysicalWorld->GetSurfaceParameters(pCollision->idmat[1], b, f, matPierceability))
 		return;
 
 	matPierceability &= sf_pierceable_mask;
-	float probability = 0.25 + 0.25 * (MAX(0, 7 - matPierceability) / 7.0f);
+	float probability=0.25f+0.25f*((float)MAX(0,7-matPierceability)/7.0f);
 	if ((matPierceability && matPierceability >= 8) || Random() > probability)
 		return;
 
@@ -1250,26 +1287,18 @@ void CProjectile::Ricochet(EventPhysCollision* pCollision)
 	}
 }
 
-
+//==================================================================
 CWeapon* CProjectile::GetWeapon()
 {
 	if (m_weaponId)
 	{
 		IItem* pItem = g_pGame->GetIGameFramework()->GetIItemSystem()->GetItem(m_weaponId);
 		if (pItem)
+		{
 			return static_cast<CWeapon*>(pItem->GetIWeapon());
+		}
 	}
-	return 0;
-}
-
-EntityId CProjectile::GetOwnerId()const
-{
-	return m_ownerId;
-}
-
-float CProjectile::GetSpeed() const
-{
-	return m_pAmmoParams->speed;
+	return nullptr;
 }
 
 //==================================================================
@@ -1351,7 +1380,7 @@ void CProjectile::SetDefaultParticleParams(pe_params_particle* pParams)
 		pParams->q0.SetIdentity();
 		pParams->surface_idx = m_pAmmoParams->pParticleParams->surface_idx;
 		pParams->flags = m_pAmmoParams->pParticleParams->flags;
-		pParams->pColliderToIgnore = NULL;
+		pParams->pColliderToIgnore = nullptr;
 		pParams->iPierceability = m_pAmmoParams->pParticleParams->iPierceability;
 	}
 	else
@@ -1362,6 +1391,16 @@ void CProjectile::SetDefaultParticleParams(pe_params_particle* pParams)
 		pParams->velocity = 0.0f;
 		pParams->iPierceability = 7;
 	}
+}
+
+//---------------------------------------------------------------------------------
+bool CProjectile::IsPlayingMfxFromClExplosion() const
+{
+	if (m_pAmmoParams && m_pAmmoParams->clexplosion_mfx != 0)
+	{
+		return gEnv->bMultiplayer && g_pGameCVars->mp_explosion_mfx != 0;
+	}
+	return false;
 }
 
 void CProjectile::GetMemoryStatistics(ICrySizer* s)

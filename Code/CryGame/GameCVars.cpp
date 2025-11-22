@@ -617,6 +617,8 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_netSerializeMaxSpeed", &mp_netSerializeMaxSpeed, 9.0f, OPTIONAL_SYNC, "Maximum character speed");
 	pConsole->Register("mp_radioTagging", &mp_radioTagging, 0, OPTIONAL_SYNC, "Enable tagging positions using radio");
 	pConsole->Register("mp_healthBars", &mp_healthBars, 0, OPTIONAL_SYNC, "Enable displaying health bars");
+	pConsole->Register("mp_deadPlayersOnMinimap", &mp_deadPlayersOnMinimap, 0, OPTIONAL_SYNC, "Display dead players on minimap");
+	pConsole->Register("mp_suitHitReaction", &mp_suitHitReaction, 0, OPTIONAL_SYNC, "Activates NanoHitReaction");
 
 	//CryMP CVars (un-synced)
 	pConsole->Register("mp_newSpectator", &mp_newSpectator, 1, VF_NOT_NET_SYNCED, "");
@@ -627,14 +629,19 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_animationModelMult", &mp_animationModelMult, 1.0f, VF_NOT_NET_SYNCED);
 	pConsole->Register("mp_animationModelMultSpeed", &mp_animationModelMultSpeed, 1.0f, VF_NOT_NET_SYNCED);
 	pConsole->Register("mp_menuSpeed", &mp_menuSpeed, 3.0f, VF_NOT_NET_SYNCED);
-	pConsole->Register("mp_hitIndicator", &mp_hitIndicator, 1, VF_NOT_NET_SYNCED, "Enables hit indicator");
+	pConsole->Register("mp_hitIndicator", &mp_hitIndicator, 1, VF_NOT_NET_SYNCED, "Enable hit indicator");
 	pConsole->Register("mp_chatHighResolution", &mp_chatHighResolution, 0, VF_NOT_NET_SYNCED);
 	pConsole->Register("mp_spectatorSlowMult", &mp_spectatorSlowMult, 0.15f, VF_NOT_NET_SYNCED, "Speed mult for spectating while holding Ctrl");
 	pConsole->Register("mp_buyPageKeepTime", &mp_buyPageKeepTime, 30, VF_NOT_NET_SYNCED, "The time in sec it will remember your last buy page");
 	pConsole->Register("mp_attachBoughtEquipment", &mp_attachBoughtEquipment, 0, VF_NOT_NET_SYNCED, "Automatically attach bought weapon attachments");
-	pConsole->Register("mp_netAimLerpFactor", &mp_netAimLerpFactor, 20.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "set aim smoothing for other clients (1-50, 0:off)");
-	pConsole->Register("mp_netAimLerpFactorCrymp", &mp_netAimLerpFactorCrymp, 42.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "set aim smoothing for other clients when mp_crymp 1 (1-50, 0:off)");
-	pConsole->Register("mp_explosiveSilhouettes", &mp_explosiveSilhouettes, 0, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "enables new indicators for explosives");
+	pConsole->Register("mp_netAimLerpFactor", &mp_netAimLerpFactor, 20.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Set aim smoothing for other clients (1-50, 0:off)");
+	pConsole->Register("mp_netAimLerpFactorCrymp", &mp_netAimLerpFactorCrymp, 42.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Set aim smoothing for other clients when mp_crymp 1 (1-50, 0:off)");
+	pConsole->Register("mp_explosiveSilhouettes", &mp_explosiveSilhouettes, 0, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Enable new indicators for explosives");
+	pConsole->Register("mp_recycleProjectiles", &mp_recycleProjectiles, 1, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Recycle projectiles");
+	pConsole->Register("mp_abandonTime", &mp_abandonTime, 10.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds after which vehicles explode");
+	pConsole->Register("mp_explosiveRemovalTime", &mp_explosiveRemovalTime, 30.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds for explosive removal after death");
+	pConsole->Register("mp_explosion_mfx", &mp_explosion_mfx, 1, VF_NOT_NET_SYNCED, "Enable mfx via ClExplosion rmi for server controlled missiles");
+	pConsole->Register("ads", &ads, 1, VF_NOT_NET_SYNCED, "Enable or disable (100h+) ads");
 }
 
 //------------------------------------------------------------------------

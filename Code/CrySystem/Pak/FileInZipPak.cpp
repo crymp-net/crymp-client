@@ -10,40 +10,52 @@
 
 std::size_t FileInZipPak::FRead(void* buffer, std::size_t elementSize, std::size_t elementCount)
 {
-	const std::size_t remainingBytes = this->size - this->pos;
-
-	std::size_t totalBytes = elementSize * elementCount;
-	if (totalBytes > remainingBytes)
+	const std::size_t requestedBytes = elementSize * elementCount;
+	if (requestedBytes == 0)
 	{
-		totalBytes = remainingBytes;
-		if (totalBytes < elementSize)
-		{
-			return 0;
-		}
-
-		totalBytes -= totalBytes % elementSize;
+		return 0;
 	}
 
 	if (this->isBinary)
 	{
+		std::size_t totalBytes = this->size - this->pos;
+		if (totalBytes > requestedBytes)
+		{
+			totalBytes = requestedBytes;
+		}
+
 		std::memcpy(buffer, &this->data[this->pos], totalBytes);
+
+		this->pos += totalBytes;
+
+		return totalBytes / elementSize;
 	}
 	else
 	{
-		std::byte* dest = static_cast<std::byte*>(buffer);
-		for (std::size_t i = 0; i < totalBytes; i++)
+		const std::byte* in = this->data + this->pos;
+		const std::byte* const inEnd = this->data + this->size;
+
+		char* out = static_cast<char*>(buffer);
+		char* const outEnd = out + requestedBytes;
+
+		while (in != inEnd && out != outEnd)
 		{
-			const std::byte ch = this->data[this->pos + i];
-			if (std::to_integer<char>(ch) != '\r')
+			char ch = std::to_integer<char>(*in++);
+
+			// convert CRLF to LF in text mode
+			if (ch == '\r' && in != inEnd && std::to_integer<char>(*in) == '\n')
 			{
-				*(dest++) = ch;
+				ch = '\n';
+				++in;
 			}
+
+			*out++ = ch;
 		}
+
+		this->pos = in - this->data;
+
+		return (out - static_cast<char*>(buffer)) / elementSize;
 	}
-
-	this->pos += totalBytes;
-
-	return totalBytes / elementSize;
 }
 
 std::size_t FileInZipPak::FWrite(const void* buffer, std::size_t elementSize, std::size_t elementCount)
@@ -60,27 +72,31 @@ int FileInZipPak::VFPrintF(const char* format, va_list args)
 
 char* FileInZipPak::FGetS(char* buffer, int bufferSize)
 {
-	if (buffer == nullptr || bufferSize == 0 || this->pos >= this->size)
+	if (buffer == nullptr || bufferSize <= 1)
 	{
 		return nullptr;
 	}
 
-	const int maxSize = bufferSize - 1;
+	const bool isBinary = this->isBinary;
 
-	int i = 0;
-	while (i < maxSize)
+	const std::byte* in = this->data + this->pos;
+	const std::byte* const inEnd = this->data + this->size;
+
+	char* out = buffer;
+	char* const outEnd = buffer + (bufferSize - 1);  // null terminator
+
+	while (in != inEnd && out != outEnd)
 	{
-		if (this->pos >= this->size)
+		char ch = std::to_integer<char>(*in++);
+
+		// convert CRLF to LF in text mode
+		if (!isBinary && ch == '\r' && in != inEnd && std::to_integer<char>(*in) == '\n')
 		{
-			break;
+			ch = '\n';
+			++in;
 		}
 
-		const char ch = std::to_integer<char>(this->data[this->pos++]);
-
-		if (ch != '\r' || this->isBinary)
-		{
-			buffer[i++] = ch;
-		}
+		*out++ = ch;
 
 		if (ch == '\n')
 		{
@@ -88,25 +104,33 @@ char* FileInZipPak::FGetS(char* buffer, int bufferSize)
 		}
 	}
 
-	buffer[i] = '\0';
+	this->pos = in - this->data;
+
+	*out = '\0';
 
 	return buffer;
 }
 
 int FileInZipPak::FGetC()
 {
-	int ch = EOF;
+	const std::byte* in = this->data + this->pos;
+	const std::byte* const inEnd = this->data + this->size;
 
-	do
+	if (in == inEnd)
 	{
-		if (this->pos >= this->size)
-		{
-			return EOF;
-		}
-
-		ch = std::to_integer<int>(this->data[this->pos++]);
+		return EOF;
 	}
-	while (ch == '\r' || this->isBinary);
+
+	int ch = std::to_integer<int>(*in++);
+
+	// convert CRLF to LF in text mode
+	if (!this->isBinary && ch == '\r' && in != inEnd && std::to_integer<char>(*in) == '\n')
+	{
+		ch = '\n';
+		++in;
+	}
+
+	this->pos = in - this->data;
 
 	return ch;
 }
@@ -150,7 +174,7 @@ int FileInZipPak::FSeek(std::int64_t offset, int mode)
 	{
 		newPos = 0;
 	}
-	else if (newPos > static_cast<std::int64_t>(this->size))
+	else if (static_cast<std::uint64_t>(newPos) > this->size)
 	{
 		newPos = this->size;
 	}

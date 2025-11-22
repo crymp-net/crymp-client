@@ -7,10 +7,17 @@
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryGame/Game.h"
 #include "CrySystem/Logger.h"
+#include "CrySystem/CryPak.h"
+
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
 #include "Server.h"
+
+#include "CryMP/Common/ScriptBind_CPPAPI.h"
+
+#include "CryMP/Server/SSM.h"
+#include "CryMP/Server/SafeWriting/SafeWriting.h"
 
 Server::Server()
 {
@@ -29,30 +36,43 @@ void Server::Init(IGameFramework* pGameFramework)
 
 	pGameFramework->RegisterListener(this, "crymp-server", FRAMEWORKLISTENERPRIORITY_DEFAULT);
 
-	if (WinAPI::CmdLine::HasArg("-oldgame"))
-	{
-		void* pCryGame = WinAPI::DLL::Load("CryGame.dll");
-		if (!pCryGame)
-		{
-			throw StringTools::SysErrorFormat("Failed to load the CryGame DLL!");
-		}
 
-		auto entry = static_cast<IGame::TEntryFunction>(WinAPI::DLL::GetSymbol(pCryGame, "CreateGame"));
-		if (!entry)
-		{
-			throw StringTools::ErrorFormat("The CryGame DLL is not valid!");
-		}
-
-		this->pGame = entry(pGameFramework);
-	}
-	else
-	{
-		this->pGame = new CGame();
+	const std::string serverPak(WinAPI::CmdLine::GetArgValue("-pak"));
+	if (!serverPak.empty()) {
+        const bool success = CryPak::GetInstance().LoadServerPak(serverPak);
+        CryLogAlways("$6[CryMP] Loading server pak '%s' %s", serverPak.c_str(), success ? "succeeded" : "failed");
 	}
 
 	// initialize the game
 	// mods are not supported
+	this->pGame = new CGame();
 	this->pGame->Init(pGameFramework);
+
+	if (ICVar* maxPlayers = gEnv->pConsole->GetCVar("sv_maxplayers")) {
+		// this overrides max 32 players cap
+		maxPlayers->SetOnChangeCallback([](ICVar* cvar) -> void {
+			int value = cvar->GetIVal();
+			if (value < 2) {
+				cvar->Set(2);
+			}
+		});
+	}
+
+	const std::string ssm(WinAPI::CmdLine::GetArgValue("-ssm"));
+	if (!ssm.empty())
+	{
+		CryLogAlways("$6[CryMP] Detected SSM: %s", ssm.c_str());
+		if (ssm == "SafeWriting")
+		{
+			this->pGame->SetSSM(new CSafeWriting(pGameFramework, pGameFramework->GetISystem()));
+		}
+		else
+		{
+			throw StringTools::ErrorFormat("Unknown SSM: %s", ssm.c_str());
+		}
+	}
+
+	m_pScriptBind_CPPAPI = std::make_unique<ScriptBind_CPPAPI>();
 }
 
 void Server::UpdateLoop()
@@ -75,6 +95,9 @@ void Server::OnPostUpdate(float deltaTime)
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_GAME);
 
 	this->pExecutor->OnUpdate();
+	if (g_pGame && g_pGame->GetSSM()) {
+		g_pGame->GetSSM()->Update(deltaTime);
+	}
 }
 
 void Server::OnSaveGame(ISaveGame* saveGame)
@@ -114,4 +137,9 @@ void Server::OnActionEvent(const SActionEvent& event)
 			break;
 		}
 	}
+}
+
+void Server::HttpRequest(HTTPClientRequest&& request)
+{
+	pHttpClient->Request(std::move(request));
 }

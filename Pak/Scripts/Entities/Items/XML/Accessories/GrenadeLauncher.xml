@@ -1,0 +1,26 @@
+<item name="GrenadeLauncher" class="Item" priority="121">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="attachment_gives_ammo" value="1" />
+	</params>
+	<accessoryAmmo>
+		<ammo name="scargrenade" amount="1" />
+	</accessoryAmmo>
+	<geometry>
+		<firstperson name="objects/weapons/attachments/grenade_launcher_rifle/grenade_launcher_rifle_fp.chr"/>
+		<thirdperson name="objects/Weapons/attachments/grenade_launcher_rifle/grenade_launcher_rifle_tp.cgf"/>
+	</geometry>
+	<actions>
+		<action name="idle">
+			<animation target="firstperson" name="idle_right_01" />
+		</action>
+		<action name="fire_gl">
+			<animation target="firstperson" name="fire_grenade_right_01" />
+		</action>		
+		<action name="reload_gl">
+			<animation target="firstperson" name="reload_grenade_right_01" />
+		</action>		
+	</actions>
+</item>

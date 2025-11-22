@@ -11,13 +11,12 @@ History:
 - 18:10:2005   17:41 : Created by Márcio Martins
 
 *************************************************************************/
-#ifndef __WEAPONSYSTEM_H__
-#define __WEAPONSYSTEM_H__
 
-#if _MSC_VER > 1000
-# pragma once
-#endif
+#pragma once
 
+#include <map>
+#include <memory>
+#include <vector>
 
 #include "CryCommon/CryAction/IItemSystem.h"
 #include "CryCommon/CryAction/ILevelSystem.h"
@@ -103,12 +102,10 @@ public:
 
 	CTracerManager &GetTracerManager() { return m_tracerManager; };
 
-	void RegisterAmmo(const char* name, const char* className, const char* script, const char* config, IItemParamsNode* params);
+	void Scan(const char* folderName);
+	bool ScanXML(XmlNodeRef& root, const char* xmlFile);
 
-	// WeaponSystem_XMLData.cpp
-	void RegisterXMLData();
-
-  static void DebugGun(IConsoleCmdArgs *args = 0);
+	static void DebugGun(IConsoleCmdArgs *args = 0);
 	static void RefGun(IConsoleCmdArgs *args = 0);
 
 	bool IsFrozenEnvironment() { return m_frozenEnvironment; }
@@ -118,6 +115,12 @@ public:
 
 	void ApplyEnvironmentChanges();
 	void CheckEnvironmentChanges();
+
+	CProjectile *UseFromPool(IEntityClass *pClass, const SAmmoParams *pAmmoParams);
+	bool ReturnToPool(CProjectile *pProjectile);
+	void RemoveFromPool(CProjectile *pProjectile);
+	void DumpPoolSizes();
+	void DumpGhostProjectiles();
 
 	void Serialize(TSerialize ser);
 
@@ -132,6 +135,7 @@ public:
 	}
 
 private: 
+	CProjectile *DoSpawnAmmo(IEntityClass* pAmmoType, bool isRemote, const SAmmoParams *pAmmoParams);
 
 	CGame								*m_pGame;
 	ISystem							*m_pSystem;
@@ -145,7 +149,9 @@ private:
 	TAmmoTypeParams			m_ammoparams;
 	TProjectileMap			m_projectiles;
 
+	TFolderList					m_folders;
 	bool								m_reloading;
+	bool								m_recursing;
 
 	string							m_config;
 
@@ -158,8 +164,20 @@ private:
 	bool                m_tokensUpdated;
 
 	EntityId m_lastHostId = 0;
+	std::size_t m_projectilesRecycled = 0;
+
+	struct ProjectileDeleter
+	{
+		void operator()(CProjectile* pProjectile) const;
+	};
+
+	using SmartProjectile = std::unique_ptr<CProjectile, ProjectileDeleter>;
+
+	struct ProjectilePool
+	{
+		std::size_t totalCount = 0;
+		std::vector<SmartProjectile> freeProjectiles;
+	};
+
+	VectorMap<IEntityClass*, ProjectilePool> m_projectilePools;
 };
-
-
-
-#endif //__WEAPONSYSTEM_H__

@@ -14,7 +14,6 @@ jobs:
     with:
       bits: 32
       type: RelWithDebInfo
-      sign: true
 
   build_64:
     uses: ./.github/workflows/build.yml
@@ -22,4 +21,3 @@ jobs:
     with:
       bits: 64
       type: RelWithDebInfo
-      sign: true

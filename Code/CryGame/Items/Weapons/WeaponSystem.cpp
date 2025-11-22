@@ -53,6 +53,7 @@ History:
 
 #include "ZoomModes/IronSight.h"
 #include "ZoomModes/Scope.h"
+#include "CryGame/GameCVars.h"
 
 template <typename T, typename R> R *CreateIt() { return new T(); };
 
@@ -80,6 +81,7 @@ CWeaponSystem::CWeaponSystem(CGame *pGame, ISystem *pSystem)
 	m_pItemSystem(pGame->GetIGameFramework()->GetIItemSystem()),
 	m_pPrecache(0),
 	m_reloading(false),
+	m_recursing(false),
 	m_frozenEnvironment(false),
 	m_wetEnvironment(false),
 	m_tokensUpdated(false)
@@ -109,7 +111,7 @@ CWeaponSystem::CWeaponSystem(CGame *pGame, ISystem *pSystem)
 	REGISTER_PROJECTILE(Bullet, CBullet);
 	REGISTER_PROJECTILE(Rock, CRock);
 	REGISTER_PROJECTILE(Rocket, CRocket);
-  REGISTER_PROJECTILE(HomingMissile, CHomingMissile);
+	REGISTER_PROJECTILE(HomingMissile, CHomingMissile);
 	REGISTER_PROJECTILE(TacBullet, CTacBullet);
 	REGISTER_PROJECTILE(TagBullet, CTagBullet);
 	REGISTER_PROJECTILE(AVExplosive, CAVMine);
@@ -123,6 +125,32 @@ CWeaponSystem::CWeaponSystem(CGame *pGame, ISystem *pSystem)
 	CBullet::SetWaterMaterialId();
 
 	m_pGame->GetIGameFramework()->GetILevelSystem()->AddListener(this);
+
+	gEnv->pConsole->AddCommand(
+		"ws_dumpAmmoPools",
+		[](IConsoleCmdArgs* pArgs)
+		{
+			if (g_pGame && g_pGame->GetWeaponSystem())
+			{
+				g_pGame->GetWeaponSystem()->DumpPoolSizes();
+			}
+		},
+		0,
+		"Dump current ammo pool sizes for debugging"
+	);
+
+	gEnv->pConsole->AddCommand(
+		"ws_dumpGhostProjectiles",
+		[](IConsoleCmdArgs* pArgs)
+		{
+			if (g_pGame && g_pGame->GetWeaponSystem())
+			{
+				g_pGame->GetWeaponSystem()->DumpGhostProjectiles();
+			}
+		},
+		0,
+		"Dump hidden ghost projectiles"
+	);
 }
 
 //------------------------------------------------------------------------
@@ -150,7 +178,10 @@ CWeaponSystem::~CWeaponSystem()
 //------------------------------------------------------------------------
 void CWeaponSystem::Update(float frameTime)
 {
-	m_tracerManager.Update(frameTime);
+	if (gEnv->bClient)
+	{
+		m_tracerManager.Update(frameTime);
+	}
 	CheckEnvironmentChanges();
 }
 
@@ -191,7 +222,10 @@ void CWeaponSystem::Reload()
 
 	m_tracerManager.Reset();
 
-	this->RegisterXMLData();
+	for (TFolderList::iterator it = m_folders.begin(); it != m_folders.end(); ++it)
+	{
+		Scan(it->c_str());
+	}
 
 	m_reloading = false;
 }
@@ -299,6 +333,24 @@ CProjectile *CWeaponSystem::SpawnAmmo(IEntityClass* pAmmoType, bool isRemote, En
 			pAmmoParams=it->second.params;
 	}
 
+	m_lastHostId = hostId;
+
+	const bool reusable = pAmmoParams->flags & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY);
+	if (reusable && g_pGameCVars->mp_recycleProjectiles)
+	{
+		if (isRemote || (!pAmmoParams->serverSpawn && reusable))
+		{
+			return UseFromPool(pAmmoType, pAmmoParams);
+		}
+	}
+
+	return DoSpawnAmmo(pAmmoType, isRemote, pAmmoParams);
+}
+
+
+//------------------------------------------------------------------------
+CProjectile *CWeaponSystem::DoSpawnAmmo(IEntityClass* pAmmoType, bool isRemote, const SAmmoParams *pAmmoParams)
+{
 	bool isServer=gEnv->bServer;
 	bool isClient=gEnv->bClient;
 
@@ -307,8 +359,6 @@ CProjectile *CWeaponSystem::SpawnAmmo(IEntityClass* pAmmoType, bool isRemote, En
 		if (!pAmmoParams->predictSpawn || isRemote)
 			return 0;
 	}
-
-	m_lastHostId = hostId;
 
 	SEntitySpawnParams spawnParams;
 	spawnParams.pClass = pAmmoType;
@@ -378,6 +428,8 @@ void CWeaponSystem::AddProjectile(IEntity *pEntity, CProjectile *pProjectile)
 void CWeaponSystem::RemoveProjectile(CProjectile *pProjectile)
 {
 	m_projectiles.erase(pProjectile->GetEntity()->GetId());
+
+	RemoveFromPool(pProjectile);
 }
 
 //------------------------------------------------------------------------
@@ -422,17 +474,99 @@ int  CWeaponSystem::QueryProjectiles(SProjectileQuery& q)
 }
 
 //------------------------------------------------------------------------
-void CWeaponSystem::RegisterAmmo(const char* name, const char* className, const char* script, const char* config, IItemParamsNode* params)
+void CWeaponSystem::Scan(const char* folderName)
 {
-	auto it = m_projectileregistry.find(CONST_TEMP_STRING(className));
-	if (it == m_projectileregistry.end())
+	string folder = folderName;
+	string search = folder;
+	search += "/*.*";
+
+	if (!m_recursing)
 	{
-		CryLogWarningAlways("Unknown ammo class '%s'! Skipping...", className);
+		CryLog("Loading ammo XML definitions from '%s'!", folderName);
 	}
 
+	for (auto& entry : CryFind(search.c_str()))
+	{
+		if (entry.IsDirectory())
+		{
+			string subName = folder + "/" + entry.name;
+			if (m_recursing)
+			{
+				Scan(subName.c_str());
+			}
+			else
+			{
+				m_recursing=true;
+				Scan(subName.c_str());
+				m_recursing=false;
+			}
+			continue;
+		}
+
+		if (_stricmp(CryPath::GetExt(entry.name), "xml"))
+		{
+			continue;
+		}
+
+		string xmlFile = folder + string("/") + string(entry.name);
+		XmlNodeRef rootNode = m_pSystem->LoadXmlFile(xmlFile.c_str());
+
+		if (!rootNode)
+		{
+			CryLogWarning("Invalid XML file '%s'! Skipping...", xmlFile.c_str());
+			continue;
+		}
+
+		ScanXML(rootNode, xmlFile.c_str());
+	}
+
+	if (!m_recursing)
+	{
+		CryLog("Finished loading ammo XML definitions from '%s'!", folderName);
+	}
+
+	if (!m_reloading && !m_recursing)
+	{
+		m_folders.push_back(folderName);
+	}
+}
+
+//------------------------------------------------------------------------
+bool CWeaponSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
+{
+	if (_stricmp(root->getTag(), "ammo"))
+	{
+		return false;
+	}
+
+	const char* name = root->getAttr("name");
+	if (!name)
+	{
+		CryLogWarningAlways("Missing ammo name in XML '%s'! Skipping...", xmlFile);
+		return false;
+	}
+
+	const char* className = root->getAttr("class");
+
+	if (!className)
+	{
+		CryLogWarningAlways("Missing ammo class in XML '%s'! Skipping...", xmlFile);
+		return false;
+	}
+
+	TProjectileRegistry::iterator it = m_projectileregistry.find(CONST_TEMP_STRING(className));
+	if (it == m_projectileregistry.end())
+	{
+		CryLogWarningAlways("Unknown ammo class '%s' specified in XML '%s'! Skipping...", className, xmlFile);
+		return false;
+	}
+
+	const char* scriptName = root->getAttr("script");
 	IEntityClassRegistry::SEntityClassDesc classDesc;
 	classDesc.sName = name;
-	classDesc.sScriptFile = script;
+	classDesc.sScriptFile = scriptName ? scriptName : "";
+	//classDesc.pUserProxyData = (void *)it->second;
+	//classDesc.pUserProxyCreateFunc = &CreateProxy<CProjectile>;
 	classDesc.flags |= ECLF_INVISIBLE;
 
 	IEntityClass* pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
@@ -444,29 +578,33 @@ void CWeaponSystem::RegisterAmmo(const char* name, const char* className, const 
 		assert(pClass);
 	}
 
-	auto ait = m_ammoparams.find(pClass);
+
+	TAmmoTypeParams::iterator ait = m_ammoparams.find(pClass);
 	if (ait == m_ammoparams.end())
 	{
-		auto result = m_ammoparams.insert(TAmmoTypeParams::value_type(pClass, SAmmoTypeDesc()));
+		std::pair<TAmmoTypeParams::iterator, bool> result = m_ammoparams.insert(TAmmoTypeParams::value_type(pClass, SAmmoTypeDesc()));
 		ait = result.first;
 	}
 
+	const char* configName = root->getAttr("configuration");
+
+	IItemParamsNode* params = m_pItemSystem->CreateParams();
+	params->ConvertFromXML(root);
+
 	SAmmoParams* pAmmoParams = new SAmmoParams(params, pClass);
+
 	SAmmoTypeDesc& desc = ait->second;
 
-	if (!config || !config[0])
+	if (!configName || !configName[0])
 	{
 		if (desc.params)
-		{
 			delete desc.params;
-		}
-
-		desc.params=pAmmoParams;
+		desc.params = pAmmoParams;
 	}
 	else
-	{
-		desc.configurations.insert(std::make_pair<string, const SAmmoParams*>(config, static_cast<const SAmmoParams*>(pAmmoParams)));
-	}
+		desc.configurations.insert(std::make_pair<string, const SAmmoParams*>(configName, static_cast<const SAmmoParams*>(pAmmoParams)));
+
+	return true;
 }
 
 //------------------------------------------------------------------------
@@ -620,6 +758,136 @@ void CWeaponSystem::CheckEnvironmentChanges()
 
 }
 
+//------------------------------------------------------------------------
+CProjectile* CWeaponSystem::UseFromPool(IEntityClass* pClass, const SAmmoParams* pAmmoParams)
+{
+	ProjectilePool& pool = m_projectilePools[pClass];
+	if (pool.freeProjectiles.empty())
+	{
+		CProjectile* pProjectile = DoSpawnAmmo(pClass, false, pAmmoParams);
+		pool.totalCount++;
+
+		return pProjectile;
+	}
+
+	// use hot projectiles (last inserted) first to potentially reduce CPU cache misses
+	CProjectile* pProjectile = pool.freeProjectiles.back().release();
+	pool.freeProjectiles.pop_back();
+
+	pProjectile->GetEntity()->Hide(false);
+	pProjectile->ReInitFromPool();
+
+	m_projectilesRecycled++;
+
+	return pProjectile;
+}
+
+//------------------------------------------------------------------------
+bool CWeaponSystem::ReturnToPool(CProjectile* pProjectile)
+{
+	IEntityClass* pClass = pProjectile->GetEntity()->GetClass();
+
+	const auto it = m_projectilePools.find(pClass);
+	if (it == m_projectilePools.end())
+	{
+		const char* name = pClass ? pClass->GetName() : "NULL";
+		CryLogWarningAlways("%s: Missing pool for projectile class %s", __FUNCTION__, name);
+		return false;
+	}
+
+	it->second.freeProjectiles.emplace_back(SmartProjectile(pProjectile));
+
+	pProjectile->GetEntity()->Hide(true);
+	pProjectile->GetEntity()->SetWorldTM(IDENTITY);
+
+	return true;
+}
+
+//------------------------------------------------------------------------
+void CWeaponSystem::RemoveFromPool(CProjectile* pProjectile)
+{
+	IEntityClass* pClass = pProjectile->GetEntity()->GetClass();
+
+	const auto it = m_projectilePools.find(pClass);
+	if (it == m_projectilePools.end())
+	{
+		return;
+	}
+
+	it->second.totalCount -= std::erase_if(it->second.freeProjectiles, [&](const SmartProjectile& x) { return x.get() == pProjectile; });
+}
+
+//------------------------------------------------------------------------
+void CWeaponSystem::DumpPoolSizes()
+{
+	CryLogAlways("------------------------ Projectile Recycler Statistics ------------------------");
+
+	CryLogAlways("Recycling %s", g_pGameCVars->mp_recycleProjectiles ? "enabled" : "disabled");
+	CryLogAlways("Projectiles recycled: %zu", m_projectilesRecycled);
+
+	for (const auto& [pClass, pool] : m_projectilePools)
+	{
+		const char* name = pClass ? pClass->GetName() : "NULL";
+		CryLogAlways("%s: totalCount=%zu, freeCount=%zu", name, pool.totalCount, pool.freeProjectiles.size());
+	}
+
+	CryLogAlways("------------------------ Tracer Manager Statistics -----------------------------");
+
+	CTracerManager& pTracerMgr = GetTracerManager();
+
+	const size_t total = pTracerMgr.GetPoolSize();
+	const size_t actives = pTracerMgr.GetActiveCount();
+	const unsigned int reused = pTracerMgr.GetNumReused();
+	const unsigned int allocated = pTracerMgr.GetNumAllocated();
+
+	CryLogAlways("Total Allocated (in pool): %zu", total);
+	CryLogAlways("Currently Active: %zu", actives);
+	CryLogAlways("Reused: %u", reused);
+	CryLogAlways("Newly Spawned: %u", allocated);
+
+	CryLogAlways("--------------------------------------------------------------------------------");
+}
+
+//------------------------------------------------------------------------
+void CWeaponSystem::DumpGhostProjectiles()
+{
+	CryLogAlways("------------------------- Ghost Projectiles ----------------------------------------");
+
+	int idx = 0;
+
+	for (const auto& [id, p] : m_projectiles)
+	{
+		if (!p || !p->IsGhost())
+			continue;
+
+		const IEntity* pEnt = p->GetEntity();
+		const char* className = (pEnt && pEnt->GetClass()) ? pEnt->GetClass()->GetName() : "<unknown>";
+
+		// resolve owner name
+		const IEntity* pOwnerEnt = gEnv->pEntitySystem->GetEntity(p->GetOwnerId());
+		const char* ownerName = pOwnerEnt ? pOwnerEnt->GetName() : "<no owner>";
+		IGameObject* pGameObject = p->GetGameObject();
+		const int slotEnables = pGameObject ? pGameObject->GetUpdateSlotEnables(p, eIUS_General) : 0;
+
+		CryLogAlways("[%03d] class=%-25s owner=%-21s $1remote=%d updated=%d",
+			idx,
+			className,
+			ownerName,
+			static_cast<int>(p->IsRemote(),
+			slotEnables)
+		);
+
+		++idx;
+	}
+
+	if (idx == 0)
+	{
+		CryLogAlways("No ghost projectiles detected.");
+	}
+
+	CryLogAlways("------------------------------------------------------------------------------------");
+}
+
 //----------------------------------------
 void CWeaponSystem::Serialize(TSerialize ser)
 {
@@ -643,6 +911,7 @@ void CWeaponSystem::GetMemoryStatistics(ICrySizer * s)
 	s->AddContainer(m_fmregistry);
 	s->AddContainer(m_zmregistry);
 	s->AddContainer(m_projectileregistry);
+	s->AddContainer(m_folders);
 	s->AddContainer(m_queryResults);
 	s->AddContainer(m_config);
 
@@ -672,4 +941,9 @@ void CWeaponSystem::GetMemoryStatistics(ICrySizer * s)
 		}
 		s->AddObject(&m_projectiles,nSize);
 	}
+}
+
+void CWeaponSystem::ProjectileDeleter::operator()(CProjectile* pProjectile) const
+{
+	gEnv->pEntitySystem->RemoveEntity(pProjectile->GetEntityId(), true);
 }

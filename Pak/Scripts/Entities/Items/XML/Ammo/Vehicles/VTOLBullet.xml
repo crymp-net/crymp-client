@@ -1,0 +1,31 @@
+<ammo name="vtolbullet" class="Bullet">
+	<geometry>
+	</geometry>
+	<flags>
+		<param name="clientonly" value="1" />
+	</flags>
+	<whiz>
+		<param name="sound" value="sounds/physics:bullet_whiz:bullet_whiz_large" />
+		<param name="speed" value="25" />
+	</whiz>
+	<physics type="particle">
+		<param name="mass" value="0.0065" />
+		<param name="speed" value="800" />
+		
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0" />
+		<param name="gravity" value="0, 0, -1" />
+		<param name="water_gravity" value="0, 0, -1" />
+		<param name="material" value="mat_metal" />
+
+		<param name="single_contact" value="1" />
+	</physics>
+	<collision>
+		<param name="effect" value="bullet.hit_incendiary.hurricane_vtol" />
+		<param name="scale" value="1.0" />
+	</collision>
+	<params>
+		<param name="lifetime" value="2" />
+		<param name="showtime" value="0.15" />
+	</params>
+</ammo>

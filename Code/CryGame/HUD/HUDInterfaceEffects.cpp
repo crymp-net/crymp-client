@@ -29,6 +29,7 @@
 #include "CryGame/Items/Weapons/OffHand.h"
 #include "CryGame/GameActions.h"
 #include "CryCommon/CryGame/GameUtils.h"
+#include "Library/StringTools.h"
 
 void CHUD::QuickMenuSnapToMode(ENanoMode mode)
 {
@@ -437,6 +438,9 @@ void CHUD::TrackProjectiles(CPlayer* pPlayerActor)
 	{
 		if (CProjectile *pProjectile=pWeaponSystem->GetProjectile(projId))
 		{
+			if (pProjectile->GetEntity()->IsHidden()) //CryMP: Skip ghost grenades
+				continue;
+
 			Vec3 proj=pProjectile->GetEntity()->GetWorldPos();
 			m_pRenderer->ProjectToScreen(	proj.x, proj.y,	proj.z, &screen.x,	&screen.y, &screen.z );
 
@@ -1002,9 +1006,9 @@ void CHUD::Targetting(EntityId pTargetEntity, bool bStatic)
 	{
 		bool vehicle = false;
 		CGameRules::SMinimapEntity mEntity = synchEntities[m];
-		FlashRadarType type = m_pHUDRadar->GetSynchedEntityType(mEntity.type);
+		MiniMapIcon type = m_pHUDRadar->GetSynchedEntityType(mEntity.type);
 		IEntity *pEntity = NULL;
-		if(type == ENuclearWeapon)
+		if(type == MiniMapIcon::NuclearWeapon)
 		{
 			if(IItem *pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(mEntity.entityId))
 			{
@@ -1093,14 +1097,14 @@ void CHUD::Targetting(EntityId pTargetEntity, bool bStatic)
 		if(pEntity)
 		{
 			int friendly = m_pHUDRadar->FriendOrFoe(gEnv->bMultiplayer, team, pEntity, m_pGameRules);
-			FlashRadarType type = m_pHUDRadar->ChooseType(pEntity);
+			MiniMapIcon type = m_pHUDRadar->ChooseMiniMapIcon(pEntity);
 			const bool pUnderAttack = IsUnderAttackFast(*it);
 			if(friendly==1 && pUnderAttack)
 			{
 				friendly = 3;
 				AddOnScreenMissionObjective(pEntity, friendly);
 			}
-			else if(HasTACWeapon() && (type == EHeadquarter || type == EHeadquarter2) && friendly == 2)
+			else if(HasTACWeapon() && (type == MiniMapIcon::Headquarter || type == MiniMapIcon::Headquarter2) && friendly == 2)
 			{
 				// Show TAC Target icon
 				AddOnScreenMissionObjective(pEntity, friendly);
@@ -1262,30 +1266,72 @@ bool CHUD::IsUnderAttack(IEntity *pEntity)
 	return underAttack;
 }
 
+CHUD::CaptureState CHUD::GetCaptureState(IEntity* pEntity)
+{
+	const int localTeamId = m_pGameRules->GetTeam(m_pClientActor->GetEntityId());
+
+	IScriptTable* pScriptTable = m_pGameRules->GetEntity()->GetScriptTable();
+	if (!pScriptTable)
+		return CaptureState::None;
+
+	//Helper to call a Lua function that returns an int (teamId), given (scriptTable, buildingId)
+	auto callTeamFn = [&](const char* fnName, int& outTeam)->bool
+		{
+			outTeam = 0;
+			HSCRIPTFUNCTION fn = nullptr;
+			if (pScriptTable->GetValue(fnName, fn) && fn)
+			{
+				const bool ok = Script::CallReturn(gEnv->pScriptSystem, fn, pScriptTable, ScriptHandle(pEntity->GetId()), outTeam);
+				gEnv->pScriptSystem->ReleaseFunc(fn);
+				return ok;
+			}
+			return false;
+		};
+
+	int capturingTeam = 0;
+	int uncapturingTeam = 0;
+
+	callTeamFn("GetTeamCapturing", capturingTeam);
+	callTeamFn("GetTeamUncapturing", uncapturingTeam);
+
+	if (capturingTeam > 0)
+	{
+		return (capturingTeam == localTeamId) ? CaptureState::TeamCapturing
+			: CaptureState::EnemyCapturing;
+	}
+	if (uncapturingTeam > 0)
+	{
+		return (uncapturingTeam == localTeamId) ? CaptureState::TeamUncapturing
+			: CaptureState::EnemyUncapturing;
+	}
+
+	return CaptureState::None;
+}
+
 void CHUD::AddOnScreenMissionObjective(IEntity *pEntity, int friendly)
 {
-	FlashRadarType type = m_pHUDRadar->ChooseType(pEntity);
-	if(type == EHeadquarter)
+	MiniMapIcon type = m_pHUDRadar->ChooseMiniMapIcon(pEntity);
+	if(type == MiniMapIcon::Headquarter)
 		if(HasTACWeapon() && friendly==2)
 			UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_HQTarget);
 		else
 			UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_HQKorean);
-	else if(type == EHeadquarter2)
+	else if(type == MiniMapIcon::Headquarter2)
 		if(HasTACWeapon() && friendly==2)
 			UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_HQTarget);
 		else
 			UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_HQUS);
-	else if(type == EFactoryTank)
+	else if(type == MiniMapIcon::FactoryTank)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_FactoryTank);
-	else if(type == EFactoryAir)
+	else if(type == MiniMapIcon::FactoryAir)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_FactoryAir);
-	else if(type == EFactorySea)
+	else if(type == MiniMapIcon::FactorySea)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_FactoryNaval);
-	else if(type == EFactoryVehicle)
+	else if(type == MiniMapIcon::FactoryVehicle)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_FactoryVehicle);
-	else if(type == EFactoryPrototype)
+	else if(type == MiniMapIcon::FactoryPrototype)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_FactoryPrototypes);
-	else if(type == EAlienEnergySource)
+	else if(type == MiniMapIcon::AlienEnergySource)
 		UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_AlienEnergyPoint);
 
 	else
@@ -1431,8 +1477,7 @@ void CHUD::UpdateVoiceChat()
 			{			
 				if(g_pGame->GetIGameFramework()->IsVoiceRecordingEnabled())
 				{
-					SUIWideString voice(pEntity->GetName());
-					m_animVoiceChat.Invoke("addVoice", voice.c_str());
+					m_animVoiceChat.Invoke("addVoice", pEntity->GetName());
 					someoneTalking = true;
 				}
 			}
@@ -1440,8 +1485,7 @@ void CHUD::UpdateVoiceChat()
 			{
 				if(pNetChannel->TimeSinceVoiceReceipt(pEntity->GetId()).GetSeconds() < 0.2f)
 				{
-					SUIWideString voice(pEntity->GetName());
-					m_animVoiceChat.Invoke("addVoice", voice.c_str());
+					m_animVoiceChat.Invoke("addVoice", pEntity->GetName());
 					someoneTalking = true;
 				}
 			}

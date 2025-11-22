@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <winhttp.h>
+#include <winnls.h>
 
 #include "WinAPI.h"
 #include "StringTools.h"
@@ -129,6 +130,22 @@ void WinAPI::SetWorkingDirectory(const std::filesystem::path& path)
 	}
 }
 
+uint64_t WinAPI::GetLastWriteTime(const std::filesystem::path& path)
+{
+	WIN32_FILE_ATTRIBUTE_DATA attributes;
+	if (!GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &attributes))
+	{
+		return 0;
+	}
+
+	// https://learn.microsoft.com/en-us/windows/win32/sysinfo/converting-a-time-t-value-to-a-file-time
+	ULARGE_INTEGER time_value;
+	time_value.LowPart = attributes.ftLastWriteTime.dwLowDateTime;
+	time_value.HighPart = attributes.ftLastWriteTime.dwHighDateTime;
+	time_value.QuadPart -= 116444736000000000ULL;
+	return time_value.QuadPart / 10000000ULL;
+}
+
 /////////////
 // Modules //
 /////////////
@@ -180,11 +197,15 @@ namespace
 	{
 		HRSRC resourceInfo = FindResourceA(static_cast<HMODULE>(pDLL), name, type);
 		if (!resourceInfo)
-			return std::string_view();
+		{
+			return {};
+		}
 
 		HGLOBAL resourceData = LoadResource(static_cast<HMODULE>(pDLL), resourceInfo);
 		if (!resourceData)
-			return std::string_view();
+		{
+			return {};
+		}
 
 		const void *data = LockResource(resourceData);
 		size_t length = SizeofResource(static_cast<HMODULE>(pDLL), resourceInfo);
@@ -193,31 +214,40 @@ namespace
 	}
 }
 
+bool WinAPI::GetVersionResource(void* pDLL, VersionResource& result)
+{
+	const void* versionRes = GetResource(pDLL, MAKEINTRESOURCE(VS_VERSION_INFO), RT_VERSION).data();
+	if (!versionRes)
+	{
+		return false;
+	}
+
+	const void* versionResKey = static_cast<const unsigned char*>(versionRes) + 0x6;
+	if (memcmp(versionResKey, L"VS_VERSION_INFO", 0x20) != 0)
+	{
+		SetLastError(ERROR_INVALID_DATA);
+		return false;
+	}
+
+	const void* versionResValue = static_cast<const unsigned char*>(versionResKey) + 0x20 + 0x2;
+	const VS_FIXEDFILEINFO* fileInfo = static_cast<const VS_FIXEDFILEINFO*>(versionResValue);
+	if (fileInfo->dwSignature != 0xFEEF04BD)
+	{
+		SetLastError(ERROR_INVALID_DATA);
+		return false;
+	}
+
+	result.major = HIWORD(fileInfo->dwProductVersionMS);
+	result.minor = LOWORD(fileInfo->dwProductVersionMS);
+	result.patch = HIWORD(fileInfo->dwProductVersionLS);
+	result.tweak = LOWORD(fileInfo->dwProductVersionLS);
+
+	return true;
+}
+
 std::string_view WinAPI::GetDataResource(void *pDLL, int resourceID)
 {
 	return GetResource(pDLL, MAKEINTRESOURCE(resourceID), RT_RCDATA);
-}
-
-/**
- * @brief Obtains game version from any Crysis DLL.
- * It parses version resource of the specified file.
- * @param pDLL Handle of any Crysis DLL.
- * @return Game build number or -1 if some error occurred.
- */
-int WinAPI::GetCrysisGameBuild(void *pDLL)
-{
-	const void *versionRes = GetResource(pDLL, MAKEINTRESOURCE(VS_VERSION_INFO), RT_VERSION).data();
-	if (!versionRes)
-		return -1;
-
-	if (memcmp(RVA(versionRes, 0x6), L"VS_VERSION_INFO", 0x20) != 0)
-		return -1;
-
-	const VS_FIXEDFILEINFO *pFileInfo = static_cast<const VS_FIXEDFILEINFO*>(RVA(versionRes, 0x6 + 0x20 + 0x2));
-	if (pFileInfo->dwSignature != 0xFEEF04BD)
-		return -1;
-
-	return LOWORD(pFileInfo->dwFileVersionLS);
 }
 
 ///////////
@@ -321,14 +351,14 @@ void WinAPI::HookWithJump(void* address, void* pNewFunc)
 		0xFF, 0xE0                                                   // jmp rax
 	};
 
-	std::memcpy(&code[2], &pNewFunc, 8);
+	memcpy(&code[2], &pNewFunc, 8);
 #else
 	unsigned char code[] = {
 		0xB8, 0x00, 0x00, 0x00, 0x00,  // mov eax, 0x0
 		0xFF, 0xE0                     // jmp eax
 	};
 
-	std::memcpy(&code[1], &pNewFunc, 4);
+	memcpy(&code[1], &pNewFunc, 4);
 #endif
 
 	FillMem(address, &code, sizeof(code));
@@ -429,191 +459,6 @@ bool WinAPI::HookIATByName(void *pDLL, const char *dllName, const char *funcName
 	}
 
 	return true;
-}
-
-///////////
-// Files //
-///////////
-
-namespace
-{
-	DWORD ToNativeFileAccessMode(WinAPI::FileAccess access)
-	{
-		switch (access)
-		{
-			case WinAPI::FileAccess::READ_ONLY:
-			{
-				return GENERIC_READ;
-			}
-			case WinAPI::FileAccess::WRITE_ONLY:
-			case WinAPI::FileAccess::WRITE_ONLY_CREATE:
-			{
-				return GENERIC_WRITE;
-			}
-			case WinAPI::FileAccess::READ_WRITE:
-			case WinAPI::FileAccess::READ_WRITE_CREATE:
-			{
-				return GENERIC_READ | GENERIC_WRITE;
-			}
-		}
-
-		return 0;
-	}
-
-	DWORD ToNativeFileCreationDisposition(WinAPI::FileAccess access)
-	{
-		switch (access)
-		{
-			case WinAPI::FileAccess::READ_ONLY:
-			case WinAPI::FileAccess::WRITE_ONLY:
-			case WinAPI::FileAccess::READ_WRITE:
-			{
-				return OPEN_EXISTING;
-			}
-			case WinAPI::FileAccess::WRITE_ONLY_CREATE:
-			case WinAPI::FileAccess::READ_WRITE_CREATE:
-			{
-				return OPEN_ALWAYS;
-			}
-		}
-
-		return 0;
-	}
-
-	DWORD ToNativeFileSeek(WinAPI::FileSeekBase base)
-	{
-		switch (base)
-		{
-			case WinAPI::FileSeekBase::BEGIN:   return FILE_BEGIN;
-			case WinAPI::FileSeekBase::CURRENT: return FILE_CURRENT;
-			case WinAPI::FileSeekBase::END:     return FILE_END;
-		}
-
-		return 0;
-	}
-}
-
-void *WinAPI::FileOpen(const std::filesystem::path & path, FileAccess access, bool *pCreated)
-{
-	const DWORD mode = ToNativeFileAccessMode(access);
-	const DWORD share = FILE_SHARE_READ;
-	const DWORD creation = ToNativeFileCreationDisposition(access);
-	const DWORD attributes = FILE_ATTRIBUTE_NORMAL;
-
-	HANDLE handle = CreateFileW(path.c_str(), mode, share, nullptr, creation, attributes, nullptr);
-	if (handle == INVALID_HANDLE_VALUE)
-	{
-		return nullptr;
-	}
-
-	if (pCreated)
-	{
-		(*pCreated) = (GetLastError() != ERROR_ALREADY_EXISTS);
-	}
-
-	return handle;
-}
-
-std::string WinAPI::FileRead(void *handle, size_t maxLength)
-{
-	// read everything from the current position to the end of the file
-	if (maxLength == 0)
-	{
-		const uint64_t currentPos = FileSeek(handle, FileSeekBase::CURRENT, 0);
-		const uint64_t endPos = FileSeek(handle, FileSeekBase::END, 0);
-
-		// restore position
-		FileSeek(handle, FileSeekBase::BEGIN, currentPos);
-
-		if (currentPos < endPos)
-		{
-			const uint64_t distance = endPos - currentPos;
-
-			if (distance >= 0x80000000)  // 2 GiB
-			{
-				throw StringTools::ErrorFormat("File is too big!");
-			}
-
-			maxLength = static_cast<size_t>(distance);
-		}
-	}
-
-	std::string result;
-	result.resize(maxLength);
-
-	void *buffer = result.data();
-	const DWORD bufferSize = static_cast<DWORD>(result.length());
-
-	DWORD bytesRead = 0;
-
-	if (!ReadFile(static_cast<HANDLE>(handle), buffer, bufferSize, &bytesRead, nullptr))
-	{
-		throw StringTools::SysErrorFormat("ReadFile");
-	}
-
-	if (bytesRead != result.length())
-	{
-		result.resize(bytesRead);
-	}
-
-	return result;
-}
-
-void WinAPI::FileWrite(void *handle, const std::string_view & text)
-{
-#ifdef BUILD_64BIT
-	if (text.length() >= 0xFFFFFFFF)
-	{
-		throw StringTools::ErrorFormat("Data is too big!");
-	}
-#endif
-
-	size_t totalBytesWritten = 0;
-
-	// make sure everything is written
-	do
-	{
-		const void *buffer = text.data() + totalBytesWritten;
-		const DWORD bufferSize = static_cast<DWORD>(text.length() - totalBytesWritten);
-
-		DWORD bytesWritten = 0;
-
-		if (!WriteFile(static_cast<HANDLE>(handle), buffer, bufferSize, &bytesWritten, nullptr))
-		{
-			throw StringTools::SysErrorFormat("WriteFile");
-		}
-
-		totalBytesWritten += bytesWritten;
-	}
-	while (totalBytesWritten < text.length());
-}
-
-uint64_t WinAPI::FileSeek(void *handle, FileSeekBase base, int64_t offset)
-{
-	LARGE_INTEGER offsetValue;
-	offsetValue.QuadPart = offset;
-
-	if (!SetFilePointerEx(static_cast<HANDLE>(handle), offsetValue, &offsetValue, ToNativeFileSeek(base)))
-	{
-		throw StringTools::SysErrorFormat("SetFilePointerEx");
-	}
-
-	return offsetValue.QuadPart;
-}
-
-void WinAPI::FileResize(void *handle, uint64_t size)
-{
-	FileSeek(handle, FileSeekBase::BEGIN, size);  // the offset is interpreted as an unsigned value
-
-	if (!SetEndOfFile(static_cast<HANDLE>(handle)))
-	{
-		throw StringTools::SysErrorFormat("SetEndOfFile");
-	}
-}
-
-void WinAPI::FileClose(void *handle)
-{
-	CloseHandle(static_cast<HANDLE>(handle));
 }
 
 //////////
@@ -766,6 +611,32 @@ wchar_t WinAPI::WideCharToUpper(wchar_t ch, int languageID)
 	}
 }
 
+std::wstring WinAPI::CharToWString(char c) {
+	WCHAR wideChar[2];
+	int wlen = MultiByteToWideChar(GetActiveKeyboardAnsiCP(), 0, &c, 1, wideChar, 2);
+	if (wlen == 0) {
+		return std::wstring{};
+	} else {
+		return std::wstring{ wideChar, wideChar + wlen };
+	}
+}
+
+unsigned WinAPI::GetActiveKeyboardAnsiCP()
+{
+	HKL hkl = GetKeyboardLayout(0);
+	LANGID langId = LOWORD(hkl);
+
+	LCID lcid = MAKELCID(langId, SORT_DEFAULT);
+
+	wchar_t buffer[10];
+
+	if (GetLocaleInfoW(lcid, LOCALE_IDEFAULTANSICODEPAGE, buffer, 10) == 0) {
+		return 0;
+	}
+
+	return std::wcstol(buffer, NULL, 10);
+}
+
 /////////////////
 // System info //
 /////////////////
@@ -894,6 +765,24 @@ int WinAPI::HTTPRequest(
 	if (!hSession)
 	{
 		throw StringTools::SysErrorFormat("WinHttpOpen");
+	}
+
+	if (urlComponents.nScheme == INTERNET_SCHEME_HTTPS)
+	{
+		// try to enable TLS 1.2 and 1.3
+		DWORD tlsFlags = WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 | WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
+
+		if (!WinHttpSetOption(hSession, WINHTTP_OPTION_SECURE_PROTOCOLS, &tlsFlags, sizeof(tlsFlags)))
+		{
+			// try only TLS 1.2 because TLS 1.3 is not supported on older Windows
+			tlsFlags = WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
+
+			if (!WinHttpSetOption(hSession, WINHTTP_OPTION_SECURE_PROTOCOLS, &tlsFlags, sizeof(tlsFlags)))
+			{
+				// we cannot continue without TLS 1.2
+				throw StringTools::SysErrorFormat("Failed to enable TLS 1.2");
+			}
+		}
 	}
 
 	const std::wstring serverNameW(urlComponents.lpszHostName, urlComponents.dwHostNameLength);
@@ -1096,4 +985,35 @@ void WinAPI::Window::ConvertPosToScreen(void* window, long& x, long& y)
 
 	x = point.x;
 	y = point.y;
+}
+
+std::string WinAPI::GetLocalIP() {
+	char hostn[255];
+	if (gethostname(hostn, sizeof(hostn)) != SOCKET_ERROR) {
+		struct hostent *host = gethostbyname(hostn);
+		if (host != NULL) {
+			for (int i = 0; host->h_addr_list[i] != 0; ++i) {
+				struct in_addr addr;
+				memcpy(&addr, host->h_addr_list[i], sizeof(struct in_addr));
+				return inet_ntoa(addr);
+			}
+		}
+	}
+	return "";
+}
+
+std::string WinAPI::GetIP(const std::string& hostName) {
+	std::string host { hostName };
+	if(size_t pos = host.find(':'); pos != std::string::npos) {
+		host = host.substr(0, pos);
+	}
+	
+	in_addr iaddr;
+	hostent *result = gethostbyname(host.c_str());
+	if(result == NULL) {
+		return host;
+	} else {
+		iaddr.s_addr=*(unsigned long*)result->h_addr;
+		return inet_ntoa(iaddr);
+	}
 }

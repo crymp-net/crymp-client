@@ -32,6 +32,7 @@ class CWeatherSystem {
 	};
 
 	bool                          m_enabled = false;
+	string                        m_lastTodXmlPath;
 	std::map<int, float[3]>       m_originalWeatherValues;
 	std::optional<Vec3>           m_originalWind;
 	std::map<int, IStatInstGroup> m_originalGroups;
@@ -47,6 +48,7 @@ class CWeatherSystem {
 	static bool tod_hooked;
 	static constexpr int WEATHER_NAMESPACE = 2000;
 	static constexpr int WEATHER_ENV_NAMESPACE = 2100;
+	static constexpr int WEATHER_TOD_PATH_ID = 2300;
 
 	static constexpr std::array<EERType, 1> static_entities = {
 		eERType_Brush,

@@ -16,6 +16,7 @@
 #include "CryMP/Server/Server.h"
 #include "CryScriptSystem/ScriptSystem.h"
 #include "CrySystem/CPUInfo.h"
+#include "CrySystem/CrashTest.h"
 #include "CrySystem/CryMemoryManager.h"
 #include "CrySystem/CryPak.h"
 #include "CrySystem/GameWindow.h"
@@ -183,7 +184,7 @@ static ICryPak* CreateNewCryPak(ISystem* pSystem, CryPakConfig* config, bool lvl
 	// TODO: config
 	// TODO: lvlRes
 	pCryPak->SetGameFolderWritable(gameFolderWritable);
-	pCryPak->LoadInternalPak(internalPak.data(), internalPak.size());
+	pCryPak->LoadClientPak(internalPak.data(), internalPak.size());
 
 	return pCryPak;
 }
@@ -504,6 +505,27 @@ static std::string_view ChooseLanguage(std::string_view defaultLanguage, ICVar* 
 	return language;
 }
 
+static void PatchFlashFont()
+{
+	const std::string_view lang = LocalizationManager::GetInstance().GetCurrentLanguage().name;
+
+	// these languages have their own special font
+	if (lang != "japanese" && lang != "korean" && lang != "chinese" && lang != "thai")
+	{
+		CryPak& cryPak = CryPak::GetInstance();
+
+		// the same font for all other languages
+		cryPak.AddRedirect(
+			"Languages/HUD_Font_LocFont.gfx",
+			"Languages/HUD_Font_LocFont_override.gfx"
+		);
+		cryPak.AddRedirect(
+			"Languages/HUD_Font_LocFont_glyphs.gfx",
+			"Languages/HUD_Font_LocFont_glyphs_override.gfx"
+		);
+	}
+}
+
 static void ReplaceLocalizationManager(void* pCrySystem)
 {
 	struct DummyCSystem
@@ -528,6 +550,8 @@ static void ReplaceLocalizationManager(void* pCrySystem)
 			}
 
 			LocalizationManager::GetInstance().SetLanguage(language.data());
+
+			PatchFlashFont();
 		}
 	};
 
@@ -717,6 +741,23 @@ static void HookNetworkGetService(void* pCryNetwork)
 	WinAPI::FillMem(&pCNetworkVTable[7], &reinterpret_cast<void*&>(pNewGetService), sizeof(void*));
 }
 
+static void LogRealWindowsBuild(Logger& logger)
+{
+	void* kernel32 = WinAPI::DLL::Get("kernel32.dll");
+	if (!kernel32)
+	{
+		return;
+	}
+
+	WinAPI::VersionResource ver;
+	if (!WinAPI::GetVersionResource(kernel32, ver))
+	{
+		return;
+	}
+
+	logger.LogAlways("Windows build: %hu.%hu.%hu (real)", ver.major, ver.minor, ver.patch);
+}
+
 static void EnableHiddenProfilerSubsystems(ISystem* pSystem)
 {
 	struct Subsystem
@@ -876,13 +917,15 @@ void Launcher::LoadEngine()
 		}
 	}
 
-	const int gameVersion = WinAPI::GetCrysisGameBuild(m_dlls.pCrySystem);
-	if (gameVersion < 0)
+	WinAPI::VersionResource version;
+	if (!WinAPI::GetVersionResource(m_dlls.pCrySystem, version))
 	{
 		throw StringTools::SysErrorFormat("Failed to get the game version!");
 	}
 
-	switch (gameVersion)
+	const int gameBuild = version.tweak;
+
+	switch (gameBuild)
 	{
 		case 5767:
 		{
@@ -927,7 +970,7 @@ void Launcher::LoadEngine()
 		}
 		default:
 		{
-			throw StringTools::ErrorFormat("Unknown game version %d!", gameVersion);
+			throw StringTools::ErrorFormat("Unknown game build %d!", gameBuild);
 		}
 	}
 
@@ -1046,27 +1089,21 @@ void Launcher::PatchEngine()
 		MemoryPatch::CrySystem::EnableServerPhysicsThread(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::HookCryWarning(m_dlls.pCrySystem, &OnCryWarning);
 
-		if (!WinAPI::CmdLine::HasArg("-oldss"))
-		{
-			ReplaceScriptSystem(m_dlls.pCrySystem);
-		}
-
 		InstallEarlyEngineInitHook(m_dlls.pCrySystem);
 
 		ReplaceCryPak(m_dlls.pCrySystem);
 		ReplaceStreamEngine(m_dlls.pCrySystem);
+		ReplaceScriptSystem(m_dlls.pCrySystem);
 		ReplaceHardwareMouse(m_dlls.pCrySystem);
 		ReplaceLocalizationManager(m_dlls.pCrySystem);
 	}
 
 	if (m_dlls.pCry3DEngine)
 	{
+		MemoryPatch::Cry3DEngine::EnableBigDecalsOnDynamicObjects(m_dlls.pCry3DEngine);
 		MemoryPatch::Cry3DEngine::FixGetObjectsByType(m_dlls.pCry3DEngine);
 
-		if (!WinAPI::CmdLine::HasArg("-oldtod"))
-		{
-			ReplaceTimeOfDay(m_dlls.pCry3DEngine);
-		}
+		ReplaceTimeOfDay(m_dlls.pCry3DEngine);
 	}
 
 	const char* GAME_WINDOW_NAME = "CryMP Client " CRYMP_VERSION_STRING;
@@ -1150,6 +1187,8 @@ void Launcher::StartEngine()
 		}
 	}
 
+	CrashTest::Register();
+
 #ifdef CRYMP_TRACY_ENABLED
 	TracyHookEngineProfiler();
 #endif
@@ -1173,6 +1212,14 @@ void Launcher::StartEngine()
 
 	StartupTime::Finish();
 	CryLogAlways("Startup finished in %.3f seconds", StartupTime::GetSeconds());
+
+#ifdef SERVER_LAUNCHER
+	if (oldAction) {
+		CryLogAlways("[CryMP] Using old CryAction");
+	} else {
+		CryLogAlways("[CryMP] Using new CryAction");
+	}
+#endif
 
 	gEnv->pSystem->ExecuteCommandLine();
 }
@@ -1208,7 +1255,13 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 	logger.SetVerbosity(verbosity);
 	logger.OpenFile((rootDirPath.empty() ? userDirPath : rootDirPath) / logFileName);
 
-	CrashLogger::Enable(&ProvideLogFile, &CryMemoryManager::ProvideHeapInfo);
+#ifdef CLIENT_LAUNCHER
+	const char* banner = "CryMP Client " CRYMP_VERSION_STRING " " CRYMP_BITS " " CRYMP_BUILD_TYPE;
+#else
+	const char* banner = "CryMP Server " CRYMP_VERSION_STRING " " CRYMP_BITS " " CRYMP_BUILD_TYPE;
+#endif
+
+	CrashLogger::Enable(&ProvideLogFile, &CryMemoryManager::ProvideHeapInfo, banner);
 
 	logger.LogAlways("Log begins at %s", Logger::FormatPrefix("%F %T%z").c_str());
 
@@ -1226,11 +1279,7 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 	const SFileVersion& version = gEnv->pSystem->GetProductVersion();
 
 	logger.LogAlways("Crysis %d.%d.%d.%d " CRYMP_BITS, version[3], version[2], version[1], version[0]);
-#ifdef CLIENT_LAUNCHER
-	logger.LogAlways("CryMP Client " CRYMP_VERSION_STRING " " CRYMP_BITS " " CRYMP_BUILD_TYPE);
-#else
-	logger.LogAlways("CryMP Server " CRYMP_VERSION_STRING " " CRYMP_BITS " " CRYMP_BUILD_TYPE);
-#endif
+	logger.LogAlways("%s", banner);
 	logger.LogAlways("Compiled by " CRYMP_COMPILER);
 	logger.LogAlways("Copyright (C) 2001-2008 Crytek GmbH");
 	logger.LogAlways("Copyright (C) 2014-2025 CryMP");
@@ -1238,15 +1287,35 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 
 	logger.SetPrefix(logPrefix);
 
+	LogRealWindowsBuild(logger);
+
 	EnableHiddenProfilerSubsystems(pSystem);
 
 	gEnv->pConsole->AddCommand("CryPakInfo", [](IConsoleCmdArgs* args) {
 		CryPak::GetInstance().LogInfo();
 	});
+
+	gEnv->pConsole->AddCommand("LocalizationManagerInfo", [](IConsoleCmdArgs* args) {
+		LocalizationManager::GetInstance().LogInfo();
+	});
 }
+
+struct DummySystemCallback : public ISystemUserCallback
+{
+	bool OnError(const char*) override { return false; }
+	void OnSaveDocument() override {}
+	void OnProcessSwitch() override {}
+	void OnInitProgress(const char*) override {}
+	void OnInit(ISystem*) override {}
+	void OnShutdown() override {}
+	void OnUpdate() override {}
+	void GetMemoryUsage(ICrySizer*) override {}
+};
 
 void Launcher::Run()
 {
+	DummySystemCallback dummyCallback;
+
 	m_params.hInstance = WinAPI::DLL::Get(nullptr);  // EXE handle
 	m_params.pLog = &Logger::GetInstance();
 #ifdef SERVER_LAUNCHER
@@ -1254,6 +1323,12 @@ void Launcher::Run()
 #else
 	m_params.isDedicatedServer = WinAPI::CmdLine::HasArg("-dedicated");
 #endif
+
+	if (WinAPI::CmdLine::HasArg("-headless"))
+	{
+		m_params.pUserCallback = &dummyCallback;
+		m_params.isDedicatedServer = true;
+	}
 
 	this->SetCmdLine();
 

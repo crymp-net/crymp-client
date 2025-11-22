@@ -1,6 +1,5 @@
-#include <chrono>
-
 #include "CrySystem/CryLog.h"
+#include "Library/WinAPI.h"
 
 #include "FileOutsidePak.h"
 
@@ -109,11 +108,7 @@ void* FileOutsidePak::GetCachedFileData(std::size_t& fileSize)
 
 std::uint64_t FileOutsidePak::GetModificationTime()
 {
-	std::error_code ec;
-	auto lastWriteTime = std::filesystem::last_write_time(m_path, ec);
-	auto systemLastWriteTime = std::chrono::clock_cast<std::chrono::system_clock>(lastWriteTime);
-
-	return std::chrono::system_clock::to_time_t(systemLastWriteTime);
+	return WinAPI::GetLastWriteTime(m_path);
 }
 
 std::FILE* FileOutsidePak::GetHandle()

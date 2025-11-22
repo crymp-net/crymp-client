@@ -27,7 +27,6 @@ History:
 #include "Weapon.h"
 #include "AmmoParams.h"
 
-
 #define MIN_DAMAGE								5
 
 class CProjectile :
@@ -53,7 +52,6 @@ public:
 	virtual void PostInitClient(int channelId) {};
 	virtual void Release();
 	virtual void FullSerialize( TSerialize ser );
-	bool RemoveIfExpired();
 	virtual bool NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile, int flags );
 	virtual void PostSerialize();
 	virtual void SerializeSpawnInfo( TSerialize ser );
@@ -73,6 +71,8 @@ public:
 	virtual bool SetAspectProfile( EEntityAspects aspect, uint8 profile );
 	virtual uint8 GetDefaultProfile( EEntityAspects aspect );
 	// ~IGameObjectProfileManager
+
+	void ReInitFromPool();
 
 	virtual void LoadGeometry();
 	virtual void Physicalize();
@@ -103,12 +103,6 @@ public:
 
 	virtual int AttachEffect(bool attach, int id, const char *name=0, const Vec3 &offset=Vec3(0.0f,0.0f,0.0f), const Vec3 &dir=Vec3(0.0f,1.0f,0.0f), float scale=1.0f, bool bParticlePrime = true);
 
-  EntityId GetOwnerId()const;
-
-	float GetSpeed() const;
-	inline float GetLifeTime() const { return m_pAmmoParams? m_pAmmoParams->lifetime : 0.0f; }
-	bool IsPredicted() const { return m_pAmmoParams? m_pAmmoParams->predictSpawn != 0 : false; }
-
 	//IHitListener
 	virtual void OnHit(const HitInfo&);
 	virtual void OnExplosion(const ExplosionInfo&);
@@ -117,32 +111,49 @@ public:
 	//Helper function to initialize particle params in exceptional cases
 	void SetDefaultParticleParams(pe_params_particle *pParams);
 
+	bool IsPlayingMfxFromClExplosion() const;
+
 	const SAmmoParams *GetParams() const { return m_pAmmoParams; };
 
-	virtual void InitWithAI( );
+	void InitWithAI();
 
-	bool IsExpired() const
+	inline EntityId GetOwnerId() const
 	{
-		const float lifeTime = GetLifeTime();
-		if (lifeTime > 0.0f)
-		{
-			return (gEnv->pTimer->GetCurrTime() - m_spawnTime) > (lifeTime + 1.0f);
-		}
-		return false;
+		return m_ownerId;
 	}
-
-	bool IsUpdated() const
+	inline EntityId GetHostId() const
 	{
-		return gEnv->pTimer->GetCurrTime() - m_lastUpdate < 0.1f;
+		return m_hostId;
 	}
-
-	float GetTotalLifeTime()
+	inline float GetSpeed() const
+	{
+		return m_pAmmoParams ? m_pAmmoParams->speed : 0.0f;
+	}
+	inline float GetLifeTime() const
+	{
+		return m_pAmmoParams ? m_pAmmoParams->lifetime : 0.0f;
+	}
+	inline bool IsPredicted() const
+	{
+		return m_pAmmoParams ? m_pAmmoParams->predictSpawn != 0 : false;
+	}
+	inline IPhysicalEntity* GetPhysicalEntity()
+	{
+		return m_pPhysicalEntity;
+	}
+	inline bool IsGhost() const
+	{
+		return m_ghost;
+	}
+	inline float GetTotalLifeTime() const
 	{
 		return m_totalLifetime;
 	}
 
 protected:
 	CWeapon *GetWeapon();
+
+	void DestroyObstructObject();
 
 	IEntitySoundProxy *GetSoundProxy();
 	template<typename T> T GetParam(const char *name, T &def)
@@ -160,45 +171,47 @@ protected:
 		return v;
 	}
 	
-	const SAmmoParams			*m_pAmmoParams;
+	const SAmmoParams* m_pAmmoParams = nullptr;
 
-	IPhysicalEntity *m_pPhysicalEntity;
+	IPhysicalEntity* m_pPhysicalEntity = nullptr;
 
-	int				m_whizSoundId;
-	int				m_trailSoundId;
-	int				m_trailEffectId;
-	int				m_trailUnderWaterId;
-	Vec3			m_last;
+	int m_whizSoundId = INVALID_SOUNDID;
+	int m_trailSoundId = INVALID_SOUNDID;
+	int m_trailEffectId = -1;
+	int m_trailUnderWaterId = -1;
+	Vec3 m_last = ZERO;
 
-	EntityId	m_ownerId;
-	EntityId	m_hostId;
-	EntityId	m_weaponId;
-	int				m_fmId;
-	int				m_damage;
-  int       m_hitTypeId;
-	bool			m_destroying;
-	bool			m_tracked;
-  
-	bool      m_firstDropApplied;
-	Vec3			m_initial_pos;
-	Vec3			m_initial_dir;	
-	Vec3			m_initial_vel;
+	EntityId m_ownerId = 0;
+	EntityId m_hostId = 0;
+	EntityId m_weaponId = 0;
+	int m_fmId = 0;
+	int m_damage = 0;
+	int m_hitTypeId = 0;
 
-	bool			m_remote;
-	uint16		m_seq;
+	bool m_destroying = false;
+	bool m_tracked = false;
 
-	float			m_totalLifetime;
-	float			m_scaledEffectval;
-	bool			m_scaledEffectSignaled;
+	bool m_firstDropApplied = false;
+	Vec3 m_initial_pos = ZERO;
+	Vec3 m_initial_dir = ZERO;
+	Vec3 m_initial_vel = ZERO;
 
-	int				m_hitPoints;
-	bool      m_noBulletHits;
-	bool			m_hitListener;
+	bool m_remote = false;
+	uint16 m_seq = 0;
 
-	IPhysicalEntity *m_obstructObject;
+	float m_totalLifetime = 0.0f;
+	float m_scaledEffectval = 0.0f;
+	bool m_scaledEffectSignaled = false;
+
+	int m_hitPoints = -1;
+	bool m_noBulletHits = false;
+	bool m_hitListener = false;
+
+	IPhysicalEntity* m_pObstructObject = nullptr;
 
 	float m_spawnTime = 0.0f;
-	float m_lastUpdate = 0.0f;
+	bool m_netUpdateReceived = false;
+	bool m_ghost = false;
 };
 
 #endif

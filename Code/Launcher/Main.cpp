@@ -1,6 +1,8 @@
-#include <stdexcept>
-#include <string>
+#ifdef CRYMP_CONSOLE_APP
+#include <cstdio>
+#endif
 
+#include "Library/StringTools.h"  // CryMP_Error
 #include "Library/WinAPI.h"
 
 #include "Launcher.h"
@@ -18,19 +20,6 @@ extern "C" __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static std::string RuntimeErrorToString(const std::runtime_error& error)
-{
-	std::string message = error.what();
-	std::string::size_type pos = 0;
-
-	while ((pos = message.find(": ", pos)) != std::string::npos)
-	{
-		message.replace(pos, 2, "\n");
-	}
-
-	return message;
-}
-
 #ifdef CRYMP_CONSOLE_APP
 int main()
 #else
@@ -44,14 +33,13 @@ int __stdcall WinMain(void*, void*, char*, int)
 	{
 		launcher.Run();
 	}
-	catch (const std::runtime_error& error)
+	catch (const CryMP_Error& error)
 	{
-		WinAPI::ErrorBox(RuntimeErrorToString(error).c_str());
-		return 1;
-	}
-	catch (const std::exception& ex)
-	{
-		WinAPI::ErrorBox(ex.what());
+#ifdef CRYMP_CONSOLE_APP
+		std::fprintf(stderr, "%s\n", error.what());
+#else
+		WinAPI::ErrorBox(error.what());
+#endif
 		return 1;
 	}
 

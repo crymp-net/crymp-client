@@ -1,0 +1,3 @@
+LevelDesigner.Maps = {
+	
+};

@@ -55,9 +55,9 @@ static void PrecacheMaterials(bool bCacheAsian)
 		g_USNanoMats[NANOMODE_INVULNERABILITY].body = matMan->LoadMaterial("objects/characters/human/us/nanosuit/nanosuit_us_invulnerability.mtl");
 		g_USNanoMats[NANOMODE_INVULNERABILITY].helmet = matMan->LoadMaterial("objects/characters/human/us/nanosuit/nanosuit_us_helmet_invulnerability.mtl");
 		g_USNanoMats[NANOMODE_INVULNERABILITY].arms = matMan->LoadMaterial("objects/weapons/arms_global/arms_nanosuit_us_invulnerability.mtl");
-		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].body = matMan->LoadMaterial("objects/characters/human/us/nanosuit/nanosuit_us_invulnerability.mtl");
-		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].helmet = matMan->LoadMaterial("objects/characters/human/us/nanosuit/nanosuit_us_helmet_invulnerability.mtl");
-		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].arms = matMan->LoadMaterial("objects/weapons/arms_global/arms_nanosuit_us_invulnerability.mtl");
+		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].body = matMan->LoadMaterial("objects/characters/human/us/nanosuit/nanosuit_us_defense.mtl");
+		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].helmet = matMan->LoadMaterial("objects/characters/human/us/nanosuit/nanosuit_us_helmet_defense.mtl");
+		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].arms = matMan->LoadMaterial("objects/weapons/arms_global/arms_nanosuit_us_defense.mtl");
 		// strategically leak it
 		for (int i = 0; i < NANOMODE_LAST; ++i)
 		{
@@ -84,9 +84,9 @@ static void PrecacheMaterials(bool bCacheAsian)
 		g_AsianNanoMats[NANOMODE_INVULNERABILITY].body = matMan->LoadMaterial("objects/characters/human/asian/nanosuit/nanosuit_asian_invulnerability.mtl");
 		g_AsianNanoMats[NANOMODE_INVULNERABILITY].helmet = matMan->LoadMaterial("objects/characters/human/asian/nanosuit/nanosuit_asian_helmet_invulnerability.mtl");
 		g_AsianNanoMats[NANOMODE_INVULNERABILITY].arms = matMan->LoadMaterial("objects/weapons/arms_global/arms_nanosuit_asian_invulnerability.mtl");
-		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].body = matMan->LoadMaterial("objects/characters/human/asian/nanosuit/nanosuit_asian_invulnerability.mtl");
-		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].helmet = matMan->LoadMaterial("objects/characters/human/asian/nanosuit/nanosuit_asian_helmet_invulnerability.mtl");
-		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].arms = matMan->LoadMaterial("objects/weapons/arms_global/arms_nanosuit_asian_invulnerability.mtl");
+		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].body = matMan->LoadMaterial("objects/characters/human/asian/nanosuit/nanosuit_asian_defense.mtl");
+		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].helmet = matMan->LoadMaterial("objects/characters/human/asian/nanosuit/nanosuit_asian_helmet_defense.mtl");
+		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].arms = matMan->LoadMaterial("objects/weapons/arms_global/arms_nanosuit_asian_defense.mtl");
 		// strategically leak it
 		for (int i = 0; i < NANOMODE_LAST; ++i)
 		{
@@ -691,13 +691,13 @@ void CNanoSuit::Hit(int damage)
 		pMaterialEffects->ExecuteEffect(id, params);
 	}
 
-	/*if(damage > 10.0f && m_pOwner && m_pOwner->GetHealth() > 0)
+	if (g_pGameCVars->mp_suitHitReaction && damage > 10.0f && m_pOwner && m_pOwner->GetHealth() > 0)
 	{
 		m_defenseHitTimer = HIT_EFFECT_TIME;
 		if(gEnv->bClient)
 			SelectSuitMaterial();
 		m_pOwner->GetGameObject()->ChangedNetworkState(CPlayer::ASPECT_NANO_SUIT_DEFENSE_HIT);
-	}*/
+	}
 }
 
 bool CNanoSuit::SetAllSlots(float armor, float strength, float speed)

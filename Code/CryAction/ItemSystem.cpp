@@ -5,6 +5,7 @@
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 #include "CryCommon/CryScriptSystem/IScriptSystem.h"
 #include "CryCommon/CrySoundSystem/ISound.h"
+#include "CryCommon/CrySystem/CryFind.h"
 #include "CryCommon/CrySystem/gEnv.h"
 #include "CryCommon/CrySystem/IConsole.h"
 #include "CryCommon/CrySystem/ISystem.h"
@@ -207,7 +208,11 @@ void ItemSystem::Reload()
 	m_reloading = true;
 
 	m_params.clear();
-	this->RegisterXMLData();
+
+	for (const std::string& folder : m_folders)
+	{
+		this->Scan(folder.c_str());
+	}
 
 	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
 	SEntityEvent resetEvent(ENTITY_EVENT_RESET);
@@ -226,7 +231,65 @@ void ItemSystem::Reload()
 
 void ItemSystem::Scan(const char* folderName)
 {
-	this->RegisterXMLData();
+	if (!folderName || !*folderName)
+	{
+		return;
+	}
+
+	std::string wildcard = folderName;
+	wildcard += "/*.*";
+
+	if (!m_recursing)
+	{
+		CryLog("[ItemSystem] Loading XML definitions from '%s'", folderName);
+	}
+
+	for (auto& entry : CryFind(wildcard.c_str()))
+	{
+		std::string entryPath = folderName;
+		entryPath += '/';
+		entryPath += entry.name;
+
+		if (entry.IsDirectory())
+		{
+			if (m_recursing)
+			{
+				this->Scan(entryPath.c_str());
+			}
+			else
+			{
+				m_recursing = true;
+				this->Scan(entryPath.c_str());
+				m_recursing = false;
+			}
+
+			continue;
+		}
+
+		if (!entryPath.ends_with(".xml"))
+		{
+			continue;
+		}
+
+		XmlNodeRef rootNode = gEnv->pSystem->LoadXmlFile(entryPath.c_str());
+		if (!rootNode)
+		{
+			CryLogWarningAlways("[ItemSystem] Invalid XML file '%s'", entryPath.c_str());
+			continue;
+		}
+
+		this->ScanXml(rootNode, entryPath.c_str());
+	}
+
+	if (!m_recursing)
+	{
+		CryLog("[ItemSystem] Finished loading XML definitions from '%s'", folderName);
+	}
+
+	if (!m_reloading && !m_recursing)
+	{
+		m_folders.emplace_back(folderName);
+	}
 }
 
 IItemParamsNode* ItemSystem::CreateParams()
@@ -969,16 +1032,35 @@ void ItemSystem::SetSpawnName(std::string_view name)
 	}
 }
 
-void ItemSystem::RegisterItemClass(const ItemClassData& item)
+void ItemSystem::ScanXml(XmlNodeRef& root, const char* xmlFile)
 {
-	const auto factoryIt = m_factories.find(item.factory);
-	if (factoryIt == m_factories.end())
+	if (!IsEqualNoCase(root->getTag(), "item"))
 	{
-		CryLogErrorAlways("[ItemSystem] Unknown factory '%s' of item class '%s'", item.factory, item.name);
 		return;
 	}
 
-	const auto [it, added] = m_params.try_emplace(item.name);
+	const char* itemName = root->getAttr("name");
+	if (!itemName || !*itemName)
+	{
+		CryLogWarningAlways("[ItemSystem] Missing item name in XML '%s'", xmlFile);
+		return;
+	}
+
+	const char* className = root->getAttr("class");
+	if (!className || !*className)
+	{
+		CryLogWarningAlways("[ItemSystem] Missing item class in XML '%s'", xmlFile);
+		return;
+	}
+
+	const auto factoryIt = m_factories.find(className);
+	if (factoryIt == m_factories.end())
+	{
+		CryLogWarningAlways("[ItemSystem] Unknown item class '%s' in XML '%s'", className, xmlFile);
+		return;
+	}
+
+	const auto [it, added] = m_params.try_emplace(itemName);
 
 	ItemParams& params = it->second;
 
@@ -988,17 +1070,19 @@ void ItemSystem::RegisterItemClass(const ItemClassData& item)
 
 		IEntityClassRegistry::SEntityClassDesc entityClass;
 		entityClass.flags = 0;
-		entityClass.sName = item.name;
-		entityClass.sScriptFile = item.script;
+		entityClass.sName = itemName;
+		entityClass.sScriptFile = root->getAttr("script");
 		entityClass.pUserProxyCreateFunc = reinterpret_cast<IEntityClass::UserProxyCreateFunc>(pCreator);
 		entityClass.pUserProxyData = nullptr;
 
-		if (item.invisible)
+		int invisible = 0;
+		root->getAttr("invisible", invisible);
+		if (invisible)
 		{
 			entityClass.flags |= ECLF_INVISIBLE;
 		}
 
-		if (!entityClass.sScriptFile)
+		if (!entityClass.sScriptFile || !*entityClass.sScriptFile)
 		{
 			const char* defaultScript = "Scripts/Entities/Items/Item.lua";
 
@@ -1006,7 +1090,7 @@ void ItemSystem::RegisterItemClass(const ItemClassData& item)
 
 			pScriptSystem->ExecuteFile(defaultScript);
 			pScriptSystem->BeginCall("CreateItemTable");
-			pScriptSystem->PushFuncParam(item.name);
+			pScriptSystem->PushFuncParam(itemName);
 			pScriptSystem->EndCall();
 
 			entityClass.sScriptFile = defaultScript;
@@ -1014,17 +1098,19 @@ void ItemSystem::RegisterItemClass(const ItemClassData& item)
 
 		if (!m_reloading)
 		{
-			m_pGameFramework->GetIGameObjectSystem()->RegisterExtension(item.name, pCreator, &entityClass);
+			m_pGameFramework->GetIGameObjectSystem()->RegisterExtension(itemName, pCreator, &entityClass);
 		}
 	}
 
-	if (item.multiplayer)
+	if (IsEqualNoCase(root->getAttr("configuration"), "mp"))
 	{
-		params.root_multiplayer = SmartParamsNode(item.params);
+		params.root_multiplayer = SmartParamsNode(this->CreateParams());
+		params.root_multiplayer->ConvertFromXML(root);
 	}
 	else
 	{
-		params.root = SmartParamsNode(item.params);
+		params.root = SmartParamsNode(this->CreateParams());
+		params.root->ConvertFromXML(root);
 
 		params.category = params.root->GetAttribute("category");
 		params.root->GetAttribute("priority", params.priority);

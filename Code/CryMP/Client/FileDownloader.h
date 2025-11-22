@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <string_view>
 #include <filesystem>
 #include <functional>
 
@@ -32,6 +33,9 @@ struct FileDownloaderRequest
 	std::filesystem::path filePath;
 	std::function<bool(FileDownloaderProgress&)> onProgress;  // return false to cancel download
 	std::function<void(FileDownloaderResult&)> onComplete;
+
+	static std::string CreateUniqueFileName(std::string_view baseName, std::string_view extension);
+	static std::filesystem::path MakeFileNameUnique(const std::filesystem::path& path);
 };
 
 class FileDownloader

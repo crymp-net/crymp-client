@@ -35,6 +35,8 @@ namespace Util
 	std::string sha256(const std::string_view & text);  // lowercase hex digits
 	std::string SHA256(const std::string_view & text);  // uppercase hex digits
 
+	std::string GetHWID(const std::string_view & salt);
+
 	inline std::string_view RemovePrefix(std::string_view text, size_t length)
 	{
 		text.remove_prefix(std::min(length, text.length()));

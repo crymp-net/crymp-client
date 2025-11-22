@@ -39,6 +39,7 @@
 #include "MPTutorial.h"
 #include "Voting.h"
 #include "SPAnalyst.h"
+#include "CryGame/Items/Weapons/Projectile.h"
 #include "CryCommon/CryAction/IWorldQuery.h"
 
 #include "CryCommon/CryCore/StlUtils.h"
@@ -49,6 +50,10 @@
 #include "CryMP/Client/WeatherSystem.h"
 #include "CryMP/Client/Advertising.h"
 #include "CryMP/Client/HealthManager.h"
+
+#include "CryMP/Server/Server.h"
+#include "CryMP/Server/SSM.h"
+#include "CryMP/Server/SafeWriting/SafeWriting.h"
 
 int CGameRules::s_invulnID = 0;
 int CGameRules::s_barbWireID = 0;
@@ -82,6 +87,7 @@ CGameRules::CGameRules()
 	m_explosionScreenFX(true),
 	m_pShotValidator(0)
 {
+	
 }
 
 //------------------------------------------------------------------------
@@ -221,6 +227,10 @@ void CGameRules::PostInit(IGameObject* pGameObject)
 	{
 		gClient->GetScriptCallbacks()->OnGameRulesCreated(GetEntityId());
 	}
+
+	if (ISSM* pSSM = g_pGame->GetSSM()) {
+		pSSM->OnGameRulesLoad(this);
+	}
 }
 
 //------------------------------------------------------------------------
@@ -270,6 +280,9 @@ void CGameRules::PostInitClient(int channelId)
 void CGameRules::Release()
 {
 	UnregisterConsoleCommands(gEnv->pConsole);
+	if (ISSM* pSSM = g_pGame->GetSSM()) {
+		pSSM->OnGameRulesUnload(this);
+	}
 	delete this;
 }
 
@@ -333,26 +346,25 @@ void CGameRules::Update(SEntityUpdateContext& ctx, int updateSlot)
 
 		if (gEnv->bMultiplayer)
 		{
-			TFrozenEntities::const_iterator next;
-			for (TFrozenEntities::const_iterator fit = m_frozen.begin(); fit != m_frozen.end(); fit = next)
-			{
-				next = fit;
-				++next;
-
-				// unfreeze vehicles after 750ms
-				if ((gEnv->pTimer->GetFrameStartTime() - fit->second).GetMilliSeconds() >= 750)
+			if (m_frozen.size() > 0) {
+				std::map<EntityId, CTimeValue> frozenCopy = m_frozen;
+				for (const auto& [entityId, freezeTime] : frozenCopy)
 				{
-					bool unfreeze = false;
-					if (m_pGameFramework->GetIVehicleSystem()->GetVehicle(fit->first))
-						unfreeze = true;
-					else if (IItem* pItem = m_pGameFramework->GetIItemSystem()->GetItem(fit->first))
+					// unfreeze vehicles after 750ms
+					if ((gEnv->pTimer->GetFrameStartTime() - freezeTime).GetMilliSeconds() >= 750)
 					{
-						if ((!pItem->GetOwnerId()) || (pItem->GetOwnerId() == pItem->GetEntityId()))
+						bool unfreeze = false;
+						if (m_pGameFramework->GetIVehicleSystem()->GetVehicle(entityId))
 							unfreeze = true;
-					}
+						else if (IItem* pItem = m_pGameFramework->GetIItemSystem()->GetItem(entityId))
+						{
+							if ((!pItem->GetOwnerId()) || (pItem->GetOwnerId() == pItem->GetEntityId()))
+								unfreeze = true;
+						}
 
-					if (unfreeze)
-						FreezeEntity(fit->first, false, false);
+						if (unfreeze)
+							FreezeEntity(entityId, false, false);
+					}
 				}
 			}
 		}
@@ -602,6 +614,10 @@ bool CGameRules::OnClientConnect(int channelId, bool isReset)
 		{
 			SetTeam(GetChannelTeam(channelId), pActor->GetEntityId());
 		}
+	}
+
+	if(ISSM* pSSM = g_pGame->GetSSM()) {
+		pSSM->OnClientConnect(this, channelId, isReset);
 	}
 
 	return pActor != 0;
@@ -1091,7 +1107,17 @@ void CGameRules::RevivePlayerInVehicle(CActor* pActor, EntityId vehicleId, int s
 //------------------------------------------------------------------------
 void CGameRules::RenamePlayer(CActor* pActor, const char* name)
 {
-	string fixed = VerifyName(name, pActor->GetEntity());
+	std::string strName { name };
+	if(ISSM* pSSM = g_pGame->GetSSM()) {
+		auto newName = pSSM->OnPlayerRename(this, pActor, strName);
+		if(newName) {
+			strName = std::move(*newName);
+		} else {
+			return;
+		}
+	}
+
+	string fixed = VerifyName(strName.c_str(), pActor->GetEntity());
 	RenameEntityParams params(pActor->GetEntityId(), fixed.c_str());
 	if (!_stricmp(fixed.c_str(), pActor->GetEntity()->GetName()))
 		return;
@@ -3128,7 +3154,8 @@ void CGameRules::SendTextMessage(ETextMessageType type, const char* msg, unsigne
 //------------------------------------------------------------------------
 bool CGameRules::CanReceiveChatMessage(EChatMessageType type, EntityId sourceId, EntityId targetId) const
 {
-	/*if (sourceId == targetId)
+	/*
+	if (sourceId == targetId)
 		return true;
 
 	bool sspec = !IsPlayerActivelyPlaying(sourceId);
@@ -3147,13 +3174,10 @@ bool CGameRules::CanReceiveChatMessage(EChatMessageType type, EntityId sourceId,
 	{
 		//CryLog("Disallowing msg (spec): source %d, target %d, sspec %d, sdead %d, tspec %d, tdead %d", sourceId, targetId, sspec, sdead, tspec, tdead);
 		return false;
-	}
+	}*/
 
 	//CryLog("Allowing msg: source %d, target %d, sspec %d, sdead %d, tspec %d, tdead %d", sourceId, targetId, sspec, sdead, tspec, tdead);
 	return true;
-	*/
-
-	return true; //CryMP: Always true
 }
 
 //------------------------------------------------------------------------
@@ -3193,15 +3217,26 @@ void CGameRules::SendChatMessage(EChatMessageType type, EntityId sourceId, Entit
 	bool sdead = IsDead(sourceId);
 	bool sspec = IsSpectator(sourceId);
 
-	//ChatLog(type, sourceId, targetId, msg);
-
 	if (gEnv->bServer)
 	{
+		// SSM: OnChatMessage
+		ISSM* pSSM = g_pGame->GetSSM();
+		if(pSSM) {
+			auto newMsg = pSSM->OnChatMessage(this, type, sourceId, targetId, msg);
+			if(newMsg) {
+				params.msg = newMsg->c_str();
+			} else {
+				return;
+			}
+		}
+
+		ChatLog(type, sourceId, targetId, params.msg.c_str());
+
 		switch (type)
 		{
 		case eChatToTarget:
 		{
-			if (CanReceiveChatMessage(type, sourceId, targetId))
+			if (pSSM ? pSSM->CanReceiveChatMessage(type, sourceId, targetId) : CanReceiveChatMessage(type, sourceId, targetId))
 				GetGameObject()->InvokeRMIWithDependentObject(ClChatMessage(), params, eRMI_ToClientChannel, targetId, GetChannelId(targetId));
 		}
 		break;
@@ -3214,7 +3249,7 @@ void CGameRules::SendChatMessage(EChatMessageType type, EntityId sourceId, Entit
 			{
 				if (CActor* pActor = GetActorByChannelId(*it))
 				{
-					if (CanReceiveChatMessage(type, sourceId, pActor->GetEntityId()) && IsPlayerInGame(pActor->GetEntityId()))
+					if ((pSSM ? pSSM->CanReceiveChatMessage(type, sourceId, pActor->GetEntityId()) : CanReceiveChatMessage(type, sourceId, pActor->GetEntityId())) && IsPlayerInGame(pActor->GetEntityId()))
 						GetGameObject()->InvokeRMIWithDependentObject(ClChatMessage(), params, eRMI_ToClientChannel, pActor->GetEntityId(), *it);
 				}
 			}
@@ -3233,7 +3268,7 @@ void CGameRules::SendChatMessage(EChatMessageType type, EntityId sourceId, Entit
 
 					for (TPlayers::const_iterator it = begin; it != end; ++it)
 					{
-						if (CanReceiveChatMessage(type, sourceId, *it))
+						if (pSSM ? pSSM->CanReceiveChatMessage(type, sourceId, *it) : CanReceiveChatMessage(type, sourceId, *it))
 							GetGameObject()->InvokeRMIWithDependentObject(ClChatMessage(), params, eRMI_ToClientChannel, *it, GetChannelId(*it));
 					}
 				}
@@ -3385,8 +3420,35 @@ float CGameRules::GetRemainingStartTimer() const
 bool CGameRules::OnCollision(const SGameCollision& event)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
+
+	if (gEnv->bClient && !gEnv->bServer)
+	{
+		if (event.pSrcEntity == event.pTrgEntity)
+			return true;
+
+		if (event.pCollision->partid[0] < -1 || event.pCollision->partid[1] < -1)
+			return true;
+
+		if (event.pSrcEntity)
+		{
+			if (CProjectile* pProj = g_pGame->GetWeaponSystem()->GetProjectile(event.pSrcEntity->GetId()))
+			{
+				if (pProj->IsPlayingMfxFromClExplosion())
+				{
+					IPhysicalEntity* pPhysicalEnt = pProj->GetPhysicalEntity();
+					if (pPhysicalEnt && pPhysicalEnt->GetType() == PE_PARTICLE)
+					{
+						//CryLogAlways("$8Blocking pSrcEntity original MFX for %s", event.pSrcEntity->GetClass()->GetName());
+						return false;
+					}
+				}
+			}
+		}
+	}
+
 	// currently this function only calls server functions
 	// prevent unnecessary script callbacks on the client
+
 	if (!gEnv->bServer || !m_onCollisionFunc || IsDemoPlayback())
 		return true;
 

@@ -15,7 +15,7 @@
 #include "Client.h"
 #include "MapDownloader.h"
 #include "FileCache.h"
-#include "ServerPAK.h"
+#include "CryMP/Common/ServerPAK.h"
 
 using json = nlohmann::json;
 
@@ -107,6 +107,7 @@ void ServerConnector::ResetCVars()
 	pGameCVars->mp_rpgMod = 0;
 	pGameCVars->mp_radioTagging = 0;
 	pGameCVars->mp_healthBars = 0;
+	pGameCVars->mp_deadPlayersOnMinimap = 0;
 }
 
 void ServerConnector::Step1_RequestServerInfo()
@@ -252,6 +253,8 @@ void ServerConnector::Step4_TryConnect()
 
 		SetLoadingDialogText("@ui_connecting_to", m_server.name.c_str());
 	}
+
+	gClient->GetServerPAK()->ResetSubSystems();
 
 	ResetCVars();
 

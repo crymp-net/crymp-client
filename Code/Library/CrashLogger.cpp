@@ -1,14 +1,11 @@
-#include <csignal>
+#include <cstdlib>
 #include <cstring>
-#include <mutex>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winternl.h>
 #include <dbghelp.h>
-#include <intrin.h>
-
-#include "config.h"
+#include <psapi.h>
 
 #include "CrashLogger.h"
 
@@ -18,9 +15,13 @@
 #define ADDR_FMT "%08X"
 #endif
 
-static std::mutex g_mutex;
+#define CRASH_LOGGER_PURE_CALL 0xE0C1C101
+#define CRASH_LOGGER_INVALID_PARAM 0xE0C1C102
+#define CRASH_LOGGER_ENGINE_ERROR 0xE0C1C103
+
 static CrashLogger::LogFileProvider g_logFileProvider;
 static CrashLogger::HeapInfoProvider g_heapInfoProvider;
+static const char* g_banner;
 
 static void* ByteOffset(void* base, std::size_t offset)
 {
@@ -66,9 +67,13 @@ static const char* ExceptionCodeToName(unsigned int code)
 		case EXCEPTION_PRIV_INSTRUCTION:         return "Privileged instruction";
 		case EXCEPTION_SINGLE_STEP:              return "Single step";
 		case EXCEPTION_STACK_OVERFLOW:           return "Stack overflow";
+		case 0xE06D7363:                         return "C++ exception";
+		case CRASH_LOGGER_PURE_CALL:             return "Pure virtual function call";
+		case CRASH_LOGGER_INVALID_PARAM:         return "Invalid parameter detected by CRT";
+		case CRASH_LOGGER_ENGINE_ERROR:          return "Engine error";
 	}
 
-	return "Unknown";
+	return "Unknown exception";
 }
 
 static void DumpExceptionInfo(std::FILE* file, const EXCEPTION_RECORD* info)
@@ -76,7 +81,7 @@ static void DumpExceptionInfo(std::FILE* file, const EXCEPTION_RECORD* info)
 	const unsigned int code = info->ExceptionCode;
 	const std::size_t address = reinterpret_cast<std::size_t>(info->ExceptionAddress);
 
-	std::fprintf(file, "%s exception (0x%08X) at 0x" ADDR_FMT "\n", ExceptionCodeToName(code), code, address);
+	std::fprintf(file, "%s (0x%08X) at 0x" ADDR_FMT, ExceptionCodeToName(code), code, address);
 
 	if (code == EXCEPTION_ACCESS_VIOLATION || code == EXCEPTION_IN_PAGE_ERROR)
 	{
@@ -84,9 +89,9 @@ static void DumpExceptionInfo(std::FILE* file, const EXCEPTION_RECORD* info)
 
 		switch (info->ExceptionInformation[0])
 		{
-			case 0: std::fprintf(file, "Read from 0x"  ADDR_FMT " failed\n", dataAddress); break;
-			case 1: std::fprintf(file, "Write to 0x"   ADDR_FMT " failed\n", dataAddress); break;
-			case 8: std::fprintf(file, "Execute at 0x" ADDR_FMT " failed\n", dataAddress); break;
+			case 0: std::fprintf(file, ": Read from 0x"  ADDR_FMT " failed", dataAddress); break;
+			case 1: std::fprintf(file, ": Write to 0x"   ADDR_FMT " failed", dataAddress); break;
+			case 8: std::fprintf(file, ": Execute at 0x" ADDR_FMT " failed", dataAddress); break;
 		}
 
 		if (g_heapInfoProvider)
@@ -94,38 +99,91 @@ static void DumpExceptionInfo(std::FILE* file, const EXCEPTION_RECORD* info)
 			g_heapInfoProvider(file, reinterpret_cast<void*>(dataAddress));
 		}
 	}
+	else if (code == CRASH_LOGGER_ENGINE_ERROR)
+	{
+		const char* message = reinterpret_cast<const char*>(info->ExceptionInformation[0]);
+
+		std::fprintf(file, ": %s", message);
+	}
 	else if (g_heapInfoProvider)
 	{
 		// let debug allocator log its error message
 		g_heapInfoProvider(file, nullptr);
 	}
 
+	std::fprintf(file, "\n");
 	std::fflush(file);
 }
 
-static void DumpMemoryUsage(std::FILE* file)
+static void DumpGlobalMemoryUsage(std::FILE* file)
 {
 	MEMORYSTATUSEX status = {};
-	status.dwLength = sizeof status;
-
-	if (GlobalMemoryStatusEx(&status))
-	{
-		std::fprintf(file, "Physical memory = %.1f MiB (%.1f MiB available, %.1f%% used)\n",
-			static_cast<double>(status.ullTotalPhys) / (1024 * 1024),
-			static_cast<double>(status.ullAvailPhys) / (1024 * 1024),
-			(100.0 * (status.ullTotalPhys - status.ullAvailPhys)) / status.ullTotalPhys
-		);
-
-		std::fprintf(file, "Virtual memory = %.1f MiB (%.1f MiB available, %.1f%% used)\n",
-			static_cast<double>(status.ullTotalVirtual) / (1024 * 1024),
-			static_cast<double>(status.ullAvailVirtual) / (1024 * 1024),
-			(100.0 * (status.ullTotalVirtual - status.ullAvailVirtual)) / status.ullTotalVirtual
-		);
-	}
-	else
+	status.dwLength = sizeof(status);
+	if (!GlobalMemoryStatusEx(&status))
 	{
 		std::fprintf(file, "GlobalMemoryStatusEx failed with error code %u\n", GetLastError());
+		std::fflush(file);
+		return;
 	}
+
+	std::fprintf(file, "Physical memory = %.1f MiB (%.1f MiB available, %.1f%% used)\n",
+		static_cast<double>(status.ullTotalPhys) / (1024 * 1024),
+		static_cast<double>(status.ullAvailPhys) / (1024 * 1024),
+		(100.0 * (status.ullTotalPhys - status.ullAvailPhys)) / status.ullTotalPhys
+	);
+
+	std::fprintf(file, "Virtual memory = %.1f MiB (%.1f MiB available, %.1f%% used)\n",
+		static_cast<double>(status.ullTotalVirtual) / (1024 * 1024),
+		static_cast<double>(status.ullAvailVirtual) / (1024 * 1024),
+		(100.0 * (status.ullTotalVirtual - status.ullAvailVirtual)) / status.ullTotalVirtual
+	);
+
+	std::fflush(file);
+}
+
+static void DumpProcessMemoryUsage(std::FILE* file)
+{
+	HMODULE psapi = GetModuleHandleA("psapi.dll");
+	if (!psapi)
+	{
+		psapi = LoadLibraryA("psapi.dll");
+	}
+
+	if (!psapi)
+	{
+		std::fprintf(file, "Loading psapi.dll failed with error code %u\n", GetLastError());
+		std::fflush(file);
+		return;
+	}
+
+	void* getProcessMemoryInfo = GetProcAddress(psapi, "GetProcessMemoryInfo");
+	if (!getProcessMemoryInfo)
+	{
+		std::fprintf(file, "Obtaining GetProcessMemoryInfo failed with error code %u\n", GetLastError());
+		std::fflush(file);
+		return;
+	}
+
+	HANDLE process = GetCurrentProcess();
+	PROCESS_MEMORY_COUNTERS info = {};
+	info.cb = sizeof(info);
+	if (!static_cast<BOOL(__stdcall *)(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD)>
+		(getProcessMemoryInfo)(process, &info, sizeof(info)))
+	{
+		std::fprintf(file, "GetProcessMemoryInfo failed with error code %u\n", GetLastError());
+		std::fflush(file);
+		return;
+	}
+
+	std::fprintf(file, "Commit charge = %.1f MiB (%.1f MiB peak)\n",
+		static_cast<double>(info.PagefileUsage) / (1024 * 1024),
+		static_cast<double>(info.PeakPagefileUsage) / (1024 * 1024)
+	);
+
+	std::fprintf(file, "Working set = %.1f MiB (%.1f MiB peak)\n",
+		static_cast<double>(info.WorkingSetSize) / (1024 * 1024),
+		static_cast<double>(info.PeakWorkingSetSize) / (1024 * 1024)
+	);
 
 	std::fflush(file);
 }
@@ -188,15 +246,14 @@ static void DumpCallStack(std::FILE* file, const CONTEXT* context)
 
 	CONTEXT localContext = *context;
 
-	DWORD options = 0;
-	options |= SYMOPT_DEFERRED_LOADS;
-	options |= SYMOPT_EXACT_SYMBOLS;
-	options |= SYMOPT_FAIL_CRITICAL_ERRORS;
-	options |= SYMOPT_LOAD_LINES;
-	options |= SYMOPT_NO_PROMPTS;
-	options |= SYMOPT_UNDNAME;
-
-	SymSetOptions(options);
+	SymSetOptions(
+		SYMOPT_DEFERRED_LOADS |
+		SYMOPT_EXACT_SYMBOLS |
+		SYMOPT_FAIL_CRITICAL_ERRORS |
+		SYMOPT_LOAD_LINES |
+		SYMOPT_NO_PROMPTS |
+		SYMOPT_UNDNAME
+	);
 
 	if (SymInitialize(process, NULL, TRUE))
 	{
@@ -205,46 +262,37 @@ static void DumpCallStack(std::FILE* file, const CONTEXT* context)
 		{
 			const std::size_t address = frame.AddrPC.Offset;
 
-			std::fprintf(file, ADDR_FMT ":", address);
-
+			const char* moduleName = "??";
 			IMAGEHLP_MODULE moduleInfo = {};
-			moduleInfo.SizeOfStruct = sizeof moduleInfo;
-
+			moduleInfo.SizeOfStruct = sizeof(moduleInfo);
 			if (SymGetModuleInfo(process, address, &moduleInfo))
 			{
-				std::fprintf(file, " %s:", BaseName(moduleInfo.ImageName));
-			}
-			else
-			{
-				std::fprintf(file, " ?:");
+				moduleName = BaseName(moduleInfo.ImageName);
 			}
 
+			const char* symbolName = "??";
 			unsigned char symbolBuffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME] = {};
 			SYMBOL_INFO& symbol = *reinterpret_cast<SYMBOL_INFO*>(symbolBuffer);
 			symbol.SizeOfStruct = sizeof(SYMBOL_INFO);
 			symbol.MaxNameLen = MAX_SYM_NAME;
 			DWORD64 symbolOffset = 0;
-
 			if (SymFromAddr(process, address, &symbolOffset, &symbol))
 			{
-				std::fprintf(file, " %s", symbol.Name);
+				symbolName = symbol.Name;
 			}
-			else
-			{
-				std::fprintf(file, " ??");
-			}
+
+			std::fprintf(file, ADDR_FMT " %s: %s", address, moduleName, symbolName);
 
 			IMAGEHLP_LINE line = {};
-			line.SizeOfStruct = sizeof line;
+			line.SizeOfStruct = sizeof(line);
 			DWORD lineOffset = 0;
-
 			if (SymGetLineFromAddr(process, address, &lineOffset, &line))
 			{
-				std::fprintf(file, " [%s:%u]\n", BaseName(line.FileName), line.LineNumber);
+				std::fprintf(file, " (%s:%u)\n", BaseName(line.FileName), line.LineNumber);
 			}
 			else
 			{
-				std::fprintf(file, " []\n");
+				std::fprintf(file, " ()\n");
 			}
 		}
 
@@ -284,7 +332,7 @@ static void DumpLoadedModules(std::FILE* file)
 	LIST_ENTRY* headMod = static_cast<LIST_ENTRY*>(ByteOffset(ldr, modListOffset));
 
 	LIST_ENTRY* firstMod = NULL;
-	std::size_t firstModBase = -1;
+	std::size_t firstModBase = static_cast<std::size_t>(-1);
 	unsigned int modCount = 0;
 
 	for (LIST_ENTRY* mod = headMod->Flink; mod != headMod; mod = mod->Flink)
@@ -309,12 +357,12 @@ static void DumpLoadedModules(std::FILE* file)
 		const UNICODE_STRING* wideName = static_cast<UNICODE_STRING*>(ByteOffset(mod, modNameOffset));
 
 		char name[512] = {};
-		WideCharToMultiByte(CP_UTF8, 0, wideName->Buffer, wideName->Length, name, sizeof name, NULL, NULL);
+		WideCharToMultiByte(CP_UTF8, 0, wideName->Buffer, wideName->Length, name, sizeof(name), NULL, NULL);
 
 		std::fprintf(file, ADDR_FMT " - " ADDR_FMT " %s\n", base, base + size, name);
 
 		LIST_ENTRY* nextMod = NULL;
-		std::size_t nextModBase = -1;
+		std::size_t nextModBase = static_cast<std::size_t>(-1);
 
 		for (mod = headMod->Flink; mod != headMod; mod = mod->Flink)
 		{
@@ -339,7 +387,7 @@ static void DumpCommandLine(std::FILE* file)
 
 	const char* cmdLine = GetCommandLineA();
 
-	// hide login name and token
+	// CryMP: hide login name and token
 	while (const char* cmd = std::strstr(cmdLine, "+secu_login"))
 	{
 		for (; *cmd != ' ' && *cmd; cmd++) {}
@@ -365,7 +413,7 @@ static void DumpCommandLine(std::FILE* file)
 static void WriteDumpHeader(std::FILE* file)
 {
 	std::fprintf(file, "================================ CRASH DETECTED ================================\n");
-	std::fprintf(file, "%s\n", "CryMP Client " CRYMP_VERSION_STRING " " CRYMP_BITS " " CRYMP_BUILD_TYPE);
+	std::fprintf(file, "%s\n", g_banner);
 	std::fflush(file);
 }
 
@@ -380,45 +428,10 @@ static void WriteCrashDump(std::FILE* file, EXCEPTION_POINTERS* exception)
 	WriteDumpHeader(file);
 
 	DumpExceptionInfo(file, exception->ExceptionRecord);
-	DumpMemoryUsage(file);
+	DumpGlobalMemoryUsage(file);
+	DumpProcessMemoryUsage(file);
 	DumpRegisters(file, exception->ContextRecord);
 	DumpCallStack(file, exception->ContextRecord);
-	DumpLoadedModules(file);
-	DumpCommandLine(file);
-
-	WriteDumpFooter(file);
-}
-
-static void WriteGenericErrorDump(std::FILE* file, CONTEXT* context, const char* message)
-{
-	WriteDumpHeader(file);
-
-	std::fprintf(file, "%s\n", message);
-	std::fflush(file);
-
-	DumpMemoryUsage(file);
-	DumpRegisters(file, context);
-	DumpCallStack(file, context);
-	DumpLoadedModules(file);
-	DumpCommandLine(file);
-
-	WriteDumpFooter(file);
-}
-
-static void WriteEngineErrorDump(std::FILE* file, CONTEXT* context, const char* format, va_list args)
-{
-	WriteDumpHeader(file);
-
-	std::fprintf(file, "Engine error: ");
-	std::fflush(file);
-
-	std::vfprintf(file, format, args);
-	std::fputc('\n', file);
-	std::fflush(file);
-
-	DumpMemoryUsage(file);
-	DumpRegisters(file, context);
-	DumpCallStack(file, context);
 	DumpLoadedModules(file);
 	DumpCommandLine(file);
 
@@ -432,8 +445,6 @@ static LONG __stdcall CrashHandler(EXCEPTION_POINTERS* exception)
 
 	if (g_logFileProvider)
 	{
-		std::lock_guard lock(g_mutex);
-
 		std::FILE* file = g_logFileProvider();
 
 		if (file)
@@ -449,117 +460,53 @@ static LONG __stdcall CrashHandler(EXCEPTION_POINTERS* exception)
 
 static void PureCallHandler()
 {
-	CONTEXT context = {};
-	RtlCaptureContext(&context);
-
-	if (g_logFileProvider)
-	{
-		std::lock_guard lock(g_mutex);
-
-		std::FILE* file = g_logFileProvider();
-
-		if (file)
-		{
-			WriteGenericErrorDump(file, &context, "Pure function call");
-
-			std::fclose(file);
-		}
-	}
-
-	__fastfail(FAST_FAIL_FATAL_APP_EXIT);
+	RaiseException(CRASH_LOGGER_PURE_CALL, EXCEPTION_NONCONTINUABLE, 0, NULL);
+	ExitProcess(1);
 }
 
 static void InvalidParameterHandler(const wchar_t*, const wchar_t*, const wchar_t*, unsigned int, uintptr_t)
 {
-	CONTEXT context = {};
-	RtlCaptureContext(&context);
-
-	if (g_logFileProvider)
-	{
-		std::lock_guard lock(g_mutex);
-
-		std::FILE* file = g_logFileProvider();
-
-		if (file)
-		{
-			WriteGenericErrorDump(file, &context, "Invalid parameter detected by CRT");
-
-			std::fclose(file);
-		}
-	}
-
-	__fastfail(FAST_FAIL_FATAL_APP_EXIT);
-}
-
-static void AbortHandler(int)
-{
-	CONTEXT context = {};
-	RtlCaptureContext(&context);
-
-	if (g_logFileProvider)
-	{
-		std::lock_guard lock(g_mutex);
-
-		std::FILE* file = g_logFileProvider();
-
-		if (file)
-		{
-			WriteGenericErrorDump(file, &context, "Aborted");
-
-			std::fclose(file);
-		}
-	}
-
-	__fastfail(FAST_FAIL_FATAL_APP_EXIT);
+	RaiseException(CRASH_LOGGER_INVALID_PARAM, EXCEPTION_NONCONTINUABLE, 0, NULL);
+	ExitProcess(1);
 }
 
 void CrashLogger::OnEngineError(const char* format, va_list args)
 {
-	CONTEXT context = {};
-	RtlCaptureContext(&context);
+	char buffer[256];
+	std::vsnprintf(buffer, sizeof(buffer), format, args);
 
-	if (g_logFileProvider)
-	{
-		std::lock_guard lock(g_mutex);
+	const ULONG_PTR params[] = { reinterpret_cast<ULONG_PTR>(buffer) };
+	const DWORD paramCount = 1;
 
-		std::FILE* file = g_logFileProvider();
-
-		if (file)
-		{
-			WriteEngineErrorDump(file, &context, format, args);
-
-			std::fclose(file);
-		}
-	}
-
-	__fastfail(FAST_FAIL_FATAL_APP_EXIT);
+	RaiseException(CRASH_LOGGER_ENGINE_ERROR, EXCEPTION_NONCONTINUABLE, paramCount, params);
+	ExitProcess(1);
 }
 
-void CrashLogger::Enable(LogFileProvider logFileProvider, HeapInfoProvider heapInfoProvider)
+void CrashLogger::Enable(LogFileProvider logFileProvider, HeapInfoProvider heapInfoProvider, const char* banner)
 {
 	g_logFileProvider = logFileProvider;
 	g_heapInfoProvider = heapInfoProvider;
+	g_banner = banner;
 
 	SetUnhandledExceptionFilter(&CrashHandler);
 
-	signal(SIGABRT, &AbortHandler);
-
-	// set error handlers for our MSVC runtime
-	// note that engine uses VS2005 MSVC runtime, which has its own error handlers
 	_set_purecall_handler(&PureCallHandler);
 	_set_invalid_parameter_handler(&InvalidParameterHandler);
 
-	HMODULE msvcr80 = GetModuleHandleA("msvcr80.dll");
+	HMODULE msvcr80 = LoadLibraryA("msvcr80.dll");
 	if (msvcr80)
 	{
-		// VS2005 _set_purecall_handler is done by each engine DLL
-		// and the handler simply calls ISystem::Error, which is redirected to our CrashLogger::OnEngineError
-		// so let's keep it
+		void* vs2005_set_purecall_handler = GetProcAddress(msvcr80, "_set_purecall_handler");
+		if (vs2005_set_purecall_handler)
+		{
+			static_cast<_purecall_handler(*)(_purecall_handler)>
+				(vs2005_set_purecall_handler)(&PureCallHandler);
+		}
 
 		void* vs2005_set_invalid_parameter_handler = GetProcAddress(msvcr80, "_set_invalid_parameter_handler");
 		if (vs2005_set_invalid_parameter_handler)
 		{
-			static_cast<decltype(&_set_invalid_parameter_handler)>
+			static_cast<_invalid_parameter_handler(*)(_invalid_parameter_handler)>
 				(vs2005_set_invalid_parameter_handler)(&InvalidParameterHandler);
 		}
 	}

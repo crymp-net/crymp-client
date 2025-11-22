@@ -10,11 +10,13 @@
 #include "CryGame/Game.h"
 #include "CryMP/Common/Executor.h"
 #include "CryMP/Common/GSMasterHook.h"
+#include "CryMP/Common/ScriptBind_CPPAPI.h"
+#include "CryMP/Common/ServerPAK.h"
 #include "CrySystem/GameWindow.h"
 #include "CrySystem/Logger.h"
 #include "CrySystem/RandomGenerator.h"
 #include "Launcher/Resources.h"
-#include "Library/StringTools.h"
+#include "Library/StdFile.h"
 #include "Library/Util.h"
 #include "Library/WinAPI.h"
 
@@ -24,10 +26,8 @@
 #include "MapDownloader.h"
 #include "ScriptCommands.h"
 #include "ScriptCallbacks.h"
-#include "ScriptBind_CPPAPI.h"
 #include "ServerBrowser.h"
 #include "ServerConnector.h"
-#include "ServerPAK.h"
 #include "EngineCache.h"
 #include "ParticleManager.h"
 #include "DrawTools.h"
@@ -40,19 +40,11 @@ void Client::InitMasters()
 {
 	std::string content;
 
-	WinAPI::File file("masters.txt", WinAPI::FileAccess::READ_ONLY);  // Crysis main directory
-	if (file)
+	if (StdFile file("masters.txt", "r"); file.IsOpen())  // Crysis main directory
 	{
 		CryLogAlways("$6[CryMP] Using local masters.txt as the master server list provider");
 
-		try
-		{
-			content = file.Read();
-		}
-		catch (const std::exception& ex)
-		{
-			CryLogAlways("$4[CryMP] Failed to read the masters.txt file: %s", ex.what());
-		}
+		content = file.ReadAll();
 	}
 	else
 	{
@@ -194,7 +186,7 @@ void Client::OnDumpKeyBindsCmd(IConsoleCmdArgs* pArgs)
 
 Client::Client()
 {
-	m_hwid = GetHWID("idsvc");
+	m_hwid = Util::GetHWID("idsvc");
 	m_locale = WinAPI::GetLocale();
 	m_timezone = std::to_string(WinAPI::GetTimeZoneBias());
 }
@@ -284,29 +276,9 @@ void Client::Init(IGameFramework *pGameFramework)
 
 	m_pServerBrowser->QueryClientPublicAddress();
 
-	if (!WinAPI::CmdLine::HasArg("-oldgame"))
-	{
-		m_pGame = new CGame();
-	}
-	else
-	{
-		void* pCryGame = WinAPI::DLL::Load("CryGame.dll");
-		if (!pCryGame)
-		{
-			throw StringTools::SysErrorFormat("Failed to load the CryGame DLL!");
-		}
-
-		auto entry = static_cast<IGame::TEntryFunction>(WinAPI::DLL::GetSymbol(pCryGame, "CreateGame"));
-		if (!entry)
-		{
-			throw StringTools::ErrorFormat("The CryGame DLL is not valid!");
-		}
-
-		m_pGame = entry(pGameFramework);
-	}
-
 	// initialize the game
 	// mods are not supported
+	m_pGame = new CGame();
 	m_pGame->Init(pGameFramework);
 }
 
@@ -373,16 +345,6 @@ std::string Client::GetMasterServerAPI(const std::string & master)
 		else
 			return "https://" + master + "/api";
 	}
-}
-
-std::string Client::GetHWID(const std::string_view & salt)
-{
-	std::string hwid = Util::SHA256(WinAPI::GetMachineGUID());
-
-	if (!hwid.empty())
-		hwid += ':' + Util::SHA256(hwid + std::string(salt));
-
-	return hwid;
 }
 
 void Client::AddKeyBind(const std::string_view& key, const std::string_view& command)
@@ -554,6 +516,14 @@ void Client::OnLevelNotFound(const char *levelName)
 
 void Client::OnLoadingStart(ILevelInfo *pLevel)
 {
+	ICVar* pLodMin = gEnv->pConsole->GetCVar("e_lod_min");
+	if (pLodMin && pLodMin->GetIVal())
+	{
+		//CryMP: Temporary fix for invisible objects
+		pLodMin->Set(0);
+		CryLogAlways("$3[CryMP] Setting Min LOD to zero");
+	}
+	
 	gEnv->pScriptSystem->ForceGarbageCollection();
 
 	m_pServerPAK->OnLoadingStart(pLevel);

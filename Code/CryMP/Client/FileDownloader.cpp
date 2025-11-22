@@ -2,6 +2,8 @@
 #include <chrono>
 
 #include "CryMP/Common/Executor.h"
+#include "CrySystem/RandomGenerator.h"
+#include "Library/StdFile.h"
 #include "Library/StringTools.h"
 #include "Library/Util.h"
 #include "Library/WinAPI.h"
@@ -9,33 +11,6 @@
 #include "FileDownloader.h"
 #include "SpeedAggregator.h"
 #include "Client.h"
-
-class OutputFile
-{
-	WinAPI::File m_file;
-
-public:
-	OutputFile(const std::filesystem::path & path)
-	{
-		bool created = false;
-
-		if (!m_file.Open(path, WinAPI::FileAccess::WRITE_ONLY_CREATE, &created))
-		{
-			throw StringTools::SysErrorFormat("Failed to open the output file");
-		}
-
-		if (!created)
-		{
-			// clear the existing file
-			m_file.Resize(0);
-		}
-	}
-
-	void Write(const char *chunk, size_t chunkLength)
-	{
-		m_file.Write(std::string_view(chunk, chunkLength));
-	}
-};
 
 struct FileDownloaderTask : public IExecutorTask
 {
@@ -77,15 +52,19 @@ struct FileDownloaderTask : public IExecutorTask
 
 		try
 		{
-			OutputFile file(request.filePath);
-
 			result.statusCode = WinAPI::HTTPRequest(
 				"GET",
 				request.url,
 				{},  // data
 				{},  // headers
-				[this, &file](uint64_t contentLength, const WinAPI::HTTPRequestReader & reader)
+				[this](uint64_t contentLength, const WinAPI::HTTPRequestReader& reader)
 				{
+					StdFile file(request.filePath.string().c_str(), "wb");
+					if (!file.IsOpen())
+					{
+						throw StringTools::SysErrorErrnoFormat("Output file open failed");
+					}
+
 					// content length is zero if not provided by the server
 					result.contentLength = contentLength;
 
@@ -93,9 +72,10 @@ struct FileDownloaderTask : public IExecutorTask
 					{
 						char chunk[8192];
 						const size_t chunkLength = reader(chunk, sizeof chunk);
-
 						if (chunkLength == 0)
+						{
 							break;
+						}
 
 						file.Write(chunk, chunkLength);
 						result.downloadedBytes += chunkLength;
@@ -140,6 +120,38 @@ std::string FileDownloaderProgress::ToString() const
 	{
 		return StringTools::Format("?? (%s/s, ??)", speedString.c_str());
 	}
+}
+
+std::string FileDownloaderRequest::CreateUniqueFileName(std::string_view baseName, std::string_view extension)
+{
+	std::string name(baseName);
+
+	// lowercase
+	StringTools::ToLowerInPlace(name);
+
+	// sanitize
+	for (char& ch : name)
+	{
+		if (!(ch >= '0' && ch <= '9') && !(ch >= 'a' && ch <= 'z'))
+		{
+			ch = '_';
+		}
+	}
+
+	// add a random suffix for uniqueness
+	StringTools::FormatTo(name, "_%09u", RandomGenerator::GenerateUInt32(0, 999'999'999));
+
+	// extension
+	name += extension;
+
+	return name;
+}
+
+std::filesystem::path FileDownloaderRequest::MakeFileNameUnique(const std::filesystem::path& path)
+{
+	std::filesystem::path newPath(path);
+	newPath.replace_filename(CreateUniqueFileName(path.filename().string(), path.extension().string()));
+	return newPath;
 }
 
 FileDownloader::FileDownloader()

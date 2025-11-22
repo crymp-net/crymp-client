@@ -20,7 +20,7 @@
 
 #include "Client.h"
 #include "FileCache.h"
-#include "ScriptBind_CPPAPI.h"
+#include "CryMP/Common/ScriptBind_CPPAPI.h"
 
 #include "Library/StringTools.h"
 #include "nlohmann/json.hpp"
@@ -85,6 +85,14 @@ void CAdManager::Update(float delta) {
 
 		if (!g_pGame->GetGameRules()) {
 			return;
+		}
+
+
+		if (g_pGameCVars->ads == 0) {
+			const auto profile{ gClient->GetScriptBind_CPPAPI()->GetProfile("real") };
+			if (profile && profile->playedTime > (100.0f * 3600.0f)) {
+				return;
+			}
 		}
 
 		CycleAds(delta);

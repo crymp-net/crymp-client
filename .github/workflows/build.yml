@@ -15,11 +15,6 @@ on:
         description: CMake build type
         required: true
         type: string
-      sign:
-        description: Code signing
-        required: false
-        default: false
-        type: boolean
     outputs:
       artifact_name:
         description: Name of the resulting artifact
@@ -39,22 +34,6 @@ jobs:
           # for version generator
           fetch-depth: 0
 
-      - name: Get Ninja
-        run: |
-          $url = 'https://api.github.com/repos/ninja-build/ninja/releases/latest'
-          $headers = @{
-            'Authorization' = 'Bearer ${{ secrets.GITHUB_TOKEN }}'
-          }
-          $release = Invoke-RestMethod -Uri $url -Headers $headers
-          $release
-          $asset = $release.assets | where { $_.name -eq 'ninja-win.zip' }
-          $ninja_dir = Join-Path $env:BUILD_DIR 'ninja'
-          $ninja_zip = Join-Path $env:BUILD_DIR 'ninja.zip'
-          New-Item $ninja_dir -ItemType Directory | Out-Null
-          Invoke-WebRequest -Uri $asset.browser_download_url -Headers $headers -OutFile $ninja_zip
-          Expand-Archive $ninja_zip -DestinationPath $ninja_dir
-          'NINJA_DIR=' + $ninja_dir >> $env:GITHUB_ENV
-
       - name: Build
         id: build
         run: |
@@ -63,7 +42,6 @@ jobs:
           Import-Module (Join-Path $vs_path 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
           $arch = if (${{ inputs.bits }} -eq 32) { 'x86' } else { 'amd64' }
           Enter-VsDevShell -VsInstallPath $vs_path -SkipAutomaticLocation -Arch $arch
-          $env:PATH = $env:NINJA_DIR + ';' + $env:PATH
           cmake -S . -B $env:BUILD_DIR -G Ninja -D CMAKE_BUILD_TYPE=${{ inputs.type }}
           cmake --build $env:BUILD_DIR
           $exe_path = Join-Path $env:BUILD_DIR 'CryMP-Client${{ inputs.bits }}.exe'
@@ -71,15 +49,25 @@ jobs:
           'artifact_name=CryMP-Client${{ inputs.bits }}-' + $version >> $env:GITHUB_OUTPUT
 
       - name: Sign
-        if: inputs.sign
+        if: github.repository_owner == 'crymp-net'
         run: |
-          Set-Content -Path bundle.txt -Value '${{ secrets.CODE_SIGNING_PFX }}'
-          certutil -decode bundle.txt bundle.pfx
-          & 'C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe' `
-            sign /fd SHA256 /f bundle.pfx /p '${{ secrets.CODE_SIGNING_PFX_PASSWORD }}' `
-            /tr 'http://timestamp.digicert.com' /td SHA256 `
-            (Get-Item (Join-Path $env:BUILD_DIR '*.exe')).FullName
-          Remove-Item bundle.*
+          Get-ChildItem -Path '${{ env.BUILD_DIR }}' | Where-Object { $_.Extension -eq '.exe' } | ForEach-Object {
+            $checksum = (Get-FileHash -Path $_.FullName -Algorithm SHA256).Hash.ToLower()
+            $timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()
+            $hmac = New-Object System.Security.Cryptography.HMACSHA256
+            $hmac.key = [Text.Encoding]::ASCII.GetBytes('${{ secrets.CODE_SIGNING_API_KEY }}')
+            $token = $hmac.ComputeHash([Text.Encoding]::ASCII.GetBytes("${checksum}:${timestamp}"))
+            $uri = 'https://prophet.comrade.one/api/v1/sign'
+            $form = @{
+              exe = Get-Item -Path $_.FullName
+              checksum = $checksum
+              timestamp = $timestamp
+              token = [System.Convert]::ToHexString($token).ToLower()
+            }
+            Write-Output "Signing $_"
+            Invoke-WebRequest -Uri $uri -Method Post -Form $form -OutFile signed.exe
+            Move-Item -Path signed.exe -Destination $_.FullName -Force
+          }
 
       - name: Upload
         uses: actions/upload-artifact@v4
