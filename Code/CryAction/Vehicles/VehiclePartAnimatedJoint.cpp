@@ -288,7 +288,7 @@ const Matrix34& CVehiclePartAnimatedJoint::GetLocalTM(bool relativeToParentPart)
     {     
       ISkeletonAnim* pSkeletonAnim = m_pCharInstance->GetISkeletonAnim();
 			ISkeletonPose* pSkeletonPose = m_pCharInstance->GetISkeletonPose();
-      if (pSkeletonAnim && pSkeletonAnim->GetNumAnimsInFIFO(0))
+      if (pSkeletonAnim /*&& pSkeletonAnim->GetNumAnimsInFIFO(0)*/) //CryMP: Commented for working VTOL wing exhaust
       { 
         const QuatT& relJointQuat = pSkeletonPose->GetRelJointByID(m_jointId);
         assert(relJointQuat.IsValid());
@@ -563,8 +563,8 @@ void CVehiclePartAnimatedJoint::ApplyRotations()
     // write joint rotation, keep translation
     QuatT newRelQuat = pSkeletonPose->GetRelJointByID(m_jointId);
     newRelQuat.q = Quat(m_localTM);  
-    pSkeletonPose->SetPostProcessQuat(m_jointId, newRelQuat);    
-    
+    pSkeletonPose->SetPostProcessQuat(m_jointId, newRelQuat);   
+
     InvalidateTM(false);
   }
 }
