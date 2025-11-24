@@ -745,6 +745,7 @@ void CPlayer::Update(SEntityUpdateContext& ctx, int updateSlot)
 		UpdateScreenFrost();
 		UpdateDraw();
 		UpdateModelChangeInVehicle();
+		UpdateReachBend(frameTime);
 	}
 
 	if (gEnv->bServer && !IsClient() && IsPlayer())
@@ -5518,8 +5519,12 @@ void CPlayer::ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTi
 		if (gEnv->bClient && !m_linkStats.GetLinked())
 		{
 			UpdateParachuteIK();
-			UpdateReachBend(pCharacter, frameTime);
 			UpdateHeldObjectIK();
+
+			if (m_reachState != ReachState::Idle && m_reachAmount > 0.0001f)
+			{
+				ApplyReachToSpine(pCharacter, GetReachDesiredPitch(), m_reachAmount);
+			}
 		}
 	}
 
@@ -5592,7 +5597,21 @@ void CPlayer::CancelGrabTarget()
 	m_reachState = ReachState::Returning; 
 }
 
-void CPlayer::UpdateReachBend(ICharacterInstance* pCharacter, float frameTime)
+float CPlayer::GetReachDesiredPitch() const
+{
+	float desiredPitch = m_fixedForwardBend;
+	switch (m_reachState)
+	{
+	case ReachState::Reaching:   desiredPitch = m_fixedForwardBend;   break;
+	case ReachState::ThrowPrep:  desiredPitch = -m_fixedBackwardBend;  break;
+	case ReachState::Throwing:   desiredPitch = -m_fixedBackwardBend;  break;
+	case ReachState::Returning:  desiredPitch = m_fixedForwardBend;   break;
+	default: break;
+	}
+	return desiredPitch;
+}
+
+void CPlayer::UpdateReachBend(float frameTime)
 {
 	if (m_reachState == ReachState::Idle && m_reachAmount <= 0.001f)
 		return;
@@ -5600,15 +5619,7 @@ void CPlayer::UpdateReachBend(ICharacterInstance* pCharacter, float frameTime)
 	const float inSpeed = m_reachSpeed;
 	const float outSpeed = m_returnSpeed;
 
-	float desiredPitch = m_fixedForwardBend; 
-	switch (m_reachState)
-	{
-	case ReachState::Reaching:   desiredPitch = m_fixedForwardBend;  break;
-	case ReachState::ThrowPrep:  desiredPitch = -m_fixedBackwardBend; break; 
-	case ReachState::Throwing:   desiredPitch = -m_fixedBackwardBend; break; 
-	case ReachState::Returning:  desiredPitch = m_fixedForwardBend;  break; 
-	default: break;
-	}
+	const float desiredPitch = GetReachDesiredPitch();
 
 	float targetAmount = 0.0f;
 	float speed = outSpeed;
@@ -5624,7 +5635,7 @@ void CPlayer::UpdateReachBend(ICharacterInstance* pCharacter, float frameTime)
 		speed = outSpeed;
 	}
 
-	bool holdAtPeak = (m_reachState == ReachState::ThrowPrep && m_reachNotified);
+	const bool holdAtPeak = (m_reachState == ReachState::ThrowPrep && m_reachNotified);
 
 	if (!holdAtPeak)
 	{
@@ -5638,27 +5649,24 @@ void CPlayer::UpdateReachBend(ICharacterInstance* pCharacter, float frameTime)
 		m_reachAmount = 1.0f;
 	}
 
-	if (m_reachAmount > 0.0001f)
-	{
-		ApplyReachToSpine(pCharacter, desiredPitch, m_reachAmount);
-	}
-
+	// notifications + state transitions stay here
 	if (!m_reachNotified && m_reachAmount >= 0.999f)
 	{
 		m_reachNotified = true;
-		COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass));
-		if (pOffHand)
+
+		if (COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass)))
 		{
 			pOffHand->OnThirdPersonBendReady(m_grabTargetId, m_reachState == ReachState::Reaching);
 		}
 
 		if (m_reachState == ReachState::Reaching)
 		{
-			m_reachState = ReachState::Returning; 
+			m_reachState = ReachState::Returning;
 		}
 	}
 
-	if ((m_reachState == ReachState::Throwing || m_reachState == ReachState::Returning) && m_reachAmount <= 0.0001f)
+	if ((m_reachState == ReachState::Throwing || m_reachState == ReachState::Returning) &&
+		m_reachAmount <= 0.0001f)
 	{
 		m_reachState = ReachState::Idle;
 		m_grabTargetId = 0;
@@ -5672,9 +5680,13 @@ void CPlayer::ApplyReachToSpine(ICharacterInstance* pCharacter, float bendAngle,
 
 	ISkeletonPose* pPose = pCharacter->GetISkeletonPose();
 	if (!pPose) return;
-		
-	const int spineIds[4] = { GetBoneID(BONE_SPINE), GetBoneID(BONE_SPINE2),
-								GetBoneID(BONE_SPINE3), GetBoneID(BONE_HEAD) };
+
+	const int spineIds[4] = {
+		GetBoneID(BONE_SPINE),
+		GetBoneID(BONE_SPINE2),
+		GetBoneID(BONE_SPINE3),
+		GetBoneID(BONE_HEAD)
+	};
 	const float w[4] = { 1.0f, 0.35f, 0.2f, 0.05f };
 
 	const float a = bendAngle * std::clamp(amount, 0.0f, 1.0f);
@@ -5682,7 +5694,10 @@ void CPlayer::ApplyReachToSpine(ICharacterInstance* pCharacter, float bendAngle,
 
 	for (int i = 0; i < 4; ++i)
 	{
-		int j = spineIds[i]; if (j < 0) continue;
+		const int j = spineIds[i];
+		if (j < 0)
+			continue;
+
 		QuatT q = pPose->GetRelJointByID(j);
 		q.q *= Quat::CreateRotationAA(a * w[i], axis);
 		pPose->SetPostProcessQuat(j, q);

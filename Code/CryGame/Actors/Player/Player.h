@@ -634,7 +634,8 @@ public:
 	void CommitThrow();       
 	void CancelThrowPrep();   
 	void CancelGrabTarget();
-	void UpdateReachBend(ICharacterInstance* pCharacter, float frameTime);
+	float GetReachDesiredPitch() const;
+	void UpdateReachBend(float frameTime);
 	void ApplyReachToSpine(ICharacterInstance* pCharacter, float bendAngle, float amount);
 	virtual void ProcessIKLegs(ICharacterInstance* pCharacter, float frameTime);
 	virtual void Landed(float fallSpeed);
@@ -996,6 +997,7 @@ private:
 	float m_returnSpeed = 2.0f;            
 	float m_fixedForwardBend = DEG2RAD(40.0f); 
 	float m_fixedBackwardBend = DEG2RAD(10.0f); 
+	float m_reachCurrentPitch = 0.0f;
 
 public:
 
