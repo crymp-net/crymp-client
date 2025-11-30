@@ -16,6 +16,7 @@ namespace MemoryPatch
 	namespace CryAction
 	{
 		void AllowDX9ImmersiveMultiplayer(void* pCryAction);
+		void AllowMultiplayerRegisterWithAI(void* pCryAction);
 		void DisableBreakLog(void* pCryAction);
 		void DisableTimeOfDayLengthLowerLimit(void* pCryAction);
 		void HookGameWarning(void* pCryAction, void (*handler)(const char* format, ...));

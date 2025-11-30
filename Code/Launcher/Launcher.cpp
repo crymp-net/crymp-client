@@ -1050,6 +1050,7 @@ void Launcher::PatchEngine()
 	if (m_dlls.pCryAction)
 	{
 		MemoryPatch::CryAction::AllowDX9ImmersiveMultiplayer(m_dlls.pCryAction);
+		MemoryPatch::CryAction::AllowMultiplayerRegisterWithAI(m_dlls.pCryAction);
 		MemoryPatch::CryAction::DisableBreakLog(m_dlls.pCryAction);
 		MemoryPatch::CryAction::DisableTimeOfDayLengthLowerLimit(m_dlls.pCryAction);
 		MemoryPatch::CryAction::HookCryWarning(m_dlls.pCryAction, &OnCryWarning);
