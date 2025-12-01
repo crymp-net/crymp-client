@@ -46,7 +46,7 @@ function InitializeClient()
 
 	local function OnMasterResolved()
 		masters = _L.CPPAPI.GetMasters()
-		printf("$5[CryMP] Resolved masters:", #masters)
+		printf("$5[CryMP] Resolved masters:")
 		for i, master in pairs(masters) do
 			printf("$5[CryMP] - %s", master)
 		end
@@ -756,7 +756,7 @@ function InitializeClient()
 	return true
 end
 
-local err, res = pcall(InitializeClient)
-if err then
-	System.LogAlways("$4[CryMP] Failed to InitializeClient: %s", tostring(err))
+local ok, res = pcall(InitializeClient)
+if not ok then
+	System.LogAlways("$4[CryMP] Failed to InitializeClient: " .. tostring(res))
 end
