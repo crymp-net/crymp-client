@@ -73,6 +73,18 @@ void MemoryPatch::CryAction::AllowDX9ImmersiveMultiplayer(void* pCryAction)
 }
 
 /**
+ * This makes the AI.RegisterWithAI Lua function work in multiplayer.
+ */
+void MemoryPatch::CryAction::AllowMultiplayerRegisterWithAI(void* pCryAction)
+{
+#ifdef BUILD_64BIT
+	FillNop(pCryAction, 0xEF401, 0x1F);
+#else
+	FillNop(pCryAction, 0xA79BA, 0x1A);
+#endif
+}
+
+/**
  * Disables useless "times out" log messages from break replicator.
  */
 void MemoryPatch::CryAction::DisableBreakLog(void* pCryAction)
