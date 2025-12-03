@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryCommon/CrySystem/ICryPak.h"
@@ -8,6 +8,10 @@
 #include "FileCache.h"
 #include "Client.h"
 #include "FileDownloader.h"
+
+#include <Windows.h>
+
+static bool IsOld(const std::filesystem::path& filePath, int maxAgeSeconds);
 
 json FileCache::LoadIndex()
 {
@@ -230,17 +234,40 @@ std::deque<FileCacheEntry> FileCache::LoadEntries()
 		}
 	}
 
+	index["lru"] = newEntries;
+
+	std::vector<std::string> filesToRemove;
+
+	if (index.contains("files") && index["files"].is_object())
+	{
+		for (auto it = index["files"].begin(); it != index["files"].end(); ++it)
+		{
+			const std::string& hash = it.key();
+			std::filesystem::path filePath = m_cacheDir / hash;
+
+			if (!std::filesystem::exists(filePath))
+			{
+				filesToRemove.emplace_back(hash);
+				removedCount++;
+			}
+		}
+
+		for (const auto& hash : filesToRemove)
+		{
+			index["files"].erase(hash);
+		}
+	}
+
 	if (removedCount > 0)
 	{
-		index["lru"] = newEntries;
-
 		SaveIndex(index);
 	}
 
 	return entries;
 }
 
-std::deque<FileCacheEntry> FileCache::Cleanup()
+
+std::deque<FileCacheEntry> FileCache::Cleanup(unsigned maxAge)
 {
 	const uint64_t CACHE_MAX_SIZE = 2147483648ULL;
 
@@ -252,6 +279,7 @@ std::deque<FileCacheEntry> FileCache::Cleanup()
 		cacheSize += entry.size;
 	}
 
+	std::set<std::filesystem::path> removedIds;
 	std::deque<FileCacheEntry> removed;
 
 	// > 1, because we cannot remove very last file downloaded
@@ -263,12 +291,68 @@ std::deque<FileCacheEntry> FileCache::Cleanup()
 
 		cacheSize -= entryToRemove.size;
 
+		removedIds.emplace(entryToRemove.path);
 		removed.push_back(entryToRemove);
 		entries.pop_front();
+	}
+
+	if (maxAge > 300) {
+		for (auto it = entries.begin(); it != entries.end();)
+		{
+			auto& entry = *it;
+			if (removedIds.contains(entry.path)) {
+				it++;
+				continue;
+			} else if (IsOld(entry.path, maxAge)) {
+				RemoveFile(entry.path);
+				cacheSize -= entry.size;
+
+				removedIds.emplace(entry.path);
+				removed.push_back(entry);
+				it = entries.erase(it);
+			} else {
+				it++;
+			}
+		}
 	}
 
 	// Clean-up LRU array inside index
 	LoadEntries();
 
 	return removed;
+}
+
+static bool IsOld(const std::filesystem::path& filePath, int maxAgeSeconds)
+{
+	WIN32_FILE_ATTRIBUTE_DATA fad;
+	if (!GetFileAttributesExW(filePath.c_str(), GetFileExInfoStandard, &fad)) {
+		// Could not read attributes, treat as not old (or true, depending on your needs)
+		return false;
+	}
+
+	// Convert FILETIME (which is 100-ns intervals since 1601) to a 64-bit value
+	ULARGE_INTEGER ul;
+	ul.LowPart = fad.ftLastWriteTime.dwLowDateTime;
+	ul.HighPart = fad.ftLastWriteTime.dwHighDateTime;
+
+	// Convert to std::chrono::system_clock time_point
+	// FILETIME epoch (1601) → system_clock epoch (1970)
+	constexpr ULONGLONG EPOCH_DIFFERENCE = 116444736000000000ULL; // in 100-ns units
+
+	// Convert FILETIME to microseconds since 1970
+	const long long fileTimeMicro =
+		static_cast<long long>((ul.QuadPart - EPOCH_DIFFERENCE) / 10);
+
+	// Convert to time_point
+	auto fileTimePoint = std::chrono::system_clock::time_point{
+		std::chrono::microseconds{fileTimeMicro}
+	};
+
+	// Get current time
+	auto now = std::chrono::system_clock::now();
+
+	// Compute age
+	auto age = std::chrono::duration_cast<std::chrono::seconds>(now - fileTimePoint);
+
+	return age.count() > maxAgeSeconds;
 }

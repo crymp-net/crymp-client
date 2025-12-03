@@ -280,6 +280,7 @@ void Client::Init(IGameFramework *pGameFramework)
 	// mods are not supported
 	m_pGame = new CGame();
 	m_pGame->Init(pGameFramework);
+	m_pFileCache->Cleanup(86400);
 }
 
 void Client::UpdateLoop()
