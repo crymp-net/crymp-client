@@ -802,6 +802,8 @@ void COffHand::UpdateHeldObject()
 	if (!gEnv->bClient)
 		return;
 
+	const bool enableThrowPitchRotation = true;
+
 	CActor* pPlayer = GetOwnerActor();
 	if (!pPlayer)
 		return;
@@ -812,7 +814,6 @@ void COffHand::UpdateHeldObject()
 	if (!pEntity)
 	{
 		FinishAction(eOHA_RESET);
-
 		return;
 	}
 
@@ -854,7 +855,7 @@ void COffHand::UpdateHeldObject()
 
 	if (m_constraintStatus == ConstraintStatus::Broken)
 	{
-		if (m_currentState & (eOHS_HOLDING_OBJECT | eOHS_THROWING_OBJECT | eOHS_HOLDING_NPC | eOHS_THROWING_NPC)) //CryMP: don't release untill we're actually holding it
+		if (m_currentState & (eOHS_HOLDING_OBJECT | eOHS_THROWING_OBJECT | eOHS_HOLDING_NPC | eOHS_THROWING_NPC)) //CryMP: don't release until we're actually holding it
 		{
 			if (pPlayer->IsClient())
 			{
@@ -887,7 +888,6 @@ void COffHand::UpdateHeldObject()
 		if (pPlayer->IsRemote())
 		{
 			FinishAction(eOHA_RESET);
-
 			return;
 		}
 	}
@@ -899,23 +899,51 @@ void COffHand::UpdateHeldObject()
 
 	const int id = eIGS_FirstPerson;
 
-	Matrix34 baseRot = Matrix34(GetSlotHelperRotation(id, "item_attachment", true));
+	const Matrix33& helperRot33 = GetSlotHelperRotation(id, "item_attachment", true);
+
+	Matrix33 viewRot33 = helperRot33;
+	Matrix33 base33 = helperRot33;
+
+	if (enableThrowPitchRotation)
+	{
+		const bool isThrowState = (m_currentState & (eOHS_THROWING_OBJECT | eOHS_THROWING_NPC)) != 0;
+
+		const float dt = gEnv->pTimer->GetFrameTime();
+		const float targetBlend = isThrowState ? 1.0f : 0.0f;
+		const float blendSpeed = 10.0f;
+
+		m_throwPitchBlend_fp += (targetBlend - m_throwPitchBlend_fp) * min(1.0f, dt * blendSpeed);
+		m_throwPitchBlend_fp = std::clamp(m_throwPitchBlend_fp, 0.0f, 1.0f);
+
+		if (m_throwPitchBlend_fp > 0.001f)
+		{
+			const float maxPitchRad = DEG2RAD(20.0f);
+			const float extraPitchRad = maxPitchRad * m_throwPitchBlend_fp;
+
+			Matrix33 extraPitch = Matrix33::CreateRotationX(extraPitchRad);
+			base33 = base33 * extraPitch;
+		}
+	}
+	else
+	{
+		m_throwPitchBlend_fp = 0.0f;
+	}
+
+	Matrix34 baseRot(base33);
 
 	Matrix34 finalMatrix = baseRot;
 	finalMatrix.Scale(m_holdScale);
 
 	Vec3 pos = GetSlotHelperPos(id, "item_attachment", true);
 
-	// Predefined offsets
 	Vec3 fpPosOffset(ZERO), tpPosOffset(ZERO);
 	GetPredefinedPosOffset(pEntity, fpPosOffset, tpPosOffset);
 
-	// Apply fpPosOffset in *camera space* (x→right, y→forward, z→up), using unscaled axes
 	if (!fpPosOffset.IsZero(0.0001f))
 	{
-		const Vec3 viewRight = baseRot.GetColumn0().GetNormalizedSafe(Vec3(1, 0, 0));
-		const Vec3 viewFwd = baseRot.GetColumn1().GetNormalizedSafe(Vec3(0, 1, 0));
-		const Vec3 viewUp = baseRot.GetColumn2().GetNormalizedSafe(Vec3(0, 0, 1));
+		const Vec3 viewRight = viewRot33.GetColumn0().GetNormalizedSafe(Vec3(1, 0, 0));
+		const Vec3 viewFwd = viewRot33.GetColumn1().GetNormalizedSafe(Vec3(0, 1, 0));
+		const Vec3 viewUp = viewRot33.GetColumn2().GetNormalizedSafe(Vec3(0, 0, 1));
 
 		pos += viewRight * fpPosOffset.x
 			+ viewFwd * fpPosOffset.y
@@ -1553,6 +1581,8 @@ void COffHand::NetStartFire()
 		if (pPlayer)
 		{
 			pPlayer->StartThrowPrep();
+
+			SetOffHandState(eOHS_THROWING_OBJECT);
 		}
 	}
 	else
@@ -1801,6 +1831,11 @@ void COffHand::FinishAction(EOffHandActions eOHA)
 
 				//CryMP: Checks if ReachState::ThrowPrep active, resets bend if so 
 				pPlayer->CommitThrow();
+
+				if (pPlayer->GetPlayerStats() && pPlayer->GetPlayerStats()->grabbedHeavyEntity)
+				{
+					pPlayer->NotifyObjectGrabbed(false, entityId, false);
+				}
 			}
 		}
 	}

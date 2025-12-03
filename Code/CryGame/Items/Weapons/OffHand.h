@@ -345,6 +345,8 @@ private:
 		float widthWS = 0.0f;
 	};
 
+	float m_throwPitchBlend_fp = 0.0f;
+
 public:
 
 	bool IsTwoHandMode() const
