@@ -280,6 +280,9 @@ void Client::Init(IGameFramework *pGameFramework)
 	// mods are not supported
 	m_pGame = new CGame();
 	m_pGame->Init(pGameFramework);
+
+	//Needs CGame
+	pScriptSystem->ExecuteFile("CryMP/Scripts/HandGripData.lua", true, true);
 }
 
 void Client::UpdateLoop()

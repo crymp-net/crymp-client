@@ -24,6 +24,7 @@ History:
 #include "CryGame/GameCVars.h"
 #include "CryGame/Actors/Player/Player.h"
 #include "CryGame/GameRules.h"
+#include "CryGame/HUD/HUD.h"
 
 #define HIT_RANGE (2000.0f)
 #define LINE_HEIGHT (8)
@@ -46,26 +47,46 @@ void CDebugGun::OnAction(EntityId actorId, const ActionId& actionId, int activat
 {
 	if (actionId == "attack1")
 	{
-		if (activationMode == eAAM_OnPress)
+		if (activationMode == eAAM_OnPress) 
 			Shoot(true);
 	}
 	else if (actionId == "zoom")
 	{
-		if (activationMode == eAAM_OnPress)
+		if (activationMode == eAAM_OnPress) 
 			Shoot(false);
+	}
+	else if (actionId == "tweak_left")
+	{
+		if (activationMode == eAAM_OnPress) 
+			ArmLeftCapture();
+	}
+	else if (actionId == "tweak_right")
+	{
+		if (activationMode == eAAM_OnPress) 
+			ArmRightCapture();
+	}
+	else if (actionId == "tweak_up")
+	{
+		if (activationMode == eAAM_OnPress)
+		{
+			m_removeGripForEntity = true;
+		}
+	}
+	else if (actionId == "tweak_down")
+	{
+		if (activationMode == eAAM_OnPress) 
+			DumpGripListOnly(); // just the array lines
 	}
 	else if (actionId == "firemode")
 	{
-		++m_fireMode;
-
+		++m_fireMode; 
 		if (m_fireMode == m_fireModes.size())
 			m_fireMode = 0;
-
-		//SGameObjectEvent evt("HUD_TextMessage", eGOEF_ToAll, IGameObjectSystem::InvalidExtensionID, (void*)m_fireModes[m_fireMode].c_str());
-		//SendHUDEvent(evt);
 	}
 	else
+	{
 		CWeapon::OnAction(actorId, actionId, activationMode, value);
+	}
 }
 
 //------------------------------------------------------------------------
@@ -313,7 +334,15 @@ void CDebugGun::Shoot(bool bPrimary)
 	hits = pWorld->RayWorldIntersection(pos, dir, ent_all, flags, &rayhit, 1, &pSkip, 1);
 	if (hits)
 	{
+		gEnv->p3DEngine->RefineRayHit(&rayhit, cam.GetViewdir() * 50.f);
+
 		pEntity = (IEntity*)rayhit.pCollider->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
+
+		if (pEntity)
+		{
+			// capture if armed (shows sphere)
+			CaptureIfArmed(pEntity, rayhit);
+		}
 
 		IRenderNode* pNode = GetRenderNodeFromCollider(rayhit.pCollider);
 		if (pNode)
@@ -502,16 +531,34 @@ void CDebugGun::PostUpdate(float frameTime)
 		cam.GetPosition() + cam.GetViewdir(), cam.GetViewdir() * 500.f, ent_all,
 		rwiFlags, &rayhit, 1);
 
+	gEnv->p3DEngine->RefineRayHit(&rayhit, cam.GetViewdir() * 50.f);
+
 	if (!hits) 
 	{
 		DisableHighLighting();
 		return;
 	}
 
-	IEntity *pEntity = rayhit.pCollider ? m_pEntitySystem->GetEntityFromPhysics(rayhit.pCollider) : nullptr;
-	EntityId entityId = pEntity ? pEntity->GetId() : 0;
+	IPhysicalEntity* pPhysicalEnt = rayhit.pCollider;
+	IEntity *pEntity = pPhysicalEnt ? m_pEntitySystem->GetEntityFromPhysics(pPhysicalEnt) : nullptr;
 
-	IRenderNode* pNode = GetRenderNodeFromCollider(rayhit.pCollider);
+	if (g_pGameCVars->i_debug_entity > 0)
+	{
+		if (IEntity* pSelectEntity = m_pEntitySystem->GetEntity(g_pGameCVars->i_debug_entity))
+		{
+			pEntity = pSelectEntity;
+			pPhysicalEnt = pSelectEntity->GetPhysics();
+		}
+		else
+		{
+			g_pGameCVars->i_debug_entity = 0; // Reset if entity not found
+			CryLogAlways("$3DebugGun: Entity with ID %d not found. Resetting i_debug_entity.");
+		}
+	}
+
+	const EntityId entityId = pEntity ? pEntity->GetId() : 0;
+
+	IRenderNode* pNode = GetRenderNodeFromCollider(pPhysicalEnt);
 
 	IMaterial *pMaterialToLog = nullptr;
 	const char* materialDescription = "";
@@ -520,6 +567,28 @@ void CDebugGun::PostUpdate(float frameTime)
 	DrawLog(xColumn1, yColumn1, font, colorYellow, "[Entity]");
 	if (pEntity)
 	{
+		DebugDrawHandGripsForEntity(pEntity, 0.2f);
+
+		if (m_armLeft || m_armRight)
+		{
+			PlaceTempSphere(rayhit.pt, m_armRight, 0.2f); // debug sphere at hit point
+		}
+
+		if (m_removeGripForEntity)
+		{
+			if (g_pGame->RemoveGripForEntity(pEntity))
+			{
+				if (CHUD* pHUD = g_pGame->GetHUD())
+					pHUD->DisplayBigOverlayFlashMessage("Cleared Hand Grip data for selected entity", 2.0f, 400, 400, Col_Goldenrod);
+			}
+			else
+			{
+				if (CHUD* pHUD = g_pGame->GetHUD())
+					pHUD->DisplayBigOverlayFlashMessage("No Hand Grip data found for selected entity!", 2.0f, 400, 400, Col_Goldenrod);
+			}
+			m_removeGripForEntity = false;
+		}
+
 		DrawLog(xColumn1, yColumn1, font, colorYellow, "Name: %s", pEntity->GetName());
 		DrawLog(xColumn1, yColumn1, font, colorYellow, "Class: %s", pEntity->GetClass()->GetName());
 		DrawLog(xColumn1, yColumn1, font, colorYellow, "Id: %u", entityId);
@@ -550,14 +619,118 @@ void CDebugGun::PostUpdate(float frameTime)
 			pMaterialToLog = pMat;
 			materialDescription = "Entity Material";
 		}
+
+		// --- Children ---
+		const int childCount = pEntity->GetChildCount();
+		if (childCount)
+		{
+			DrawLog(xColumn1, yColumn1, font, colorYellow, "Children: %d", childCount);
+
+			for (int i = 0; i < childCount; ++i)
+			{
+				if (IEntity* pChild = pEntity->GetChild(i))
+				{
+					const char* childName = pChild->GetName();
+					const char* childClass = pChild->GetClass() ? pChild->GetClass()->GetName() : "<no class>";
+					EntityId    childId = pChild->GetId();
+
+					DrawLog(xColumn1, yColumn1, font, colorYellow,
+						"  [%d] %s  id=%u  class=%s",
+						i, childName, childId, childClass);
+				}
+			}
+		}
+
+		if (IEntity* pParent = pEntity->GetParent())
+		{
+			const char* parentClass = pParent->GetClass() ? pParent->GetClass()->GetName() : "<no class>";
+			DrawLog(xColumn1, yColumn1, font, colorYellow,
+				"Parent: %s  id=%u  class=%s",
+				pParent->GetName(), pParent->GetId(), parentClass);
+		}
+
+		{
+			int linkCount = 0;
+			for (IEntityLink* pLink = pEntity->GetEntityLinks(); pLink; pLink = pLink->next)
+				++linkCount;
+
+			if (linkCount)
+			{
+				DrawLog(xColumn1, yColumn1, font, colorYellow, "Links (out): %d", linkCount);
+
+				for (IEntityLink* pLink = pEntity->GetEntityLinks(); pLink; pLink = pLink->next)
+				{
+					const EntityId targetId = pLink->entityId;
+					const char* linkName = pLink->name ? pLink->name : "<no name>";
+					const IEntity* pTarget = gEnv->pEntitySystem->GetEntity(targetId);
+					const char* targetName = pTarget ? pTarget->GetName() : "<missing>";
+					const char* targetClass = (pTarget && pTarget->GetClass()) ? pTarget->GetClass()->GetName() : "<no class>";
+
+					DrawLog(xColumn1, yColumn1, font, colorYellow,
+						"  %s -> %s id=%u class=%s", linkName, targetName, targetId, targetClass);
+				}
+			}
+		}
+
+		const int slotCount = pEntity->GetSlotCount();
+		int totalSubs = 0;
+		for (int s = 0; s < slotCount; ++s)
+		{
+			if (IStatObj* so = pEntity->GetStatObj(s))
+			{
+				const int nSubs = so->GetSubObjectCount();
+				if (nSubs > 0)
+				{
+					DrawLog(xColumn1, yColumn1, font, colorYellow, "Slot %d SubObjects: %d", s, nSubs);
+					for (int i = 0; i < nSubs; ++i)
+					{
+						if (IStatObj::SSubObject* sub = so->GetSubObject(i))
+						{
+							const char* n = sub->name.c_str();
+							DrawLog(xColumn1, yColumn1, font, colorYellow, "  [%d] %s", i, n);
+							++totalSubs;
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// === Physics Info ===
 	DrawLog(xColumn2, yColumn2, font, colorCyan, "[Physics]");
-	if (IPhysicalEntity* pPhys = rayhit.pCollider)
+	if (IPhysicalEntity* pPhys = pPhysicalEnt)
 	{
+		DrawLog(xColumn2, yColumn2, font, colorCyan, "PhysHandle: %p", pPhys);
+
+		DrawLog(xColumn2, yColumn2, font, colorCyan, "PartId: %d", rayhit.partid);
+
 		const float distance = (rayhit.pt - cam.GetPosition()).GetLength();
 		DrawLog(xColumn2, yColumn2, font, colorCyan, "Distance: %.2f", distance);
+
+		const int peType = pPhys->GetType();
+		//pe_type
+		{
+			const auto PeTypeToString = [](int t) -> const char*
+				{
+					switch (t)
+					{
+					case PE_NONE:           return "PE_NONE";
+					case PE_STATIC:         return "PE_STATIC";
+					case PE_RIGID:          return "PE_RIGID";
+					case PE_WHEELEDVEHICLE: return "PE_WHEELEDVEHICLE";
+					case PE_LIVING:         return "PE_LIVING";
+					case PE_PARTICLE:       return "PE_PARTICLE";
+					case PE_ARTICULATED:    return "PE_ARTICULATED";
+					case PE_ROPE:           return "PE_ROPE";
+					case PE_SOFT:           return "PE_SOFT";
+					case PE_AREA:           return "PE_AREA";
+					default:                return "UNKNOWN";
+					}
+				};
+
+			DrawLog(xColumn2, yColumn2, font, colorCyan,
+				"Type: %s (%d)", PeTypeToString(peType), peType);
+		}
 
 		pe_status_dynamics dyn;
 		if (pPhys->GetStatus(&dyn))
@@ -565,6 +738,100 @@ void CDebugGun::PostUpdate(float frameTime)
 			DrawLog(xColumn2, yColumn2, font, colorCyan, "Mass: %.1f", dyn.mass);
 			DrawLog(xColumn2, yColumn2, font, colorCyan, "Velocity: %.2f", dyn.v.len());
 			DrawLog(xColumn2, yColumn2, font, colorCyan, "Submerged: %.2f", dyn.submergedFraction);
+		}
+
+		pe_status_pos status;
+		if (pPhys->GetStatus(&status))
+		{
+			int simClass = status.iSimClass;
+			const char* simClassStr = "Unknown";
+
+			switch (simClass)
+			{
+			case SC_STATIC:          simClassStr = "SC_STATIC"; break;
+			case SC_SLEEPING_RIGID:  simClassStr = "SC_SLEEPING_RIGID"; break;
+			case SC_ACTIVE_RIGID:    simClassStr = "SC_ACTIVE_RIGID"; break;
+			case SC_LIVING:          simClassStr = "SC_LIVING"; break;
+			case SC_TRIGGER:         simClassStr = "SC_TRIGGER"; break;
+			case SC_INDEPENDENT:     simClassStr = "SC_INDEPENDENT"; break;
+			case SC_DELETED:         simClassStr = "SC_DELETED"; break;
+			}
+			DrawLog(xColumn2, yColumn2, font, colorCyan, "Sim Class: %s", simClassStr);
+
+			//Check for discrepancy between physics and entity position
+			if (pEntity)
+			{
+				const Vec3 physPos = status.pos;
+				const Vec3 entPos = pEntity->GetWorldPos();
+				const float delta = (physPos - entPos).len();
+
+				const float eps = 1.0f;
+
+				if (delta > eps)
+				{
+					DrawLog(xColumn2, yColumn2, font, colorYellow,
+						"Phys!=Entity: %.3f | Phys(%.2f, %.2f, %.2f) vs Ent(%.2f, %.2f, %.2f)",
+						delta, physPos.x, physPos.y, physPos.z, entPos.x, entPos.y, entPos.z);
+				}
+			}
+		}
+
+		pe_params_timeout timeoutParams;
+		if (pPhys->GetParams(&timeoutParams))
+		{
+			if (timeoutParams.timeIdle > 0.0f)
+				DrawLog(xColumn2, yColumn2, font, colorCyan, "TimeIdle = %.3f", timeoutParams.timeIdle);
+
+			if (timeoutParams.maxTimeIdle > 0.0f)
+				DrawLog(xColumn2, yColumn2, font, colorCyan, "MaxTimeIdle = %.3f", timeoutParams.maxTimeIdle);
+		}
+
+		// --- Physics Part Info ---
+		pe_status_nparts snp;
+		const int nParts = pPhys->GetStatus(&snp); 
+		DrawLog(xColumn2, yColumn2, font, colorCyan, "Parts: %d", nParts);
+
+		for (int i = 0; i < nParts; ++i)
+		{
+			pe_params_part pp;
+			pp.ipart = i;
+			if (!pPhys->GetParams(&pp))
+				continue;
+
+			const phys_geometry* pPG = pp.pPhysGeomProxy ? pp.pPhysGeomProxy : pp.pPhysGeom;
+			const char* label = pp.pPhysGeomProxy ? "proxy" : "geom";
+
+			const int gtype = (pPG && pPG->pGeom) ? pPG->pGeom->GetType() : -1;
+			const char* typeStr = "unknown";
+
+			switch (gtype)
+			{
+			case GEOM_TRIMESH:     typeStr = "GEOM_TRIMESH";     break;
+			case GEOM_HEIGHTFIELD: typeStr = "GEOM_HEIGHTFIELD"; break;
+			case GEOM_CYLINDER:    typeStr = "GEOM_CYLINDER";    break;
+			case GEOM_CAPSULE:     typeStr = "GEOM_CAPSULE";     break;
+			case GEOM_RAY:         typeStr = "GEOM_RAY";         break;
+			case GEOM_SPHERE:      typeStr = "GEOM_SPHERE";      break;
+			case GEOM_BOX:         typeStr = "GEOM_BOX";         break;
+			case GEOM_VOXELGRID:   typeStr = "GEOM_VOXELGRID";   break;
+			default:               typeStr = "unknown";     break;
+			}
+
+			DrawLog(xColumn2, yColumn2, font, i == rayhit.partid ? colorYellow : colorCyan, "  Part %d: %s (%s)", i, label, typeStr);
+
+			// --- Structural Joints
+			if (i == rayhit.partid)
+			{
+				pe_params_structural_joint pj;
+				pj.idx = rayhit.partid;
+				if (pPhys->GetParams(&pj))
+				{
+					if (pj.bBreakable || pj.bBroken)
+					{
+						DrawLog(xColumn2, yColumn2, font, colorYellow, "	%s%s", pj.bBreakable ? "Breakable " : "", pj.bBroken ? "-> Broken" : "");
+					}
+				}
+			}
 		}
 	}
 
@@ -784,5 +1051,203 @@ void CDebugGun::PostUpdate(float frameTime)
 	}
 
 	CWeapon::PostUpdate(frameTime);
+}
+
+// ==================== CDebugGun capture implementation ====================
+
+void CDebugGun::ArmLeftCapture() 
+{ 
+	m_armLeft = true;  
+	m_armRight = false;
+	CryLogAlways("$3[DebugGun] Armed LEFT"); 
+
+	if (CHUD *pHUD = g_pGame->GetHUD())
+		pHUD->DisplayBigOverlayFlashMessage("[LEFT - HAND GRIP] Shoot an object to save hand grip position", 2.0f, 400, 400, Col_Goldenrod);
+}
+
+void CDebugGun::ArmRightCapture() 
+{ 
+	m_armRight = true;
+	m_armLeft = false; 
+	CryLogAlways("$3[DebugGun] Armed RIGHT");
+
+	if (CHUD* pHUD = g_pGame->GetHUD())
+		pHUD->DisplayBigOverlayFlashMessage("[RIGHT - HAND GRIP] Shoot an object to save hand grip position", 2.0f, 400, 400, Col_Goldenrod);
+}
+
+// Robust sphere (PersistantDebug + AuxGeom fallback)
+void CDebugGun::PlaceTempSphere(const Vec3& worldPos, bool isRight, float lifeSec) const
+{
+	if (IPersistantDebug* pd = g_pGame->GetIGameFramework()->GetIPersistantDebug())
+	{
+		static const char* kTag = "GripCapture";
+		// DO NOT clear (false) so other systems don’t wipe our spheres immediately
+		pd->Begin(kTag, /*clear=*/false);
+		const ColorF colL(1.f, 0.9f, 0.0f, 1.f); // yellow
+		const ColorF colR(0.2f, 0.6f, 1.0f, 1.f); // blue
+		pd->AddSphere(worldPos, 0.03f, isRight ? colR : colL, lifeSec <= 0.f ? 15.0f : lifeSec);
+	}
+}
+
+// ---------- capture on shot ----------
+void CDebugGun::CaptureIfArmed(IEntity* pEntity, const ray_hit& rayhit)
+{
+	if (!pEntity)
+		return;
+
+	if (!m_armLeft && !m_armRight)
+		return;
+
+	// Build key: prefer CGF path from slot 0. If missing, use entity class name.
+	const char* keyCStr = nullptr;
+
+	IStatObj* so = pEntity->GetStatObj(0);
+	if (so)
+	{
+		const char* p = so->GetFilePath();
+		if (p && *p)
+		{
+			keyCStr = p;
+		}
+	}
+
+	if (!keyCStr)
+	{
+		const IEntityClass* c = pEntity->GetClass();
+		if (c)
+		{
+			const char* n = c->GetName();
+			if (n && *n)
+			{
+				keyCStr = n;
+			}
+		}
+	}
+
+	if (!keyCStr)
+	{
+		CryLogAlways("$4[DebugGun] No model/class; capture ignored.");
+		return;
+	}
+
+	const Matrix34 inv = pEntity->GetWorldTM().GetInverted();
+	const Vec3     hitEL = inv.TransformPoint(rayhit.pt);
+
+	if (m_armLeft)
+	{
+		g_pGame->SetGripLeft(keyCStr, hitEL);
+		m_armLeft = false;
+
+		PlaceTempSphere(rayhit.pt, /*isRight=*/false, 18.0f);
+		CryLogAlways("$3[DebugGun] LEFT saved '%s'  EL=(%.3f, %.3f, %.3f)", keyCStr, hitEL.x, hitEL.y, hitEL.z);
+
+		if (CHUD* pHUD = g_pGame->GetHUD())
+			pHUD->DisplayBigOverlayFlashMessage("[LEFT - HAND GRIP] Position saved", 2.0f, 400, 400, Col_Goldenrod);
+	}
+	else if (m_armRight)
+	{
+		g_pGame->SetGripRight(keyCStr, hitEL);
+		m_armRight = false;
+
+		PlaceTempSphere(rayhit.pt, /*isRight=*/true, 18.0f);
+
+		if (CHUD* pHUD = g_pGame->GetHUD())
+			pHUD->DisplayBigOverlayFlashMessage("[RIGHT - HAND GRIP] Position saved", 2.0f, 400, 400, Col_Goldenrod);
+	}
+}
+
+void CDebugGun::DebugDrawHandGripsForEntity(IEntity* pEntity, float lifeSec)
+{
+	if (!pEntity)
+		return;
+
+	// Lookup grip info.
+	const CGame::HandGripInfo* info = g_pGame->GetGripByEntity(pEntity);
+	if (!info)
+		return;
+
+	IPersistantDebug* pd = g_pGame->GetIGameFramework()->GetIPersistantDebug();
+	if (!pd)
+		return;
+
+	const Matrix34 entW = pEntity->GetWorldTM();
+
+	const ColorF colL(1.0f, 0.9f, 0.0f, 1.0f);  // yellow (left)
+	const ColorF colR(0.2f, 0.6f, 1.0f, 1.0f);  // blue   (right)
+	const float  radius = 0.08f;
+
+	// Use a stable tag; we clear each frame so the spheres don't accumulate.
+	const char* kTag = "GripPreview";
+	pd->Begin(kTag, /*clear=*/true);
+
+	if (info->hasLeft)
+	{
+		const Vec3 ws = entW.TransformPoint(info->leftEL);
+		pd->AddSphere(ws, radius, colL, lifeSec);
+	}
+
+	if (info->hasRight)
+	{
+		const Vec3 ws = entW.TransformPoint(info->rightEL);
+		pd->AddSphere(ws, radius, colR, lifeSec);
+	}
+}
+
+void CDebugGun::DumpGripListOnly() const
+{
+	const auto& reg = g_pGame->GetGripRegistry();
+
+	CryLogAlways("CPPAPI.CreateHandGripData({");
+
+	for (const CGame::HandGripInfo& e : reg)
+	{
+		CryLogAlways("  {");
+		CryLogAlways("    key  = \"%s\",", e.key.c_str());
+		CryLogAlways("    hasL = %s,", e.hasLeft ? "true" : "false");
+		CryLogAlways("    hasR = %s,", e.hasRight ? "true" : "false");
+
+		if (e.hasLeft)
+		{
+			CryLogAlways("    L = {");
+			CryLogAlways("      x = %.6f,", e.leftEL.x);
+			CryLogAlways("      y = %.6f,", e.leftEL.y);
+			CryLogAlways("      z = %.6f", e.leftEL.z);
+			CryLogAlways("    },");
+		}
+
+		if (e.hasRight)
+		{
+			CryLogAlways("    R = {");
+			CryLogAlways("      x = %.6f,", e.rightEL.x);
+			CryLogAlways("      y = %.6f,", e.rightEL.y);
+			CryLogAlways("      z = %.6f", e.rightEL.z);
+			CryLogAlways("    },");
+		}
+
+		if (!e.posOffset_FP.IsZero())
+		{
+			CryLogAlways("    posOffset_FP = {");
+			CryLogAlways("      x = %.6f,", e.posOffset_FP.x);
+			CryLogAlways("      y = %.6f,", e.posOffset_FP.y);
+			CryLogAlways("      z = %.6f", e.posOffset_FP.z);
+			CryLogAlways("    },");
+		}
+
+		if (!e.posOffset_TP.IsZero())
+		{
+			CryLogAlways("    posOffset_TP = {");
+			CryLogAlways("      x = %.6f,", e.posOffset_TP.x);
+			CryLogAlways("      y = %.6f,", e.posOffset_TP.y);
+			CryLogAlways("      z = %.6f", e.posOffset_TP.z);
+			CryLogAlways("    },");
+		}
+
+		CryLogAlways("  },");
+	}
+
+	CryLogAlways("})");
+
+	if (CHUD* pHUD = g_pGame->GetHUD())
+		pHUD->DisplayBigOverlayFlashMessage("Dumped HandGrip data into console", 2.0f, 400, 400, Col_Goldenrod);
 }
 

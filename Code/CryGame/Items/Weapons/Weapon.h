@@ -187,6 +187,7 @@ public:
 	virtual int GetFireModeIdx(const char* name) const;
 	virtual int GetCurrentFireMode() const;
 	virtual void SetCurrentFireMode(int idx);
+	void SetCurrentFireModeLocal(int idx);
 	virtual void SetCurrentFireMode(const char* name);
 	virtual void ChangeFireMode();
 	virtual int GetNextFireMode(int currMode) const;

@@ -13,4 +13,7 @@ public:
 	int RayWorldIntersection(IFunctionHandler *pH);
 	int RayTraceCheck(IFunctionHandler *pH, Vec3 src, Vec3 dst, ScriptHandle skipEntityId1, ScriptHandle skipEntityId2);
 	int SamplePhysEnvironment(IFunctionHandler *pH);
+	int GetPhysPosAng(IFunctionHandler* pH, ScriptHandle entityId);
+	int GetEntityFromPhysicsId(IFunctionHandler* pH);
+	int GetPhysicsIdFromEntity(IFunctionHandler* pH);
 };
