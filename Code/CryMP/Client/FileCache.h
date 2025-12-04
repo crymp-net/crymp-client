@@ -52,5 +52,5 @@ public:
 	std::filesystem::path GetPath(const std::string_view & path);
 
 	std::deque<FileCacheEntry> LoadEntries();
-	std::deque<FileCacheEntry> Cleanup();
+	std::deque<FileCacheEntry> Cleanup(unsigned maxAge);
 };
