@@ -302,7 +302,6 @@ std::deque<FileCacheEntry> FileCache::Cleanup(unsigned maxAge)
 			auto& entry = *it;
 			if (removedIds.contains(entry.path)) {
 				it++;
-				continue;
 			} else if (IsOld(entry.path, maxAge)) {
 				RemoveFile(entry.path);
 				cacheSize -= entry.size;
@@ -326,17 +325,25 @@ static bool IsOld(const std::filesystem::path& filePath, int maxAgeSeconds)
 {
 	WIN32_FILE_ATTRIBUTE_DATA fad;
 	if (!GetFileAttributesExW(filePath.c_str(), GetFileExInfoStandard, &fad)) {
-		// Could not read attributes, treat as not old (or true, depending on your needs)
 		return false;
 	}
 
 	// Convert FILETIME (which is 100-ns intervals since 1601) to a 64-bit value
+	ULARGE_INTEGER ulw, ula;
+	ulw.LowPart = fad.ftLastWriteTime.dwLowDateTime;
+	ulw.HighPart = fad.ftLastWriteTime.dwHighDateTime;
+	ula.LowPart = fad.ftLastAccessTime.dwLowDateTime;
+	ula.HighPart = fad.ftLastAccessTime.dwHighDateTime;
+
 	ULARGE_INTEGER ul;
-	ul.LowPart = fad.ftLastWriteTime.dwLowDateTime;
-	ul.HighPart = fad.ftLastWriteTime.dwHighDateTime;
+	if (ula.QuadPart > ulw.QuadPart) {
+		ul.QuadPart = ula.QuadPart;
+	} else {
+		ul.QuadPart = ulw.QuadPart;
+	}
 
 	// Convert to std::chrono::system_clock time_point
-	// FILETIME epoch (1601) → system_clock epoch (1970)
+	// FILETIME epoch (1601) -> system_clock epoch (1970)
 	constexpr ULONGLONG EPOCH_DIFFERENCE = 116444736000000000ULL; // in 100-ns units
 
 	// Convert FILETIME to microseconds since 1970
