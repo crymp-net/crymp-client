@@ -603,7 +603,7 @@ void CHUDVehicleInterface::OnVehicleEvent(EVehicleEvent event, const SVehicleEve
 
 		UpdateSeats();
 	}
-	else if (eVE_Damaged == event || eVE_Collision == event || eVE_Repair)
+	else if (eVE_Damaged == event || eVE_Collision == event || eVE_Repair == event)
 	{
 		UpdateDamages(m_eCurVehicleHUD, m_pVehicle);
 	}

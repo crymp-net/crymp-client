@@ -1033,13 +1033,13 @@ protected:
 	{
 		struct 
 		{
-			int _fastcast_CAIActor : 1;
-			int _fastcast_CAIAttribute : 1;
-			int _fastcast_CAIPlayer : 1;
-			int _fastcast_CLeader : 1;
-			int _fastcast_CPipeUser : 1;
-			int _fastcast_CPuppet : 1;
-			int _fastcast_CAIVehicle : 1;
+			unsigned int _fastcast_CAIActor : 1;
+			unsigned int _fastcast_CAIAttribute : 1;
+			unsigned int _fastcast_CAIPlayer : 1;
+			unsigned int _fastcast_CLeader : 1;
+			unsigned int _fastcast_CPipeUser : 1;
+			unsigned int _fastcast_CPuppet : 1;
+			unsigned int _fastcast_CAIVehicle : 1;
 		};
 		int _fastcast_any;
 	};

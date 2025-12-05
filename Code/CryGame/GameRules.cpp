@@ -3590,8 +3590,10 @@ void CGameRules::CmdDebugSpawns(IConsoleCmdArgs* pArgs)
 	for (TSpawnLocations::const_iterator lit = pGameRules->m_spawnLocations.begin(); lit != pGameRules->m_spawnLocations.end(); ++lit)
 	{
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(*lit);
-		Vec3 pos = pEntity ? pEntity->GetWorldPos() : ZERO;
-		CryLogAlways("Spawn Location: %s  (eid: %d %08x  team: %d) %.2f,%.2f,%.2f", pEntity->GetName(), pEntity->GetId(), pEntity->GetId(), pGameRules->GetTeam(pEntity->GetId()), pos.x, pos.y, pos.z);
+		if (pEntity) {
+			Vec3 pos = pEntity->GetWorldPos();
+			CryLogAlways("Spawn Location: %s  (eid: %d %08x  team: %d) %.2f,%.2f,%.2f", pEntity->GetName(), pEntity->GetId(), pEntity->GetId(), pGameRules->GetTeam(pEntity->GetId()), pos.x, pos.y, pos.z);
+		}
 	}
 }
 

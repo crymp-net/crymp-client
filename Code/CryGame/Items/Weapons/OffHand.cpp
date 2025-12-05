@@ -3089,7 +3089,7 @@ void COffHand::ThrowNPC(bool kill /*= true*/)
 					pActor->DropItem(currentItem->GetEntityId(), 0.5f, false, true);
 
 				//Don't kill if it was already dead
-				if (!stats->isRagDoll || prevHealth > 0 || m_grabbedNPCSpecies == eGCT_HUMAN)
+				if (stats && (!stats->isRagDoll || prevHealth > 0 || m_grabbedNPCSpecies == eGCT_HUMAN))
 				{
 					pActor->SetAnimationInput("Action", "idle");
 					pActor->CreateScriptEvent("kill", 0);

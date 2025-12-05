@@ -268,12 +268,12 @@ struct SAnimationTarget
 		, errorVelocity(ZERO)
 		, errorRotationalVelocity(IDENTITY)
 		{}
-	int preparing : 1;
-	int activated : 1;
-	int doingSomething : 1;
-	mutable int allowActivation : 1;
-	mutable int notAiControlledAnymore : 1;
-	int isNavigationalSO : 1;
+	unsigned int preparing : 1;
+	unsigned int activated : 1;
+	unsigned int doingSomething : 1;
+	mutable unsigned int allowActivation : 1;
+	mutable unsigned int notAiControlledAnymore : 1;
+	unsigned int isNavigationalSO : 1;
 	float maxRadius;
 	Vec3 position;
 	float positionRadius;

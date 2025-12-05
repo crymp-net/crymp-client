@@ -2701,7 +2701,7 @@ void CWeapon::RaiseWeapon(bool raise, bool faster /* = false */)
 			CActor* owner = GetOwnerActor();
 			if (CNanoSuit* pNanoSuit = CPlayer::GetNanoSuit(owner))
 			{
-				if (pPlayer->GetNanoSuit()->GetMode() == NANOMODE_SPEED)
+				if (pPlayer && pPlayer->GetNanoSuit()->GetMode() == NANOMODE_SPEED)
 				{
 					speedOverride = 1.75f;
 				}
@@ -3250,7 +3250,7 @@ void CWeapon::UpdateWeaponLowering(float frameTime)
 	}
 
 	//If not, check entity in front
-	if (IsFriendlyEntity(pLookAtEntity, pActorAI, pPlayer))
+	if (pLookAtEntity && IsFriendlyEntity(pLookAtEntity, pActorAI, pPlayer))
 	{
 		LowerWeapon(true);
 		if (GetEntity()->GetClass() != CItem::sOffHandClass)

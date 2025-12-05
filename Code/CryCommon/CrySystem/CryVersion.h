@@ -39,6 +39,7 @@ struct SFileVersion
 
 		char t[50];	char* p;
 		strncpy(t,s,sizeof(t));
+		t[49] = 0;
 
 		if(!(p = strtok(t,"."))) return;
 		v[3] = atoi(p);

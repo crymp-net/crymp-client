@@ -867,7 +867,7 @@ void CHUD::PlayerIdSet(EntityId playerId)
 
 		GetMissionObjectiveSystem().DeactivateObjectives(true); //this should remove all "old" objectives
 	}
-	else
+	else if(m_pClientActor)
 	{
 		m_pClientActor->UnregisterPlayerEventListener(this);
 		if (CNanoSuit* pSuit = m_pClientActor->GetNanoSuit())

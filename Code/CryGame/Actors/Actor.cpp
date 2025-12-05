@@ -184,9 +184,11 @@ void SIKLimb::Update(IEntity* pOwner, float frameTime)
 		{
 			ISkeletonPose* pISkeletonPose = pCharacter->GetISkeletonPose();
 			uint32 numJoints = pISkeletonPose->GetJointCount();
-			QuatT* pRelativeQuatIK = (QuatT*)alloca(numJoints * sizeof(QuatT));
-			QuatT* pAbsoluteQuatIK = (QuatT*)alloca(numJoints * sizeof(QuatT));
+			std::vector<QuatT> relativeQuatIK(numJoints);
+			std::vector<QuatT> absoluteQuatIK(numJoints);
 
+			QuatT* pRelativeQuatIK = relativeQuatIK.data();
+			QuatT* pAbsoluteQuatIK = absoluteQuatIK.data();
 			pISkeletonPose->CCDInitIKBuffer(pRelativeQuatIK, pAbsoluteQuatIK);
 			pISkeletonPose->CCDInitIKChain(rootBoneID, endBoneID);
 

@@ -42,13 +42,15 @@ void TimeOfDay::FloatSpline::SerializeSpline(XmlNodeRef& node, bool loading)
 		{
 			float time = 0;
 			float value = 0;
-			std::sscanf(currentKey.c_str(), "%g:%g", &time, &value);
+			if (std::sscanf(currentKey.c_str(), "%g:%g", &time, &value) == 2) {
+				ValueType tmp;
+				tmp[0] = value;
+				this->InsertKey(time, tmp);
 
-			ValueType tmp;
-			tmp[0] = value;
-			this->InsertKey(time, tmp);
-
-			currentKey = keys.Tokenize(",", currentPos);
+				currentKey = keys.Tokenize(",", currentPos);
+			} else {
+				break;
+			}
 		}
 	}
 	else
@@ -97,20 +99,24 @@ void TimeOfDay::ColorSpline::SerializeSpline(XmlNodeRef& node, bool loading)
 		{
 			float time = 0;
 			float values[3] = {};
-			std::sscanf(currentKey.c_str(), "%g:(%g:%g:%g),",
-				&time,
-				&values[0],
-				&values[1],
-				&values[2]
-			);
+			if (
+				std::sscanf(currentKey.c_str(), "%g:(%g:%g:%g),",
+					&time,
+					&values[0],
+					&values[1],
+					&values[2]
+				) == 4) {
 
-			ValueType tmp;
-			tmp[0] = values[0];
-			tmp[1] = values[1];
-			tmp[2] = values[2];
-			this->InsertKey(time, tmp);
+				ValueType tmp;
+				tmp[0] = values[0];
+				tmp[1] = values[1];
+				tmp[2] = values[2];
+				this->InsertKey(time, tmp);
 
-			currentKey = keys.Tokenize(",", currentPos);
+				currentKey = keys.Tokenize(",", currentPos);
+			} else {
+				break;
+			}
 		}
 	}
 	else

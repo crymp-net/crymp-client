@@ -1130,13 +1130,13 @@ public:
 
 	SmartScriptFunction & operator=(const SmartScriptFunction &) = delete;
 
-	SmartScriptFunction(SmartScriptFunction&& other) : m_hFunc(other.m_hFunc), m_pSS(other.m_pSS)
+	SmartScriptFunction(SmartScriptFunction&& other) noexcept : m_hFunc(other.m_hFunc), m_pSS(other.m_pSS)
 	{
 		other.m_hFunc = nullptr;
 		other.m_pSS = nullptr;
 	}
 
-	SmartScriptFunction& operator=(SmartScriptFunction&& other)
+	SmartScriptFunction& operator=(SmartScriptFunction&& other) noexcept
 	{
 		if (m_hFunc)
 		{

@@ -701,9 +701,13 @@ void CMPHub::DisconnectError(EDisconnectionCause dc, bool connecting, const char
 				wstring newstring = L"%1\n@{ui_reason}: %2";
 				pLoc->FormatStringMessage(final, newstring, localised.c_str(), tmp.c_str());
 				ShowErrorText(final.c_str());
-				break;
+			} else {
+				ShowError(msg, true, 1);
 			}
+		} else {
+			ShowError(msg, true, 1);
 		}
+		break;
 	}
 	case eDC_AuthenticationFailed:
 		ShowError(msg, true, 1);
@@ -900,7 +904,7 @@ static ILINE string EncodeStr(const char* x, int len)
 static ILINE bool DecodeStr(string& x)
 {
 	string out;
-	uint8 cur;
+	uint8 cur = 0;
 	if (x.length() < 64)
 		return false;
 	for (int i = 0; i < x.length(); i++)
