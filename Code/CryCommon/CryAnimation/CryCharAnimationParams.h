@@ -370,7 +370,7 @@ struct LMGCapabilities
 		if (b.m_bIsValid && !a.m_bIsValid)
 			return b;
 
-		if (!a.m_bIsValid && !a.m_bIsValid)
+		if (!a.m_bIsValid)
 			return merged;
 
 		merged.m_bIsValid = true;

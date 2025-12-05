@@ -1306,6 +1306,7 @@ int CScriptBind_Actor::GetClosestAttachment(IFunctionHandler* pH, int characterS
 	//FIXME FIXME: E3 workaround
 	char attachmentName[64];
 	strncpy(attachmentName, pClosestAtt->GetName(), 63);
+	attachmentName[63] = 0;
 	char* pDotChar = strstr(attachmentName, ".");
 	if (pDotChar)
 		*pDotChar = 0;

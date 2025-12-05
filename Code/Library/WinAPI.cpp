@@ -785,6 +785,10 @@ int WinAPI::HTTPRequest(
 		}
 	}
 
+	if (!urlComponents.lpszHostName) {
+		throw StringTools::SysErrorFormat("Invalid Hostname");
+	}
+
 	const std::wstring serverNameW(urlComponents.lpszHostName, urlComponents.dwHostNameLength);
 
 	HTTPHandleGuard hConnect = WinHttpConnect(hSession, serverNameW.c_str(), urlComponents.nPort, 0);
@@ -863,6 +867,7 @@ int WinAPI::HTTPRequest(
 		}
 		else
 		{
+			contentLengthString[31] = 0;
 			contentLength = _wcstoui64(contentLengthString, nullptr, 10);
 		}
 

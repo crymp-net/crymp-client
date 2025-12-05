@@ -285,6 +285,8 @@ void CVehicleClient::OnAction(IVehicle* pVehicle, EntityId actorId, const Action
 	case (eVAI_ZoomOut):
 		if (SAFE_HUD_FUNC_RET(GetModalHUD()))
 			break;
+		pVehicle->OnAction(ite->second, activationMode, value, actorId);
+		break;
 	default:
 		pVehicle->OnAction(ite->second, activationMode, value, actorId);
 		break;

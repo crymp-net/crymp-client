@@ -668,7 +668,7 @@ static int str_gsub (lua_State *L) {
     }
     if (e && e>src) /* non empty match? */
       src = e;  /* skip it */
-    else if (src < ms.src_end)
+    else if (src && src < ms.src_end)
       luaL_addchar(&b, *src++);
     else break;
     if (anchor) break;
