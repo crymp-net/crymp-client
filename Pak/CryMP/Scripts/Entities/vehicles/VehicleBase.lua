@@ -505,14 +505,30 @@ function VehicleBase:GetVehicleHelperPos(helperName)
 end
 
 --------------------------------------------------------------------------
-function VehicleBase:RequestSeatByPosition(userId)	
-	local pos = System.GetEntity(userId):GetWorldPos();
+-- CryMP:
+function VehicleBase:IsSeatFree(seat, player)
+	if g_gameRules.CanEnterSeat then
+		local free = seat:IsFree()
+		if free then
+			return g_gameRules:CanEnterSeat(self, seat, player, false)
+		else
+			return false
+		end
+	else
+		return seat:IsFree()
+	end
+end
+
+--------------------------------------------------------------------------
+function VehicleBase:RequestSeatByPosition(userId)
+	local actor = System.GetEntity(userId)
+	local pos = actor:GetWorldPos();
 	local radiusSq = 10;
 
 	for i,seat in pairs(self.Seats) do
 		-- Look if the seat is free
 
-		if (seat.enterHelper and not seat.passengerId) then
+		if (seat.enterHelper and not seat.passengerId) and self:IsSeatFree(seat, actor) then
 			-- Look if there's a seat entering pos near the player
 			
 			if (seat.useBoundsForEntering == nil or seat.useBoundsForEntering == true) then
@@ -542,7 +558,8 @@ end
 
 --------------------------------------------------------------------------
 function VehicleBase:RequestClosestSeat(userId)	
-	local pos = System.GetEntity(userId):GetWorldPos();
+	local actor = System.GetEntity(userId)
+	local pos = actor:GetWorldPos();
 	
 	local minDistanceSq = 100000;
 	local selectedSeat;
@@ -550,14 +567,13 @@ function VehicleBase:RequestClosestSeat(userId)
 	for i,seat in pairs(self.Seats) do
 		-- Look if the seat is free
 
-		if (seat.enterHelper and seat:IsFree()) then
-		
+		if (seat.enterHelper and self:IsSeatFree(seat, actor)) then
 			local enterPos; 
 			if (self.vehicle:HasHelper(seat.enterHelper)) then
-	      enterPos = self.vehicle:GetHelperWorldPos(seat.enterHelper);
-	    else
-	      enterPos = self:GetHelperPos(seat.enterHelper, HELPER_WORLD);
-	    end
+				enterPos = self.vehicle:GetHelperWorldPos(seat.enterHelper);
+			else
+				enterPos = self:GetHelperPos(seat.enterHelper, HELPER_WORLD);
+			end
 			
 			--Log("Helper for seat "..tostring(i)..": "..seat.enterHelper..Vec2Str(enterPos));
 			
@@ -580,18 +596,18 @@ end
 
 --------------------------------------------------------------------------
 function VehicleBase:RequestMostPrioritarySeat(userId)	
-
-	local pos = System.GetEntity(userId):GetWorldPos();	
+	local actor = System.GetEntity(userId)
+	local pos = actor:GetWorldPos();	
 	local selectedSeat;
 	-- search driver seat first
 	local seat = self.Seats[1];
-	if(seat:IsFree()) then 
+	if self:IsSeatFree(seat, actor) then 
 		return 1;
 	end
 
 	for i,seat in pairs(self.Seats) do
 		-- search for gunner seats
-		if (seat.enterHelper and seat.Weapons and seat:IsFree()) then
+		if (seat.enterHelper and seat.Weapons and self:IsSeatFree(seat, actor)) then
 			if AI then AI.LogEvent(System.GetEntity(userId):GetName().." found seat "..i) end;
 			return i;
 		end
@@ -599,7 +615,7 @@ function VehicleBase:RequestMostPrioritarySeat(userId)
 
 	for i,seat in pairs(self.Seats) do
 		-- search for remaining seats
-		if (seat.enterHelper and seat:IsFree()) then
+		if (seat.enterHelper and self:IsSeatFree(seat, actor)) then
 			if AI then AI.LogEvent(System.GetEntity(userId):GetName().." found seat "..i) end;
 			return i;
 		end
@@ -611,11 +627,12 @@ end
 
 --------------------------------------------------------------------------
 function VehicleBase:RequestSeat(userId)
-	local pos = System.GetEntity(userId):GetWorldPos();
+	local actor = System.GetEntity(userId)
+	local pos = actor:GetWorldPos();
 	local radiusSq = 6;
 
 	for i,seat in pairs(self.Seats) do
-		if (seat:IsFree()) then
+		if (self:IsSeatFree(seat, actor)) then
 			return i;
 		end
 	end
@@ -904,7 +921,7 @@ function VehicleBase:OnActorSitDown(seatId, passengerId)
 
 	-- need to generate AI sound event (vehicle engine)
 	if(seat.isDriver) then 
---System.Log(">>> vehicleSoundTimer setting NOW >>>>>>");		
+		--System.Log(">>> vehicleSoundTimer setting NOW >>>>>>");		
 		self:SetTimer(AISOUND_TIMER, AISOUND_TIMEOUT);
 	end
 	
@@ -972,6 +989,19 @@ function VehicleBase:OnActorSitDown(seatId, passengerId)
 
 		-- notify the "wait" goalop
 		AI.Signal(SIGNALFILTER_SENDER, 9, "ENTERING_END", passengerId); -- 9 is to skip normal processing of signal
+	end
+
+	if g_gameRules.CanEnterSeat then
+		local result = g_gameRules:CanEnterSeat(self, seat, passenger, true)
+		if result == false then
+			Script.SetTimer(20, function()
+				self:LeaveVehicle(passengerId, true)
+			end)
+		elseif type(result) == "number" then
+			Script.SetTimer(20, function()
+				self:EnterVehicle(passengerId, result, false)
+			end)
+		end
 	end
 end
 --------------------------------------------------------------------------

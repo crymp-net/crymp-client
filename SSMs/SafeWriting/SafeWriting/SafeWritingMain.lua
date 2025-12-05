@@ -108,7 +108,9 @@ SafeWriting.FuncContainer:AddCategs(
 		"OnLeaveVehicleSeat",
 		"UpdatePlayer",
 		"OnEnterBuyZone",
-		"OnEnterServiceZone"
+		"OnEnterServiceZone",
+		"CanEnterSeat",
+		"OnKillAward"
 	}
 )
 Out = Queue:Create()

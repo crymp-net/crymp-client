@@ -997,6 +997,15 @@ if not SafeWritingGameRules.UpdatePings then
 		end
 		MakePluginEvent("OnEquipPlayer",player,additionalEquip);
 	end
+	SafeWritingGameRules.CanEnterSeat=function(self, vehicle, seat, player, entered)
+		local funcs=SafeWriting.FuncContainer:GetFuncs("CanEnterSeat");
+		if(funcs)then
+			for i,v in pairs(funcs) do
+				local val=PluginSafeCall(v, vehicle, player, player.id, seat, entered);
+				if val~=nil then return val; end
+			end
+		end
+	end
 	SafeWritingGameRules.CanEnterVehicle=function(self,vehicle, userId)
 		local funcs=SafeWriting.FuncContainer:GetFuncs("CanEnterVehicle");
 		local player=System.GetEntity(userId);
