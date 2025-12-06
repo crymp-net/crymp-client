@@ -811,7 +811,6 @@ bool ScriptSystem::GetGlobalAny(const char *key, ScriptAnyValue & any)
 	}
 
 	memcpy(key_buffer, key, key_length + 1);
-	key_buffer[255] = 0;
 	char* current_key = key_buffer;
 
 	bool success = false;
