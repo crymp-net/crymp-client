@@ -275,34 +275,34 @@ function similartext_old(a,b)
 end
 
 function similartext(a, b)
-	local len_a = #a
-	local len_b = #b
+    local len_a = #a
+    local len_b = #b
 
-	-- Create a 2D matrix
-	local matrix = {}
-	for i = 0, len_a do
-		matrix[i] = {}
-		matrix[i][0] = i
-	end
-	for j = 0, len_b do
-		matrix[0][j] = j
-	end
+    -- Create a 2D matrix
+    local matrix = {}
+    for i = 0, len_a do
+        matrix[i] = {}
+        matrix[i][0] = i
+    end
+    for j = 0, len_b do
+        matrix[0][j] = j
+    end
 
-	-- Compute Levenshtein distance
-	for i = 1, len_a do
-		for j = 1, len_b do
-			local cost = (a:sub(i,i) == b:sub(j,j)) and 0 or 1
-			matrix[i][j] = math.min(
-				matrix[i-1][j] + 1,	  -- Deletion
-				matrix[i][j-1] + 1,	  -- Insertion
-				matrix[i-1][j-1] + cost  -- Substitution
-			)
-		end
-	end
+    -- Compute Levenshtein distance
+    for i = 1, len_a do
+        for j = 1, len_b do
+            local cost = (a:sub(i,i) == b:sub(j,j)) and 0 or 1
+            matrix[i][j] = math.min(
+                matrix[i-1][j] + 1,      -- Deletion
+                matrix[i][j-1] + 1,      -- Insertion
+                matrix[i-1][j-1] + cost  -- Substitution
+            )
+        end
+    end
 
-	-- The distance is in the bottom-right cell
-	local distance = matrix[len_a][len_b]
-	return 100 / (1 + distance)
+    -- The distance is in the bottom-right cell
+    local distance = matrix[len_a][len_b]
+    return 100 / (1 + distance)
 end
 
 function CompileFile(file,folder)
@@ -358,7 +358,7 @@ function MergeFunctions(f1,f2,p1)
 end
 function tonum(...)
 	for i,v in ipairs({...}) do
-		({...})[i]=tonumber(v);		
+		({...})[i]=tonumber(v);        
 	end
 	return ...;
 end
@@ -379,7 +379,7 @@ function trim_from(str,params)
 end
 function sfwstrfind(str,_substr,off)
 	local pos=str:find(_substr,off or 1,true);
-	return pos or -1;
+    return pos or -1;
 end
 function strcontains(str,_substr)
 	return (sfwstrfind(str,_substr)>(-1));
