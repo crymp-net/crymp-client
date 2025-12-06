@@ -75,11 +75,8 @@ namespace
 		uint8_t byte2 = 0;
 		uint8_t byte3 = 0;
 
-		if (sscanf(ip, "%hhu.%hhu.%hhu.%hhu", &byte0, &byte1, &byte2, &byte3) == 4) {
-			return (byte3 << 24) | (byte2 << 16) | (byte1 << 8) | byte0;
-		} else {
-			return (0x0100007F);
-		}
+		sscanf(ip, "%hhu.%hhu.%hhu.%hhu", &byte0, &byte1, &byte2, &byte3);
+		return (byte3 << 24) | (byte2 << 16) | (byte1 << 8) | byte0;
 	}
 
 	int GetTimeLeft(const json & serverInfo)
