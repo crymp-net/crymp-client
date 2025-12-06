@@ -5,8 +5,8 @@ SafeWriting = SafeWriting or {
     GlobalData = {},
     -- FuncContainer={};
     -- Schedule={};
-    Version = "3.0.0",
-    NumVersion = 300, -- format abc.d, 2.1.6 = 216, 2.1.6.1 = 216.1
+    Version = "3.0.1",
+    NumVersion = 301, -- format abc.d, 2.1.6 = 216, 2.1.6.1 = 216.1
     GameVersion = "<unknown>",
     NanosuitModes = {
         ["speed"] = 0,
@@ -44,9 +44,20 @@ SessionFlags = {
     All = 1,
     AdminsModerators = 2
 }
+ChatStream = {
+    _type = "none"
+}
+ConsoleStream = {
+    _type = "none"
+}
+MessageStream = {
+    _type = "center"
+}
+
 Yes = true
 No = false
 Maybe = 2
+
 PLAYER = "player"
 PLAYERS = "players"
 INT = "int"
@@ -55,6 +66,7 @@ NUMBER = "number"
 WORD = "word"
 TEXT = "text"
 TIME = "time"
+
 -- CF compat layer:
 ADMIN = {
     AdminOnly = true
@@ -91,14 +103,13 @@ teamIDs = {
     us = 2
 }
 -- ~CF compat layer
+
 System.LogAlways("$1[SafeWriting] SafeWritingMain.lua loaded, root directory: " .. SAFEWRITING_ROOTDIR)
 
 Script.LoadScript(SAFEWRITING_ROOTDIR:gsub("%\\", "/") .. "/SafeWritingUtilities.lua", 1, 1)
 Script.LoadScript(SAFEWRITING_ROOTDIR:gsub("%\\", "/") .. "/SafeWritingUTF8.lua", 1, 1)
 Script.LoadScript(SAFEWRITING_ROOTDIR:gsub("%\\", "/") .. "/SafeWritingUpdater.lua", 1, 1)
 
--- CPPAPI.LoadSSMScript("Files/SafeWritingUtilities.lua");
--- CPPAPI.LoadSSMScript("Files/SafeWritingUpdater.lua");
 SafeWriting.FuncContainer = SafeWriting.FuncContainer or FunctionsContainer:Create()
 SafeWriting.FuncContainer:AddCategs({"OnTimerTick", "PrepareAll", "CheckPlayer", "OnKill", "ProcessBulletDamage",
                                      "OnClientConnect", "OnClientDisconnect", "OnChangeSpectatorMode", "OnPlayerRevive",
@@ -3132,6 +3143,7 @@ function HasProperty(player, prop, rem)
     end
     return false
 end
+
 -- Spawning
 function Spawn:CalculatePosition(player, distance)
     local pos = player:GetBonePos("Bip01 head")
@@ -3286,15 +3298,7 @@ function GetTargetPos(player)
     end
     return nil
 end
-ChatStream = {
-    _type = "none"
-}
-ConsoleStream = {
-    _type = "none"
-}
-MessageStream = {
-    _type = "center"
-}
+
 function GetPlayersInTeam(t)
     if type(t) == "number" then
         return GetPlayers("*" .. (teamNames[t] or "all"))
@@ -3354,6 +3358,7 @@ end
 function ChatStream:SetType(t)
     self._type = t
 end -- avoid errors
+
 function ConsoleStream:SetType(t)
     self._type = t
 end
