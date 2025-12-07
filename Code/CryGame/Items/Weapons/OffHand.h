@@ -262,7 +262,7 @@ private:
 	bool m_forceThrow = false;
 
 	// Sound
-	tSoundID m_sounds[eOHSound_LastSound]; 
+	tSoundID m_sounds[eOHSound_LastSound] = {};
 
 	// Usage state
 	float m_range = OFFHAND_RANGE;

@@ -1882,8 +1882,7 @@ void COffHand::LogOffHandState(EOffHandStates eOHS)
 {
 	// -- Current State Bitmask --
 	string stateBits;
-	struct StateFlagInfo { int flag; const char* name; };
-	const StateFlagInfo flags[] = {
+	static constexpr struct { int flag; const char* name; } FLAGS[] = {
 		{ eOHS_INIT_STATE,        "Init" },
 		{ eOHS_SWITCHING_GRENADE, "SwitchingGrenade" },
 		{ eOHS_HOLDING_GRENADE,   "HoldingGrenade" },
@@ -1899,7 +1898,7 @@ void COffHand::LogOffHandState(EOffHandStates eOHS)
 		{ eOHS_TRANSITIONING,     "Transitioning" },
 		{ eOHS_MELEE,             "Melee" }
 	};
-	for (const auto& f : flags)
+	for (const auto& f : FLAGS)
 	{
 		if (eOHS & f.flag)
 		{
@@ -2826,9 +2825,13 @@ Matrix34 COffHand::GetHoldOffset(IEntity* pEntity)
 			{
 				for (int j = 0; j < 2; ++j)
 				{
-					std::string helper = (j == 0) ?
-						std::string(slotInfo.pStatObj->GetGeoName()) + "_" + std::string(grabType.helper.c_str()) :
-						std::string(grabType.helper.c_str());
+					std::string helper;
+					if (j == 0)
+					{
+						helper += slotInfo.pStatObj->GetGeoName();
+						helper += "_";
+					}
+					helper += grabType.helper.c_str();
 
 					IStatObj* parentObj = slotInfo.pStatObj->GetParentObject();
 					IStatObj::SSubObject* pSubObj = parentObj ?
@@ -2902,15 +2905,13 @@ bool COffHand::IsGrabTypeTwoHanded(const EntityId entityId) const noexcept
 					string helper;
 					if (j == 0)
 					{
-						helper.reserve((geoName ? strlen(geoName) : 0) + 1 + gt.helper.length());
-						if (geoName) helper.append(geoName);
+						if (geoName)
+						{
+							helper.append(geoName);
+						}
 						helper.push_back('_');
-						helper.append(gt.helper.c_str());
 					}
-					else
-					{
-						helper = gt.helper.c_str();
-					}
+					helper.append(gt.helper.c_str());
 
 					if (slotInfo.pStatObj->GetParentObject())
 					{
@@ -5152,8 +5153,7 @@ void COffHand::DebugLogInfo()
 
 	// -- Current State Bitmask --
 	string stateBits;
-	struct StateFlagInfo { int flag; const char* name; };
-	const StateFlagInfo flags[] = {
+	static constexpr struct { int flag; const char* name; } FLAGS[] = {
 		{ eOHS_INIT_STATE,        "Init" },
 		{ eOHS_SWITCHING_GRENADE, "SwitchingGrenade" },
 		{ eOHS_HOLDING_GRENADE,   "HoldingGrenade" },
@@ -5170,7 +5170,7 @@ void COffHand::DebugLogInfo()
 		{ eOHS_MELEE,             "Melee" }
 	};
 
-	for (const auto& f : flags)
+	for (const auto& f : FLAGS)
 	{
 		if (m_currentState & f.flag)
 		{

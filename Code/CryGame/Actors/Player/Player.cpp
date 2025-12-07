@@ -5298,9 +5298,14 @@ void CPlayer::SetExtension(const char* extension)
 	if (extension == nullptr || strcmp(extension, "ignore") != 0)
 	{
 		if (extension && extension[0])
+		{
 			strncpy(m_params.animationAppendix, extension, 32);
+			m_params.animationAppendix[32 - 1] = '\0';
+		}
 		else
+		{
 			strcpy(m_params.animationAppendix, "nw");
+		}
 
 		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput(m_inputItem, m_params.animationAppendix);
 	}
@@ -5338,9 +5343,14 @@ void CPlayer::PlayAction(const char* action, const char* extension, bool looping
 	if (extension == NULL || strcmp(extension, "ignore") != 0)
 	{
 		if (extension && extension[0])
+		{
 			strncpy(m_params.animationAppendix, extension, 32);
+			m_params.animationAppendix[32 - 1] = '\0';
+		}
 		else
+		{
 			strcpy(m_params.animationAppendix, "nw");
+		}
 
 		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput(m_inputItem, m_params.animationAppendix);
 	}
@@ -8583,13 +8593,11 @@ void CPlayer::PlayAnimation(const char* animationName, float speed /*= 1.0f*/, b
 	params.m_nFlags = loop ? CA_LOOP_ANIMATION : 0; // Set looping if needed
 
 	const char* fixedResourceName = animationName;
-	if (!fixedResourceName || strlen(fixedResourceName) == 0)
+	if (!fixedResourceName || !*fixedResourceName)
 	{
 		return;
 	}
 
 	// Start the animation
-	if (pSkeletonAnim->StartAnimation(fixedResourceName, nullptr, nullptr, nullptr, params))
-	{
-	}
+	pSkeletonAnim->StartAnimation(fixedResourceName, nullptr, nullptr, nullptr, params);
 }

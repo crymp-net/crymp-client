@@ -1412,7 +1412,6 @@ public:
 	template<class... Args>
 	void DrawLog(const char* msg, Args... args)
 	{
-		int index = 1;
 		IItemSystem* pItemSystem = gEnv->pGame->GetIGameFramework()->GetIItemSystem();
 		int k = 1;
 
@@ -1429,7 +1428,6 @@ public:
 
 					if (pItem == this)
 					{
-						index = k;
 						break;
 					}
 					++k;

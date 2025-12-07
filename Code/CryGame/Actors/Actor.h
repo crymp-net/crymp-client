@@ -1447,7 +1447,6 @@ public:
 	template<class... Args>
 	void DrawLog(const char* msg, Args... args)
 	{
-		int index = 1;
 		IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
 		IActorIteratorPtr pActorIterator = pActorSystem->CreateActorIterator();
 		IActor* pActor = nullptr;
@@ -1457,7 +1456,6 @@ public:
 		{
 			if (pActor == this)
 			{
-				index = k;
 				break;
 			}
 			++k;

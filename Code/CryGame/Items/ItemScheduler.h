@@ -81,7 +81,6 @@ struct SLambdaAction
 {
 	F fn;
 	void execute(CItem* item) { fn(item); }
-	void GetMemoryStatistics(ICrySizer*) {} 
 };
 
 template<class F>
