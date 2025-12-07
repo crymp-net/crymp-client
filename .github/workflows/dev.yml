@@ -8,6 +8,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - v*
 
 jobs:
   build_32:
@@ -25,7 +27,7 @@ jobs:
       type: RelWithDebInfo
 
   publish:
-    if: github.ref == 'refs/heads/master' && github.repository_owner == 'crymp-net'
+    if: github.repository_owner == 'crymp-net'
     needs:
       - build_32
       - build_64

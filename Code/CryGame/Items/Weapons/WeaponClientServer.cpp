@@ -628,7 +628,7 @@ IMPLEMENT_RMI(CWeapon, SvRequestMeleeAttack)
 			eRMI_ToOtherClients|eRMI_NoLocalCalls, m_pGameFramework->GetGameChannelId(pNetChannel));
 
 		IActor *pLocalActor=m_pGameFramework->GetClientActor();
-		bool isLocal = pLocalActor && (pLocalActor->GetChannelId() == pActor->GetChannelId());
+		bool isLocal = pLocalActor && pActor && (pLocalActor->GetChannelId() == pActor->GetChannelId());
 
 		if (!isLocal)
 			NetMeleeAttack(params.wmelee, params.pos, params.dir);

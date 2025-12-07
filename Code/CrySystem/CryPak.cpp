@@ -382,25 +382,29 @@ ICryPak::PakInfo* CryPak::GetPakInfo()
 	const unsigned int pakCount = m_paks.GetActiveCount();
 
 	PakInfo* info = static_cast<PakInfo*>(std::calloc(1, sizeof(PakInfo) + (sizeof(PakInfo::Pak) * pakCount)));
-	info->numOpenPaks = pakCount;
+	if (info) {
+		info->numOpenPaks = pakCount;
 
-	const auto my_strdup = [](std::string_view str) -> char*
-	{
-		char* res = static_cast<char*>(std::malloc(str.length() + 1));
-		std::memcpy(res, str.data(), str.length());
-		res[str.length()] = '\0';
-		return res;
-	};
+		const auto my_strdup = [](std::string_view str) -> char*
+			{
+				char* res = static_cast<char*>(std::malloc(str.length() + 1));
+				if (res) {
+					std::memcpy(res, str.data(), str.length());
+					res[str.length()] = '\0';
+				}
+				return res;
+			};
 
-	PakSlot* pak = m_paks.GetFirstActive();
+		PakSlot* pak = m_paks.GetFirstActive();
 
-	for (unsigned int i = 0; i < pakCount; ++i)
-	{
-		info->arrPaks[i].szFilePath = my_strdup(pak->path);
-		info->arrPaks[i].szBindRoot = my_strdup(pak->root);
-		info->arrPaks[i].nUsedMem = pak->impl->GetCachedDataSize();
+		for (unsigned int i = 0; i < pakCount; ++i)
+		{
+			info->arrPaks[i].szFilePath = my_strdup(pak->path);
+			info->arrPaks[i].szBindRoot = my_strdup(pak->root);
+			info->arrPaks[i].nUsedMem = pak->impl->GetCachedDataSize();
 
-		pak = m_paks.GetNextActive(pak);
+			pak = m_paks.GetNextActive(pak);
+		}
 	}
 
 	return info;

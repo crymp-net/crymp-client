@@ -76,7 +76,6 @@ namespace
 		uint8_t byte3 = 0;
 
 		sscanf(ip, "%hhu.%hhu.%hhu.%hhu", &byte0, &byte1, &byte2, &byte3);
-
 		return (byte3 << 24) | (byte2 << 16) | (byte1 << 8) | byte0;
 	}
 
@@ -85,9 +84,11 @@ namespace
 		int minutes = 0;
 		int seconds = 0;
 
-		sscanf(GetCString(serverInfo, "timel"), "%d:%d", &minutes, &seconds);
-
-		return (minutes * 60) + seconds;
+		if (sscanf(GetCString(serverInfo, "timel"), "%d:%d", &minutes, &seconds) == 2) {
+			return (minutes * 60) + seconds;
+		} else {
+			return 0;
+		}
 	}
 
 	void ParseServerInfo(const json & serverInfo, ServerInfo & server)

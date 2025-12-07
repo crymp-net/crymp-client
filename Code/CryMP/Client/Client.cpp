@@ -283,6 +283,8 @@ void Client::Init(IGameFramework *pGameFramework)
 
 	//Needs CGame
 	pScriptSystem->ExecuteFile("CryMP/Scripts/HandGripData.lua", true, true);
+
+	m_pFileCache->Cleanup(86400);
 }
 
 void Client::UpdateLoop()

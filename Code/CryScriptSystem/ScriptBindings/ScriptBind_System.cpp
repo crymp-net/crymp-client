@@ -1898,7 +1898,7 @@ int ScriptBind_System::GetCountOfClass(IFunctionHandler* pH, const char* EntityC
 
 	pIIt->MoveFirst();
 
-	while (pEntity = pIIt->Next())
+	while ((pEntity = pIIt->Next()))
 	{
 		IEntityClass* entClass = pEntity->GetClass();
 		if (entClass == pClass)
@@ -1933,7 +1933,7 @@ int ScriptBind_System::RemoveEntitiesByClass(IFunctionHandler* pH, const char* E
 
 	pIIt->MoveFirst();
 
-	while (pEntity = pIIt->Next())
+	while ((pEntity = pIIt->Next()))
 	{
 		auto* entClass = pEntity->GetClass();
 		if (entClass == pClass)

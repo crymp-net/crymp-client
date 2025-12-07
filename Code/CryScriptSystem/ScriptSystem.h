@@ -11,6 +11,8 @@
 struct lua_State;
 struct IConsoleCmdArgs;
 
+void DumpLuaStackTrace(std::FILE* file);
+
 class ScriptSystem : public IScriptSystem
 {
 	lua_State *m_L = nullptr;
