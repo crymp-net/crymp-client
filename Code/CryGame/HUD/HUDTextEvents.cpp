@@ -1262,17 +1262,15 @@ void CHUD::UpdateSubtitlesManualRender(float frameTime)
 					else
 					{
 						assert (entry.nCurChunk >= 0 && entry.nCurChunk < entry.nChunks);
-						if (entry.nCurChunk < 0 || entry.nCurChunk >= entry.nChunks)
-						{
-							assert(0);
+						if (entry.nCurChunk >= 0 && entry.nCurChunk < 10 && entry.nCurChunk < entry.nChunks) {
+							const SSubtitleEntry::Chunk& chunk = entry.chunks[entry.nCurChunk];
+							if (entry.bNameShown == false) // only first visible chunk will display the character's name
+							{
+								SubtitleAppendCharacterName(entry, subtitleString);
+								entry.bNameShown = true;
+							}
+							subtitleString.append(entry.localized.c_str() + chunk.start, chunk.len);
 						}
-						const SSubtitleEntry::Chunk& chunk = entry.chunks[entry.nCurChunk];
-						if (entry.bNameShown == false) // only first visible chunk will display the character's name
-						{
-							SubtitleAppendCharacterName(entry, subtitleString);
-							entry.bNameShown = true;
-						}
-						subtitleString.append(entry.localized.c_str() + chunk.start, chunk.len);
 					}
 				}
 				m_animSubtitles.Invoke("setText", subtitleString.c_str());

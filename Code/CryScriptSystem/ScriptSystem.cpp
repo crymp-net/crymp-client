@@ -22,6 +22,8 @@ extern "C"
 #include "ScriptTable.h"
 #include "ScriptUtil.h"
 
+static lua_State *g_L = nullptr;
+
 static HSCRIPTFUNCTION RefToFunctionHandle(int ref)
 {
 	return reinterpret_cast<HSCRIPTFUNCTION>(static_cast<std::uintptr_t>(ref));
@@ -756,6 +758,7 @@ void ScriptSystem::SetGlobalAny(const char *key, const ScriptAnyValue & any)
 	}
 
 	memcpy(key_buffer, key, key_length + 1);
+	key_buffer[255] = 0;
 	char* current_key = key_buffer;
 
 	bool success = false;
@@ -949,6 +952,7 @@ void ScriptSystem::LuaInit()
 	LuaClose();
 
 	m_L = lua_newstate(ScriptSystem::LuaAllocator, this);
+	g_L = m_L;
 
 	// set handler for errors in unprotected environment
 	lua_atpanic(m_L, ScriptSystem::PanicHandler);
@@ -970,6 +974,7 @@ void ScriptSystem::LuaClose()
 	{
 		lua_close(m_L);
 		m_L = nullptr;
+		g_L = nullptr;
 	}
 }
 
@@ -1130,4 +1135,26 @@ void ScriptSystem::OnDumpScriptsCmd(IConsoleCmdArgs *pArgs)
 void ScriptSystem::OnGarbageCollectCmd(IConsoleCmdArgs *pArgs)
 {
 	gEnv->pScriptSystem->ForceGarbageCollection();
+}
+
+void DumpLuaStackTrace(std::FILE* file) {
+	if (g_L) {
+		lua_Debug ar = {};
+		int level = 0;
+
+		std::fprintf(file, "Lua stack:\n");
+
+		while (lua_getstack(g_L, level++, &ar) && lua_getinfo(g_L, "Sln", &ar))
+		{
+			std::fprintf(file, " %s:%d %s %s %s\n",
+				ar.source,
+				ar.currentline,
+				ar.what,
+				ar.namewhat,
+				ar.name);
+		}
+		std::fflush(file);
+	} else {
+		std::fprintf(file, "Lua was already closed\n");
+	}
 }
