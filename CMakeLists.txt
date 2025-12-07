@@ -643,6 +643,9 @@ add_library(Base OBJECT
 	ThirdParty/Lua/src/lbaselib.c
 	ThirdParty/Lua/src/lcode.c
 	ThirdParty/Lua/src/lcode.h
+	ThirdParty/Lua/src/lcorolib.c
+	ThirdParty/Lua/src/lctype.c
+	ThirdParty/Lua/src/lctype.h
 	ThirdParty/Lua/src/ldblib.c
 	ThirdParty/Lua/src/ldebug.c
 	ThirdParty/Lua/src/ldebug.h
@@ -655,6 +658,7 @@ add_library(Base OBJECT
 	ThirdParty/Lua/src/lgc.h
 	ThirdParty/Lua/src/linit.c
 	ThirdParty/Lua/src/liolib.c
+	ThirdParty/Lua/src/ljumptab.h
 	ThirdParty/Lua/src/llex.c
 	ThirdParty/Lua/src/llex.h
 	ThirdParty/Lua/src/llimits.h
@@ -666,9 +670,11 @@ add_library(Base OBJECT
 	ThirdParty/Lua/src/lobject.h
 	ThirdParty/Lua/src/lopcodes.c
 	ThirdParty/Lua/src/lopcodes.h
+	ThirdParty/Lua/src/lopnames.h
 	ThirdParty/Lua/src/loslib.c
 	ThirdParty/Lua/src/lparser.c
 	ThirdParty/Lua/src/lparser.h
+	ThirdParty/Lua/src/lprefix.h
 	ThirdParty/Lua/src/lstate.c
 	ThirdParty/Lua/src/lstate.h
 	ThirdParty/Lua/src/lstring.c
@@ -681,9 +687,11 @@ add_library(Base OBJECT
 	ThirdParty/Lua/src/ltm.h
 	ThirdParty/Lua/src/luaconf.h
 	ThirdParty/Lua/src/lua.h
+	ThirdParty/Lua/src/lua.hpp
 	ThirdParty/Lua/src/lualib.h
 	ThirdParty/Lua/src/lundump.c
 	ThirdParty/Lua/src/lundump.h
+	ThirdParty/Lua/src/lutf8lib.c
 	ThirdParty/Lua/src/lvm.c
 	ThirdParty/Lua/src/lvm.h
 	ThirdParty/Lua/src/lzio.c
