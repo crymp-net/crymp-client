@@ -441,7 +441,7 @@ static void interror (lua_State *L, int arg) {
     tag_error(L, arg, LUA_TNUMBER);
 }
 
-
+#ifdef RAW_LUA54
 LUALIB_API lua_Integer luaL_checkinteger (lua_State *L, int arg) {
   int isnum;
   lua_Integer d = lua_tointegerx(L, arg, &isnum);
@@ -450,6 +450,21 @@ LUALIB_API lua_Integer luaL_checkinteger (lua_State *L, int arg) {
   }
   return d;
 }
+#else
+LUALIB_API lua_Integer luaL_checkinteger(lua_State* L, int arg) {
+    int isnum;
+    lua_Integer d = lua_tointegerx(L, arg, &isnum);
+    if (l_unlikely(!isnum)) {
+        lua_Number n = lua_tonumberx(L, arg, &isnum);
+        if (l_unlikely(!isnum)) {
+            interror(L, arg);
+        } else {
+            d = (lua_Integer)n;
+        }
+    }
+    return d;
+}
+#endif
 
 
 LUALIB_API lua_Integer luaL_optinteger (lua_State *L, int arg,

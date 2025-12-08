@@ -16,7 +16,7 @@ std::vector<std::string> ScriptUtil::GetCallStack(lua_State *L, int level)
 	while (lua_getstack(L, level++, &ar) && lua_getinfo(L, "Sln", &ar))
 	{
 		result.emplace_back(StringTools::Format("%s:%d %s %s %s",
-			ar.short_src,
+			ar.source,
 			ar.currentline,
 			ar.what,
 			ar.namewhat,

@@ -1,9 +1,7 @@
-local math_random = math.random
-
 unpack = table.unpack
+loadstring = load
+string.gfind = string.gmatch
 
 table.getn = function(self)
 	return #self
 end
-
-math.random = lua51.random
