@@ -98,7 +98,7 @@ static int int_arshift(lua_State *L)
 	return 1;
 }
 
-static const struct luaL_reg bitlib[] = {
+static const struct luaL_Reg bitlib[] = {
 	{ "bnot",    int_not     },
 	{ "imod",    int_mod     },  // "mod" already in Lua math library
 	{ "band",    int_and     },
@@ -110,10 +110,9 @@ static const struct luaL_reg bitlib[] = {
 	{ NULL, NULL }
 };
 
-int bitlib_init(lua_State *L)
+int bitlib_init(lua_State* L)
 {
-	lua_pushvalue(L, LUA_GLOBALSINDEX);
-	luaL_openlib(L, NULL, bitlib, 0);  // open lib into global table
-
+	lua_pushglobaltable(L);
+	luaL_setfuncs(L, bitlib, 0);
 	return 1;
 }

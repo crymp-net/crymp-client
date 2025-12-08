@@ -37,6 +37,7 @@ static int FunctionHandleToRef(HSCRIPTFUNCTION handle)
 extern "C"
 {
 	int bitlib_init(lua_State *L);
+	int lua51_init(lua_State *L);
 }
 
 ScriptSystem::ScriptSystem()
@@ -66,6 +67,7 @@ void ScriptSystem::Init()
 	pConsole->AddCommand("lua_dump_scripts", OnDumpScriptsCmd, 0, "Dumps loaded scripts to the log.");
 	pConsole->AddCommand("lua_garbage_collect", OnGarbageCollectCmd, 0, "Forces garbage collection.");
 
+	ExecuteFile("Scripts/lua51.lua");
 	ExecuteFile("Scripts/common.lua");
 }
 
@@ -99,61 +101,63 @@ void ScriptSystem::PushAny(const ScriptAnyValue & any)
 {
 	switch (any.type)
 	{
-		case ANY_ANY:
-		case ANY_TNIL:
-		{
+	case ANY_ANY:
+	case ANY_TNIL:
+	{
+		lua_pushnil(m_L);
+		break;
+	}
+	case ANY_TBOOLEAN:
+	{
+		lua_pushboolean(m_L, any.b);
+		break;
+	}
+	case ANY_THANDLE:
+	{
+		lua_pushlightuserdata(m_L, const_cast<void*>(any.ptr));
+		break;
+	}
+	case ANY_TNUMBER:
+	{
+		lua_pushnumber(m_L, any.number);
+		break;
+	}
+	case ANY_TSTRING:
+	{
+		lua_pushstring(m_L, any.str);
+		break;
+	}
+	case ANY_TTABLE:
+	{
+		if (any.table)
+			static_cast<ScriptTable*>(any.table)->PushRef();
+		else
 			lua_pushnil(m_L);
-			break;
-		}
-		case ANY_TBOOLEAN:
-		{
-			lua_pushboolean(m_L, any.b);
-			break;
-		}
-		case ANY_THANDLE:
-		{
-			lua_pushlightuserdata(m_L, const_cast<void*>(any.ptr));
-			break;
-		}
-		case ANY_TNUMBER:
-		{
-			lua_pushnumber(m_L, any.number);
-			break;
-		}
-		case ANY_TSTRING:
-		{
-			lua_pushstring(m_L, any.str);
-			break;
-		}
-		case ANY_TTABLE:
-		{
-			if (any.table)
-				static_cast<ScriptTable*>(any.table)->PushRef();
-			else
-				lua_pushnil(m_L);
-			break;
-		}
-		case ANY_TFUNCTION:
-		{
-			if (any.function)
-				lua_getref(m_L, FunctionHandleToRef(any.function));
-			else
-				lua_pushnil(m_L);
-			break;
-		}
-		case ANY_TUSERDATA:
-		{
-			if (any.ud.ptr)
-				lua_getref(m_L, static_cast<int>(reinterpret_cast<std::uintptr_t>(any.ud.ptr)));
-			else
-				lua_pushnil(m_L);
-			break;
-		}
-		case ANY_TVECTOR:
-		{
-			PushVec3(Vec3(any.vec3.x, any.vec3.y, any.vec3.z));
-			break;
-		}
+		break;
+	}
+	case ANY_TFUNCTION:
+	{
+		if (any.function)
+			// Lua 5.4 Migration: lua_getref removed. Use lua_rawgeti with LUA_REGISTRYINDEX.
+			lua_rawgeti(m_L, LUA_REGISTRYINDEX, FunctionHandleToRef(any.function));
+		else
+			lua_pushnil(m_L);
+		break;
+	}
+	case ANY_TUSERDATA:
+	{
+		if (any.ud.ptr)
+			// Lua 5.4 Migration: lua_getref removed.
+			lua_rawgeti(m_L, LUA_REGISTRYINDEX, static_cast<int>(reinterpret_cast<std::uintptr_t>(any.ud.ptr)));
+		else
+			lua_pushnil(m_L);
+		break;
+	}
+	case ANY_TVECTOR:
+	{
+		PushVec3(Vec3(any.vec3.x, any.vec3.y, any.vec3.z));
+		break;
+	}
 	}
 }
 
@@ -196,7 +200,7 @@ bool ScriptSystem::PopAnys(ScriptAnyValue *anys, int count)
 	return true;
 }
 
-bool ScriptSystem::ToAny(ScriptAnyValue & any, int index)
+bool ScriptSystem::ToAny(ScriptAnyValue &any, int index)
 {
 	if (!lua_gettop(m_L))
 	{
@@ -205,119 +209,100 @@ bool ScriptSystem::ToAny(ScriptAnyValue & any, int index)
 
 	switch (lua_type(m_L, index))
 	{
-		case LUA_TNIL:
+	case LUA_TNIL:
+	{
+		if (any.type == ANY_ANY || any.type == ANY_TNIL)
 		{
-			if (any.type == ANY_ANY || any.type == ANY_TNIL)
-			{
-				any.type = ANY_TNIL;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			any.type = ANY_TNIL;
+			return true;
 		}
-		case LUA_TBOOLEAN:
+		else
 		{
-			if (any.type == ANY_ANY || any.type == ANY_TBOOLEAN)
-			{
-				any.b = (lua_toboolean(m_L, index) != 0);
-				any.type = ANY_TBOOLEAN;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			return false;
 		}
-		case LUA_TLIGHTUSERDATA:
+	}
+	case LUA_TBOOLEAN:
+	{
+		if (any.type == ANY_ANY || any.type == ANY_TBOOLEAN)
 		{
-			if (any.type == ANY_ANY || any.type == ANY_THANDLE)
-			{
-				any.ptr = lua_topointer(m_L, index);
-				any.type = ANY_THANDLE;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			any.b = (lua_toboolean(m_L, index) != 0);
+			any.type = ANY_TBOOLEAN;
+			return true;
 		}
-		case LUA_TNUMBER:
+		else
 		{
-			if (any.type == ANY_ANY || any.type == ANY_TNUMBER)
-			{
-				any.number = lua_tonumber(m_L, index);
-				any.type = ANY_TNUMBER;
-				return true;
-			}
-			else if (any.type == ANY_TBOOLEAN)
-			{
-				any.b = (lua_tonumber(m_L, index) != 0);
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			return false;
 		}
-		case LUA_TSTRING:
+	}
+	case LUA_TLIGHTUSERDATA:
+	{
+		if (any.type == ANY_ANY || any.type == ANY_THANDLE)
 		{
-			if (any.type == ANY_ANY || any.type == ANY_TSTRING)
-			{
-				any.str = lua_tostring(m_L, index);
-				any.type = ANY_TSTRING;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			any.ptr = lua_topointer(m_L, index);
+			any.type = ANY_THANDLE;
+			return true;
 		}
-		case LUA_TTABLE:
-		case LUA_TUSERDATA:
+		else
 		{
-			if (any.type == ANY_ANY || any.type == ANY_TTABLE)
+			return false;
+		}
+	}
+	case LUA_TNUMBER:
+	{
+		if (any.type == ANY_ANY || any.type == ANY_TNUMBER)
+		{
+			any.number = lua_tonumber(m_L, index);
+			any.type = ANY_TNUMBER;
+			return true;
+		}
+		else if (any.type == ANY_TBOOLEAN)
+		{
+			any.b = (lua_tonumber(m_L, index) != 0);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	case LUA_TSTRING:
+	{
+		if (any.type == ANY_ANY || any.type == ANY_TSTRING)
+		{
+			any.str = lua_tostring(m_L, index);
+			any.type = ANY_TSTRING;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	case LUA_TTABLE:
+	case LUA_TUSERDATA:
+	{
+		if (any.type == ANY_ANY || any.type == ANY_TTABLE)
+		{
+			if (!any.table)
 			{
-				if (!any.table)
-				{
-					any.table = ScriptTable::Create(this, m_L, true);
-					any.table->AddRef();
-				}
+				any.table = ScriptTable::Create(this, m_L, true);
+				any.table->AddRef();
+			}
 
-				lua_pushvalue(m_L, index);
-				static_cast<ScriptTable*>(any.table)->Attach();
+			lua_pushvalue(m_L, index);
+			static_cast<ScriptTable*>(any.table)->Attach();
 
-				any.type = ANY_TTABLE;
-				return true;
-			}
-			else if (any.type == ANY_TVECTOR)
-			{
-				Vec3 v(0, 0, 0);
-				if (ToVec3(v, index))
-				{
-					any.vec3.x = v.x;
-					any.vec3.y = v.y;
-					any.vec3.z = v.z;
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-			}
-			else
-			{
-				return false;
-			}
+			any.type = ANY_TTABLE;
+			return true;
 		}
-		case LUA_TFUNCTION:
+		else if (any.type == ANY_TVECTOR)
 		{
-			if (any.type == ANY_ANY || any.type == ANY_TFUNCTION)
+			Vec3 v(0, 0, 0);
+			if (ToVec3(v, index))
 			{
-				lua_pushvalue(m_L, index);
-				any.function = RefToFunctionHandle(lua_ref(m_L, 1));
-				any.type = ANY_TFUNCTION;
+				any.vec3.x = v.x;
+				any.vec3.y = v.y;
+				any.vec3.z = v.z;
 				return true;
 			}
 			else
@@ -325,12 +310,33 @@ bool ScriptSystem::ToAny(ScriptAnyValue & any, int index)
 				return false;
 			}
 		}
+		else
+		{
+			return false;
+		}
+	}
+	case LUA_TFUNCTION:
+	{
+		if (any.type == ANY_ANY || any.type == ANY_TFUNCTION)
+		{
+			lua_pushvalue(m_L, index);
+			// Lua 5.4 Migration: lua_ref(L, 1) removed. Use luaL_ref(L, LUA_REGISTRYINDEX).
+			// Note: luaL_ref pops the value, which matches lua_ref's behavior in this context.
+			any.function = RefToFunctionHandle(luaL_ref(m_L, LUA_REGISTRYINDEX));
+			any.type = ANY_TFUNCTION;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
 	}
 
 	return false;
 }
 
-bool ScriptSystem::ToVec3(Vec3 & vec, int index)
+bool ScriptSystem::ToVec3(Vec3 &vec, int index)
 {
 	if (index < 0)
 		index = lua_gettop(m_L) + index + 1;
@@ -595,7 +601,8 @@ int ScriptSystem::BeginCall(HSCRIPTFUNCTION func)
 
 	const int funcRef = FunctionHandleToRef(func);
 
-	lua_getref(m_L, funcRef);
+	// Lua 5.4 Migration: lua_getref removed.
+	lua_rawgeti(m_L, LUA_REGISTRYINDEX, funcRef);
 	if (!lua_isfunction(m_L, -1))
 	{
 		CryLogWarning("ScriptSystem::BeginCall(%d): Not a function", funcRef);
@@ -698,8 +705,8 @@ HSCRIPTFUNCTION ScriptSystem::GetFunctionPtr(const char *funcName)
 		return nullptr;
 	}
 
-	HSCRIPTFUNCTION handle = RefToFunctionHandle(lua_ref(m_L, 1));
-	lua_pop(m_L, 1);
+	// Lua 5.4 Migration: lua_ref(L, 1) -> luaL_ref(L, LUA_REGISTRYINDEX).
+	HSCRIPTFUNCTION handle = RefToFunctionHandle(luaL_ref(m_L, LUA_REGISTRYINDEX));
 
 	return handle;
 }
@@ -723,8 +730,11 @@ HSCRIPTFUNCTION ScriptSystem::GetFunctionPtr(const char *tableName, const char *
 		return nullptr;
 	}
 
-	HSCRIPTFUNCTION handle = RefToFunctionHandle(lua_ref(m_L, 1));
-	lua_pop(m_L, 2);
+	// Lua 5.4 Migration: lua_ref -> luaL_ref.
+	HSCRIPTFUNCTION handle = RefToFunctionHandle(luaL_ref(m_L, LUA_REGISTRYINDEX));
+
+	// luaL_ref popped the function. We still have the table at -1.
+	lua_pop(m_L, 1); // Pop the table.
 
 	return handle;
 }
@@ -733,7 +743,8 @@ void ScriptSystem::ReleaseFunc(HSCRIPTFUNCTION func)
 {
 	if (func)
 	{
-		lua_unref(m_L, FunctionHandleToRef(func));
+		// Lua 5.4 Migration: lua_unref -> luaL_unref.
+		luaL_unref(m_L, LUA_REGISTRYINDEX, FunctionHandleToRef(func));
 	}
 }
 
@@ -869,6 +880,7 @@ void ScriptSystem::SetGlobalToNull(const char *key)
 
 IScriptTable *ScriptSystem::CreateUserData(void *data, size_t dataSize)
 {
+	// Lua 5.4: lua_newuserdata is a macro for lua_newuserdatauv.
 	void *buffer = lua_newuserdata(m_L, dataSize);
 	memcpy(buffer, data, dataSize);
 
@@ -963,9 +975,13 @@ void ScriptSystem::LuaInit()
 	// custom Lua libraries
 	bitlib_init(m_L);
 
+	// compatibility layer
+	lua51_init(m_L);
+
 	// prepare handler for errors in protected environment
 	lua_pushcfunction(m_L, ScriptSystem::ErrorHandler);
-	m_errorHandlerRef = lua_ref(m_L, 1);
+	// Lua 5.4 Migration: lua_ref -> luaL_ref
+	m_errorHandlerRef = luaL_ref(m_L, LUA_REGISTRYINDEX);
 }
 
 void ScriptSystem::LuaClose()
@@ -999,7 +1015,8 @@ bool ScriptSystem::LuaCall(int paramCount, int resultCount)
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
 
 	const int errorHandlerIndex = lua_gettop(m_L) - paramCount;
-	lua_getref(m_L, m_errorHandlerRef);
+	// Lua 5.4 Migration: lua_getref -> lua_rawgeti
+	lua_rawgeti(m_L, LUA_REGISTRYINDEX, m_errorHandlerRef);
 	lua_insert(m_L, errorHandlerIndex);
 
 	const int status = lua_pcall(m_L, paramCount, resultCount, errorHandlerIndex);
@@ -1101,26 +1118,39 @@ void* ScriptSystem::LuaAllocator(void* userData, void* originalBlock, size_t ori
 {
 	ScriptSystem *self = static_cast<ScriptSystem*>(userData);
 
-	if (!newSize)
+	// free
+	if (newSize == 0)
 	{
-		self->Deallocate(originalBlock);
+		if (originalBlock)
+			self->Deallocate(originalBlock);
 		return nullptr;
+	}
+
+	// realloc existing block if shrinking or expanding
+	if (!originalBlock)
+	{
+		// allocate new block
+		return self->Allocate(newSize);
 	}
 
 	if (newSize <= originalSize)
 	{
+		// Lua allows returning the same block for shrink
 		return originalBlock;
 	}
 
-	// always succeeds
+	// allocate a new block for growth
 	void *newBlock = self->Allocate(newSize);
-
-	memcpy(newBlock, originalBlock, originalSize);
+	if (originalSize > 0)
+	{
+		memcpy(newBlock, originalBlock, originalSize);
+	}
 
 	self->Deallocate(originalBlock);
 
 	return newBlock;
 }
+
 
 void ScriptSystem::OnDumpStateCmd(IConsoleCmdArgs *pArgs)
 {

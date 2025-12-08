@@ -558,6 +558,7 @@ add_library(Base OBJECT
 	Code/CryMP/Server/SafeWriting/SafeWriting.h
 	Code/CryMP/Server/SafeWriting/SafeWriting.cpp
 	Code/CryScriptSystem/LuaLibs/bitlib.c
+	Code/CryScriptSystem/LuaLibs/lua51.c
 	Code/CryScriptSystem/ScriptBindings/ScriptBindings.cpp
 	Code/CryScriptSystem/ScriptBindings/ScriptBindings.h
 	Code/CryScriptSystem/ScriptBindings/ScriptBind_Movie.cpp
@@ -685,9 +686,9 @@ add_library(Base OBJECT
 	ThirdParty/Lua/src/ltablib.c
 	ThirdParty/Lua/src/ltm.c
 	ThirdParty/Lua/src/ltm.h
-	ThirdParty/Lua/src/luaconf.h
 	ThirdParty/Lua/src/lua.h
 	ThirdParty/Lua/src/lua.hpp
+	ThirdParty/Lua/src/luaconf.h
 	ThirdParty/Lua/src/lualib.h
 	ThirdParty/Lua/src/lundump.c
 	ThirdParty/Lua/src/lundump.h
