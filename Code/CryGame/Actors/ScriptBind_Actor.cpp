@@ -29,6 +29,9 @@
 #include "CryCommon/CryMath/Cry_Geo.h"
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 
+#include "CryMP/Client/Client.h"
+#include "CryMP/Client/HandGripRegistry.h"
+
 //------------------------------------------------------------------------
 CScriptBind_Actor::CScriptBind_Actor(ISystem* pSystem)
 	: m_pSystem(pSystem),
@@ -1889,6 +1892,11 @@ int CScriptBind_Actor::GetLookAtPoint(IFunctionHandler* pH, float maxDist)
 
 int CScriptBind_Actor::SetHeldObjectOffsets(IFunctionHandler* pH)
 {
+	if (!gClient || !gClient->GetHandGripRegistry())
+	{
+		return pH->EndFunction();
+	}
+
 	CActor* pActor = GetActor(pH);
 	if (!pActor)
 		return pH->EndFunction();
@@ -1919,7 +1927,7 @@ int CScriptBind_Actor::SetHeldObjectOffsets(IFunctionHandler* pH)
 	// --- update registry entry if present ---
 	if (pEnt)
 	{
-		if (CGame::HandGripInfo* info = g_pGame->GetGripByEntity(pEnt))
+		if (HandGripInfo* info = gClient->GetHandGripRegistry()->GetGripByEntity(pEnt))
 		{
 			if (hasFP) { info->posOffset_FP = fp; ++applied; }
 			if (hasTP) { info->posOffset_TP = tp; ++applied; }

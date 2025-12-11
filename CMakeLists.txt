@@ -515,6 +515,8 @@ add_library(Base OBJECT
 	Code/CryMP/Client/FileCache.h
 	Code/CryMP/Client/FileDownloader.cpp
 	Code/CryMP/Client/FileDownloader.h
+	Code/CryMP/Client/HandGripRegistry.cpp
+	Code/CryMP/Client/HandGripRegistry.h
 	Code/CryMP/Client/HealthManager.cpp
 	Code/CryMP/Client/HealthManager.h
 	Code/CryMP/Client/MapDownloader.cpp

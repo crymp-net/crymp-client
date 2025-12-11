@@ -26,6 +26,9 @@ History:
 #include "CryGame/GameRules.h"
 #include "CryGame/HUD/HUD.h"
 
+#include "CryMP/Client/Client.h"
+#include "CryMP/Client/HandGripRegistry.h"
+
 #define HIT_RANGE (2000.0f)
 #define LINE_HEIGHT (8)
 
@@ -576,7 +579,7 @@ void CDebugGun::PostUpdate(float frameTime)
 
 		if (m_removeGripForEntity)
 		{
-			if (g_pGame->RemoveGripForEntity(pEntity))
+			if (gClient->GetHandGripRegistry()->RemoveGripForEntity(pEntity))
 			{
 				if (CHUD* pHUD = g_pGame->GetHUD())
 					pHUD->DisplayBigOverlayFlashMessage("Cleared Hand Grip data for selected entity", 2.0f, 400, 400, Col_Goldenrod);
@@ -1081,7 +1084,7 @@ void CDebugGun::PlaceTempSphere(const Vec3& worldPos, bool isRight, float lifeSe
 	if (IPersistantDebug* pd = g_pGame->GetIGameFramework()->GetIPersistantDebug())
 	{
 		static const char* kTag = "GripCapture";
-		// DO NOT clear (false) so other systems don’t wipe our spheres immediately
+		// DO NOT clear (false) so other systems don't wipe our spheres immediately
 		pd->Begin(kTag, /*clear=*/false);
 		const ColorF colL(1.f, 0.9f, 0.0f, 1.f); // yellow
 		const ColorF colR(0.2f, 0.6f, 1.0f, 1.f); // blue
@@ -1135,7 +1138,7 @@ void CDebugGun::CaptureIfArmed(IEntity* pEntity, const ray_hit& rayhit)
 
 	if (m_armLeft)
 	{
-		g_pGame->SetGripLeft(keyCStr, hitEL);
+		gClient->GetHandGripRegistry()->SetGripLeft(keyCStr, hitEL);
 		m_armLeft = false;
 
 		PlaceTempSphere(rayhit.pt, /*isRight=*/false, 18.0f);
@@ -1146,7 +1149,7 @@ void CDebugGun::CaptureIfArmed(IEntity* pEntity, const ray_hit& rayhit)
 	}
 	else if (m_armRight)
 	{
-		g_pGame->SetGripRight(keyCStr, hitEL);
+		gClient->GetHandGripRegistry()->SetGripRight(keyCStr, hitEL);
 		m_armRight = false;
 
 		PlaceTempSphere(rayhit.pt, /*isRight=*/true, 18.0f);
@@ -1162,7 +1165,7 @@ void CDebugGun::DebugDrawHandGripsForEntity(IEntity* pEntity, float lifeSec)
 		return;
 
 	// Lookup grip info.
-	const CGame::HandGripInfo* info = g_pGame->GetGripByEntity(pEntity);
+	const HandGripInfo* info = gClient->GetHandGripRegistry()->GetGripByEntity(pEntity);
 	if (!info)
 		return;
 
@@ -1195,59 +1198,13 @@ void CDebugGun::DebugDrawHandGripsForEntity(IEntity* pEntity, float lifeSec)
 
 void CDebugGun::DumpGripListOnly() const
 {
-	const auto& reg = g_pGame->GetGripRegistry();
+	std::string script = gClient->GetHandGripRegistry()->SerializeToLuaScript();
 
-	CryLogAlways("CPPAPI.CreateHandGripData({");
-
-	for (const CGame::HandGripInfo& e : reg)
-	{
-		CryLogAlways("  {");
-		CryLogAlways("    key  = \"%s\",", e.key.c_str());
-		CryLogAlways("    hasL = %s,", e.hasLeft ? "true" : "false");
-		CryLogAlways("    hasR = %s,", e.hasRight ? "true" : "false");
-
-		if (e.hasLeft)
-		{
-			CryLogAlways("    L = {");
-			CryLogAlways("      x = %.6f,", e.leftEL.x);
-			CryLogAlways("      y = %.6f,", e.leftEL.y);
-			CryLogAlways("      z = %.6f", e.leftEL.z);
-			CryLogAlways("    },");
-		}
-
-		if (e.hasRight)
-		{
-			CryLogAlways("    R = {");
-			CryLogAlways("      x = %.6f,", e.rightEL.x);
-			CryLogAlways("      y = %.6f,", e.rightEL.y);
-			CryLogAlways("      z = %.6f", e.rightEL.z);
-			CryLogAlways("    },");
-		}
-
-		if (!e.posOffset_FP.IsZero())
-		{
-			CryLogAlways("    posOffset_FP = {");
-			CryLogAlways("      x = %.6f,", e.posOffset_FP.x);
-			CryLogAlways("      y = %.6f,", e.posOffset_FP.y);
-			CryLogAlways("      z = %.6f", e.posOffset_FP.z);
-			CryLogAlways("    },");
-		}
-
-		if (!e.posOffset_TP.IsZero())
-		{
-			CryLogAlways("    posOffset_TP = {");
-			CryLogAlways("      x = %.6f,", e.posOffset_TP.x);
-			CryLogAlways("      y = %.6f,", e.posOffset_TP.y);
-			CryLogAlways("      z = %.6f", e.posOffset_TP.z);
-			CryLogAlways("    },");
-		}
-
-		CryLogAlways("  },");
-	}
-
-	CryLogAlways("})");
+	CryLogAlways("%s", script.c_str());
 
 	if (CHUD* pHUD = g_pGame->GetHUD())
+	{
 		pHUD->DisplayBigOverlayFlashMessage("Dumped HandGrip data into console", 2.0f, 400, 400, Col_Goldenrod);
+	}
 }
 

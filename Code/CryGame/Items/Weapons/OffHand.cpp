@@ -28,6 +28,9 @@ History:
 #include "Projectile.h"
 #include "CryGame/GameCVars.h"
 
+#include "CryMP/Client/Client.h"
+#include "CryMP/Client/HandGripRegistry.h"
+
 //Sounds tables
 namespace
 {
@@ -4724,7 +4727,12 @@ bool COffHand::GetPredefinedGripHandPos(IEntity* pEnt, Vec3& outLeftEL, Vec3& ou
 	if (!pEnt)
 		return false;
 
-	const CGame::HandGripInfo* info = g_pGame->GetGripByEntity(pEnt);
+	if (!gClient || !gClient->GetHandGripRegistry())
+	{
+		return false;
+	}
+
+	const HandGripInfo* info = gClient->GetHandGripRegistry()->GetGripByEntity(pEnt);
 	if (!info)
 		return false;
 
@@ -4751,7 +4759,12 @@ void COffHand::GetPredefinedPosOffset(IEntity* pEnt, Vec3& fpPosOffset, Vec3& tp
 	if (!pEnt)
 		return;
 
-	const CGame::HandGripInfo* info = g_pGame->GetGripByEntity(pEnt);
+	if (!gClient || !gClient->GetHandGripRegistry())
+	{
+		return;
+	}
+
+	const HandGripInfo* info = gClient->GetHandGripRegistry()->GetGripByEntity(pEnt);
 	if (!info)
 		return;
 

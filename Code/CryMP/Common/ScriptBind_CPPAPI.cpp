@@ -14,6 +14,7 @@
 
 #include "ScriptBind_CPPAPI.h"
 #include "CryMP/Client/Client.h"
+#include "CryMP/Client/HandGripRegistry.h"
 #include "CryMP/Client/ScriptCommands.h"
 #include "CryMP/Client/ScriptCallbacks.h"
 #include "CryMP/Client/DrawTools.h"
@@ -1173,6 +1174,17 @@ int ScriptBind_CPPAPI::GetTime(IFunctionHandler* pH, int future) {
 
 int ScriptBind_CPPAPI::CreateHandGripData(IFunctionHandler* pH)
 {
+	if (!gClient)
+	{
+		return pH->EndFunction();
+	}
+
+	HandGripRegistry* pHandGripRegistry = gClient->GetHandGripRegistry();
+	if (!pHandGripRegistry)
+	{
+		return pH->EndFunction();
+	}
+
 	// Params: 1=array table, 2=optional bool dontClear (default=false)
 	if ((pH->GetParamCount() < 1) || (pH->GetParamType(1) != svtObject))
 		return pH->EndFunction();
@@ -1203,7 +1215,7 @@ int ScriptBind_CPPAPI::CreateHandGripData(IFunctionHandler* pH)
 	// Clear first unless caller asked to preserve existing data
 	if (!dontClear)
 	{
-		g_pGame->ClearGripRegistry();
+		pHandGripRegistry->ClearGripRegistry();
 	}
 
 	int loaded = 0;
@@ -1233,10 +1245,10 @@ int ScriptBind_CPPAPI::CreateHandGripData(IFunctionHandler* pH)
 		ReadVec3(row, "posOffset_FP", posOffset_FP);
 		ReadVec3(row, "posOffset_TP", posOffset_TP);
 
-		g_pGame->SetGripHoldObjectOffset(key, posOffset_FP, posOffset_TP);
+		pHandGripRegistry->SetGripHoldObjectOffset(key, posOffset_FP, posOffset_TP);
 
-		if (hasL) { g_pGame->SetGripLeft(key, L); }
-		if (hasR) { g_pGame->SetGripRight(key, R); }
+		if (hasL) { pHandGripRegistry->SetGripLeft(key, L); }
+		if (hasR) { pHandGripRegistry->SetGripRight(key, R); }
 
 		++loaded;
 	}
