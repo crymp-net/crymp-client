@@ -273,6 +273,7 @@ void Client::Init(IGameFramework *pGameFramework)
 	pScriptSystem->ExecuteFile("CryMP/Scripts/RPC.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/Client.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true);
+	pScriptSystem->ExecuteFile("CryMP/Scripts/HandGripData.lua", true, true);
 
 	InitMasters();
 
@@ -282,9 +283,6 @@ void Client::Init(IGameFramework *pGameFramework)
 	// mods are not supported
 	m_pGame = new CGame();
 	m_pGame->Init(pGameFramework);
-
-	//Needs CGame
-	pScriptSystem->ExecuteFile("CryMP/Scripts/HandGripData.lua", true, true);
 
 	m_pFileCache->Cleanup(86400);
 }
