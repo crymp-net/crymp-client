@@ -4842,7 +4842,7 @@ void COffHand::OnHeldObjectCollision(CPlayer* pClientActor, const EventPhysColli
 		{
 			if (CHUD *pHUD = g_pGame->GetHUD())
 			{
-				pHUD->DisplayBigOverlayFlashMessage("@object_collision_drop", 2.0f, 400, 400, Col_Goldenrod);
+				pHUD->DisplayBigOverlayFlashMessage("@object_collision_vehicle_drop", 2.0f, 400, 400, Col_Goldenrod);
 			}
 
 			IVehicle* pCarriedVehicle = m_pVehicleSystem->GetVehicle(m_heldEntityId);

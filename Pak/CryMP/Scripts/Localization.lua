@@ -1560,7 +1560,7 @@ CPPAPI.AddLocalizedLabel("object_too_heavy", {
     },
 })
 
-CPPAPI.AddLocalizedLabel("object_collision_drop", {
+CPPAPI.AddLocalizedLabel("object_collision_vehicle_drop", {
     english_text = "Watch it — collisions make you drop carried vehicles.",
     languages = {
         czech = {
