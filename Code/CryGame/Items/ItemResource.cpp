@@ -321,13 +321,36 @@ void CItem::HideCharacterAttachment(int slot, const char* name, bool hide)
 }
 
 //------------------------------------------------------------------------
-void CItem::HideCharacterAttachmentMaster(int slot, const char* name, bool hide)
+bool CItem::IsCharacterAttachmentHidden(int slot, const char* name) const
 {
+	if (!name)
+		return false;
+
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(slot);
+	if (!pCharacter)
+		return false;
+
+	IAttachmentManager* pAttachmentManager = pCharacter->GetIAttachmentManager();
+	if (!pAttachmentManager)
+		return false;
+
+	IAttachment* pAttachment = pAttachmentManager->GetInterfaceByName(name);
+	if (!pAttachment)
+		return false;
+
+	return pAttachment->IsAttachmentHidden() != 0;
+}
+
+//------------------------------------------------------------------------
+void CItem::HideFirstPersonCharacterMaster(bool hide)
+{
+	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(eIGS_FirstPerson);
 	if (!pCharacter)
 		return;
 
 	pCharacter->HideMaster(hide ? 1 : 0);
+
+	m_fpMasterHidden = hide;
 }
 
 //------------------------------------------------------------------------
@@ -437,7 +460,10 @@ bool CItem::SetGeometry(int slot, const ItemString& name, const Vec3& poffset, c
 
 			CreateAttachmentHelpers(slot);
 
-			SetDefaultIdleAnimation(slot, g_pItemStrings->idle);
+			if (GetEntity()->GetClass() != sOffHandClass) //CryMP: Fix wrong object position after switching from 3rd to 1st person
+			{
+				SetDefaultIdleAnimation(slot, g_pItemStrings->idle);
+			}
 		}
 
 		if (slot == eIGS_FirstPerson)

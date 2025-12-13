@@ -892,6 +892,20 @@ void CActor::SetActorModel()
 		CreateBoneAttachment(EntitySlot::CHARACTER, "alt_weapon_bone01", "left_item_attachment");
 		CreateBoneAttachment(EntitySlot::CHARACTER, "weapon_bone", "laser_attachment");
 
+		//CryMP
+		if (GetActorClass() == ActorType::CPlayer)
+		{
+			if (gEnv->bMultiplayer)
+			{
+				Vec3 positionOffset(0.007f, -0.065f, 0.025f);
+				Quat rotationOffset = Quat(IDENTITY);
+
+				CreateBoneAttachment(EntitySlot::CHARACTER, "alt_weapon_bone01", "left_hand_grenade_attachment", positionOffset, rotationOffset);
+			}
+			
+			CreateBoneAttachment(EntitySlot::CHARACTER, "Bip01 Head", "held_object_attachment");
+		}
+
 		// Additional attachments if defined
 		CallCreateAttachments();
 	}
@@ -2867,12 +2881,19 @@ void CActor::UpdateGrab(float frameTime)
 //IK stuff
 void CActor::SetIKPos(const char* pLimbName, const Vec3& goalPos, int priority)
 {
+	SetIKPos(pLimbName, goalPos, priority, 0.5f, 0.5f);
+}
+
+void CActor::SetIKPos(const char* pLimbName, const Vec3& goalPos, int priority,
+	float blendIn, float recover)
+{
 	const int limbID = GetIKLimbIndex(pLimbName);
-	if (limbID > -1)
-	{
-		Vec3 pos(goalPos);
-		m_IKLimbs[limbID].SetWPos(GetEntity(), pos, ZERO, 0.5f, 0.5f, priority);
-	}
+	if (limbID < 0) return;
+
+	blendIn = std::max(0.0f, blendIn);
+	recover = std::max(0.0f, recover);
+
+	m_IKLimbs[limbID].SetWPos(GetEntity(), goalPos, ZERO, blendIn, recover, priority);
 }
 
 void CActor::ClearIKPosBlending(const char* pLimbName)
@@ -3327,6 +3348,16 @@ IItem* CActor::GetHolsteredItem() const
 }
 
 //------------------------------------------------------------------------
+EntityId CActor::GetHolsteredItemId() const
+{
+	IInventory* pInventory = GetInventory();
+	if (!pInventory)
+		return 0;
+
+	return pInventory->GetHolsteredItem();
+}
+
+//------------------------------------------------------------------------
 IInventory* CActor::GetInventory() const
 {
 	if (!m_pInventory)
@@ -3353,9 +3384,41 @@ EntityId CActor::NetGetCurrentItem() const
 }
 
 //------------------------------------------------------------------------
-void CActor::NetSetCurrentItem(EntityId id)
+//CryMP: When client picks up an object, weapon is holstered
+//Required for mp_pickupObjects 1 (otherwise remote players might still hold a gun while holding an object)
+//Server need the updated NetSetCurrentItem for this to work
+//------------------------------------------------------------------------
+
+void CActor::NetSetCurrentItem(EntityId itemId, bool hasWeapon)
 {
-	SelectItem(id, false);
+	if (itemId && !m_netItemReceived)
+	{
+		//Network bound item has been received, so we can proceed with the netholstered items
+		m_netItemReceived = true;
+	}
+	if (g_pGameCVars->mp_netSerializeHolsteredItems)
+	{
+		if (GetHealth() > 0 && m_netItemReceived && itemId == 0 && !hasWeapon)
+		{
+			HolsterItem(true);
+		}
+		else
+		{
+			const EntityId holsteredId = GetHolsteredItemId();
+			if (holsteredId && holsteredId == itemId)
+			{
+				HolsterItem(false);
+			}
+			else
+			{
+				SelectItem(itemId, false);
+			}
+		}
+	}
+	else
+	{
+		SelectItem(itemId, false);
+	}
 }
 
 //------------------------------------------------------------------------
@@ -3563,13 +3626,14 @@ IMPLEMENT_RMI(CActor, SvRequestPickUpItem)
 		//Here is server handler (add this code to server, to add support for it)
 		if (gEnv->bMultiplayer && m_pGameFramework->IsImmersiveMPEnabled())
 		{
-			auto* pObject = gEnv->pEntitySystem->GetEntity(params.itemId);
+			IEntity* pObject = gEnv->pEntitySystem->GetEntity(params.itemId);
 			if (pObject)
 			{
 				if (IGameObject* pGameObject = m_pGameFramework->GetGameObject(params.itemId))
 				{
 					m_pGameFramework->GetNetContext()->DelegateAuthority(params.itemId, pNetChannel);
-					SetHeldObjectId(params.itemId);
+
+					OnObjectEvent(ObjectEvent::GRAB, params.itemId);
 
 					GetGameObject()->InvokeRMIWithDependentObject(CActor::ClPickUp(), CActor::PickItemParams(params.itemId, false, false), eRMI_ToAllClients | eRMI_NoLocalCalls, params.itemId);
 				}
@@ -4177,11 +4241,7 @@ IMPLEMENT_RMI(CActor, ClPickUp)
 		//Here is client handler
 		if (gEnv->bMultiplayer && m_pGameFramework->IsImmersiveMPEnabled() && g_pGameCVars->mp_pickupObjects)
 		{
-			IEntity* pObject = gEnv->pEntitySystem->GetEntity(params.itemId);
-			if (pObject)
-			{
-				SetHeldObjectId(params.itemId);
-			}
+			OnObjectEvent(ObjectEvent::GRAB, params.itemId);
 		}
 		return true;
 	}
@@ -4323,6 +4383,24 @@ void CActor::NotifyInventoryAmmoChange(IEntityClass* pAmmoClass, int amount)
 		g_pGame->GetHUD()->DisplayAmmoPickup(pAmmoClass->GetName(), amount);
 }
 
+//------------------------------------------------------------------------
+void CActor::SetHeldObjectId(EntityId objectId, ObjectHoldType type)
+{
+	if (objectId)
+	{
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(objectId);
+		if (pEntity)
+		{
+			m_heldObjectId = objectId;
+			m_heldObjectType = type;
+			return;
+		}
+	}
+	m_heldObjectId = 0;
+	m_heldObjectType = ObjectHoldType::None;
+}
+
+
 void CActor::SaveNick(const std::string_view& name)
 {
 	m_playerNameClean = Util::RemoveColorCodes(name);
@@ -4343,10 +4421,11 @@ bool CActor::IsGhostPit()
 	return false;
 }
 
-IAttachment* CActor::CreateBoneAttachment(int characterSlot, const char* boneName, const char* attachmentName)
+IAttachment* CActor::CreateBoneAttachment(int characterSlot, const char* boneName, const char* attachmentName,
+	const Vec3& offsetPosition /*= Vec3(ZERO)*/,
+	const Quat& offsetRotation /*= Quat(IDENTITY)*/)
 {
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(characterSlot);
-
 	if (!pCharacter)
 	{
 		return nullptr;
@@ -4354,13 +4433,24 @@ IAttachment* CActor::CreateBoneAttachment(int characterSlot, const char* boneNam
 
 	IAttachmentManager* pIAttachmentManager = pCharacter->GetIAttachmentManager();
 	IAttachment* pIAttachment = pIAttachmentManager->GetInterfaceByName(attachmentName);
+
 	if (!pIAttachment)
 	{
 		pIAttachment = pIAttachmentManager->CreateAttachment(attachmentName, CA_BONE, boneName);
+		if (pIAttachment)
+		{
+			// Apply the provided offset immediately after creation
+			if (!offsetPosition.IsZero() || !offsetRotation.IsIdentity())
+			{
+				QuatT offset(offsetRotation, offsetPosition);
+				pIAttachment->SetAttRelativeDefault(offset);
+			}
+		}
 	}
 
 	return pIAttachment;
 }
+
 
 void CActor::HideAllAttachments(int characterSlot, bool hide, bool hideShadow)
 {

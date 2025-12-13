@@ -252,9 +252,15 @@ bool CProjectile::Init(IGameObject* pGameObject)
 	m_pAmmoParams = g_pGame->GetWeaponSystem()->GetAmmoParams(GetEntity()->GetClass());
 
 	if (0 == (GetEntity()->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY)))
+	{
 		if (!m_pAmmoParams->predictSpawn)
+		{
 			if (!GetGameObject()->BindToNetwork())
+			{
 				return false;
+			}
+		}
+	}
 
 	LoadGeometry();
 	Physicalize();
