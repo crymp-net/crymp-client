@@ -847,9 +847,12 @@ void COffHand::UpdateHeldObject()
 				{
 					m_constraintStatus = ConstraintStatus::Broken;
 
-					if (CHUD* pHUD = g_pGame->GetHUD())
+					if (pPlayer->IsClient())
 					{
-						pHUD->DisplayBigOverlayFlashMessage("@object_lost_destroyed", 2.0f, 400, 400, Col_Goldenrod);
+						if (CHUD* pHUD = g_pGame->GetHUD())
+						{
+							pHUD->DisplayBigOverlayFlashMessage("@object_lost_destroyed", 2.0f, 400, 400, Col_Goldenrod);
+						}
 					}
 				}
 			}
@@ -920,7 +923,8 @@ void COffHand::UpdateHeldObject()
 
 		if (m_throwPitchBlend_fp > 0.001f)
 		{
-			const float maxPitchRad = DEG2RAD(20.0f);
+			IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(entityId);
+			const float maxPitchRad = pVehicle ? DEG2RAD(10.0f) : DEG2RAD(20.0f);
 			const float extraPitchRad = maxPitchRad * m_throwPitchBlend_fp;
 
 			Matrix33 extraPitch = Matrix33::CreateRotationX(extraPitchRad);
