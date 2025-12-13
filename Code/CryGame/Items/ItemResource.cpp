@@ -535,7 +535,6 @@ void CItem::ForceSkinning(bool always)
 //------------------------------------------------------------------------
 void CItem::EnableHiddenSkinning(bool enable)
 {
-	/*
 	for (int slot=0; slot<eIGS_Last; slot++)
 	{
 		ICharacterInstance *pCharacter = GetEntity()->GetCharacter(slot);
@@ -547,7 +546,6 @@ void CItem::EnableHiddenSkinning(bool enable)
 				pCharacter->SetFlags(pCharacter->GetFlags()&(~CS_FLAG_UPDATE_ALWAYS));
 		}
 	}
-	*/
 }
 
 //------------------------------------------------------------------------
