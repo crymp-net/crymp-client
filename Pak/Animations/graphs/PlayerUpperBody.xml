@@ -4067,6 +4067,8 @@
      <Value id="Stealth"/>
      <Value id="zerog"/>
     </Parameter>
+
+    <!-- LEFT HAND -->
     <Override id="Left,LowerCut,Combat">
      <SelectWhen>
       <Signal value="melee_lower_cut_left"/>
@@ -4076,6 +4078,7 @@
      <SelectWhen>
       <Signal value="melee_lower_cut_left"/>
      </SelectWhen>
+     <Template animation="crouch_weaponPunchLeftUB_nw_01"/>
     </Override>
     <Override id="Left,LowerCut,Prone">
      <SelectWhen>
@@ -4092,6 +4095,7 @@
       <Signal value="melee_lower_cut_left"/>
      </SelectWhen>
     </Override>
+
     <Override id="Left,Punch,Combat">
      <SelectWhen>
       <Signal value="melee_punch_left"/>
@@ -4117,6 +4121,7 @@
       <Signal value="melee_punch_left"/>
      </SelectWhen>
     </Override>
+
     <Override id="Left,Swing,Combat">
      <SelectWhen>
       <Signal value="melee_swing_left"/>
@@ -4126,6 +4131,7 @@
      <SelectWhen>
       <Signal value="melee_swing_left"/>
      </SelectWhen>
+     <Template animation="crouch_weaponPunchLeftUB_nw_01"/>
     </Override>
     <Override id="Left,Swing,Prone">
      <SelectWhen>
@@ -4142,6 +4148,7 @@
       <Signal value="melee_swing_left"/>
      </SelectWhen>
     </Override>
+
     <Override id="Left,UpperCut,Combat">
      <SelectWhen>
       <Signal value="melee_upper_cut_left"/>
@@ -4151,6 +4158,7 @@
      <SelectWhen>
       <Signal value="melee_upper_cut_left"/>
      </SelectWhen>
+     <Template animation="crouch_weaponPunchLeftUB_nw_01"/>
     </Override>
     <Override id="Left,UpperCut,Prone">
      <SelectWhen>
@@ -4167,6 +4175,8 @@
       <Signal value="melee_upper_cut_left"/>
      </SelectWhen>
     </Override>
+
+    <!-- RIGHT HAND -->
     <Override id="Right,LowerCut,Combat">
      <SelectWhen>
       <Signal value="melee_lower_cut_right"/>
@@ -4176,6 +4186,7 @@
      <SelectWhen>
       <Signal value="melee_lower_cut_right"/>
      </SelectWhen>
+     <Template animation="crouch_weaponPunchRightUB_nw_01"/>
     </Override>
     <Override id="Right,LowerCut,Prone">
      <SelectWhen>
@@ -4192,6 +4203,7 @@
       <Signal value="melee_lower_cut_right"/>
      </SelectWhen>
     </Override>
+
     <Override id="Right,Punch,Combat">
      <SelectWhen>
       <Signal value="melee_punch_right"/>
@@ -4217,6 +4229,7 @@
       <Signal value="melee_punch_right"/>
      </SelectWhen>
     </Override>
+
     <Override id="Right,Swing,Combat">
      <SelectWhen>
       <Signal value="melee_swing_right"/>
@@ -4226,6 +4239,7 @@
      <SelectWhen>
       <Signal value="melee_swing_right"/>
      </SelectWhen>
+     <Template animation="crouch_weaponPunchRightUB_nw_01"/>
     </Override>
     <Override id="Right,Swing,Prone">
      <SelectWhen>
@@ -4242,6 +4256,7 @@
       <Signal value="melee_swing_right"/>
      </SelectWhen>
     </Override>
+
     <Override id="Right,UpperCut,Combat">
      <SelectWhen>
       <Signal value="melee_upper_cut_right"/>
@@ -4251,6 +4266,7 @@
      <SelectWhen>
       <Signal value="melee_upper_cut_right"/>
      </SelectWhen>
+     <Template animation="crouch_weaponPunchRightUB_nw_01"/>
     </Override>
     <Override id="Right,UpperCut,Prone">
      <SelectWhen>
@@ -4269,6 +4285,7 @@
     </Override>
    </Parameterization>
   </State>
+
   <State id="x_anyStance_reloadLoopUB_shotgun" allowSelect="0" includeInGame="1" canMix="0" cost="100" MovementControlMethodH="1" MovementControlMethodV="1" animationControlledView="0" hurryable="0" NoCollider="0" additionalTurnMultiplier="3" skipFirstPerson="0" snapshotTime="0.5" extend="Alive">
    <Template name="Default"/>
    <SetInput time="0" input="Action" value="reload" restoreOnLeave="1"/>
