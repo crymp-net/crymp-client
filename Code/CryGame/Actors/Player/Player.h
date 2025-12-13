@@ -991,12 +991,7 @@ private:
 	ReachState m_reachState = ReachState::Idle;
 
 	float m_reachAmount = 0.0f;  
-	bool  m_reachNotified = false;  
-
-	float m_reachSpeed = 4.0f;          
-	float m_returnSpeed = 2.0f;            
-	float m_fixedForwardBend = DEG2RAD(40.0f); 
-	float m_fixedBackwardBend = DEG2RAD(10.0f); 
+	bool  m_reachNotified = false;            
 	float m_reachCurrentPitch = 0.0f;
 
 public:

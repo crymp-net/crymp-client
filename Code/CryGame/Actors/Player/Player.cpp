@@ -5609,13 +5609,15 @@ void CPlayer::CancelGrabTarget()
 
 float CPlayer::GetReachDesiredPitch() const
 {
-	float desiredPitch = m_fixedForwardBend;
+	const float fwdDeg = DEG2RAD(25.0f);
+	const float backDeg = DEG2RAD(10.0f);
+	float desiredPitch = fwdDeg;
 	switch (m_reachState)
 	{
-	case ReachState::Reaching:   desiredPitch = m_fixedForwardBend;   break;
-	case ReachState::ThrowPrep:  desiredPitch = -m_fixedBackwardBend;  break;
-	case ReachState::Throwing:   desiredPitch = -m_fixedBackwardBend;  break;
-	case ReachState::Returning:  desiredPitch = m_fixedForwardBend;   break;
+	case ReachState::Reaching:   desiredPitch = fwdDeg;   break;
+	case ReachState::ThrowPrep:  desiredPitch = -backDeg;  break;
+	case ReachState::Throwing:   desiredPitch = -backDeg;  break;
+	case ReachState::Returning:  desiredPitch = fwdDeg;   break;
 	default: break;
 	}
 	return desiredPitch;
@@ -5626,8 +5628,8 @@ void CPlayer::UpdateReachBend(float frameTime)
 	if (m_reachState == ReachState::Idle && m_reachAmount <= 0.001f)
 		return;
 
-	const float inSpeed = m_reachSpeed;
-	const float outSpeed = m_returnSpeed;
+	const float inSpeed = 4.0f;
+	const float outSpeed = 2.0f;
 
 	const float desiredPitch = GetReachDesiredPitch();
 
