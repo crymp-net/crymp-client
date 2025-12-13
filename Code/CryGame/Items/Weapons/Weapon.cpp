@@ -836,9 +836,13 @@ void CWeapon::Update(SEntityUpdateContext& ctx, int update)
 	{
 	case eIUS_FireMode:
 		if (m_fm)
+		{
 			m_fm->Update(ctx.fFrameTime, ctx.nFrameID);
+		}
 		if (m_melee)
+		{
 			m_melee->Update(ctx.fFrameTime, ctx.nFrameID);
+		}
 		break;
 
 	case eIUS_Zooming:
@@ -1036,7 +1040,12 @@ bool CWeapon::CanMeleeAttack() const
 				return false;
 		}
 	}
-	return m_melee && m_melee->CanFire();
+	bool isFistPunching = false;
+	if (GetEntity()->GetClass() == sFistsClass)
+	{
+		isFistPunching = m_fm && m_fm->IsFiring();
+	}
+	return m_melee && m_melee->CanFire() && !isFistPunching;
 }
 
 //------------------------------------------------------------------------
