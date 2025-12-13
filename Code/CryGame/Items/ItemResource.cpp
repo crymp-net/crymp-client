@@ -268,7 +268,7 @@ Matrix34 CItem::GetCharacterAttachmentLocalTM(int slot, const char* name)
 {
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(slot);
 	if (!pCharacter)
-		return Matrix34::CreateIdentity();;
+		return Matrix34::CreateIdentity();
 
 	IAttachmentManager* pAttachmentManager = pCharacter->GetIAttachmentManager();
 	IAttachment* pAttachment = pAttachmentManager->GetInterfaceByName(name);
@@ -420,7 +420,7 @@ bool CItem::SetGeometry(int slot, const ItemString& name, const Vec3& poffset, c
 			DrawSlot(slot, false); //CryMP: Hide unused slot instead of clearing it
 		}
 
-		DestroyAttachmentHelpers(slot);
+		//DestroyAttachmentHelpers(slot);
 
 		if (!name.empty())
 		{

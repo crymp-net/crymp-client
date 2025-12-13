@@ -780,6 +780,7 @@ public:
 	void WetEnable(bool enable, bool fade);
 	void WetSync(bool fade);
 	void ApplyMaterialLayerSettings(uint8 mask, uint32 blend);
+	void ProcessFirstPersonSkeleton();
 
 
 	virtual bool IsTwoHand() const;
