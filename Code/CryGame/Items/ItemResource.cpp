@@ -437,7 +437,10 @@ bool CItem::SetGeometry(int slot, const ItemString& name, const Vec3& poffset, c
 
 			CreateAttachmentHelpers(slot);
 
-			SetDefaultIdleAnimation(slot, g_pItemStrings->idle);
+			if (GetEntity()->GetClass() != sFistsClass)
+			{
+				SetDefaultIdleAnimation(slot, g_pItemStrings->idle);
+			}
 		}
 
 		if (slot == eIGS_FirstPerson)
