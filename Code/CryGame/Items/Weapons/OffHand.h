@@ -24,10 +24,34 @@ History:
 #include "CryGame/Actors/Player/Player.h"
 #include "CryCommon/CryAction/IViewSystem.h"
 
-#define OH_NO_GRAB					0
-#define OH_GRAB_OBJECT			1
-#define OH_GRAB_ITEM				2
-#define OH_GRAB_NPC					3
+//================ Grab States ================
+#define OH_NO_GRAB           0
+#define OH_GRAB_OBJECT       1
+#define OH_GRAB_ITEM         2
+#define OH_GRAB_NPC          3
+
+//================ Grab Types ================
+#define GRAB_TYPE_ONE_HANDED   0
+#define GRAB_TYPE_TWO_HANDED   1
+#define GRAB_TYPE_NPC          2
+
+//================ Item Exchange =============
+#define ITEM_NO_EXCHANGE     0
+#define ITEM_CAN_PICKUP      1
+#define ITEM_CAN_EXCHANGE    2
+
+//================ Inputs ====================
+#define INPUT_DEF            0
+#define INPUT_USE            1
+#define INPUT_LBM            2
+#define INPUT_RBM            3
+
+//================ Timers & Limits ===========
+#define KILL_NPC_TIMEOUT     7.25f
+#define TIME_TO_UPDATE_CH    0.25f
+#define MAX_CHOKE_SOUNDS     5
+#define MAX_GRENADE_TYPES    4
+#define OFFHAND_RANGE        2.5f
 
 enum EOffHandActions
 {
@@ -76,7 +100,6 @@ enum EOffHandSounds
 
 class COffHand : public CWeapon
 {
-
 	struct SGrabType
 	{
 		ItemString	helper;
@@ -93,39 +116,44 @@ public:
 	COffHand();
 	virtual ~COffHand();
 
-	virtual void Update(SEntityUpdateContext& ctx, int slot);
+	virtual void Update(SEntityUpdateContext& ctx, int slot) override;
 	void CheckTimers(float frameTime);
-	virtual void PostUpdate(float frameTime);
-	virtual void PostInit(IGameObject* pGameObject);
-	virtual void Reset();
+	void SharedUpdate(float frameTime);
+	virtual void PostUpdate(float frameTime) override;
+	virtual void PostInit(IGameObject* pGameObject) override;
+	virtual void Reset() override;
 
-	virtual void OnAction(EntityId actorId, const ActionId& actionId, int activationMode, float value);
+	virtual void OnAction(EntityId actorId, const ActionId& actionId, int activationMode, float value) override;
 
-	virtual bool CanSelect() const;
-	virtual void Select(bool select);
-	virtual void FullSerialize(TSerialize ser);
-	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags);
-	virtual void PostSerialize();
+	virtual bool CanSelect() const override;
+	virtual void Select(bool select) override;
+	virtual void FullSerialize(TSerialize ser) override;
+	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
+	virtual void PostSerialize() override;
 
-	virtual void MeleeAttack();
+	virtual void MeleeAttack() override;
 
-	virtual void PostFilterView(struct SViewParams& viewParams);
+	virtual void PostFilterView(struct SViewParams& viewParams) override;
 
 	//Only needed because is used in CFists
-	virtual void EnterWater(bool enter) {}
+	virtual void EnterWater(bool enter) override {}
 
-	virtual void UpdateFPView(float frameTime);
+	virtual void UpdateFPView(float frameTime) override;
 
 	//AIGrenades (for AI)
-	virtual void PerformThrow(float speedScale);
+	virtual void PerformThrow(float speedScale) override;
 
 	//Memory Statistics
-	virtual void GetMemoryStatistics(ICrySizer* s) { s->Add(*this); CWeapon::GetMemoryStatistics(s); }
+	virtual void GetMemoryStatistics(ICrySizer* s) override { s->Add(*this); CWeapon::GetMemoryStatistics(s); }
 
-	void  SetOffHandState(EOffHandStates eOHS);
+	void SetOffHandState(EOffHandStates eOHS);
+	void SetMainHandWeapon(CWeapon* pWeapon);
+	CWeapon* GetMainHandWeapon() const;
 	ILINE int  GetOffHandState() { return m_currentState; }
-	void  FinishAction(EOffHandActions eOHA);
-	virtual void Freeze(bool freeze);
+	void FinishAction(EOffHandActions eOHA);
+	virtual void Freeze(bool freeze) override;
+
+	void LogOffHandState(EOffHandStates eOHS);
 
 	bool IsHoldingEntity();
 
@@ -141,15 +169,18 @@ public:
 
 	virtual bool ReadItemParams(const IItemParamsNode* root);
 
-	void	SelectGrabType(IEntity* pEntity);
+	void SelectGrabType(IEntity* pEntity);
+	bool IsGrabTypeTwoHanded(const EntityId entityId) const noexcept;
+
+	Matrix34 GetHoldOffset(IEntity* pEntity);
 
 	bool EvaluateStateTransition(int requestedAction, int activationMode, int inputMethod);
 	bool PreExecuteAction(int requestedAction, int activationMode, bool forceSelect = false);
 	void CancelAction();
 
-	void IgnoreCollisions(bool ignore, EntityId entityId = 0);
+	void SetIgnoreCollisionsWithOwner(bool activate, EntityId entityId = 0);
 	void DrawNear(bool drawNear, EntityId entityId = 0);
-	bool PerformPickUp();
+	bool PerformPickUp(EntityId entityId);
 	int  CanPerformPickUp(CActor* pActor, IPhysicalEntity* pPhysicalEntity = NULL, bool getEntityInfo = false);
 	void OnLookAtEntityChanged(IEntity* pEntity);
 	int  CheckItemsInProximity(Vec3 pos, Vec3 dir, bool getEntityInfo);
@@ -159,24 +190,26 @@ public:
 	void UpdateHeldObject();
 	void UpdateGrabbedNPCState();
 	void UpdateGrabbedNPCWorldPos(IEntity* pEntity, struct SViewParams* viewParams);
+	bool GetGrabbedActorNeckWorldPos(IEntity* pEntity, Vec3& outNeckPos) const;
 
 	void StartSwitchGrenade(bool xi_switch = false, bool fakeSwitch = false);
 	void EndSwitchGrenade();
 
-	//Offhand (for Player)
-	void PerformThrow(int activationMode, EntityId throwableId, int oldFMId = -1, bool isLivingEnt = false);
-
 	void StartPickUpItem();
 	void EndPickUpItem();
 
-	void PickUpObject(bool isLivingEnt = false);
-	void ThrowObject(int activationMode, bool isLivingEnt = false);
+	void StartPickUpObject(const EntityId entityId, bool isLivingEnt = false/* = false */, bool fromOnReachReadyCallback = false /* = false */);
+	void StartThrowObject(const EntityId entityId, int activationMode, bool isLivingEnt /*= false*/);
 
-	void NetStartFire();
-	void NetStopFire();
+	void StartFire() override;
+	void StopFire() override;
 
-	bool GrabNPC();
-	void ThrowNPC(bool kill = true);
+	void NetStartFire() override;
+	void NetStopFire() override;
+
+	CActor* CanGrabNPC(const EntityId grabActorId);
+	bool PerformGrabNPC(CActor *pHeldActor);
+	void ThrowNPC(const EntityId entityId, bool kill = true/*= true*/);
 
 	//Special stuff for grabbed NPCs
 	void RunEffectOnGrabbedNPC(CActor* pNPC);
@@ -185,8 +218,6 @@ public:
 	EntityId	GetHeldEntityId() const;
 
 	void AttachGrenadeToHand(int grenade, bool fp = true, bool attach = true);
-
-	void AttachObjectToHand(bool attach);
 
 	virtual void ForcePendingActions() {}
 
@@ -202,61 +233,60 @@ private:
 
 	void	PostPostSerialize();
 
-	//Grenade info
-	int					m_lastFireModeId;
-	bool				m_isClient = false;
-	bool				m_wasThirdPerson = false;
-	float				m_nextGrenadeThrow;
+	// Grenade info
+	int m_lastFireModeId = 0;
 
-	float				m_lastCHUpdate;
+	float m_nextThrowTimer = -1.0f;
+	float m_lastCHUpdate = 0.0f;
 
-	//All what we need for grabbing
-	TGrabTypes		m_grabTypes;
-	uint32				m_grabType;
-	EntityId			m_heldEntityId, m_preHeldEntityId, m_crosshairId;
-	EntityId            m_lastLookAtEntityId = 0;
-	Matrix34			m_holdOffset;
-	Vec3          m_holdScale;
-	int						m_constraintId;
-	bool					m_hasHelper;
-	int						m_grabbedNPCSpecies;
-	float					m_heldEntityMass;
+	// Grabbing system
+	TGrabTypes m_grabTypes;
+	uint32 m_grabType = GRAB_TYPE_TWO_HANDED;
+	EntityId m_heldEntityId = 0;
+	EntityId m_preHeldEntityId = 0;
+	EntityId m_crosshairId = 0;
+	EntityId m_lastLookAtEntityId = 0;
+	Matrix34 m_holdOffset;
+	Vec3 m_holdScale = Vec3(1.0f, 1.0f, 1.0f);
+	int m_constraintId = 0;
+	bool m_hasHelper = false;
+	int m_grabbedNPCSpecies = eGCT_UNKNOWN;
+	float m_heldEntityMass = 0.0f;
 
-	float					m_killTimeOut;
-	bool					m_killNPC;
-	bool					m_effectRunning;
-	bool					m_npcWasDead;
-	bool					m_startPickUp;
-	int						m_grabbedNPCInitialHealth;
-	bool          m_forceThrow;
+	float m_killTimeOut = -1.0f;
+	bool m_killNPC = false;
+	bool m_effectRunning = false;
+	bool m_npcWasDead = false;
+	bool m_startPickUp = false;
+	int m_grabbedNPCInitialHealth = 0;
+	bool m_forceThrow = false;
 
-	tSoundID			m_sounds[eOHSound_LastSound];
+	// Sound
+	tSoundID m_sounds[eOHSound_LastSound] = {};
 
-	float					m_range;
-	float					m_pickingTimer;
-	float					m_resetTimer;
+	// Usage state
+	float m_range = OFFHAND_RANGE;
+	float m_resetTimer = -1.0f;
+	int m_usable = false;
 
-	int						m_usable;
+	bool m_bCutscenePlaying = false;
 
-	int           m_checkForConstraintDelay;
-	bool          m_bCutscenePlaying;
+	float m_fGrenadeToggleTimer = -1.0f;
+	float m_fGrenadeThrowTimer = -1.0f;
 
-	float					m_fGrenadeToggleTimer;
-	float					m_fGrenadeThrowTimer;
+	// Weapon/main hand state
+	int m_currentState = eOHS_INIT_STATE;
+	CWeapon* m_mainHandWeapon = nullptr;
+	EntityId m_prevMainHandId = 0;
+	bool m_mainHandIsDualWield = false;
+	bool m_restoreStateAfterLoading = false;
 
-	//Current state and pointers to actor main item(weapon) while offHand is selected
-	int						m_currentState;
-	CItem* m_mainHand;
-	CWeapon* m_mainHandWeapon;
-	EntityId			m_prevMainHandId;
+	IRenderNode* m_pRockRN = nullptr;
 
-	IRenderNode* m_pRockRN;
+	Matrix34 m_lastNPCMatrix; 
+	Matrix34 m_intialBoidLocalMatrix;
 
-	Matrix34      m_lastNPCMatrix;
-	Matrix34			m_intialBoidLocalMatrix;
-
-	bool					m_mainHandIsDualWield;
-	bool					m_restoreStateAfterLoading;
+	bool m_useFPCamSpacePP = false;
 
 	//Input actions
 	static TActionHandler<COffHand> s_actionHandler;
@@ -271,6 +301,83 @@ private:
 	bool OnActionXISwitchGrenade(EntityId actorId, const ActionId& actionId, int activationMode, float value);
 	bool OnActionSpecial(EntityId actorId, const ActionId& actionId, int activationMode, float value);
 	void RegisterActions();
+
+private:
+
+	enum class EntityFpViewMode
+	{
+		Default,
+		ForceActive,
+		ForceDisable,
+		ForceUpdate,
+	};
+
+	bool m_objectFpMode = false;
+
+	enum class ConstraintStatus
+	{
+		Inactive,
+		WaitForPhysicsUpdate,
+		Active,
+		Broken
+	};
+
+	enum ConstraintReset
+	{
+		Skip = 1 << 0,
+		Immediate = 1 << 1,
+		Delayed = 1 << 2,
+		SkipIfDelayTimerActive = 1 << 3,
+	};
+
+	ConstraintStatus m_constraintStatus = ConstraintStatus::Inactive;
+	float m_lastTooHeavyMessage = 0.0f;
+	unsigned int m_timerEnableCollisions = 0;
+	bool m_footAlignmentEnabled = true;
+	int m_heldVehicleCollisions = 0;
+	float m_heldEntityMassBackup = 0.0f;
+
+	struct SGripHitLocal
+	{
+		bool ok = false;
+		Vec3 leftLocal = ZERO;  
+		Vec3 rightLocal = ZERO; 
+		float widthWS = 0.0f;
+	};
+
+	float m_throwPitchBlend_fp = 0.0f;
+
+public:
+
+	bool IsTwoHandMode() const
+	{
+		return m_grabType == GRAB_TYPE_TWO_HANDED;
+	}
+	bool Request_PickUpObject_MP();
+	bool PickUpObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId);
+	bool ThrowObject_MP(CPlayer* pPlayer, const EntityId synchedObjectId, bool stealingObject = false);
+	void AttachObjectToHand(bool attach, EntityId objectId, bool throwObject);
+	void UpdateEntityRenderFlags(const EntityId entityId, EntityFpViewMode mode = EntityFpViewMode::Default);
+	void EnableFootGroundAlignment(bool enable);
+	bool SetHeldEntityId(const EntityId entityId);
+	bool RemoveHeldEntityId(const EntityId oldId, ConstraintReset constraintReset = ConstraintReset::Immediate);
+	void HandleNewHeldEntity(const EntityId entityId, const bool isNewItem, CActor* pActor);
+	void HandleOldHeldEntity(const EntityId oldHeldEntityId, const bool isOldItem, ConstraintReset constraintReset, CActor* pActor);
+	void AwakeEntityPhysics(IEntity* pEntity);
+	SGripHitLocal ComputeGripHitsLocal(CActor* pOwner, IEntity* pObject, bool isTwoHand);
+	bool GetPredefinedGripHandPos(IEntity* pEnt, Vec3& outLeftEL, Vec3& outRightEL);
+	void GetPredefinedPosOffset(IEntity* pEnt, Vec3& fpPosOffset, Vec3& tpPosOffset);
+	bool IsTimerEnableCollisionsActive();
+	CActor::ObjectHoldType DetermineObjectHoldType(const EntityId entityId) const;
+	void OnThirdPersonBendReady(const EntityId targetId, bool reaching);
+	void OnHeldObjectCollision(CPlayer* pClientActor, const EventPhysCollision* pCollision, IEntity *pTargetEnt);
+	void OnPlayerRevive(CPlayer* pPlayer);
+	void OnPlayerDied(CPlayer* pPlayer);
+	void ReAttachObjectToHand();
+	void FinishGrenadeAction(CWeapon* pMainHandWeapon);
+	void PerformThrowAction_Press(EntityId throwableId, bool isLivingEnt);
+	void PerformThrowAction_Release(EntityId throwableId, bool isLivingEnt);
+	void DebugLogInfo();
 };
 
 #endif

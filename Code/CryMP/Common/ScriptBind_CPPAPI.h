@@ -87,4 +87,8 @@ public:
 	int GetLocalIP(IFunctionHandler* pH);
 	int GetIP(IFunctionHandler* pH, const char* host);
 	int GetTime(IFunctionHandler *pH, int future=0);
+	////////////////////////////////////////////////////////////////////////////////
+	// HandGripData
+	////////////////////////////////////////////////////////////////////////////////
+	int CreateHandGripData(IFunctionHandler* pH);
 };

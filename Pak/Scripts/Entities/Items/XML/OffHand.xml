@@ -13,6 +13,8 @@
 		<firstperson name="objects/weapons/us/frag_grenade/frag_grenade_left.chr" angles="0,0,0" />
 		<aux0 name="objects/weapons/us/frag_grenade/frag_grenade_tp.cgf" />
 		<aux1 name="objects/weapons/us/smoke grenade/smoke_grenade_tp.cgf" />
+		<ownerloop name="objects/weapons/us/Flashbang/Flashbang.cgf" />
+		<owner name="objects/weapons/us/emp_grenade/emp_grenade.cgf" />
 		<boneAttachments>
 			<attachment target="firstperson" name="grenade_attachment" bone="item_attachment" />
 		</boneAttachments>
@@ -42,7 +44,7 @@
 			<sound target="thirdperson" name="sounds/weapons:fraggrenade:fire" radius="5" static="0" />-->
 		</action>
 		<action name="hold_grenade">
-			<animation target="ownerloop" name="hold_grenade" />
+			<animation target="ownerloop" name="hold_grenade" /> 
 			<!--<sound target="firstperson" name="sounds/weapons:fraggrenade:fire" radius="5" static="0" />
 			<sound target="thirdperson" name="sounds/weapons:fraggrenade:fire" radius="5" static="0" />-->
 		</action>
@@ -52,7 +54,7 @@
 		</action>			
 		<action name="idle_object_left">
 			<animation target="firstperson" name="idle_item_%hand%_01" />
-			<animation target="ownerloop" name="hold_grenade" />
+			<animation target="ownerloop" name="idle" /> <!--CryMP: was hold_grenade-->
 		</action>
 		<action name="pickup_weapon_left">
 			<animation target="firstperson" name="pick_up_weapon_%hand%_01" speed="0.85"/>
@@ -72,7 +74,7 @@
 		</action>				
 		<action name="idle_object">
 			<animation target="firstperson" name="idle_item_01" />
-			<animation target="ownerloop" name="hold_grenade" />
+			<animation target="ownerloop" name="idle" /> <!--CryMP: was hold_grenade-->
 		</action>
 		<action name="throw_object">
 			<animation target="firstperson" name="throw_item_01" />
