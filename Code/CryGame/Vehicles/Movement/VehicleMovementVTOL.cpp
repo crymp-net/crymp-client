@@ -156,7 +156,8 @@ void CVehicleMovementVTOL::SetHorizontalMode(float horizontal)
 	{
 		if (m_horizontal != horizontal)
 		{
-			m_pWingsAnimation->PlaySound(m_wingHorizontalStateId); //CryMP
+			//CryMP: Just queue, don't play from physics thread
+			m_requestHorizontalSound = true;
 
 			m_horizontal = horizontal;
 		}
@@ -173,7 +174,8 @@ void CVehicleMovementVTOL::SetHorizontalMode(float horizontal)
 	{
 		if (m_horizontal != 0.0f)
 		{
-			m_pWingsAnimation->PlaySound(m_wingVerticalStateId); //CryMP
+			//CryMP: Queue vertical mode sound
+			m_requestVerticalSound = true;
 
 			m_horizontal = 0.0f;
 		}
@@ -871,6 +873,21 @@ void CVehicleMovementVTOL::Update(const float deltaTime)
 			Interpolate(m_wingsAnimTimeInterp, m_wingsAnimTime, 2.0f, deltaTime);
 
 		m_pWingsAnimation->SetTime(m_wingsAnimTimeInterp);
+
+		// -----------------------------------------------------
+		//CryMP: Play queued wing mode sounds on main thread 
+		if (m_requestHorizontalSound)
+		{
+			m_pWingsAnimation->PlaySound(m_wingHorizontalStateId);
+			m_requestHorizontalSound = false;
+		}
+
+		if (m_requestVerticalSound)
+		{
+			m_pWingsAnimation->PlaySound(m_wingVerticalStateId);
+			m_requestVerticalSound = false;
+		}
+		// -----------------------------------------------------
 	}
 
 	if (pActor && pActor->IsClient())

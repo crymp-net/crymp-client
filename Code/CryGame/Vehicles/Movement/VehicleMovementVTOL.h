@@ -100,6 +100,9 @@ protected:
 
 	float m_wingsAnimTime;
 	float m_wingsAnimTimeInterp;
+
+	bool m_requestHorizontalSound = false;
+	bool m_requestVerticalSound = false;
 };
 
 #endif
