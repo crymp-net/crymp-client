@@ -23,6 +23,8 @@ static CrashLogger::LogFileProvider g_logFileProvider;
 static CrashLogger::HeapInfoProvider g_heapInfoProvider;
 static const char* g_banner;
 
+void DumpLuaStackTrace(std::FILE *file);
+
 static void* ByteOffset(void* base, std::size_t offset)
 {
 	return static_cast<unsigned char*>(base) + offset;
@@ -434,6 +436,8 @@ static void WriteCrashDump(std::FILE* file, EXCEPTION_POINTERS* exception)
 	DumpCallStack(file, exception->ContextRecord);
 	DumpLoadedModules(file);
 	DumpCommandLine(file);
+
+	DumpLuaStackTrace(file);
 
 	WriteDumpFooter(file);
 }

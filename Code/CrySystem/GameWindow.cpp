@@ -72,8 +72,7 @@ static LRESULT CALLBACK WindowProc(HWND window, UINT msg, WPARAM wParam, LPARAM 
 				event.timestamp = keyCodeWide[0];
 
 				// MB_CUR_MAX should be here, but it's slow
-				char keyName[4] = {};
-
+				char keyName[5] = {};
 				if (wctomb(keyName, static_cast<wchar_t>(wParam)) >= 0)
 				{
 					if (keyName[1] == 0 && static_cast<unsigned char>(keyName[0]) >= 32)

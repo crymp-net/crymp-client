@@ -258,16 +258,18 @@ void CWeaponSystem::OnLoadingComplete(ILevel *pLevel)
 			m_pItemSystem->CacheGeometry(geometry);
 
 			// Preload particle assets.
-			for (int ch = params->GetChildCount()-1; ch >= 0; ch--)
-			{
-				const IItemParamsNode *child = params->GetChild(ch);
-				if (child)
+			if (params) {
+				for (int ch = params->GetChildCount() - 1; ch >= 0; ch--)
 				{
-					CItemParamReader reader(child);
-					const char *effect = 0;
-					reader.Read("effect", effect);
-					if (effect && *effect)
-						gEnv->p3DEngine->FindParticleEffect(effect, "WeaponSystem");
+					const IItemParamsNode* child = params->GetChild(ch);
+					if (child)
+					{
+						CItemParamReader reader(child);
+						const char* effect = 0;
+						reader.Read("effect", effect);
+						if (effect && *effect)
+							gEnv->p3DEngine->FindParticleEffect(effect, "WeaponSystem");
+					}
 				}
 			}
 		}
