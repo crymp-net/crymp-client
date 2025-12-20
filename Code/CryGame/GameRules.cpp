@@ -39,6 +39,7 @@
 #include "MPTutorial.h"
 #include "Voting.h"
 #include "SPAnalyst.h"
+#include "CryGame/Items/Weapons/Projectile.h"
 #include "CryCommon/CryAction/IWorldQuery.h"
 
 #include "CryCommon/CryCore/StlUtils.h"
@@ -53,6 +54,7 @@
 #include "CryMP/Server/Server.h"
 #include "CryMP/Server/SSM.h"
 #include "CryMP/Server/SafeWriting/SafeWriting.h"
+#include "Items/Weapons/OffHand.h"
 
 int CGameRules::s_invulnID = 0;
 int CGameRules::s_barbWireID = 0;
@@ -3419,8 +3421,47 @@ float CGameRules::GetRemainingStartTimer() const
 bool CGameRules::OnCollision(const SGameCollision& event)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
+
+	if (gEnv->bClient && !gEnv->bServer)
+	{
+		if (event.pSrcEntity == event.pTrgEntity)
+			return true;
+
+		if (event.pCollision->partid[0] < -1 || event.pCollision->partid[1] < -1)
+			return true;
+
+		if (event.pSrcEntity)
+		{
+			if (CProjectile* pProj = g_pGame->GetWeaponSystem()->GetProjectile(event.pSrcEntity->GetId()))
+			{
+				if (pProj->IsPlayingMfxFromClExplosion())
+				{
+					IPhysicalEntity* pPhysicalEnt = pProj->GetPhysicalEntity();
+					if (pPhysicalEnt && pPhysicalEnt->GetType() == PE_PARTICLE)
+					{
+						//CryLogAlways("$8Blocking pSrcEntity original MFX for %s", event.pSrcEntity->GetClass()->GetName());
+						return false;
+					}
+				}
+			}
+		}
+
+		if (CPlayer* pPlayer = static_cast<CPlayer*>(m_pGameFramework->GetClientActor()))
+		{
+			if (event.pSrcEntity && pPlayer->GetHeldObjectId() && pPlayer->GetHeldObjectId() == event.pSrcEntity->GetId())
+			{
+				if (COffHand* pOffHand = static_cast<COffHand*>(pPlayer->GetItemByClass(CItem::sOffHandClass)))
+				{
+					pOffHand->OnHeldObjectCollision(pPlayer, event.pCollision, event.pTrgEntity);
+				}
+				return true;
+			}
+		}
+	}
+
 	// currently this function only calls server functions
 	// prevent unnecessary script callbacks on the client
+
 	if (!gEnv->bServer || !m_onCollisionFunc || IsDemoPlayback())
 		return true;
 
@@ -3562,8 +3603,10 @@ void CGameRules::CmdDebugSpawns(IConsoleCmdArgs* pArgs)
 	for (TSpawnLocations::const_iterator lit = pGameRules->m_spawnLocations.begin(); lit != pGameRules->m_spawnLocations.end(); ++lit)
 	{
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(*lit);
-		Vec3 pos = pEntity ? pEntity->GetWorldPos() : ZERO;
-		CryLogAlways("Spawn Location: %s  (eid: %d %08x  team: %d) %.2f,%.2f,%.2f", pEntity->GetName(), pEntity->GetId(), pEntity->GetId(), pGameRules->GetTeam(pEntity->GetId()), pos.x, pos.y, pos.z);
+		if (pEntity) {
+			Vec3 pos = pEntity->GetWorldPos();
+			CryLogAlways("Spawn Location: %s  (eid: %d %08x  team: %d) %.2f,%.2f,%.2f", pEntity->GetName(), pEntity->GetId(), pEntity->GetId(), pGameRules->GetTeam(pEntity->GetId()), pos.x, pos.y, pos.z);
+		}
 	}
 }
 

@@ -1,0 +1,12 @@
+<item name="DualSOCOM" class="PlayerFeature">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="unique" value="1" />
+		<param name="mass" value="0" />				
+	</params>
+	<features>
+		<feature name="dualSOCOM" noPickUp="1"/>
+	</features>	
+</item>

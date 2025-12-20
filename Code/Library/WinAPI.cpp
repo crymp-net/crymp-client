@@ -767,6 +767,28 @@ int WinAPI::HTTPRequest(
 		throw StringTools::SysErrorFormat("WinHttpOpen");
 	}
 
+	if (urlComponents.nScheme == INTERNET_SCHEME_HTTPS)
+	{
+		// try to enable TLS 1.2 and 1.3
+		DWORD tlsFlags = WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 | WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
+
+		if (!WinHttpSetOption(hSession, WINHTTP_OPTION_SECURE_PROTOCOLS, &tlsFlags, sizeof(tlsFlags)))
+		{
+			// try only TLS 1.2 because TLS 1.3 is not supported on older Windows
+			tlsFlags = WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
+
+			if (!WinHttpSetOption(hSession, WINHTTP_OPTION_SECURE_PROTOCOLS, &tlsFlags, sizeof(tlsFlags)))
+			{
+				// we cannot continue without TLS 1.2
+				throw StringTools::SysErrorFormat("Failed to enable TLS 1.2");
+			}
+		}
+	}
+
+	if (!urlComponents.lpszHostName) {
+		throw StringTools::SysErrorFormat("Invalid Hostname");
+	}
+
 	const std::wstring serverNameW(urlComponents.lpszHostName, urlComponents.dwHostNameLength);
 
 	HTTPHandleGuard hConnect = WinHttpConnect(hSession, serverNameW.c_str(), urlComponents.nPort, 0);
@@ -845,6 +867,7 @@ int WinAPI::HTTPRequest(
 		}
 		else
 		{
+			contentLengthString[31] = 0;
 			contentLength = _wcstoui64(contentLengthString, nullptr, 10);
 		}
 

@@ -1,0 +1,54 @@
+<item name="GaussCannon" class="VehicleWeapon" invisible="1" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ammos>
+		<ammo name="gausstankbullet" extra="10" amount="0" />
+	</ammos>
+	<actions>
+  	<action name="fire">			
+			<sound target="firstperson" name="sounds/weapons:vehicle_asian_tank:fire_gauss_fp" radius="200" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:vehicle_asian_tank:fire" radius="200" static="1" />
+		</action>
+  </actions>
+	<firemodes>
+		<firemode name="Single" type="Single">
+			<fire>
+				<param name="ammo_type" value="gausstankbullet" />
+				<param name="rate" value="10" />
+				<param name="clip_size" value="0" />				
+				<param name="damage" value="2000" />
+				<param name="reload_time" value="3.5" />				
+				<param name="nearmiss_signal" value="OnNearMiss" />
+				<param name="hit_type" value="gaussbullet" />
+			</fire>
+			<recoil>
+			  <param name="impulse" 		value="25000" />
+				<param name="max_recoil"	value="10" />
+				<param name="attack" 			value="8" />
+				<param name="decay" 			value="1.25" />
+				<param name="maxx" 				value="8" />
+				<param name="maxy" 				value="3" />
+				<param name="randomness" 	value="2" />
+				<hints>
+					<hint x="0.00" 	y="0.00" />
+					<hint x="1.00" 	y="0.00" />
+				</hints>				
+			</recoil>				
+		  <muzzleflash>
+				<firstperson effect="muzzleflash.Tank.cannon_gauss" time="1" helper="" light_helper="" light_radius="3" light_time="0.01" light_color="0.5,0.5,1" light_diffuse_mult="8" />
+				<thirdperson effect="muzzleflash.Tank.cannon_gauss_tp" time="1" helper="" light_helper="" light_radius="3" light_time="0.01" light_color="0.5,0.5,1" light_diffuse_mult="8"  />
+			</muzzleflash>			
+			<dust>
+			  <param name="mfxtag" value="dust_tankcannon" />
+			  <param name="maxheight" value="10" />			  
+			  <param name="maxheightscale" value="0.5" />
+			</dust>
+		</firemode>
+	</firemodes>
+</item>

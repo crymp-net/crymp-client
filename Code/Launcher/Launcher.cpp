@@ -741,6 +741,71 @@ static void HookNetworkGetService(void* pCryNetwork)
 	WinAPI::FillMem(&pCNetworkVTable[7], &reinterpret_cast<void*&>(pNewGetService), sizeof(void*));
 }
 
+struct DummyCSystem
+{
+	void Warning(int subsys, int severity, int flags, const char* file, const char* format, ...)
+	{
+		std::string msg;
+
+		// severity is ignored because the message is always supposed to be a warning
+
+		switch (subsys)
+		{
+			case VALIDATOR_MODULE_UNKNOWN:      msg += "[Unknown] ";      break;
+			case VALIDATOR_MODULE_RENDERER:     msg += "[Renderer] ";     break;
+			case VALIDATOR_MODULE_3DENGINE:     msg += "[3DEngine] ";     break;
+			case VALIDATOR_MODULE_AI:           msg += "[AI] ";           break;
+			case VALIDATOR_MODULE_ANIMATION:    msg += "[Animation] ";    break;
+			case VALIDATOR_MODULE_ENTITYSYSTEM: msg += "[EntitySystem] "; break;
+			case VALIDATOR_MODULE_SCRIPTSYSTEM: msg += "[ScriptSystem] "; break;
+			case VALIDATOR_MODULE_SYSTEM:       msg += "[System] ";       break;
+			case VALIDATOR_MODULE_SOUNDSYSTEM:  msg += "[SoundSystem] ";  break;
+			case VALIDATOR_MODULE_GAME:         msg += "[Game] ";         break;
+			case VALIDATOR_MODULE_MOVIE:        msg += "[Movie] ";        break;
+			case VALIDATOR_MODULE_EDITOR:       msg += "[Editor] ";       break;
+			case VALIDATOR_MODULE_NETWORK:      msg += "[Network] ";      break;
+			case VALIDATOR_MODULE_PHYSICS:      msg += "[Physics] ";      break;
+			case VALIDATOR_MODULE_FLOWGRAPH:    msg += "[FlowGraph] ";    break;
+			default:                            msg += "[?] ";            break;
+		}
+
+		if (flags & VALIDATOR_FLAG_FILE)    msg += "[File] ";
+		if (flags & VALIDATOR_FLAG_TEXTURE) msg += "[Texture] ";
+		if (flags & VALIDATOR_FLAG_SCRIPT)  msg += "[Script] ";
+		if (flags & VALIDATOR_FLAG_SOUND)   msg += "[Sound] ";
+		if (flags & VALIDATOR_FLAG_AI)      msg += "[AI] ";
+
+		va_list args;
+		va_start(args, format);
+		StringTools::FormatToV(msg, format, args);
+		va_end(args);
+
+		if (file)
+		{
+			msg += " [";
+			msg += file;
+			msg += "]";
+		}
+
+		CryLogWarning("%s", msg.c_str());
+	}
+};
+
+static void HookSystemWarning(void* pCrySystem)
+{
+	void** pCSystemVTable = static_cast<void**>(WinAPI::RVA(pCrySystem,
+#ifdef BUILD_64BIT
+		0x26ACF8
+#else
+		0x1BC5F8
+#endif
+	));
+
+	// vtable hook
+	auto pNewWarning = &DummyCSystem::Warning;
+	WinAPI::FillMem(&pCSystemVTable[21], &reinterpret_cast<void*&>(pNewWarning), sizeof(void*));
+}
+
 static void LogRealWindowsBuild(Logger& logger)
 {
 	void* kernel32 = WinAPI::DLL::Get("kernel32.dll");
@@ -1050,6 +1115,7 @@ void Launcher::PatchEngine()
 	if (m_dlls.pCryAction)
 	{
 		MemoryPatch::CryAction::AllowDX9ImmersiveMultiplayer(m_dlls.pCryAction);
+		MemoryPatch::CryAction::AllowMultiplayerRegisterWithAI(m_dlls.pCryAction);
 		MemoryPatch::CryAction::DisableBreakLog(m_dlls.pCryAction);
 		MemoryPatch::CryAction::DisableTimeOfDayLengthLowerLimit(m_dlls.pCryAction);
 		MemoryPatch::CryAction::HookCryWarning(m_dlls.pCryAction, &OnCryWarning);
@@ -1090,6 +1156,7 @@ void Launcher::PatchEngine()
 		MemoryPatch::CrySystem::HookCryWarning(m_dlls.pCrySystem, &OnCryWarning);
 
 		InstallEarlyEngineInitHook(m_dlls.pCrySystem);
+		HookSystemWarning(m_dlls.pCrySystem);
 
 		ReplaceCryPak(m_dlls.pCrySystem);
 		ReplaceStreamEngine(m_dlls.pCrySystem);
@@ -1100,12 +1167,10 @@ void Launcher::PatchEngine()
 
 	if (m_dlls.pCry3DEngine)
 	{
+		MemoryPatch::Cry3DEngine::EnableBigDecalsOnDynamicObjects(m_dlls.pCry3DEngine);
 		MemoryPatch::Cry3DEngine::FixGetObjectsByType(m_dlls.pCry3DEngine);
 
-		if (!WinAPI::CmdLine::HasArg("-oldtod"))
-		{
-			ReplaceTimeOfDay(m_dlls.pCry3DEngine);
-		}
+		ReplaceTimeOfDay(m_dlls.pCry3DEngine);
 	}
 
 	const char* GAME_WINDOW_NAME = "CryMP Client " CRYMP_VERSION_STRING;
@@ -1138,11 +1203,7 @@ void Launcher::PatchEngine()
 
 void Launcher::StartEngine()
 {
-	#ifdef SERVER_LAUNCHER
-	const bool oldAction = true;
-	#else
 	const bool oldAction = WinAPI::CmdLine::HasArg("-oldaction");
-	#endif
 
 	IGameFramework* pGameFramework = nullptr;
 
@@ -1218,6 +1279,7 @@ void Launcher::StartEngine()
 
 	StartupTime::Finish();
 	CryLogAlways("Startup finished in %.3f seconds", StartupTime::GetSeconds());
+
 #ifdef SERVER_LAUNCHER
 	if (oldAction) {
 		CryLogAlways("[CryMP] Using old CryAction");
@@ -1298,6 +1360,10 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 
 	gEnv->pConsole->AddCommand("CryPakInfo", [](IConsoleCmdArgs* args) {
 		CryPak::GetInstance().LogInfo();
+	});
+
+	gEnv->pConsole->AddCommand("LocalizationManagerInfo", [](IConsoleCmdArgs* args) {
+		LocalizationManager::GetInstance().LogInfo();
 	});
 }
 

@@ -513,6 +513,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	// weapon system
 	i_debuggun_1 = pConsole->RegisterString("i_debuggun_1", "ai_statsTarget", VF_DUMPTODISK, "Command to execute on primary DebugGun fire");
 	i_debuggun_2 = pConsole->RegisterString("i_debuggun_2", "ag_debug", VF_DUMPTODISK, "Command to execute on secondary DebugGun fire");
+	pConsole->Register("i_debug_entity", &i_debug_entity, 0, VF_NOT_NET_SYNCED, "Force debug entity id");
 
 	pConsole->Register("tracer_min_distance", &tracer_min_distance, 4.0f, 0, "Distance at which to start scaling/lengthening tracers.");
 	pConsole->Register("tracer_max_distance", &tracer_max_distance, 50.0f, 0, "Distance at which to stop scaling/lengthening tracers.");
@@ -603,6 +604,9 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_flyMode", &mp_flyMode, 0, OPTIONAL_SYNC, "Enable FlyMode", OnChangeFlyMode);
 	pConsole->Register("mp_pickupObjects", &mp_pickupObjects, 0, OPTIONAL_SYNC, "Allow pickup and throw objects in DX10");
 	pConsole->Register("mp_pickupVehicles", &mp_pickupVehicles, 0, OPTIONAL_SYNC, "Allow pickup and throw vehicles (requires mp_pickupObjects 1)");
+	pConsole->Register("mp_pickupMassLimit", &mp_pickupMassLimit, 0.0f, OPTIONAL_SYNC, "Specify maximum weight possible to pickup, 0 = all objects allowed");
+	pConsole->Register("mp_pickupThrowMult", &mp_pickupThrowMult, 1.0f, OPTIONAL_SYNC, "Throw multiplier for objects");
+	pConsole->Register("mp_pickupMaxVehicleCollisions", &mp_pickupMaxVehicleCollisions, 0, OPTIONAL_SYNC, "Maximum vehicle collisions untill throwing object");
 	pConsole->Register("mp_weaponsOnBack", &mp_weaponsOnBack, 0, OPTIONAL_SYNC, "Attach weapons to back as in SP");
 	pConsole->Register("mp_thirdPerson", &mp_thirdPerson, 1, OPTIONAL_SYNC, "Allow ThirdPerson mode (F1)", OnChangeThirdPerson);
 	pConsole->Register("mp_animationGrenadeSwitch", &mp_animationGrenadeSwitch, 0, OPTIONAL_SYNC, "Enable FP animations for grenade switching");
@@ -615,6 +619,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_C4StrengthThrowMult", &mp_C4StrengthThrowMult, 1.0f, OPTIONAL_SYNC, "Strength throw mult for C4s");
 	pConsole->Register("mp_netSerializePhysVel", &mp_netSerializePhysVel, 0, OPTIONAL_SYNC, "Serialize the player physics velocity for more precise speed");
 	pConsole->Register("mp_netSerializeMaxSpeed", &mp_netSerializeMaxSpeed, 9.0f, OPTIONAL_SYNC, "Maximum character speed");
+	pConsole->Register("mp_netSerializeHolsteredItems", &mp_netSerializeHolsteredItems, 0, OPTIONAL_SYNC, "Serialize holstered items");
 	pConsole->Register("mp_radioTagging", &mp_radioTagging, 0, OPTIONAL_SYNC, "Enable tagging positions using radio");
 	pConsole->Register("mp_healthBars", &mp_healthBars, 0, OPTIONAL_SYNC, "Enable displaying health bars");
 	pConsole->Register("mp_deadPlayersOnMinimap", &mp_deadPlayersOnMinimap, 0, OPTIONAL_SYNC, "Display dead players on minimap");
@@ -640,6 +645,8 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_recycleProjectiles", &mp_recycleProjectiles, 1, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Recycle projectiles");
 	pConsole->Register("mp_abandonTime", &mp_abandonTime, 10.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds after which vehicles explode");
 	pConsole->Register("mp_explosiveRemovalTime", &mp_explosiveRemovalTime, 30.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds for explosive removal after death");
+	pConsole->Register("mp_explosion_mfx", &mp_explosion_mfx, 1, VF_NOT_NET_SYNCED, "Enable mfx via ClExplosion rmi for server controlled missiles");
+	pConsole->Register("ads", &ads, 1, VF_NOT_NET_SYNCED, "Enable or disable (100h+) ads");
 }
 
 //------------------------------------------------------------------------

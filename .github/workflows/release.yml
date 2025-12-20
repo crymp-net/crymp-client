@@ -16,7 +16,6 @@ jobs:
     with:
       bits: 32
       type: Release
-      sign: true
 
   build_64:
     uses: ./.github/workflows/build.yml
@@ -24,7 +23,6 @@ jobs:
     with:
       bits: 64
       type: Release
-      sign: true
 
   release:
     runs-on: ubuntu-latest

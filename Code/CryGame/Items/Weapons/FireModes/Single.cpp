@@ -777,21 +777,10 @@ void CSingle::PatchParams(const IItemParamsNode* patch)
 
 void CSingle::PatchParamsCryMP()
 {
-	//CryMP hack: enable tracers on AAA.. TOOD: move to CryAction params
 	const IEntityClass* pWClass = m_pWeapon->GetEntity()->GetClass();
-	if (pWClass == gEnv->pEntitySystem->GetClassRegistry()->FindClass("AACannon"))
+	if (pWClass == gEnv->pEntitySystem->GetClassRegistry()->FindClass("AARocketLauncher"))
 	{
-		m_tracerparams.effectFP = "";
-		m_tracerparams.effect = "";
-		m_tracerparams.geometryFP = "objects/effects/tracer_standard_red_new.cgf";
-		m_tracerparams.geometry = "objects/effects/tracer_standard_red_new.cgf";
-		m_tracerparams.frequency = 1;
-		m_tracerparams.speed = 230;
-		m_tracerparams.speedFP = 300;
-	}
-	//CryMP hack: enable lockon missiles.. TOOD: move to CryAction params
-	else if (pWClass == gEnv->pEntitySystem->GetClassRegistry()->FindClass("AARocketLauncher"))
-	{
+		//CryMP: enable lockon missiles for AARocketLauncher if mp_aaLockOn '1'
 		if (g_pGameCVars->mp_aaLockOn)
 		{
 			m_fireparams.autoaim = true;
@@ -804,6 +793,7 @@ void CSingle::PatchParamsCryMP()
 
 	else if (pWClass == CItem::sRocketLauncherClass)
 	{
+		//CryMP: enable lockon missiles for RocketLauncher if mp_rpgMod '1'
 		if (g_pGameCVars->mp_rpgMod)
 		{
 			m_fireparams.autoaim = true;

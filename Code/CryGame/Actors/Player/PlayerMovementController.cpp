@@ -1159,9 +1159,12 @@ bool CPlayerMovementController::UpdateNormal(float frameTime, SActorFrameMovemen
 		}
 	}
 
-
 	Vec3 viewDir = ((bodyTarget - playerPos).GetNormalizedSafe(ZERO));
-	if (!m_pPlayer->IsClient() && viewDir.len2() > 0.01f)
+	if (m_pPlayer->IsClient()) //CryMP
+	{
+		params.lookIK = true;
+	}
+	else if (viewDir.len2() > 0.01f)
 	{
 		//Vec3 localVDir(m_pPlayer->GetEntity()->GetWorldRotation().GetInverted() * viewDir);
 		Vec3 localVDir(m_pPlayer->GetViewQuat().GetInverted() * viewDir);

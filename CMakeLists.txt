@@ -149,7 +149,6 @@ add_library(Base OBJECT
 	Code/CryAction/GameTokenSystem.h
 	Code/CryAction/ItemParamsNode.cpp
 	Code/CryAction/ItemParamsNode.h
-	Code/CryAction/ItemSystem_XMLData.cpp
 	Code/CryAction/ItemSystem.cpp
 	Code/CryAction/ItemSystem.h
 	Code/CryAction/LevelSystem.cpp
@@ -516,6 +515,8 @@ add_library(Base OBJECT
 	Code/CryMP/Client/FileCache.h
 	Code/CryMP/Client/FileDownloader.cpp
 	Code/CryMP/Client/FileDownloader.h
+	Code/CryMP/Client/HandGripRegistry.cpp
+	Code/CryMP/Client/HandGripRegistry.h
 	Code/CryMP/Client/HealthManager.cpp
 	Code/CryMP/Client/HealthManager.h
 	Code/CryMP/Client/MapDownloader.cpp
@@ -534,14 +535,14 @@ add_library(Base OBJECT
 	Code/CryMP/Client/ServerConnector.h
 	Code/CryMP/Client/ServerInfo.cpp
 	Code/CryMP/Client/ServerInfo.h
-	Code/CryMP/Client/ServerPAK.cpp
-	Code/CryMP/Client/ServerPAK.h
 	Code/CryMP/Client/SpeedAggregator.cpp
 	Code/CryMP/Client/SpeedAggregator.h
 	Code/CryMP/Client/WeatherSystem.cpp
 	Code/CryMP/Client/WeatherSystem.h
 	Code/CryMP/Common/Executor.cpp
 	Code/CryMP/Common/Executor.h
+	Code/CryMP/Common/ServerPAK.cpp
+	Code/CryMP/Common/ServerPAK.h
 	Code/CryMP/Common/GSMasterHook.cpp
 	Code/CryMP/Common/GSMasterHook.h
 	Code/CryMP/Common/HTTP.cpp
@@ -992,7 +993,6 @@ add_library(CryGame OBJECT
 	Code/CryGame/Items/Weapons/WeaponClientServer.cpp
 	Code/CryGame/Items/Weapons/WeaponEvent.cpp
 	Code/CryGame/Items/Weapons/WeaponInput.cpp
-	Code/CryGame/Items/Weapons/WeaponSystem_XMLData.cpp
 	Code/CryGame/Items/Weapons/WeaponSystem.cpp
 	Code/CryGame/Items/Weapons/WeaponSystem.h
 	Code/CryGame/Items/Weapons/ZoomModes/IronSight.cpp

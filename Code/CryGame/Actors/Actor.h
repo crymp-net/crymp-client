@@ -810,6 +810,7 @@ public:
 	virtual void ExtendCombat();
 
 	virtual void SetIKPos(const char* pLimbName, const Vec3& goalPos, int priority);
+	void SetIKPos(const char* pLimbName, const Vec3& goalPos, int priority, float blendIn, float recover);
 	void ClearIKPosBlending(const char* pLimbName);
 
 	virtual void HandleEvent(const SGameObjectEvent& event);
@@ -1092,7 +1093,7 @@ public:
 	virtual void	SetStance(EStance stance);
 	virtual void	StanceChanged(EStance lastStance, EStance newStance) {};
 	virtual bool	TrySetStance(EStance stance); // Shared between humans and aliens.
-	  //
+	//
 
 	IAnimationGraphState* GetAnimationGraphState();
 	IAnimatedCharacter* GetAnimatedCharacter() const { return m_pAnimatedCharacter; };
@@ -1103,12 +1104,13 @@ public:
 	CWeapon* GetCurrentWeapon(bool includeVehicle/*=false*/) const;
 	EntityId GetCurrentItemId(bool includeVehicle = false) const;
 	virtual IItem* GetHolsteredItem() const;
+	EntityId GetHolsteredItemId() const;
 
 	IInteractor* GetInteractor() const;
 
 	//Net
 	EntityId NetGetCurrentItem() const;
-	void NetSetCurrentItem(EntityId id);
+	void NetSetCurrentItem(EntityId id, bool hasWeapon);
 
 	//AI
 	Vec3 GetAIAttentionPos();
@@ -1216,7 +1218,7 @@ protected:
 
 	float m_frozenAmount; // internal amount. used to leave authority over frozen state at game
 
-	  // ScreenEffects-related variables
+	// ScreenEffects-related variables
 	CScreenEffects* m_screenEffects;
 
 	// Weapon Attachment manager
@@ -1258,8 +1260,6 @@ protected:
 	int				m_teamId;
 	EntityId	m_lastItemId;
 
-	EntityId m_HoldingObjectId = (EntityId)0;
-
 public:
 	// Can occur only when we're not zooming out
 	int m_autoZoomInID;
@@ -1275,10 +1275,25 @@ public:
 		return m_currentPhysProfile;
 	}
 
+	void NetSetTeamId(const int teamId)
+	{
+		m_teamId = teamId;
+	}
+
 //////////////////////////////////////////////////////////////////////////////////
 //CryMP
 //////////////////////////////////////////////////////////////////////////////////
 public:
+
+	enum class ObjectHoldType
+	{
+		None,
+		Actor,
+		Projectile,
+		OneHanded,
+		TwoHanded,
+		Vehicle
+	};
 
 	bool IsPlayerClass() const
 	{
@@ -1292,14 +1307,18 @@ public:
 	virtual bool IsFpSpectatorTarget() const { return false; }
 	virtual bool IsTpSpectatorTarget() const { return false; }
 
-	EntityId GetHeldObjectId() const { return m_HoldingObjectId; }
-	void SetHeldObjectId(EntityId objectId) { m_HoldingObjectId = objectId; }
+	EntityId GetHeldObjectId() const { return m_heldObjectId; }
+	ObjectHoldType GetHeldObjectType() const { return m_heldObjectType; }
+
+	void SetHeldObjectId(EntityId objectId, ObjectHoldType type = ObjectHoldType::None);
 
 	void SaveNick(const std::string_view& name);
 
 	bool IsGhostPit();
 
-	IAttachment* CreateBoneAttachment(int characterSlot, const char* boneName, const char* attachmentName);
+	IAttachment* CreateBoneAttachment(int characterSlot, const char* boneName, const char* attachmentName,
+		const Vec3& offsetPosition = Vec3(ZERO),
+		const Quat& offsetRotation = Quat(IDENTITY));
 
 	void HideAllAttachments(int characterSlot, bool hide, bool hideShadow);
 	void HideAttachment(int characterSlot, const char* attachmentName, bool hide, bool hideShadow);
@@ -1355,7 +1374,18 @@ public:
 		return m_vehicleRelinkUpdateId;
 	}
 
+	enum class ObjectEvent
+	{
+		GRAB,
+		THROW
+	};
+
+	virtual void OnObjectEvent(ObjectEvent evnt, const EntityId objectId) {};
+
 private:
+
+	ObjectHoldType m_heldObjectType = ObjectHoldType::None;
+	EntityId m_heldObjectId = (EntityId)0;
 
 	struct IKLimb
 	{
@@ -1379,6 +1409,7 @@ private:
 	std::string m_fpItemHandsModel;
 
 	EntityId m_vehicleRelinkUpdateId = 0;
+	bool m_netItemReceived = false;
 
 	enum EntitySlot
 	{
@@ -1416,7 +1447,6 @@ public:
 	template<class... Args>
 	void DrawLog(const char* msg, Args... args)
 	{
-		int index = 1;
 		IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
 		IActorIteratorPtr pActorIterator = pActorSystem->CreateActorIterator();
 		IActor* pActor = nullptr;
@@ -1426,7 +1456,6 @@ public:
 		{
 			if (pActor == this)
 			{
-				index = k;
 				break;
 			}
 			++k;

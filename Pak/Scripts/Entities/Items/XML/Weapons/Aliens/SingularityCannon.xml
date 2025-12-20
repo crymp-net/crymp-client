@@ -1,0 +1,60 @@
+<item name="SingularityCannon" class="Weapon">
+	<params>
+		<param name="equipeable"	value="1" />
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="1" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="0" />
+		<param name="usable"		 	value="1" />
+		<param name="arms"			 	value="0" />
+		<mount />				
+	</params>
+	<ai_descriptor handler="hunter_singularity_cannon" damage_radius="10" charge_time="5.0" signal_on_shoot="0" />
+	<ammos>
+		<ammo name="singularityprojectile" extra="1000" amount="1000" />
+	</ammos>
+	<actions>	
+		<action name="spin_up">
+			<animation target="owner" name="shoot" />
+			<sound target="firstperson" name="Sounds/weapons:singularity_cannon:sing_cannon_charge" radius="100" static="1" />
+			<sound target="thirdperson" name="Sounds/weapons:singularity_cannon:sing_cannon_charge" radius="100" static="1" />
+		</action>		
+		<action name="blast">
+			<sound target="firstperson" name="Sounds/weapons:singularity_cannon:sing_cannon_fire_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="Sounds/weapons:singularity_cannon:sing_cannon_fire_fp" radius="100" static="1" />
+		</action>		
+		<action name="fire">			
+			<sound target="firstperson" name="Sounds/weapons:singularity_cannon:sing_cannon_fire_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="Sounds/weapons:singularity_cannon:sing_cannon_fire_fp" radius="100" static="1" />
+		</action>
+	</actions>
+	<firemodes>		
+		<firemode name="Charge" type="Charge">
+			<fire>
+				<param name="spin_up_time" value="5" />
+				<param name="ammo_type" value="singularityprojectile" />
+				<param name="rate" value="10" />
+				<param name="damage" value="500" />				
+				<param name="offset" value="0" />								
+			</fire>
+			<charge>
+				<param name="time" value="0.1" />
+				<param name="max_charges" value="1" />
+			</charge>
+			<spread>
+				<param name="min" value="0" />
+				<param name="max" value="0" />
+				<param name="attack" value="0" />
+				<param name="decay" value="0" />
+			</spread>
+			<muzzleflash>
+				<firstperson effect="Alien_Weapons.singularity.Hunter_Singularity_Muzzle" helper="dummy" light_helper="dummy" light_radius="10" time="0.100" />
+				<thirdperson effect="Alien_Weapons.singularity.Hunter_Singularity_Muzzle" helper="dummy" light_helper="dummy" light_radius="10" time="0.100" />
+			</muzzleflash>			
+			<spinup>
+				<firstperson effect="Alien_weapons.singularity.Hunter_singularity_Spinup" helper="dummy" light_radius="0" />
+				<thirdperson effect="Alien_weapons.singularity.Hunter_singularity_Spinup" helper="dummy" light_radius="0" />	
+			</spinup>	
+		</firemode>
+	</firemodes>
+</item>

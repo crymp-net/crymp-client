@@ -5,6 +5,7 @@
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 #include "CryCommon/CryAction/IVehicleSystem.h"
 #include "CryCommon/CryMath/Cry_Camera.h"
+#include "CryCommon/CryNetwork/INetwork.h"
 #include "CrySystem/LocalizationManager.h"
 #include "CrySystem/RandomGenerator.h"
 #include "Library/StringTools.h"
@@ -13,6 +14,7 @@
 
 #include "ScriptBind_CPPAPI.h"
 #include "CryMP/Client/Client.h"
+#include "CryMP/Client/HandGripRegistry.h"
 #include "CryMP/Client/ScriptCommands.h"
 #include "CryMP/Client/ScriptCallbacks.h"
 #include "CryMP/Client/DrawTools.h"
@@ -63,6 +65,7 @@ ScriptBind_CPPAPI::ScriptBind_CPPAPI()
 	SCRIPT_REG_FUNC(GetLP);
 	SCRIPT_REG_FUNC(GetNumVars);
 	SCRIPT_REG_FUNC(GetVars);
+	SCRIPT_REG_FUNC(HasNetworkConnectivity);
 	SCRIPT_REG_TEMPLFUNC(SetProfile, "type, profileId, token");
 
 	// Localization
@@ -98,6 +101,8 @@ ScriptBind_CPPAPI::ScriptBind_CPPAPI()
 	SCRIPT_REG_TEMPLFUNC(GetIP, "host");
 	SCRIPT_REG_TEMPLFUNC(GetLocalIP, "");
 	SCRIPT_REG_TEMPLFUNC(GetTime, "future");
+
+	SCRIPT_REG_TEMPLFUNC(CreateHandGripData, "handgripdata");
 }
 
 ScriptBind_CPPAPI::~ScriptBind_CPPAPI()
@@ -517,11 +522,17 @@ int ScriptBind_CPPAPI::GetVars(IFunctionHandler* pH)
 	return pH->EndFunction(vars);
 }
 
-int ScriptBind_CPPAPI::SetProfile(IFunctionHandler* pH, const char* type, const char* profileId, const char* token) {
+int ScriptBind_CPPAPI::HasNetworkConnectivity(IFunctionHandler* pH)
+{
+	return pH->EndFunction(gEnv->pNetwork->HasNetworkConnectivity());
+}
+
+int ScriptBind_CPPAPI::SetProfile(IFunctionHandler* pH, const char* type, const char* profileId, const char* token, float playedTime) {
 	std::string strType{ type };
 	SProfileInfo info{
 		.id = profileId,
-		.token = token
+		.token = token,
+		.playedTime = playedTime
 	};
 	if (info.id.length() == 0 || info.token.length() == 0) {
 		auto it = m_profiles.find(strType);
@@ -1160,3 +1171,97 @@ int ScriptBind_CPPAPI::GetTime(IFunctionHandler* pH, int future) {
 	sprintf(bf, "%04d%02d%02d%02d%02d%02d", info->tm_year + 1900, info->tm_mon + 1, info->tm_mday, info->tm_hour, info->tm_min, info->tm_sec);
 	return pH->EndFunction(bf);
 }
+
+int ScriptBind_CPPAPI::CreateHandGripData(IFunctionHandler* pH)
+{
+	if (!gClient)
+	{
+		return pH->EndFunction();
+	}
+
+	HandGripRegistry* pHandGripRegistry = gClient->GetHandGripRegistry();
+	if (!pHandGripRegistry)
+	{
+		return pH->EndFunction();
+	}
+
+	// Params: 1=array table, 2=optional bool dontClear (default=false)
+	if ((pH->GetParamCount() < 1) || (pH->GetParamType(1) != svtObject))
+		return pH->EndFunction();
+
+	SmartScriptTable arr;
+	pH->GetParam(1, arr);
+	if (!arr)
+		return pH->EndFunction();
+
+	bool dontClear = false;
+	if (pH->GetParamCount() >= 2)
+	{
+		pH->GetParam(2, dontClear);
+	}
+
+	auto ReadVec3 = [](IScriptTable* tbl, const char* name, Vec3& out) -> bool
+		{
+			SmartScriptTable sub;
+			if (!tbl->GetValue(name, sub) || !sub) return false;
+			float x = 0.f, y = 0.f, z = 0.f;
+			sub->GetValue("x", x);
+			sub->GetValue("y", y);
+			sub->GetValue("z", z);
+			out = Vec3(x, y, z);
+			return true;
+		};
+
+	// Clear first unless caller asked to preserve existing data
+	if (!dontClear)
+	{
+		pHandGripRegistry->ClearGripRegistry();
+	}
+
+	int loaded = 0;
+
+	const int len = arr->Count();
+	for (int i = 1; i <= len; ++i)
+	{
+		SmartScriptTable row;
+		if (!arr->GetAt(i, row) || !row)
+			continue;
+
+		const char* key = nullptr;
+		bool hasL = false, hasR = false;
+		Vec3 L = Vec3(ZERO), R = Vec3(ZERO);
+		Vec3 posOffset_FP = Vec3(ZERO);
+		Vec3 posOffset_TP = Vec3(ZERO);
+
+		row->GetValue("key", key);
+		row->GetValue("hasL", hasL);
+		row->GetValue("hasR", hasR);
+		if (!key || !*key)
+			continue;
+
+		if (hasL) ReadVec3(row, "L", L);
+		if (hasR) ReadVec3(row, "R", R);
+
+		ReadVec3(row, "posOffset_FP", posOffset_FP);
+		ReadVec3(row, "posOffset_TP", posOffset_TP);
+
+		pHandGripRegistry->SetGripHoldObjectOffset(key, posOffset_FP, posOffset_TP);
+
+		if (hasL) { pHandGripRegistry->SetGripLeft(key, L); }
+		if (hasR) { pHandGripRegistry->SetGripRight(key, R); }
+
+		++loaded;
+	}
+
+	if (dontClear)
+	{
+		CryLogAlways("$3[CryMP] Added %d handgrip entr%s from Lua (existing registry preserved)", loaded, (loaded == 1 ? "y" : "ies"));
+	}
+	else
+	{
+		CryLogAlways("$3[CryMP] Loaded %d handgrip entr%s from Lua", loaded, (loaded == 1 ? "y" : "ies"));
+	}
+
+	return pH->EndFunction(loaded);
+}
+

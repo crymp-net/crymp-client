@@ -1,0 +1,57 @@
+<item name="AISmokeGrenades" class="OffHand">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="1" />
+		<param name="droppable" value="0" />
+		<param name="mass" value="0" />
+		<param name="pose" value="ignore" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/us/frag_grenade/frag_grenade_left.chr" angles="0,0,0" />
+		<firstperson name="objects/weapons/us/frag_grenade/frag_grenade_tp.cgf" angles="0,0,0" />
+	</geometry>	
+	
+	<ammos>
+		<ammo name="smokegrenade" extra="0" amount="4" />
+	</ammos>
+	
+	<actions>
+		<action name="select_grenade">
+			<animation target="firstperson" name="select_grenade_%hand%_01" />
+		</action>				
+		<action name="deselect_grenade">
+			<animation target="firstperson" name="deselect_grenade_%hand%_01" />
+		</action>				
+		<action name="throw_grenade">
+			<animation target="firstperson" name="throw_grenade_%hand%_01" />
+			<animation target="owner" name="throw" />
+			<!--<sound target="firstperson" name="sounds/weapons:fraggrenade:fire" radius="5" static="0" />
+			<sound target="thirdperson" name="sounds/weapons:fraggrenade:fire" radius="5" static="0" />-->
+		</action>
+	</actions>
+
+	<firemodes>
+		<firemode type="Throw" name="ThrowGrenade">
+			<fire>
+				<param name="ammo_type" value="smokegrenade" />
+				<param name="clip_size" value="4" />
+				<param name="rate" value="60" />
+				<param name="damage" value="200" />
+<!--				<param name="helper_tp" value="dummy" /> NO HELPER FOR AI! -->
+				<param name="helper_fp" value="grenade" />
+				<param name="track_projectiles" value="1" />
+			</fire>
+			<throw>
+				<param name="delay" value="2.05" />
+				<param name="auto_select_last" value="0" />
+			</throw>
+			<recoil>
+				<param name="max_recoil"	value="0" />
+				<param name="attack" 			value="0" />
+			</recoil>
+			<actions>
+				<param name="throw" value="throw_grenade" />
+			</actions>
+		</firemode>
+	</firemodes>
+</item>

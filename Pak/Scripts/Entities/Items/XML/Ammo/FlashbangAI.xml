@@ -1,0 +1,50 @@
+<ammo name="FlashbangAI" class="Projectile">
+	<geometry>
+		<firstperson name="objects/weapons/us/flashbang/flashbang.cgf" />
+		<thirdperson name="objects/weapons/us/flashbang/flashbang.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="0.35" />
+		<param name="speed" value="26" />
+		<param name="radius" value="0.125" />
+		
+		<param name="air_resistance" value="0" />		<!-- THE AI GRENADE MUST HAVE AIR RESISTANCE SET TO ZERO! -->
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, -9.8" />
+		<param name="water_gravity" value="0, 0, -9.8" />
+		
+		<param name="thrust" value="0" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="8" />
+		<param name="material" value="mat_grenade" />
+		<param name="spin_random" value="720, 720, 720" />
+		
+		<param name="single_contact" value="0" />
+		<param name="traceable" value="1" />
+	</physics>
+	<explosion>
+		<param name="pressure" value="0" />
+		<param name="hole_size" value="0" />
+		<param name="terrain_hole_size" value="0" />
+		<param name="decal" value="textures/decal/explo_decal.dds" />
+		<param name="effect" value="explosions.flashbang.explode" />
+		<param name="effect_scale" value="1" />
+	</explosion>
+	<params>
+		<param name="lifetime" value="1.8" />
+		<param name="showtime" value="0.05" />
+		<param name="aitype"	value="grenade" />
+	</params>
+	<trail>
+		<param name="effect" value="muzzleflash.LAM.grenade_white" />
+	</trail>
+	<flashbang>
+		<param name="max_radius" value="25.0" />
+		<param name="blindAmount" value="0.35" /> <!-- This value between 0.0f and 1.0f -->
+		<param name="flashbangBaseTime" value="2.5" />
+	</flashbang>
+</ammo>

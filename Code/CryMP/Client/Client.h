@@ -16,6 +16,7 @@ class CGame;
 class Executor;
 class FileDownloader;
 class FileCache;
+class HandGripRegistry;
 class MapDownloader;
 class GSMasterHook;
 class ScriptCommands;
@@ -37,6 +38,7 @@ class Client : public IGameFrameworkListener, public ILevelSystemListener, publi
 	std::unique_ptr<HTTPClient> m_pHTTPClient;
 	std::unique_ptr<FileDownloader> m_pFileDownloader;
 	std::unique_ptr<FileCache> m_pFileCache;
+	std::unique_ptr<HandGripRegistry> m_pHandGripRegistry;
 	std::unique_ptr<MapDownloader> m_pMapDownloader;
 	std::unique_ptr<GSMasterHook> m_pGSMasterHook;
 	std::unique_ptr<ScriptCommands> m_pScriptCommands;
@@ -141,6 +143,11 @@ public:
 	FileCache *GetFileCache()
 	{
 		return m_pFileCache.get();
+	}
+
+	HandGripRegistry *GetHandGripRegistry()
+	{
+		return m_pHandGripRegistry.get();
 	}
 
 	MapDownloader *GetMapDownloader()

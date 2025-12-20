@@ -7,6 +7,8 @@
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryGame/Game.h"
 #include "CrySystem/Logger.h"
+#include "CrySystem/CryPak.h"
+
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
@@ -34,10 +36,27 @@ void Server::Init(IGameFramework* pGameFramework)
 
 	pGameFramework->RegisterListener(this, "crymp-server", FRAMEWORKLISTENERPRIORITY_DEFAULT);
 
+
+	const std::string serverPak(WinAPI::CmdLine::GetArgValue("-pak"));
+	if (!serverPak.empty()) {
+        const bool success = CryPak::GetInstance().LoadServerPak(serverPak);
+        CryLogAlways("$6[CryMP] Loading server pak '%s' %s", serverPak.c_str(), success ? "succeeded" : "failed");
+	}
+
 	// initialize the game
 	// mods are not supported
 	this->pGame = new CGame();
 	this->pGame->Init(pGameFramework);
+
+	if (ICVar* maxPlayers = gEnv->pConsole->GetCVar("sv_maxplayers")) {
+		// this overrides max 32 players cap
+		maxPlayers->SetOnChangeCallback([](ICVar* cvar) -> void {
+			int value = cvar->GetIVal();
+			if (value < 2) {
+				cvar->Set(2);
+			}
+		});
+	}
 
 	const std::string ssm(WinAPI::CmdLine::GetArgValue("-ssm"));
 	if (!ssm.empty())

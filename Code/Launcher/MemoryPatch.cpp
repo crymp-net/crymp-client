@@ -22,6 +22,25 @@ static void FillMem(void* base, std::size_t offset, const void* data, std::size_
 // Cry3DEngine
 ////////////////////////////////////////////////////////////////////////////////
 
+void MemoryPatch::Cry3DEngine::EnableBigDecalsOnDynamicObjects(void* pCry3DEngine)
+{
+	const unsigned char code[] = {
+#ifdef BUILD_64BIT
+		0xC6, 0x44, 0x24, 0x30, 0x00,  // mov byte ptr ss:[rsp+0x30], 0x0
+#else
+		0x6A, 0x00,                    // push 0x0
+#endif
+	};
+
+#ifdef BUILD_64BIT
+	FillMem(pCry3DEngine, 0xF6835, code, sizeof(code));
+	FillMem(pCry3DEngine, 0xF6867, code, sizeof(code));
+#else
+	FillMem(pCry3DEngine, 0xBAE29, code, sizeof(code));
+	FillMem(pCry3DEngine, 0xBAE43, code, sizeof(code));
+#endif
+}
+
 void MemoryPatch::Cry3DEngine::FixGetObjectsByType(void* pCry3DEngine)
 {
 	const unsigned char code[] = {
@@ -50,6 +69,18 @@ void MemoryPatch::CryAction::AllowDX9ImmersiveMultiplayer(void* pCryAction)
 #else
 	FillNop(pCryAction, 0x1D698A, 0x1A);
 	FillNop(pCryAction, 0x1D89FC, 0x15);
+#endif
+}
+
+/**
+ * This makes the AI.RegisterWithAI Lua function work in multiplayer.
+ */
+void MemoryPatch::CryAction::AllowMultiplayerRegisterWithAI(void* pCryAction)
+{
+#ifdef BUILD_64BIT
+	FillNop(pCryAction, 0xEF401, 0x1F);
+#else
+	FillNop(pCryAction, 0xA79BA, 0x1A);
 #endif
 }
 

@@ -1,0 +1,48 @@
+<ammo name="empgrenade" class="Projectile">
+	<geometry>
+		<firstperson name="objects/weapons/us/Transceiver/Transceiver_tp.cgf" />
+		<thirdperson name="objects/weapons/us/Transceiver/Transceiver_tp.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="0.35" />
+		<param name="speed" value="22" />
+		<param name="radius" value="0.125" />
+		
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, -9.8" />
+		<param name="water_gravity" value="0, 0, -9.8" />
+		
+		<param name="thrust" value="0" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="8" />
+		<param name="material" value="mat_grenade" />
+		<param name="spin_random" value="720, 720, 720" />
+		
+		<param name="single_contact" value="0" />
+		<param name="traceable" value="1" />
+	</physics>
+	<params>
+		<param name="lifetime" value="3.5" />
+		<param name="showtime" value="0.05" />
+		<param name="aitype"	value="grenade" />
+	</params>
+	<trail>
+		<param name="effect" value="muzzleflash.LAM.grenade_blue" />
+	</trail>
+	<explosion>
+		<param name="pressure" value="0" />
+		<param name="min_radius" value="20" />
+		<param name="max_radius" value="20" />
+		<param name="hole_size" value="0" />
+		<param name="terrain_hole_size" value="0" />
+		<param name="effect" value="misc.emp.sphere" />
+		<param name="effect_scale" value="1" />
+		<param name="type" value="emp" />
+		<param name="radialblurdist" value="0" />
+	</explosion>
+</ammo>

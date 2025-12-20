@@ -87,6 +87,14 @@ void CAdManager::Update(float delta) {
 			return;
 		}
 
+
+		if (g_pGameCVars->ads == 0) {
+			const auto profile{ gClient->GetScriptBind_CPPAPI()->GetProfile("real") };
+			if (profile && profile->playedTime > (100.0f * 3600.0f)) {
+				return;
+			}
+		}
+
 		CycleAds(delta);
 	}
 }

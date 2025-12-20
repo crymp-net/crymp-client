@@ -1,0 +1,8 @@
+<item name="CustomAmmoPickup" class="AmmoPickup" category="" priority="0">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="0'" />
+		<param name="droppable" 	value="0" />
+		<param name="ammo_pickup_sound" value="sounds/weapons:weapon_accessories:pickup_weapon_fp" />
+	</params>
+</item>

@@ -48,7 +48,7 @@ struct SExplosionParams
 	const char *effectName;
 	float effectScale;
 	string type;
-	int		hitTypeId;
+	int hitTypeId;
 	float maxblurdist;
 
 	SExplosionParams(const IItemParamsNode* explosion);
@@ -91,6 +91,7 @@ struct SAmmoParams
 	unsigned int	flags;
 	int		serverSpawn;
 	int		predictSpawn;
+	int     clexplosion_mfx;
 
 	// common parameters
 	float	lifetime;

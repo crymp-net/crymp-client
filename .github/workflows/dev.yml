@@ -8,6 +8,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - v*
 
 jobs:
   build_32:
@@ -16,7 +18,6 @@ jobs:
     with:
       bits: 32
       type: RelWithDebInfo
-      sign: true
 
   build_64:
     uses: ./.github/workflows/build.yml
@@ -24,10 +25,9 @@ jobs:
     with:
       bits: 64
       type: RelWithDebInfo
-      sign: true
 
   publish:
-    if: github.ref == 'refs/heads/master' && github.repository_owner == 'crymp-net'
+    if: github.repository_owner == 'crymp-net'
     needs:
       - build_32
       - build_64

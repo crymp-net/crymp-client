@@ -20,6 +20,7 @@
 #include "Player/Player.h"
 #include "Alien/Alien.h"
 #include "CryGame/GameCVars.h"
+#include "CryGame/Items/Weapons/OffHand.h"
 
 #include "CryCommon/CryAction/IGameFramework.h"
 #include "CryCommon/CryAction/IVehicleSystem.h"
@@ -27,6 +28,9 @@
 #include "CryCommon/CryAction/IWorldQuery.h"
 #include "CryCommon/CryMath/Cry_Geo.h"
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
+
+#include "CryMP/Client/Client.h"
+#include "CryMP/Client/HandGripRegistry.h"
 
 //------------------------------------------------------------------------
 CScriptBind_Actor::CScriptBind_Actor(ISystem* pSystem)
@@ -158,6 +162,7 @@ CScriptBind_Actor::CScriptBind_Actor(ISystem* pSystem)
 	SCRIPT_REG_FUNC(GetPhysicalColliderMode);
 	SCRIPT_REG_FUNC(GetLookAtEntity);
 	SCRIPT_REG_TEMPLFUNC(GetLookAtPoint, "");
+	SCRIPT_REG_TEMPLFUNC(SetHeldObjectOffsets, "");
 
 	m_pSS->SetGlobalValue("STANCE_PRONE", STANCE_PRONE);
 	m_pSS->SetGlobalValue("STANCE_CROUCH", STANCE_CROUCH);
@@ -1306,6 +1311,7 @@ int CScriptBind_Actor::GetClosestAttachment(IFunctionHandler* pH, int characterS
 	//FIXME FIXME: E3 workaround
 	char attachmentName[64];
 	strncpy(attachmentName, pClosestAtt->GetName(), 63);
+	attachmentName[63] = 0;
 	char* pDotChar = strstr(attachmentName, ".");
 	if (pDotChar)
 		*pDotChar = 0;
@@ -1883,3 +1889,72 @@ int CScriptBind_Actor::GetLookAtPoint(IFunctionHandler* pH, float maxDist)
 
 	return pH->EndFunction();
 }
+
+int CScriptBind_Actor::SetHeldObjectOffsets(IFunctionHandler* pH)
+{
+	if (!gClient || !gClient->GetHandGripRegistry())
+	{
+		return pH->EndFunction();
+	}
+
+	CActor* pActor = GetActor(pH);
+	if (!pActor)
+		return pH->EndFunction();
+
+	int applied = 0;
+
+	// --- parse params (expect exactly one table) ---
+	SmartScriptTable root;
+	if (!(pH->GetParamCount() >= 1 && pH->GetParamType(1) == svtObject && pH->GetParam(1, root) && root))
+		return pH->EndFunction(applied);
+
+	Vec3 fp(ZERO), tp(ZERO);
+	bool hasFP = false, hasTP = false;
+	{
+		CScriptSetGetChain chain(root);
+		hasFP = chain.GetValue("posOffset_FP", fp); 
+		hasTP = chain.GetValue("posOffset_TP", tp);
+	}
+
+	// --- resolve held entity from this actor ---
+	IEntity* pEnt = nullptr;
+	if (CPlayer* pl = CPlayer::FromActor(pActor))
+	{
+		if (EntityId id = pl->GetHeldObjectId())
+			pEnt = gEnv->pEntitySystem->GetEntity(id);
+	}
+
+	// --- update registry entry if present ---
+	if (pEnt)
+	{
+		if (HandGripInfo* info = gClient->GetHandGripRegistry()->GetGripByEntity(pEnt))
+		{
+			if (hasFP) { info->posOffset_FP = fp; ++applied; }
+			if (hasTP) { info->posOffset_TP = tp; ++applied; }
+
+			CryLogAlways("$3[Grips] SetHeldObjectOffsets: '%s'  FP:%s (%.3f,%.3f,%.3f)  TP:%s (%.3f,%.3f,%.3f)",
+				pEnt->GetName(),
+				hasFP ? "on" : "skip", fp.x, fp.y, fp.z,
+				hasTP ? "on" : "skip", tp.x, tp.y, tp.z);
+
+			if (pActor->IsThirdPerson())
+			{
+				if (COffHand* pOffHand = static_cast<COffHand*>(pActor->GetItemByClass(CItem::sOffHandClass)))
+				{
+					pOffHand->ReAttachObjectToHand();
+				}
+			}
+		}
+		else
+		{
+			CryLogAlways("$4[Grips] SetHeldObjectOffsets: no grip entry for entity '%s' (capture grips first)", pEnt->GetName());
+		}
+	}
+	else
+	{
+		CryLogAlways("$4[Grips] SetHeldObjectOffsets: no held entity / not a CPlayer");
+	}
+
+	return pH->EndFunction(applied); // 0..2 fields applied
+}
+
