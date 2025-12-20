@@ -460,9 +460,9 @@ bool CItem::SetGeometry(int slot, const ItemString& name, const Vec3& poffset, c
 
 			CreateAttachmentHelpers(slot);
 
-      //CryMP: 
-      //Skip OffHand: Fixes wrong object position after switching from 3rd to 1st person
-      //Skip Fists: Keeps idle animations after switching from 3rd to 1st person
+			//CryMP: 
+			//Skip OffHand: Fixes wrong object position after switching from 3rd to 1st person
+			//Skip Fists: Keeps idle animations after switching from 3rd to 1st person
 			if (GetEntity()->GetClass() != sFistsClass && GetEntity()->GetClass() != sOffHandClass) 
 			{
 				SetDefaultIdleAnimation(slot, g_pItemStrings->idle);
