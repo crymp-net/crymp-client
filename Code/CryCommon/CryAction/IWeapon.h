@@ -167,6 +167,14 @@ struct IZoomMode
 
 	//! zoom mode is activated by toggling
 	virtual bool IsToggle() = 0;
+
+	//CryMP
+	virtual void OnEnterFirstPerson()
+	{
+	}
+	virtual void OnEnterThirdPerson()
+	{
+	}
 };
 
 

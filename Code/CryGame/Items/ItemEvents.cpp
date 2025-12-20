@@ -42,7 +42,7 @@ void CItem::OnSelected(bool selected)
 void CItem::OnEnterFirstPerson()
 {
 	EnableUpdate(true, eIUS_General);
-	EnableHiddenSkinning(true);
+	//EnableHiddenSkinning(true); //unused
 	SetViewMode(eIVM_FirstPerson);
 	AttachToHand(false);
 	AttachArms(true, true);
@@ -64,7 +64,7 @@ void CItem::OnEnterFirstPerson()
 //------------------------------------------------------------------------
 void CItem::OnEnterThirdPerson()
 {
-	EnableHiddenSkinning(false);
+	//EnableHiddenSkinning(false); //unused
 	AttachToHand(true);
 	AttachArms(false, false);
 	SetViewMode(eIVM_ThirdPerson);

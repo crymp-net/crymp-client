@@ -268,7 +268,7 @@ Matrix34 CItem::GetCharacterAttachmentLocalTM(int slot, const char* name)
 {
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(slot);
 	if (!pCharacter)
-		return Matrix34::CreateIdentity();;
+		return Matrix34::CreateIdentity();
 
 	IAttachmentManager* pAttachmentManager = pCharacter->GetIAttachmentManager();
 	IAttachment* pAttachment = pAttachmentManager->GetInterfaceByName(name);
@@ -443,7 +443,7 @@ bool CItem::SetGeometry(int slot, const ItemString& name, const Vec3& poffset, c
 			DrawSlot(slot, false); //CryMP: Hide unused slot instead of clearing it
 		}
 
-		DestroyAttachmentHelpers(slot);
+		//DestroyAttachmentHelpers(slot);
 
 		if (!name.empty())
 		{
@@ -460,7 +460,10 @@ bool CItem::SetGeometry(int slot, const ItemString& name, const Vec3& poffset, c
 
 			CreateAttachmentHelpers(slot);
 
-			if (GetEntity()->GetClass() != sOffHandClass) //CryMP: Fix wrong object position after switching from 3rd to 1st person
+			//CryMP: 
+			//Skip OffHand: Fixes wrong object position after switching from 3rd to 1st person
+			//Skip Fists: Keeps idle animations after switching from 3rd to 1st person
+			if (GetEntity()->GetClass() != sFistsClass && GetEntity()->GetClass() != sOffHandClass) 
 			{
 				SetDefaultIdleAnimation(slot, g_pItemStrings->idle);
 			}
@@ -561,7 +564,6 @@ void CItem::ForceSkinning(bool always)
 //------------------------------------------------------------------------
 void CItem::EnableHiddenSkinning(bool enable)
 {
-	/*
 	for (int slot=0; slot<eIGS_Last; slot++)
 	{
 		ICharacterInstance *pCharacter = GetEntity()->GetCharacter(slot);
@@ -573,7 +575,6 @@ void CItem::EnableHiddenSkinning(bool enable)
 				pCharacter->SetFlags(pCharacter->GetFlags()&(~CS_FLAG_UPDATE_ALWAYS));
 		}
 	}
-	*/
 }
 
 //------------------------------------------------------------------------

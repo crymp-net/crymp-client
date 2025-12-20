@@ -424,7 +424,20 @@ void CItem::Update(SEntityUpdateContext& ctx, int slot)
 	if (slot == eIUS_General)
 	{
 		if (m_stats.mounted)
+		{
 			UpdateMounted(ctx.fFrameTime);
+		}
+		else
+		{
+			if (gEnv->bClient && !m_stats.fp)
+			{
+				CActor* pOwner = GetOwnerActor();
+				if (pOwner && (pOwner->IsClient() || pOwner->IsFpSpectatorTarget() || pOwner->IsTpSpectatorTarget()))
+				{
+					ProcessFirstPersonSkeleton();
+				}
+			}
+		}
 	}
 }
 
@@ -1099,9 +1112,9 @@ void CItem::SetHand(int hand)
 		result = SetGeometry(eIGS_FirstPerson, geometry.name, geometry.position, geometry.angles, geometry.scale);
 	}
 
+	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(eIGS_FirstPerson);
 	if (idx == 0)
 	{
-		ICharacterInstance* pCharacter = GetEntity()->GetCharacter(eIGS_FirstPerson);
 		if (!pCharacter)
 			return;
 
@@ -1114,7 +1127,10 @@ void CItem::SetHand(int hand)
 
 	if (result)
 	{
-		PlayAction(m_idleAnimation[eIGS_FirstPerson], 0, true, (eIPAF_Default | eIPAF_NoBlend) & ~eIPAF_Owner);
+		if (pCharacter && pCharacter->GetISkeletonAnim()->GetNumAnimsInFIFO(0) < 1)
+		{
+			PlayAction(m_idleAnimation[eIGS_FirstPerson], 0, true, (eIPAF_Default | eIPAF_NoBlend) & ~eIPAF_Owner);
+		}
 	}
 }
 

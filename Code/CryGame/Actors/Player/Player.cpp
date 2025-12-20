@@ -2288,7 +2288,7 @@ void CPlayer::EnableFpSpectatorTarget(bool activate)
 		pPlayer->SetFpSpectator(activate);
 	}
 
-	m_stats.spectatorTargetType = activate ? SpectatorTargetType::FIRST_PERSON : SpectatorTargetType::NONE;
+	SetSpectatorTargetType(activate ? SpectatorTargetType::FIRST_PERSON : SpectatorTargetType::THIRD_PERSON);
 
 	EnableThirdPerson(!activate);
 
@@ -3927,20 +3927,32 @@ void CPlayer::Revive(ReasonForRevive reason)
 	m_stats.spectatorMode = spectator;
 	m_stats.fpSpectator = fpSpectator;
 
-	if (reason == ReasonForRevive::SCRIPT_BIND)
+	if (IsClient())
 	{
-		EnableThirdPerson(thirdPerson);
-	}
-
-	if (spectatorTargetType != SpectatorTargetType::NONE)
-	{
-		if (spectatorTargetType == SpectatorTargetType::FIRST_PERSON)
+		if (reason == ReasonForRevive::SCRIPT_BIND)
 		{
-			EnableFpSpectatorTarget(true);
+			EnableThirdPerson(thirdPerson);
+		}
+	}
+	else
+	{
+		if (reason != ReasonForRevive::SCRIPT_BIND && reason != ReasonForRevive::SPAWN)
+		{
+			SetSpectatorTargetType(SpectatorTargetType::NONE);
 		}
 		else
 		{
-			SetSpectatorTargetType(spectatorTargetType);
+			if (spectatorTargetType != SpectatorTargetType::NONE)
+			{
+				if (spectatorTargetType == SpectatorTargetType::FIRST_PERSON)
+				{
+					EnableFpSpectatorTarget(true);
+				}
+				else
+				{
+					SetSpectatorTargetType(spectatorTargetType);
+				}
+			}
 		}
 	}
 

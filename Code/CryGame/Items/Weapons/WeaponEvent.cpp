@@ -329,6 +329,11 @@ void CWeapon::OnEnterFirstPerson()
 	{
 		pFM->OnEnterFirstPerson();
 	}
+	IZoomMode* pZM = GetActiveZoomMode();
+	if (pZM)
+	{
+		pZM->OnEnterFirstPerson();
+	}
 }
 
 //------------------------------------------------------
@@ -340,5 +345,10 @@ void CWeapon::OnEnterThirdPerson()
 	if (pFM)
 	{
 		pFM->OnEnterThirdPerson();
+	}
+	IZoomMode* pZM = GetActiveZoomMode();
+	if (pZM)
+	{
+		pZM->OnEnterThirdPerson();
 	}
 }
