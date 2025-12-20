@@ -55,7 +55,7 @@
      <TexMod />
     </Texture>
    </Textures>
-   <PublicParams AnisotropicShape="0.25" SparksPow="6.54" SparksMultiplier="15" SparksPhase="30.6" SparksFrequency="10" SparksColor="0.070588239,0.12156863,0.11764706" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="1.35" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.31400001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.465" FresnelScale="27.870001" FresnelScaleShadowBias="1"/>
+   <PublicParams AnisotropicShape="0.25" SparksPow="6.54" SparksMultiplier="8" SparksPhase="12" SparksFrequency="10" SparksColor="0.416,0.671,0.643" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="1.35" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.31400001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.465" FresnelScale="27.870001" FresnelScaleShadowBias="1"/>
    <MaterialLayers />
   </Material>
   <Material Name="L_arm" MtlFlags="132" Shader="Cloth" GenMask="268468496" SurfaceType="mat_kevlar" Diffuse="0.50196099,0.50196099,0.50196099" Specular="1,1,1" Emissive="0,0,0" Shininess="10" Opacity="1">
@@ -73,7 +73,7 @@
      <TexMod />
     </Texture>
    </Textures>
-   <PublicParams AnisotropicShape="0.25" SparksPow="6.54" SparksMultiplier="15" SparksPhase="30.6" SparksFrequency="10" SparksColor="0.070588239,0.12156863,0.11764706" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="1.35" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.31400001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.465" FresnelScale="27.870001" FresnelScaleShadowBias="1"/>
+   <PublicParams AnisotropicShape="0.25" SparksPow="6.54" SparksMultiplier="8" SparksPhase="12" SparksFrequency="10" SparksColor="0.416,0.671,0.643" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="1.35" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.31400001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.465" FresnelScale="27.870001" FresnelScaleShadowBias="1"/>
    <MaterialLayers />
   </Material>
   <Material Name="R_arm" MtlFlags="132" Shader="Cloth" GenMask="268468496" SurfaceType="mat_kevlar" Diffuse="0.50196099,0.50196099,0.50196099" Specular="1,1,1" Emissive="0,0,0" Shininess="10" Opacity="1">
@@ -91,10 +91,11 @@
      <TexMod />
     </Texture>
    </Textures>
-   <PublicParams AnisotropicShape="0.25" SparksPow="6.54" SparksMultiplier="15" SparksPhase="30.6" SparksFrequency="10" SparksColor="0.070588239,0.12156863,0.11764706" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="1.35" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.31400001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.465" FresnelScale="27.870001" FresnelScaleShadowBias="1"/>
+   <PublicParams AnisotropicShape="0.25" SparksPow="6.54" SparksMultiplier="8" SparksPhase="12" SparksFrequency="10" SparksColor="0.416,0.671,0.643" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="1.35" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.31400001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.465" FresnelScale="27.870001" FresnelScaleShadowBias="1"/>
    <MaterialLayers />
   </Material>
  </SubMaterials>
  <PublicParams ObmDisplacement="0.0040000002" PomDisplacement="0.025" SelfShadowStrength="3" AmbientMultiplier="1"/>
  <MaterialLayers />
 </Material>
+

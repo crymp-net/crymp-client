@@ -55,7 +55,7 @@
      <TexMod />
     </Texture>
    </Textures>
-   <PublicParams AnimPhase="0" AnimFrequency="0" AnimAmplitudeWav0="0" AnimAmplitudeWav1="0" AnimAmplitudeWav2="0" AnisotropicShape="0.60000002" SparksPow="6.5" SparksMultiplier="15" SparksPhase="15" SparksFrequency="10" SparksColor="0.070588239,0.12156863,0.11764706" DiffuseExponent="0.5" FuzzynessSmoothness="1" FuzzynessStrength="2" FuzzynessSpread="2.9200001" FuzzynessSaturation="1" SpecularMultiplier="0.30000001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.2" FresnelScale="10" FresnelScaleShadowBias="1"/>
+   <PublicParams AnimPhase="0" AnimFrequency="0" AnimAmplitudeWav0="0" AnimAmplitudeWav1="0" AnimAmplitudeWav2="0" AnisotropicShape="0.60000002" SparksPow="6.5" SparksMultiplier="10" SparksPhase="15" SparksFrequency="10" SparksColor="1,0.784,0.459" DiffuseExponent="0.5" FuzzynessSmoothness="1" FuzzynessStrength="2" FuzzynessSpread="2.9200001" FuzzynessSaturation="1" SpecularMultiplier="0.30000001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.2" FresnelScale="10" FresnelScaleShadowBias="1"/>
    <MaterialLayers />
   </Material>
   <Material Name="vest" MtlFlags="128" Shader="Cloth" GenMask="268476688" SurfaceType="mat_kevlar" Diffuse="0.50196081,0.50196081,0.50196081" Specular="0.74509799,0.74509799,0.74509799" Emissive="0,0,0" Shininess="15" Opacity="1">
@@ -73,10 +73,11 @@
      <TexMod />
     </Texture>
    </Textures>
-   <PublicParams AnimPhase="0" AnimFrequency="0" AnimAmplitudeWav0="0" AnimAmplitudeWav1="0" AnimAmplitudeWav2="0" AnisotropicShape="0.60000002" SparksPow="6.5" SparksMultiplier="15" SparksPhase="15" SparksFrequency="10" SparksColor="0.070588239,0.12156863,0.11764706" DiffuseExponent="0.5" FuzzynessSmoothness="1" FuzzynessStrength="2" FuzzynessSpread="2.9200001" FuzzynessSaturation="1" SpecularMultiplier="0.30000001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.2" FresnelScale="10" FresnelScaleShadowBias="1"/>
+   <PublicParams AnimPhase="0" AnimFrequency="0" AnimAmplitudeWav0="0" AnimAmplitudeWav1="0" AnimAmplitudeWav2="0" AnisotropicShape="0.60000002" SparksPow="6.5" SparksMultiplier="10" SparksPhase="15" SparksFrequency="10" SparksColor="1,0.784,0.459" DiffuseExponent="0.5" FuzzynessSmoothness="1" FuzzynessStrength="2" FuzzynessSpread="2.9200001" FuzzynessSaturation="1" SpecularMultiplier="0.30000001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.2" FresnelScale="10" FresnelScaleShadowBias="1"/>
    <MaterialLayers />
   </Material>
  </SubMaterials>
  <PublicParams ObmDisplacement="0.0040000002" PomDisplacement="0.025" SelfShadowStrength="3" AmbientMultiplier="1"/>
  <MaterialLayers />
 </Material>
+
