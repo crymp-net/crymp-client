@@ -88,8 +88,8 @@ void CHUD::WeaponAccessoriesInterface(bool visible, bool force)
 		m_bIgnoreMiddleClick = false;
 		if (WeaponHasAttachments())
 		{
-			m_animWeaponAccessories.Invoke("showWeaponAccessories");
-			m_animWeaponAccessories.SetVisible(true);
+			m_animWeaponAccessories.Invoke("showWeaponAccessories"); //CryMP: makes the menu appear
+			//m_animWeaponAccessories.SetVisible(true); //already set to visible when pressing C
 		}
 	}
 	else
@@ -149,6 +149,8 @@ bool CHUD::ShowWeaponAccessories(bool enable)
 			{
 				if (UpdateWeaponAccessoriesScreen())
 				{
+					m_animWeaponAccessories.SetVisible(true); //CryMP: adds the buttons for fast switch, but doesn't show the menu untill later
+
 					//CryMP: Changed to false, showing mouse pointer only when menu available
 					SwitchToModalHUD(&m_animWeaponAccessories, false); 
 
