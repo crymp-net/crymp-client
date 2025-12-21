@@ -37,6 +37,8 @@
 #include "config.h"
 #include "version.h"
 
+static void InstallEntityUpdateHook();
+
 void Client::InitMasters()
 {
 	std::string content;
@@ -223,6 +225,7 @@ void Client::Init(IGameFramework *pGameFramework)
 	m_pDrawTools         = std::make_unique<DrawTools>();
 
 	PatchCryFont();
+	InstallEntityUpdateHook();
 
 	// register engine listeners
 	pGameFramework->RegisterListener(this, "crymp-client", FRAMEWORKLISTENERPRIORITY_DEFAULT);
@@ -649,3 +652,162 @@ void Client::SynchWithPhysicsPosition(IEntity* pEntity)
 		}
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// To be removed once we have our own CryEntitySystem.
+////////////////////////////////////////////////////////////////////////////////
+
+#include "CryCommon/CryEntitySystem/IEntitySystem.h"
+#include "CryCommon/CryAISystem/IAgent.h"
+
+static std::uintptr_t CRYENTITYSYSTEM_BASE = 0;
+
+static void CallEntitySystem_ActivateEntity(IEntity* pEntity, bool activate)
+{
+#ifdef BUILD_64BIT
+	std::uintptr_t func = CRYENTITYSYSTEM_BASE + 0x1D6F0;
+#else
+	std::uintptr_t func = CRYENTITYSYSTEM_BASE + 0x36470;
+#endif
+
+	(gEnv->pEntitySystem->*reinterpret_cast<void(IEntitySystem::*&)(IEntity*, bool)>(func))(pEntity, activate);
+}
+
+struct CryMP_CEntity : public IEntity
+{
+	unsigned int m_bActive : 1;
+	unsigned int m_reserved1 : 3;
+	unsigned int m_bHidden : 1;
+	unsigned int m_reserved2 : 1;
+	unsigned int m_bUseProxyArray : 1;
+	unsigned int m_reserved3 : 3;
+	unsigned int m_nUpdateCounter : 4;
+
+#ifdef BUILD_64BIT
+	void* m_reserved4[17];
+#else
+	void* m_reserved4[31];
+#endif
+
+	IAIObject* m_pAIObject;
+
+	void* m_reserved5[2];
+
+	union UProxies
+	{
+		struct SProxySimple { IEntityProxy* pProxyArray[3]; } simple;
+		struct SProxyArray {
+			IEntityProxy** pProxyArray;
+			int numProxies;
+		} array;
+	};
+	UProxies m_proxy;
+
+	int ProxyCount() const
+	{
+		return m_bUseProxyArray ? m_proxy.array.numProxies : 3;
+	}
+
+	IEntityProxy* GetProxyAt(int index) const
+	{
+		if (m_bUseProxyArray)
+		{
+			if (index < m_proxy.array.numProxies)
+			{
+				return m_proxy.array.pProxyArray[index];
+			}
+		}
+		else
+		{
+			if (index <= ENTITY_PROXY_SCRIPT)
+			{
+				return m_proxy.simple.pProxyArray[index];
+			}
+		}
+
+		return nullptr;
+	}
+
+	bool GetUpdateStatus() const
+	{
+		return (m_bActive || m_nUpdateCounter) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN));
+	}
+
+	void SetUpdateStatus()
+	{
+		const bool enable = GetUpdateStatus();
+
+		CallEntitySystem_ActivateEntity(this, enable);
+
+		if (m_pAIObject)
+		{
+			IUnknownProxy* pProxy = m_pAIObject->GetProxy();
+			if (pProxy)
+			{
+				pProxy->EnableUpdate(enable);
+			}
+		}
+	}
+
+	void Update(SEntityUpdateContext& context)
+	{
+		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ENTITY);
+
+		if (m_bHidden && !CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN))
+		{
+			return;
+		}
+
+		for (int i = ENTITY_PROXY_RENDER + 1; i < ProxyCount(); i++)
+		{
+			IEntityProxy* pProxy = GetProxyAt(i);
+			if (pProxy)
+			{
+				pProxy->Update(context);
+			}
+		}
+
+		IEntityProxy* pRenderProxy = GetProxyAt(ENTITY_PROXY_RENDER);
+		if (pRenderProxy)
+		{
+			pRenderProxy->Update(context);
+		}
+
+		if (m_nUpdateCounter != 0)
+		{
+			if (--m_nUpdateCounter == 0)
+			{
+				SetUpdateStatus();
+			}
+		}
+	}
+};
+
+#ifdef BUILD_64BIT
+static_assert(offsetof(CryMP_CEntity, m_pAIObject) == 0x98);
+static_assert(offsetof(CryMP_CEntity, m_proxy) == 0xb0);
+#else
+static_assert(offsetof(CryMP_CEntity, m_pAIObject) == 0x84);
+static_assert(offsetof(CryMP_CEntity, m_proxy) == 0x90);
+#endif
+
+static void InstallEntityUpdateHook()
+{
+	void* pCryEntitySystem = WinAPI::DLL::Get("CryEntitySystem.dll");
+	if (!pCryEntitySystem)
+	{
+		CryLogErrorAlways("%s: CryEntitySystem.dll not found!", __FUNCTION__);
+		return;
+	}
+
+	CRYENTITYSYSTEM_BASE = reinterpret_cast<std::uintptr_t>(pCryEntitySystem);
+
+	auto newUpdateFunc = &CryMP_CEntity::Update;
+#ifdef BUILD_64BIT
+	WinAPI::HookWithJump(WinAPI::RVA(pCryEntitySystem, 0x9E40), reinterpret_cast<void*&>(newUpdateFunc));
+#else
+	WinAPI::HookWithJump(WinAPI::RVA(pCryEntitySystem, 0x2BB40), reinterpret_cast<void*&>(newUpdateFunc));
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////
