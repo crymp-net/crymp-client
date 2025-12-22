@@ -305,9 +305,10 @@ void CHUDTextChat::OpenChat(int type)
 		return;
 	}
 
-	if (g_pGame->GetGameRules() && g_pGame->GetGameRules()->GetRadio() && g_pGame->GetGameRules()->GetRadio()->IsOpen())
+	CRadio* pRadio = g_pGame->GetGameRules() ? g_pGame->GetGameRules()->GetRadio() : nullptr;
+	if (pRadio && (pRadio->IsOpen() || pRadio->IsPending()))
 	{
-		g_pGame->GetGameRules()->GetRadio()->CloseRadioMenu();
+		pRadio->CloseRadioMenu();
 	}
 
 	m_isListening = true;
