@@ -66,8 +66,6 @@ CWeapon::CWeapon()
 	m_restartZoomStep(0),
 	m_targetOn(false),
 	m_silencerAttached(false),
-	m_weaponRaised(false),
-	m_weaponLowered(false),
 	m_switchingFireMode(false),
 	m_switchLeverLayers(false),
 	m_firedRockets(0),

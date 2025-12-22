@@ -463,9 +463,13 @@ bool CItem::SetGeometry(int slot, const ItemString& name, const Vec3& poffset, c
 			//CryMP: 
 			//Skip OffHand: Fixes wrong object position after switching from 3rd to 1st person
 			//Skip Fists: Keeps idle animations after switching from 3rd to 1st person
-			if (GetEntity()->GetClass() != sFistsClass && GetEntity()->GetClass() != sOffHandClass) 
+			//Skip if weapon lowered or raise
+			if (!m_weaponRaised && !m_weaponLowered)
 			{
-				SetDefaultIdleAnimation(slot, g_pItemStrings->idle);
+				if (GetEntity()->GetClass() != sFistsClass && GetEntity()->GetClass() != sOffHandClass)
+				{
+					SetDefaultIdleAnimation(slot, g_pItemStrings->idle);
+				}
 			}
 		}
 

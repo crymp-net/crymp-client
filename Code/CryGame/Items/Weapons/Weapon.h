@@ -680,8 +680,6 @@ protected:
 	Vec3					m_aimPosition;
 	Vec3					m_targetPosition;
 
-	bool					m_weaponRaised;
-	bool					m_weaponLowered;
 	float         m_raiseProbability;
 
 	bool					m_switchingFireMode;
