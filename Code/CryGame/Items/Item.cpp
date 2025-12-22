@@ -1127,9 +1127,12 @@ void CItem::SetHand(int hand)
 
 	if (result)
 	{
-		if (pCharacter && pCharacter->GetISkeletonAnim()->GetNumAnimsInFIFO(0) < 1)
+		if (!m_idleAnimation[eIGS_FirstPerson].empty())
 		{
-			PlayAction(m_idleAnimation[eIGS_FirstPerson], 0, true, (eIPAF_Default | eIPAF_NoBlend) & ~eIPAF_Owner);
+			if ((pCharacter && pCharacter->GetISkeletonAnim()->GetNumAnimsInFIFO(0) < 1) || m_stats.fp)
+			{
+				PlayAction(m_idleAnimation[eIGS_FirstPerson], 0, true, (eIPAF_Default | eIPAF_NoBlend) & ~eIPAF_Owner);
+			}
 		}
 	}
 }

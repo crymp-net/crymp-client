@@ -1349,6 +1349,10 @@ protected:
 public:
 
 	bool									m_noDrop;				//Fix reseting problem in editor
+
+	bool m_weaponRaised = false;
+	bool m_weaponLowered = false;
+
 	static IEntityClass*	sOffHandClass;
 	static IEntityClass*	sSCARClass;
 	static IEntityClass*	sFY71Class;
