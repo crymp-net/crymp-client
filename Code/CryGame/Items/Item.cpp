@@ -1127,7 +1127,7 @@ void CItem::SetHand(int hand)
 
 	if (result)
 	{
-		if (m_idleAnimation[eIGS_FirstPerson].length() > 0)
+		if (!m_idleAnimation[eIGS_FirstPerson].empty())
 		{
 			if ((pCharacter && pCharacter->GetISkeletonAnim()->GetNumAnimsInFIFO(0) < 1) || m_stats.fp)
 			{
