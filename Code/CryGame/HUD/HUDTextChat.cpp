@@ -305,6 +305,11 @@ void CHUDTextChat::OpenChat(int type)
 		return;
 	}
 
+	if (g_pGame->GetGameRules() && g_pGame->GetGameRules()->GetRadio() && g_pGame->GetGameRules()->GetRadio()->IsOpen())
+	{
+		g_pGame->GetGameRules()->GetRadio()->CloseRadioMenu();
+	}
+
 	m_isListening = true;
 
 	gEnv->pInput->ClearKeyState();
