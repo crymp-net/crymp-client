@@ -48,6 +48,11 @@ public:
 		return m_currentGroup != -1;
 	}
 
+	bool IsPending() const
+	{
+		return m_waitForInputEvents;
+	}
+
 	void		CloseRadioMenu();
 
 private:
