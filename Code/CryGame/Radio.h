@@ -45,7 +45,7 @@ public:
 
 	bool IsOpen() const
 	{
-		return m_menuOpenTime > 0.0f;
+		return m_currentGroup != -1;
 	}
 
 	void		CloseRadioMenu();
