@@ -1093,6 +1093,10 @@ CPPAPI.AddLocalizedLabel("ui_TeamInstantAction", {
 	},
 })
 
+CPPAPI.AddLocalizedLabel("ui_DefuseAction", {
+	english_text = "DEFUSE ACTION",
+})
+
 CPPAPI.AddLocalizedLabel("ui_msg_overtime_0", {
 	english_text = "We need a winner! %1 min overtime!",
 	languages = {
