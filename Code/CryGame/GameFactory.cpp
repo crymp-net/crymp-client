@@ -237,4 +237,10 @@ void InitGameFactory(IGameFramework* pFramework)
 	pFramework->GetIGameRulesSystem()->AddGameRulesAlias("PowerStruggle", "ps");
 	pFramework->GetIGameRulesSystem()->AddGameRulesLevelLocation("PowerStruggle", "multiplayer/ps/");
 #endif //spdemo
+
+	#ifndef SP_DEMO  //CryMP added by Sagitta11
+    pFramework->GetIGameRulesSystem()->RegisterGameRules("DefuseAction", "GameRules");
+	pFramework->GetIGameRulesSystem()->AddGameRulesAlias("DefuseAction", "dfa"); //Boom!
+	pFramework->GetIGameRulesSystem()->AddGameRulesLevelLocation("DefuseAction", "multiplayer/dfa/");
+#endif
 }
