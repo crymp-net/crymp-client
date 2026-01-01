@@ -35,13 +35,16 @@ DefuseAction.weaponList=
 	{ id="avmine",						name="@mp_eMine",								price=25,				class="AVMine",						buyammo="avexplosive",				selectOnBuyAmmo="true", category="@mp_catExplosives", loadout=1 },
 	{ id="c4",							name="@mp_eExplosive", 						price=50, 			class="C4", 							buyammo="c4explosive",				selectOnBuyAmmo="true", category="@mp_catExplosives", loadout=1 },
 
-	{ id="shotgun",					name="@mp_eShotgun", 						price=50, 			class="Shotgun", 					uniqueId=4,		category="@mp_catWeapons", loadout=1, 		uniqueloadoutgroup=1, uniqueloadoutcount=2},
-	{ id="smg",							name="@mp_eSMG", 								price=75, 			class="SMG", 							uniqueId=5,		category="@mp_catWeapons", loadout=1, 		uniqueloadoutgroup=1, uniqueloadoutcount=2},
-	{ id="fy71",							name="@mp_eFY71", 							price=125, 			class="FY71", 						uniqueId=6,		category="@mp_catWeapons", loadout=1, 	uniqueloadoutgroup=1, uniqueloadoutcount=2},
+	{ id="shotgun",					name="@mp_eShotgun", 						price=120, 			class="Shotgun", 					uniqueId=4,		category="@mp_catWeapons", loadout=1, 		uniqueloadoutgroup=1, uniqueloadoutcount=2},
+	{ id="smg",							name="@mp_eSMG", 								price=145, 			class="SMG", 							uniqueId=5,		category="@mp_catWeapons", loadout=1, 		uniqueloadoutgroup=1, uniqueloadoutcount=2},
+	{ id="fy71",							name="@mp_eFY71", 							price=165, 			class="FY71", 						uniqueId=6,		category="@mp_catWeapons", loadout=1, 	uniqueloadoutgroup=1, uniqueloadoutcount=2},
 	{ id="macs",						name="@mp_eSCAR", 							price=150, 			class="SCAR", 						uniqueId=7,		category="@mp_catWeapons", loadout=1, 		uniqueloadoutgroup=1, uniqueloadoutcount=2},
 	{ id="rpg",							name="@mp_eML", 								price=200, 			class="LAW", 							uniqueId=8,		category="@mp_catExplosives", loadout=1},
 	{ id="dsg1",							name="@mp_eSniper"	,							price=200, 			class="DSG1", 						uniqueId=9,		category="@mp_catWeapons", loadout=1, uniqueloadoutgroup=1, uniqueloadoutcount=2},
 	{ id="gauss",						name="@mp_eGauss", 							price=600, 			class="GaussRifle",				uniqueId=10,	category="@mp_catWeapons", loadout=1, 		uniqueloadoutgroup=1, uniqueloadoutcount=2},
+	{ id="minigun",				name="@mp_eMinigun",						price=250, 		class="Hurricane", 						uniqueId=13,	category="@mp_catWeapons", loadout=1, 		uniqueloadoutgroup=1, uniqueloadoutcount=2},
+	{ id="moac",					name="@mp_eAlienWeapon", 			price=300, 		class="AlienMount", 					uniqueId=11,	category="@mp_catWeapons", loadout=1, 		uniqueloadoutgroup=1, uniqueloadoutcount=2},
+    { id="moar",					name="@mp_eAlienMOAR", 				price=100, 		class="MOARAttach", 				uniqueId=12,	category="@mp_catWeapons", loadout=1,  uniqueloadoutgroup=1, uniqueloadoutcount=2},
 };
 
 
@@ -180,8 +183,8 @@ DefuseAction.ppList=
 	KILL										= 100,
 	KILL_RANKDIFF_MULT			= 10,
 	TURRETKILL							= 100,
-	HEADSHOT								= 50,
-	MELEE										= 50,
+	HEADSHOT								= 200,
+	MELEE										= 210,
 	SUICIDE									= 0,
 	TEAMKILL								= -200,
 	
@@ -1389,3 +1392,4 @@ function DefuseAction:CanWork(entityId, playerId, work_type)
 	
 	return result;
 end
+
