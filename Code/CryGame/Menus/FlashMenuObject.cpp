@@ -2981,7 +2981,12 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 {
 	if (gEnv->pSystem->IsEditor() || gEnv->pSystem->IsDedicated()) return;
 
-	fDeltaTime = gEnv->pTimer->GetFrameTime(ITimer::ETIMER_UI);
+	fDeltaTime = std::min(0.05f, gEnv->pTimer->GetFrameTime(ITimer::ETIMER_UI));
+
+	if (fDeltaTime > 0.05f)
+	{
+		fDeltaTime = 0.05f;
+	}
 
 	if (ICVar* requireinputdevice = gEnv->pConsole->GetCVar("sv_requireinputdevice"))
 	{
