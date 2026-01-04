@@ -133,7 +133,17 @@ void CNetPlayerInput::DoSetState(const SSerializedPlayerInput& input)
 	m_pPlayer->GetGameObject()->ChangedNetworkState(INPUT_ASPECT);
 
 	CMovementRequest moveRequest;
-	moveRequest.SetStance((EStance)m_curInput.stance);
+
+	const int stanceInput = static_cast<int>(m_curInput.stance);
+	if (m_pPlayer->IsStanceInputValid(stanceInput))
+	{
+		moveRequest.SetStance(static_cast<EStance>(stanceInput));
+	}
+	//else
+	//{
+	//	CryLogAlways("Ignoring invalid net stance %d for %s (chan %d)",
+	//		stanceInput, m_pPlayer->GetEntity()->GetName(), m_pPlayer->GetChannelId());
+	//}
 
 	if (IsDemoPlayback())
 	{

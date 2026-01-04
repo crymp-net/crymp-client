@@ -8615,3 +8615,10 @@ void CPlayer::PlayAnimation(const char* animationName, float speed /*= 1.0f*/, b
 	// Start the animation
 	pSkeletonAnim->StartAnimation(fixedResourceName, nullptr, nullptr, nullptr, params);
 }
+
+bool CPlayer::IsStanceInputValid(int stance) const
+{
+	// Valid actionable stance range: STANCE_STAND (0) .. STANCE_LAST-1
+	return (stance >= static_cast<int>(STANCE_STAND) &&
+		stance < static_cast<int>(STANCE_LAST));
+}
