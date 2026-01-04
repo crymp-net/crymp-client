@@ -486,7 +486,8 @@ void CActor::Revive(ReasonForRevive reason)
 	}
 
 	m_stance = STANCE_NULL;
-	m_desiredStance = STANCE_NULL;
+	
+	SetStance(STANCE_NULL);
 
 	if (gEnv->bServer)
 	{

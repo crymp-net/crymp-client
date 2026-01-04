@@ -611,10 +611,36 @@ void CDebugGun::PostUpdate(float frameTime)
 				}
 			}
 		}
-		if (IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(entityId))
+		if (CActor* pActor = static_cast<CActor*>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(entityId)))
 		{
 			DrawLog(xColumn1, yColumn1, font, colorYellow, "[Actor]");
 			DrawLog(xColumn1, yColumn1, font, colorYellow, "Health: %d", pActor->GetHealth());
+
+			const EStance stance = pActor->GetStance();
+
+			const char* stanceStr = "STANCE_UNKNOWN";
+			switch (stance)
+			{
+			case STANCE_NULL:    stanceStr = "STANCE_NULL";    break;
+			case STANCE_STAND:   stanceStr = "STANCE_STAND";   break;
+			case STANCE_CROUCH:  stanceStr = "STANCE_CROUCH";  break;
+			case STANCE_PRONE:   stanceStr = "STANCE_PRONE";   break;
+			case STANCE_RELAXED: stanceStr = "STANCE_RELAXED"; break;
+			case STANCE_STEALTH: stanceStr = "STANCE_STEALTH"; break;
+			case STANCE_SWIM:    stanceStr = "STANCE_SWIM";    break;
+			case STANCE_ZEROG:   stanceStr = "STANCE_ZEROG";   break;
+			default: break;
+			}
+
+			DrawLog(
+				xColumn1,
+				yColumn1,
+				font,
+				colorYellow,
+				"Stance: %s (%d)",
+				stanceStr,
+				(int)stance
+			);
 		}
 
 		if (IMaterial* pMat = pEntity->GetMaterial())

@@ -1064,6 +1064,8 @@ public:
 	void OnObjectEvent(ObjectEvent evnt, const EntityId objectId) override;
 	void PlayAnimation(const char* animationName, float speed = 1.0f, bool loop = false, bool noBlend = false, int layerID = 0);
 
+	bool IsStanceInputValid(int stance) const;
+
 	static CPlayer* FromIActor(IActor* pActor)
 	{
 		if (!pActor)
