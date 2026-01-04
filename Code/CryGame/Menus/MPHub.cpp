@@ -491,6 +491,7 @@ void CMPHub::SetCurrentFlashScreen(IFlashPlayer* screen, bool ingame)
 
 	//CryMP: Update creategame list with new modes (called once only)
 	AddGameModToList("@ui_TeamInstantAction", "TeamInstantAction");
+	AddGameModToList("@ui_DefuseAction", "DefuseAction"); //CryMP: Addded by Sagitta11
 }
 
 void CMPHub::ConnectFailed(EDisconnectionCause cause, const char* description)
