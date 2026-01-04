@@ -3113,6 +3113,11 @@ void CHUD::OnPostUpdate(float frameTime)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
+	if (frameTime > 0.05f)
+	{
+		frameTime = 0.05f;
+	}
+
 	if (m_bStopCutsceneNextUpdate)
 	{
 #ifdef USER_alexl
