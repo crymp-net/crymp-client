@@ -113,12 +113,13 @@ void CNetPlayerInput::GetState(SSerializedPlayerInput& input)
 
 void CNetPlayerInput::Reset()
 {
-	SSerializedPlayerInput i(m_curInput);
-	i.leanl = i.leanr = i.sprint = false;
-	i.deltaMovement.zero();
+	m_curInput = SSerializedPlayerInput();  
 
-	DoSetState(i);
+	m_curInput.leanl = m_curInput.leanr = m_curInput.sprint = false;
+	m_curInput.deltaMovement.zero();
+	m_curInput.stance = STANCE_STAND; 
 
+	DoSetState(m_curInput);
 	m_pPlayer->GetGameObject()->ChangedNetworkState(IPlayerInput::INPUT_ASPECT);
 }
 
