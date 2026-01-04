@@ -2981,7 +2981,7 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 {
 	if (gEnv->pSystem->IsEditor() || gEnv->pSystem->IsDedicated()) return;
 
-	fDeltaTime = std::min(0.05f, gEnv->pTimer->GetFrameTime(ITimer::ETIMER_UI));
+	fDeltaTime = gEnv->pTimer->GetFrameTime(ITimer::ETIMER_UI);
 
 	if (fDeltaTime > 0.05f)
 	{
