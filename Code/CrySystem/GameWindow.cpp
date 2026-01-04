@@ -204,9 +204,16 @@ static LRESULT CALLBACK WindowProc(HWND window, UINT msg, WPARAM wParam, LPARAM 
 		}
 		case WM_ACTIVATE:
 		{
-			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS,
-				LOWORD(wParam) != WA_INACTIVE, 0);
+			const bool hasFocus = (LOWORD(wParam) != WA_INACTIVE);
 
+			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(
+				ESYSTEM_EVENT_CHANGE_FOCUS, hasFocus ? 1 : 0, 0);
+
+			// Pause sound when unfocused (alt-tab / Start menu / click other app)
+			if (gEnv->pSoundSystem)
+			{
+				gEnv->pSoundSystem->Pause(!hasFocus);
+			}
 			return 0;
 		}
 		case WM_SETFOCUS:
