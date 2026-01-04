@@ -753,16 +753,12 @@ end
 
 
 ----------------------------------------------------------------------------------------------------
-function DefuseAction.Server:RequestRevive(playerId)
+function DefuseAction.Server:RequestRevive(playerId) --test
 	local player = System.GetEntity(playerId);
-
-	if (player and player.actor) then
-		-- allow respawn if spectating player and on a team
-		if (((player.actor:GetSpectatorMode() == 3 and self.game:GetTeam(playerId)~=0) or (player:IsDead() and player.death_time and _time-player.death_time>2.5)) and (not self:IsInReviveQueue(playerId))) then
-			self:QueueRevive(playerId);
-		end
+     if player.actor == nil then
+		resetAll();
+			end
 	end
-end
 
 
 ----------------------------------------------------------------------------------------------------
@@ -1605,3 +1601,4 @@ van="nkapc";
 Script.LoadScript("scripts/gamerules/defuseactionbuying.lua", 1, 1);
 Script.LoadScript("scripts/gamerules/defuseactionrank.lua", 1, 1);
 Script.LoadScript("scripts/gamerules/defuseactionAlert.lua", 1, 1);
+
