@@ -1174,7 +1174,6 @@ set(CRYMP_CLIENT_RESOURCES
 	${PROJECT_SOURCE_DIR}/Resources/CursorGreen.cur
 	${PROJECT_SOURCE_DIR}/Resources/CursorRed.cur
 	${PROJECT_SOURCE_DIR}/Resources/CursorWhite.cur
-	${PROJECT_SOURCE_DIR}/masters.txt
 	${PROJECT_BINARY_DIR}/config.h
 	${PROJECT_BINARY_DIR}/version.h
 	${CRYMP_INTERNAL_PAK_PATH}
@@ -1183,7 +1182,6 @@ set(CRYMP_CLIENT_RESOURCES
 set(CRYMP_SERVER_RESOURCES
 	${PROJECT_SOURCE_DIR}/Code/Launcher/Resources.h
 	${PROJECT_SOURCE_DIR}/Resources/ServerIcon.ico
-	${PROJECT_SOURCE_DIR}/masters.txt
 	${PROJECT_BINARY_DIR}/config.h
 	${PROJECT_BINARY_DIR}/version.h
 	${CRYMP_INTERNAL_PAK_PATH}
