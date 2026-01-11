@@ -16,13 +16,13 @@
 #include "CrySystem/Logger.h"
 #include "CrySystem/RandomGenerator.h"
 #include "Launcher/Resources.h"
-#include "Library/StdFile.h"
 #include "Library/Util.h"
 #include "Library/WinAPI.h"
 
 #include "Client.h"
 #include "FileDownloader.h"
 #include "FileCache.h"
+#include "HandGripRegistry.h"
 #include "MapDownloader.h"
 #include "ScriptCommands.h"
 #include "ScriptCallbacks.h"
@@ -38,22 +38,14 @@
 
 void Client::InitMasters()
 {
-	std::string content;
+	m_masters.clear();
 
-	if (StdFile file("masters.txt", "r"); file.IsOpen())  // Crysis main directory
+	if (const std::string_view mastersArg(WinAPI::CmdLine::GetArgValue("-masters")); !mastersArg.empty())
 	{
-		CryLogAlways("$6[CryMP] Using local masters.txt as the master server list provider");
-
-		content = file.ReadAll();
-	}
-	else
-	{
-		content = WinAPI::GetDataResource(nullptr, RESOURCE_MASTERS_TXT);
-	}
-
-	for (const std::string_view & master : Util::SplitWhitespace(content))
-	{
-		m_masters.emplace_back(master);
+		for (const std::string_view& master : Util::Split(mastersArg, ","))
+		{
+			m_masters.emplace_back(master);
+		}
 	}
 
 	if (m_masters.empty())
@@ -208,6 +200,7 @@ void Client::Init(IGameFramework *pGameFramework)
 	m_pHTTPClient        = std::make_unique<HTTPClient>(*m_pExecutor);
 	m_pFileDownloader    = std::make_unique<FileDownloader>();
 	m_pFileCache         = std::make_unique<FileCache>();
+	m_pHandGripRegistry  = std::make_unique<HandGripRegistry>();
 	m_pMapDownloader     = std::make_unique<MapDownloader>();
 	m_pGSMasterHook      = std::make_unique<GSMasterHook>();
 	m_pScriptCommands    = std::make_unique<ScriptCommands>();
@@ -271,6 +264,7 @@ void Client::Init(IGameFramework *pGameFramework)
 	pScriptSystem->ExecuteFile("CryMP/Scripts/RPC.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/Client.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true);
+	pScriptSystem->ExecuteFile("CryMP/Scripts/HandGripData.lua", true, true);
 
 	InitMasters();
 
@@ -280,6 +274,7 @@ void Client::Init(IGameFramework *pGameFramework)
 	// mods are not supported
 	m_pGame = new CGame();
 	m_pGame->Init(pGameFramework);
+
 	m_pFileCache->Cleanup(86400);
 }
 

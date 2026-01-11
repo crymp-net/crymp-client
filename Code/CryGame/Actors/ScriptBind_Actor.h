@@ -151,6 +151,7 @@ public:
 	virtual int GetPhysicalColliderMode(IFunctionHandler* pH);
 	int GetLookAtEntity(IFunctionHandler* pH);
 	int GetLookAtPoint(IFunctionHandler* pH, float maxDist);
+	int SetHeldObjectOffsets(IFunctionHandler* pH);
 
 	//misc
 	//virtual int MeleeEffect(IFunctionHandler *pH);

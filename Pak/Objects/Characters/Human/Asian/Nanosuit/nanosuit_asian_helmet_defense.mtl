@@ -15,7 +15,7 @@
      <TexMod />
     </Texture>
    </Textures>
-   <PublicParams AnimFrequency="0" AnimAmplitudeWav0="0" AnimAmplitudeWav1="0" AnimAmplitudeWav2="0" AnimPhase="1" AnisotropicShape="0.60000002" SparksPow="6.5" SparksMultiplier="15" SparksPhase="15" SparksFrequency="10" SparksColor="0.070588239,0.12156863,0.11764706" DiffuseExponent="0.5" FuzzynessSmoothness="1" FuzzynessStrength="2" FuzzynessSpread="2.9200001" FuzzynessSaturation="1" SpecularMultiplier="0.30000001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.2" FresnelScale="10" FresnelScaleShadowBias="1"/>
+   <PublicParams AnimFrequency="0" AnimAmplitudeWav0="0" AnimAmplitudeWav1="0" AnimAmplitudeWav2="0" AnimPhase="1" AnisotropicShape="0.60000002" SparksPow="6.5" SparksMultiplier="10" SparksPhase="15" SparksFrequency="10" SparksColor="1,0.784,0.459" DiffuseExponent="0.5" FuzzynessSmoothness="1" FuzzynessStrength="2" FuzzynessSpread="2.9200001" FuzzynessSaturation="1" SpecularMultiplier="0.30000001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.2" FresnelScale="10" FresnelScaleShadowBias="1"/>
   </Material>
   <Material Name="Light" MtlFlags="160" Shader="Illum" GenMask="285212672" SurfaceType="" Diffuse="0,0.10196079,0.35686275" Specular="0,0.63137299,1" Emissive="0,0.113725,0.184314" Shininess="5" Opacity="1" GlowAmount="5">
    <Textures>
@@ -42,3 +42,4 @@
  </SubMaterials>
  <PublicParams AmbientMultiplier="1"/>
 </Material>
+

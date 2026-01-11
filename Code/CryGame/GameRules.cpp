@@ -54,6 +54,7 @@
 #include "CryMP/Server/Server.h"
 #include "CryMP/Server/SSM.h"
 #include "CryMP/Server/SafeWriting/SafeWriting.h"
+#include "Items/Weapons/OffHand.h"
 
 int CGameRules::s_invulnID = 0;
 int CGameRules::s_barbWireID = 0;
@@ -3442,6 +3443,18 @@ bool CGameRules::OnCollision(const SGameCollision& event)
 						return false;
 					}
 				}
+			}
+		}
+
+		if (CPlayer* pPlayer = static_cast<CPlayer*>(m_pGameFramework->GetClientActor()))
+		{
+			if (event.pSrcEntity && pPlayer->GetHeldObjectId() && pPlayer->GetHeldObjectId() == event.pSrcEntity->GetId())
+			{
+				if (COffHand* pOffHand = static_cast<COffHand*>(pPlayer->GetItemByClass(CItem::sOffHandClass)))
+				{
+					pOffHand->OnHeldObjectCollision(pPlayer, event.pCollision, event.pTrgEntity);
+				}
+				return true;
 			}
 		}
 	}

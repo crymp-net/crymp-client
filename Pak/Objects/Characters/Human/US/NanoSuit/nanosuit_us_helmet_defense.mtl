@@ -15,7 +15,7 @@
      <TexMod />
     </Texture>
    </Textures>
-   <PublicParams AnisotropicShape="0.40000001" SparksPow="3.3" SparksMultiplier="15" SparksPhase="30.6" SparksFrequency="10" SparksColor="0.070588239,0.12156863,0.11764706" DiffuseExponent="0.30000001" FuzzynessSmoothness="1" FuzzynessStrength="1" FuzzynessSpread="1" FuzzynessSaturation="0.85000002" SpecularMultiplier="0.34999999" MetallicAmount="1" ReflectionAmount="2" FresnelBias="0.059999999" FresnelScale="2" FresnelScaleShadowBias="0"/>
+   <PublicParams AnisotropicShape="0.40000001" SparksPow="3.3" SparksMultiplier="8" SparksPhase="12" SparksFrequency="10" SparksColor="0.416,0.671,0.643" DiffuseExponent="0.30000001" FuzzynessSmoothness="1" FuzzynessStrength="1" FuzzynessSpread="1" FuzzynessSaturation="0.85000002" SpecularMultiplier="0.34999999" MetallicAmount="1" ReflectionAmount="2" FresnelBias="0.059999999" FresnelScale="2" FresnelScaleShadowBias="0"/>
    <MaterialLayers />
   </Material>
   <Material Name="Glasses" MtlFlags="128" Shader="Metal" GenMask="268435472" SurfaceType="" Diffuse="0.086274512,0.086274512,0.086274512" Specular="0.050980397,0.050980397,0.043137256" Emissive="0,0,0" Shininess="10" Opacity="1" GlowAmount="10">
@@ -37,3 +37,4 @@
  <PublicParams ObmDisplacement="0.0040000002" PomDisplacement="0.025" AmbientMultiplier="1"/>
  <MaterialLayers />
 </Material>
+

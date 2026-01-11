@@ -84,6 +84,7 @@ IEntityClass* CItem::sHurricaneClass = 0;
 IEntityClass* CItem::sDoorClass = 0;
 IEntityClass* CItem::sElevatorSwitchClass = 0;
 IEntityClass* CItem::sFlagClass = 0;
+IEntityClass* CItem::sGeomEntityClass = 0;
 //vehicles
 IEntityClass* CItem::sAsian_apc = 0;
 IEntityClass* CItem::sAsian_helicopter = 0;
@@ -258,6 +259,7 @@ bool CItem::Init(IGameObject* pGameObject)
 		sLockpickKitClass = pRegistry->FindClass("LockpickKit");
 		sHurricaneClass = pRegistry->FindClass("Hurricane");
 		sFlagClass = pRegistry->FindClass("Flag");
+		sGeomEntityClass = pRegistry->FindClass("GeomEntity");
 		sAsian_apc = pRegistry->FindClass("Asian_apc");
 		sAsian_helicopter = pRegistry->FindClass("Asian_helicopter");
 		sAsian_truck = pRegistry->FindClass("Asian_truck");
@@ -422,7 +424,20 @@ void CItem::Update(SEntityUpdateContext& ctx, int slot)
 	if (slot == eIUS_General)
 	{
 		if (m_stats.mounted)
+		{
 			UpdateMounted(ctx.fFrameTime);
+		}
+		else
+		{
+			if (gEnv->bClient && !m_stats.fp)
+			{
+				CActor* pOwner = GetOwnerActor();
+				if (pOwner && (pOwner->IsClient() || pOwner->IsFpSpectatorTarget() || pOwner->IsTpSpectatorTarget()))
+				{
+					ProcessFirstPersonSkeleton();
+				}
+			}
+		}
 	}
 }
 
@@ -1097,9 +1112,9 @@ void CItem::SetHand(int hand)
 		result = SetGeometry(eIGS_FirstPerson, geometry.name, geometry.position, geometry.angles, geometry.scale);
 	}
 
+	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(eIGS_FirstPerson);
 	if (idx == 0)
 	{
-		ICharacterInstance* pCharacter = GetEntity()->GetCharacter(eIGS_FirstPerson);
 		if (!pCharacter)
 			return;
 
@@ -1111,7 +1126,15 @@ void CItem::SetHand(int hand)
 	}
 
 	if (result)
-		PlayAction(m_idleAnimation[eIGS_FirstPerson], 0, true, (eIPAF_Default | eIPAF_NoBlend) & ~eIPAF_Owner);
+	{
+		if (!m_idleAnimation[eIGS_FirstPerson].empty())
+		{
+			if ((pCharacter && pCharacter->GetISkeletonAnim()->GetNumAnimsInFIFO(0) < 1) || m_stats.fp)
+			{
+				PlayAction(m_idleAnimation[eIGS_FirstPerson], 0, true, (eIPAF_Default | eIPAF_NoBlend) & ~eIPAF_Owner);
+			}
+		}
+	}
 }
 
 //------------------------------------------------------------------------
@@ -1290,7 +1313,7 @@ void CItem::Select(bool select)
 	OnSelected(select);
 }
 
-void CItem::PlaySelectAnimation(CActor *pOwner)
+void CItem::PlaySelectAnimation(CActor* pOwner, bool thirdpersonOnly)
 {
 	float speedOverride = -1.0f;
 
@@ -1303,12 +1326,18 @@ void CItem::PlaySelectAnimation(CActor *pOwner)
 
 	// only LAW has 2 different select animations
 	const ItemString& select_animation = (m_params.has_first_select && m_stats.first_selection)
-		? g_pItemStrings->first_select : g_pItemStrings->select;
+		? g_pItemStrings->first_select
+		: g_pItemStrings->select;
+
+	// Base flags
+	int flags = eIPAF_Default | eIPAF_NoBlend;
+	if (thirdpersonOnly)
+		flags |= eIPAF_ForceThirdPerson;
 
 	if (speedOverride > 0.0f)
-		PlayAction(select_animation, 0, false, eIPAF_Default | eIPAF_NoBlend, speedOverride);
+		PlayAction(select_animation, 0, false, flags, speedOverride);
 	else
-		PlayAction(select_animation, 0, false, eIPAF_Default | eIPAF_NoBlend);
+		PlayAction(select_animation, 0, false, flags);
 }
 
 //------------------------------------------------------------------------
@@ -2627,8 +2656,10 @@ void CItem::Hide(bool hide)
 {
 	GetEntity()->SetFlags(GetEntity()->GetFlags() & ~ENTITY_FLAG_UPDATE_HIDDEN);
 
-	if ((hide && m_stats.fp) || IsServer())
+	if ((hide && (m_stats.fp || GetEntity()->GetClass() == sOffHandClass)) || IsServer())
+	{
 		GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_UPDATE_HIDDEN);
+	}
 
 	GetEntity()->Hide(hide);
 }
@@ -2640,15 +2671,21 @@ void CItem::HideArms(bool hide)
 }
 
 //------------------------------------------------------------------------
+bool CItem::IsArmsHidden() const
+{
+	return IsCharacterAttachmentHidden(eIGS_FirstPerson, ITEM_ARMS_ATTACHMENT_NAME);
+}
+
+//------------------------------------------------------------------------
 void CItem::HideItem(bool hide)
 {
-	HideCharacterAttachmentMaster(eIGS_FirstPerson, ITEM_ARMS_ATTACHMENT_NAME, hide);
+	HideFirstPersonCharacterMaster(hide);
 
 	IEntity* pOwner = GetOwner();
 	if (!pOwner)
 		return;
 
-	ICharacterInstance* pOwnerCharacter = pOwner->GetCharacter(0);
+	ICharacterInstance* pOwnerCharacter = pOwner->GetCharacter(eIGS_FirstPerson);
 	if (!pOwnerCharacter)
 		return;
 
@@ -2656,6 +2693,12 @@ void CItem::HideItem(bool hide)
 	IAttachment* pAttachment = pAttachmentManager->GetInterfaceByName(m_params.attachment[m_stats.hand].c_str());
 	if (pAttachment)
 		pAttachment->HideAttachment(hide ? 1 : 0);
+}
+
+//------------------------------------------------------------------------
+bool CItem::IsItemHidden() const
+{
+	return IsCharacterAttachmentHidden(eIGS_FirstPerson, m_params.attachment[m_stats.hand].c_str());
 }
 
 //------------------------------------------------------------------------

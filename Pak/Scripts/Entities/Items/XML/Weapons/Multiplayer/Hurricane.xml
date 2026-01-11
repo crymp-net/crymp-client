@@ -81,7 +81,7 @@
 		
 		<action name="melee">
 			<animation target="firstperson" name="melee_01" />
-			<animation target="owner" name="weaponPunch" />
+			<animation target="owner" name="melee" />
 			<!--<sound target="firstperson" name="sounds/weapons:melee:fire_fp_mw" radius="5" />-->
 			<sound target="thirdperson" name="sounds/weapons:melee:fire" radius="5" />
 		</action>

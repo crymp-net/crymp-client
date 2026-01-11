@@ -2983,6 +2983,11 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 
 	fDeltaTime = gEnv->pTimer->GetFrameTime(ITimer::ETIMER_UI);
 
+	if (fDeltaTime > 0.05f)
+	{
+		fDeltaTime = 0.05f;
+	}
+
 	if (ICVar* requireinputdevice = gEnv->pConsole->GetCVar("sv_requireinputdevice"))
 	{
 		if (!strcmpi(requireinputdevice->GetString(), "gamepad") && !m_iGamepadsConnected && !IsActive())

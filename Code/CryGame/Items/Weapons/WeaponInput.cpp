@@ -345,7 +345,8 @@ public:
 	}
 	void execute(CItem *item) {
 		SAFE_HUD_FUNC(WeaponAccessoriesInterface(true));
-		_pWeapon->PlayLayer(g_pItemStrings->modify_layer, eIPAF_Default|eIPAF_NoBlend, false);
+		//CryMP: Commented to fix weapon customization stuck when closing at certain point with right click
+		//_pWeapon->PlayLayer(g_pItemStrings->modify_layer, eIPAF_Default|eIPAF_NoBlend, false); 
 		_pWeapon->m_transitioning = false;
 
 		_pWeapon->m_timerLayerEnterId = 0;

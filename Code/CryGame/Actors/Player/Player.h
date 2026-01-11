@@ -613,6 +613,8 @@ public:
 	virtual void PostPhysicalize();
 	virtual void CameraShake(float angle, float shift, float duration, float frequency, Vec3 pos, int ID, const char* source = "");
 	virtual bool CreateCodeEvent(SmartScriptTable& rTable);
+	void SetExtension(const char* extension);
+	void SetInput(const char* action, bool looping = false);
 	ILINE virtual void VectorToLocal(Vec3& v) { v = m_clientViewMatrix.GetInverted() * v; }
 	ILINE virtual Matrix34 GetViewMatrix() const { return m_clientViewMatrix; }
 	virtual void AddAngularImpulse(const Ang3& angular, float deceleration, float duration);
@@ -623,6 +625,18 @@ public:
 	virtual float GetActorStrength() const;
 	virtual void Freeze(bool freeze);
 	virtual void ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTime);
+	bool SetGrabTarget(EntityId targetId);
+	bool IsGrabTargetSet(EntityId targetId) const
+	{
+		return !m_reachNotified && m_grabTargetId && m_grabTargetId != targetId;
+	}
+	bool StartThrowPrep();   
+	void CommitThrow();       
+	void CancelThrowPrep();   
+	void CancelGrabTarget();
+	float GetReachDesiredPitch() const;
+	void UpdateReachBend(float frameTime);
+	void ApplyReachToSpine(ICharacterInstance* pCharacter, float bendAngle, float amount);
 	virtual void ProcessIKLegs(ICharacterInstance* pCharacter, float frameTime);
 	virtual void Landed(float fallSpeed);
 
@@ -637,6 +651,7 @@ public:
 
 	void UpdateParachute(float frameTime);
 	void UpdateParachuteIK();
+	void UpdateHeldObjectIK();
 	void UpdateParachuteMorph(float frameTime);
 	void ChangeParachuteState(int8 newState);
 	void DeployParachute(bool show, bool sound);
@@ -957,7 +972,46 @@ private:
 
 	int m_lastAttachmentCount = 0;
 
+	Vec3 m_lefthandGrip = Vec3(ZERO);
+	Vec3 m_righthandGrip = Vec3(ZERO);
+	bool m_handGripsValid = false;
+
+private:
+
+	enum class ReachState : uint8
+	{
+		Idle = 0,
+		Reaching,    
+		ThrowPrep,   
+		Throwing,   
+		Returning
+	};
+
+	EntityId   m_grabTargetId = 0;
+	ReachState m_reachState = ReachState::Idle;
+
+	float m_reachAmount = 0.0f;  
+	bool  m_reachNotified = false;            
+	float m_reachCurrentPitch = 0.0f;
+
 public:
+
+	void SetArmIKLocal(const Vec3& leftHand, const Vec3& rightHand)
+	{
+		m_lefthandGrip = leftHand;
+		m_righthandGrip = rightHand;
+		m_handGripsValid = true;
+	}
+
+	void SetArmIKLocalInvalid()
+	{
+		m_handGripsValid = false;
+	}
+
+	bool IsLeftRightHandGripValid() const 
+	{	
+		return m_handGripsValid; 
+	}
 
 	// Member variables
 	bool m_camoState = false;
@@ -1006,6 +1060,12 @@ public:
 	Vec3 GetNetAimDir() const { return m_netAimDir; }
 	Vec3 GetNetAimDirSmooth() const { return m_netAimDirSmooth; }
 
+
+	void OnObjectEvent(ObjectEvent evnt, const EntityId objectId) override;
+	void PlayAnimation(const char* animationName, float speed = 1.0f, bool loop = false, bool noBlend = false, int layerID = 0);
+
+	bool IsStanceInputValid(int stance) const;
+
 	static CPlayer* FromIActor(IActor* pActor)
 	{
 		if (!pActor)
@@ -1026,6 +1086,14 @@ public:
 			return static_cast<CPlayer*>(pActor);
 		else
 			return nullptr;
+	}
+
+	static CPlayer* FromActorId(const EntityId actorId)
+	{
+		if (!actorId)
+			return nullptr;
+
+		return FromIActor(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId));
 	}
 
 	static CNanoSuit* GetNanoSuit(CActor* pActor)

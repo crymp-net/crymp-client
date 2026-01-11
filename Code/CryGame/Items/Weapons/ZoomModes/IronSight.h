@@ -314,6 +314,9 @@ public:
 
 	virtual void FilterView(SViewParams &viewparams);
 	virtual void PostFilterView(SViewParams & viewparams);
+
+	void OnEnterFirstPerson() override;
+	void OnEnterThirdPerson() override;
 	// ~IZoomMode
 
 	virtual void ResetTurnOff();
@@ -400,6 +403,11 @@ protected:
 	float         m_swayCycle;
 
 	float         m_lastRecoil;
+
+	bool m_FilterMaskedBlurring_Active = false;
+	bool m_Dof_Active = false;
+	bool m_skipRequestZoomOnce = false;
+
 
 };
 
