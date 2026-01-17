@@ -228,17 +228,28 @@ void PathTools::Normalize(std::string& path)
 {
 	std::string::size_type prefixLength = 0;
 
+	char targetSlash = '/';
+
 	if (path.length() >= 1 && IsSlash(path[0]))
 	{
-		// POSIX absolute path
-		// note that UNC paths are not supported
-		path[0] = '/';
-		prefixLength = 1;
+		if (path.length() >= 2 && path[0] == '\\' && path[1] == '\\')
+		{
+			// UNC path
+			// keep backslashes in UNC paths
+			targetSlash = '\\';
+			prefixLength = 2;
+		}
+		else
+		{
+			// POSIX absolute path
+			path[0] = targetSlash;
+			prefixLength = 1;
+		}
 	}
 	else if (path.length() >= 3 && IsAlpha(path[0]) && path[1] == ':' && IsSlash(path[2]))
 	{
 		// Windows absolute path
-		path[2] = '/';
+		path[2] = targetSlash;
 		prefixLength = 3;
 	}
 
@@ -268,7 +279,7 @@ void PathTools::Normalize(std::string& path)
 
 			if (goodLength > 2)
 			{
-				const auto prevSlashPos = path.rfind('/', goodLength - 2);
+				const auto prevSlashPos = path.rfind(targetSlash, goodLength - 2);
 				if (prevSlashPos != std::string::npos && prevSlashPos > prefixLength)
 				{
 					erasePos = prevSlashPos + 1;
@@ -287,14 +298,14 @@ void PathTools::Normalize(std::string& path)
 
 		if (nextSlashPos != std::string::npos)
 		{
-			path[nextSlashPos] = '/';
+			path[nextSlashPos] = targetSlash;
 			goodLength++;
 		}
 	}
 
 	// remove trailing slash
 	// but keep the first slash
-	if (path.length() > 1 && path.back() == '/')
+	if ((path.length() > 1 && path.back() == '/') || (path.length() > 2 && path.back() == '\\'))
 	{
 		path.pop_back();
 	}
