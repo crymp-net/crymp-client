@@ -520,6 +520,53 @@ void Client::OnLoadingStart(ILevelInfo *pLevel)
 		CryLogAlways("$3[CryMP] Setting Min LOD to zero");
 	}
 	
+	const auto protect = [](const char* cvar, auto value) {
+		ICVar* pCVar = gEnv->pConsole->GetCVar(cvar);
+		if (pCVar)
+		{
+			if (gEnv->bMultiplayer)
+			{
+				// reset the value
+				pCVar->Set(value);
+			}
+
+			// enable net-sync to prevent changing the value in multiplayer
+			pCVar->SetFlags(pCVar->GetFlags() & ~VF_NOT_NET_SYNCED);
+		}
+	};
+
+	// CryMP: problematic cvars that aren't net-synced
+	protect("r_ATOC", 0);  // non-zero value hides vegetation
+	protect("e_decals", 1);  // zero value hides roads and stuff
+	protect("r_WaterReflections", 1);  // zero value makes the ocean black
+
+	const auto limitDetailMaterialsViewDistMinValue = [](const char* cvar) {
+		constexpr float MIN_VALUE = 64.f;  // low spec
+
+		ICVar* pCVar = gEnv->pConsole->GetCVar(cvar);
+		if (pCVar)
+		{
+			if (gEnv->bMultiplayer && pCVar->GetFVal() < MIN_VALUE)
+			{
+				pCVar->Set(MIN_VALUE);
+			}
+
+			// can't be net-synced because the value is not the same in all specs:
+			// ... e_detail_materials_view_dist_xy = 64/2048/2048/2048/2048
+			// ... e_detail_materials_view_dist_z = 64/128/128/128/128
+			pCVar->SetOnChangeCallback([](ICVar* pCVar) {
+				if (gEnv->bMultiplayer && pCVar->GetFVal() < MIN_VALUE)
+				{
+					pCVar->Set(MIN_VALUE);
+				}
+			});
+		}
+	};
+
+	// CryMP: these cvars are not net-synced and break terrain textures when set too low (zero)
+	limitDetailMaterialsViewDistMinValue("e_detail_materials_view_dist_xy");
+	limitDetailMaterialsViewDistMinValue("e_detail_materials_view_dist_z");
+
 	gEnv->pScriptSystem->ForceGarbageCollection();
 
 	m_pServerPAK->OnLoadingStart(pLevel);
