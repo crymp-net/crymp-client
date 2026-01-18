@@ -218,6 +218,7 @@ private:
 	};
 
 	void SynchWithPhysicsPosition(IEntity* pEntity);
+	void FixCVars();
 };
 
 ///////////////////////
