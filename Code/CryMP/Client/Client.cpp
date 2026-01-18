@@ -530,8 +530,16 @@ void Client::OnLoadingStart(ILevelInfo *pLevel)
 				pCVar->Set(value);
 			}
 
-			// enable net-sync to prevent changing the value in multiplayer
-			pCVar->SetFlags(pCVar->GetFlags() & ~VF_NOT_NET_SYNCED);
+			if (gEnv->bServer)
+			{
+				// disable net-sync to avoid breaking in-game server compatibility with vanilla clients
+				pCVar->SetFlags(pCVar->GetFlags() | VF_NOT_NET_SYNCED);
+			}
+			else
+			{
+				// enable net-sync to prevent clients from changing the value in multiplayer
+				pCVar->SetFlags(pCVar->GetFlags() & ~VF_NOT_NET_SYNCED);
+			}
 		}
 	};
 
