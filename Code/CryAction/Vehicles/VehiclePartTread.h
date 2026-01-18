@@ -85,6 +85,8 @@ protected:
 
 	typedef std::vector <SWheelInfo> TWheelInfoVector;
 	TWheelInfoVector m_wheels;
+
+	std::vector<int> m_texSlots;
 };
 
 #endif

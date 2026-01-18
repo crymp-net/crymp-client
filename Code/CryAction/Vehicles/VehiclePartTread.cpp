@@ -124,19 +124,29 @@ bool CVehiclePartTread::Init(IVehicle* pVehicle, const CVehicleParams& table, IV
 				m_pShaderResources = pMaterial->GetShaderItem().m_pShaderResources;
 		}
 
+		m_texSlots.clear();
+		m_texSlots.reserve(4);
+
 		if (m_pShaderResources)
 		{
 			for (int i = 0; i < EFTT_MAX; ++i)
 			{
-				if (!m_pShaderResources->GetTexture(i))
-					continue;
+				if (SEfResTexture* pTexture = m_pShaderResources->GetTexture(i))
+				{
+					//CryMP: Skip nameless slots
+					const char* file = pTexture->m_Name.c_str();
+					if (file && file[0] != '\0')
+					{
+						m_texSlots.push_back(i);
 
-				SEfTexModificator& modif = m_pShaderResources->GetTexture(i)->m_TexModificator;
-				modif.m_bDontUpdate = false;
+						SEfTexModificator& modif = m_pShaderResources->GetTexture(i)->m_TexModificator;
+						modif.m_bDontUpdate = false;
 
-				modif.SetMember("m_eUMoveType", 1.0f); 
-				modif.SetMember("m_UOscRate", 0.0f);
-				modif.SetMember("m_UOscAmplitude", 1.0f);
+						modif.SetMember("m_eUMoveType", 1.0f);
+						modif.SetMember("m_UOscRate", 0.0f);
+						modif.SetMember("m_UOscAmplitude", 1.0f);
+					}
+				}
 			}
 		}
 	}
@@ -393,24 +403,19 @@ void CVehiclePartTread::SkeletonPostProcess(ICharacterInstance* pCharInstance)
 void CVehiclePartTread::UpdateU()
 {
 	if (!m_pShaderResources || m_currentU == m_wantedU)
-	{
 		return;
-	}
 
 	m_currentU = m_wantedU;
+	const float u = -m_wantedU;
 
-	for (int i = 0; i < EFTT_MAX; ++i)
+	for (int idx : m_texSlots)
 	{
-		if (!m_pShaderResources->GetTexture(i))
+		if (SEfResTexture* pTexture = m_pShaderResources->GetTexture(idx))
 		{
-			continue;
+			pTexture->m_TexModificator.SetMember("m_UOscRate", u);
+
+			//CryLogAlways("%s (%d) pTexture -> %s (frame updated %d, m_bDontUpdate %d)", GetName().c_str(), idx, pTexture->m_Name.c_str(), pTexture->m_TexModificator.m_nFrameUpdated, pTexture->m_TexModificator.m_bDontUpdate);
 		}
-
-		SEfTexModificator& modif = m_pShaderResources->GetTexture(i)->m_TexModificator;
-
-		m_wantedU = -m_wantedU;
-
-		modif.SetMember("m_UOscRate", m_wantedU);
 	}
 }
 
