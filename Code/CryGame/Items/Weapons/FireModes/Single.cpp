@@ -2058,21 +2058,35 @@ void CSingle::SetupEmitters(bool attach)
 	if (attach)
 	{
 		const int id = m_pWeapon->GetStats().fp ? 0 : 1;
-		Vec3 offset(ZERO);
 
-		if (m_muzzleflash.helper[id].empty())
+		//XML offset/dir
+		Vec3 offset = m_muzzleflash.offset[id];
+		Vec3 dir = m_muzzleflash.dir[id];
+
+		//If no helper specified, try getting pos from firing locator
+		if (m_muzzleflash.helper[id].empty() && offset.GetLengthSquared() < 1e-6f)
 		{
-			// if no helper specified, try getting pos from firing locator
 			IWeaponFiringLocator* pLocator = m_pWeapon->GetFiringLocator();
+			Vec3 locatorOffset(ZERO);
 
-			if (pLocator && pLocator->GetFiringPos(m_pWeapon->GetEntityId(), this, offset))
-				offset = m_pWeapon->GetEntity()->GetWorldTM().GetInvertedFast() * offset;
+			if (pLocator && pLocator->GetFiringPos(m_pWeapon->GetEntityId(), this, locatorOffset))
+			{
+				locatorOffset = m_pWeapon->GetEntity()->GetWorldTM().GetInvertedFast() * locatorOffset;
+				offset = locatorOffset;
+			}
 		}
 
 		if (!m_muzzleflash.effect[id].empty())
 		{
-			m_mfIds[m_barrelId].mfId[id] = m_pWeapon->AttachEffect(id, -1, true, m_muzzleflash.effect[id].c_str(),
-				m_muzzleflash.helper[id].c_str(), offset, Vec3Constants<float>::fVec3_OneY, 1.0f, false);
+			m_mfIds[m_barrelId].mfId[id] = m_pWeapon->AttachEffect(
+				id, -1, true,
+				m_muzzleflash.effect[id].c_str(),
+				m_muzzleflash.helper[id].c_str(),
+				offset,
+				dir,
+				1.0f,
+				false
+			);
 		}
 	}
 	else
@@ -2084,7 +2098,6 @@ void CSingle::SetupEmitters(bool attach)
 		}
 	}
 }
-
 
 //------------------------------------------------------------------------
 void CSingle::MuzzleFlashEffect(bool attach, bool light, bool effect)
@@ -2309,7 +2322,7 @@ void CSingle::RejectEffect()
 				return; // too far, do not spawn physicalized empty shells and make sounds 
 		}
 
-		Vec3 offset = m_reject.offset;
+		Vec3 offset = m_reject.offset[id];
 		Vec3 dir = front.Cross(up);
 		if (m_pWeapon->IsZoomed())
 			offset += ((front * 0.1f) + (dir * 0.04f));
