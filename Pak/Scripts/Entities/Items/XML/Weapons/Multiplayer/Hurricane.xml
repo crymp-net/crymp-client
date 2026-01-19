@@ -186,6 +186,19 @@
 				
 				<param name="camshake_rotate" value=".005,0,0" />
 				<param name="camshake_perShot" value="4.0" />
+
+				<!-- Optional TP spinning geometry slot -->
+				<param name="tp_barrel_enable" value="1" />
+				<param name="tp_barrel_slot" value="8" /> <!-- Aux1 -->
+				<param name="tp_barrel_model" value="objects/weapons/us/hurricane/attachments/barrel.cgf" />
+
+				<param name="tp_barrel_hide_fp" value="1" />
+
+				<param name="tp_barrel_offset" value="0.0,0.845,-0.02" />
+				<param name="tp_barrel_rotation" value="0,0,180" />
+				<param name="tp_barrel_scale" value="1.3" />
+
+				<param name="barrel_spin_mult" value="2.0" />
 			</rapid>
 			<recoil>
 				<param name="angular_impulse" value="0.75" />

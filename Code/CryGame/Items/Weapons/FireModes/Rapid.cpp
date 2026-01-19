@@ -22,7 +22,6 @@ History:
 //------------------------------------------------------------------------
 CRapid::CRapid()
 {
-	m_startedToFire = false;
 }
 
 //------------------------------------------------------------------------
@@ -40,6 +39,8 @@ void CRapid::ResetParams(const struct IItemParamsNode* params)
 
 	m_rapidactions.Reset(actions);
 	m_rapidparams.Reset(rapid);
+
+	m_barrelBaseTMValid = false;
 }
 
 //------------------------------------------------------------------------
@@ -52,6 +53,8 @@ void CRapid::PatchParams(const struct IItemParamsNode* patch)
 
 	m_rapidactions.Reset(actions, false);
 	m_rapidparams.Reset(rapid, false);
+
+	m_barrelBaseTMValid = false;
 }
 
 //------------------------------------------------------------------------
@@ -80,10 +83,6 @@ void CRapid::Activate(bool activate)
 	m_decelerating = false;
 	m_acceleration = 0.0f;
 
-	// initialize rotation xforms
-	const auto slot = m_pWeapon->GetStats().fp ? CItem::eIGS_FirstPerson : CItem::eIGS_ThirdPerson;
-	UpdateRotation(slot, 0.0f);
-
 	m_soundId = INVALID_SOUNDID;
 	m_spinUpSoundId = INVALID_SOUNDID;
 
@@ -92,6 +91,11 @@ void CRapid::Activate(bool activate)
 
 	m_hasBarrelAttachment = !m_rapidparams.barrel_attachment.empty();
 	m_hasEngineAttachment = !m_rapidparams.engine_attachment.empty();
+
+	UpdateTpBarrelVisibility();
+
+	const auto slot = m_pWeapon->GetStats().fp ? CItem::eIGS_FirstPerson : CItem::eIGS_ThirdPerson;
+	UpdateRotation(slot, 0.0f);
 }
 
 //------------------------------------------------------------------------
@@ -120,8 +124,9 @@ void CRapid::Update(float frameTime, unsigned int frameId)
 	if ((m_speed >= m_rapidparams.min_speed) && (!m_decelerating))
 	{
 		float dt = 1.0f;
-		if (cry_fabsf(m_speed) > 0.001f && cry_fabsf(m_rapidparams.max_speed > 0.001f))
+		if (cry_fabsf(m_speed) > 0.001f && cry_fabsf(m_rapidparams.max_speed) > 0.001f)
 			dt = m_speed / m_rapidparams.max_speed;
+
 		m_next_shot_dt = 60.0f / (m_fireparams.rate * dt);
 
 		bool canShoot = CanFire(false);
@@ -142,7 +147,14 @@ void CRapid::Update(float frameTime, unsigned int frameId)
 					{
 						IView* pView = g_pGame->GetIGameFramework()->GetIViewSystem()->GetActiveView();
 						if (pView)
-							pView->SetViewShake(Ang3(m_rapidparams.camshake_rotate), m_rapidparams.camshake_shift, m_next_shot_dt / m_rapidparams.camshake_perShot, m_next_shot_dt / m_rapidparams.camshake_perShot, 0, 1);
+						{
+							pView->SetViewShake(
+								Ang3(m_rapidparams.camshake_rotate),
+								m_rapidparams.camshake_shift,
+								m_next_shot_dt / m_rapidparams.camshake_perShot,
+								m_next_shot_dt / m_rapidparams.camshake_perShot,
+								0, 1);
+						}
 					}
 				}
 			}
@@ -303,13 +315,18 @@ float CRapid::GetSpinUpTime() const
 //------------------------------------------------------------------------
 float CRapid::GetSpinDownTime() const
 {
-	return m_rapidparams.max_speed / m_rapidparams.deceleration;
+	return m_rapidparams.max_speed / max(0.0001f, cry_fabsf(m_rapidparams.deceleration));
 }
 
 //------------------------------------------------------------------------
 void CRapid::OnEnterFirstPerson()
 {
 	UpdateRotation(CItem::eIGS_FirstPerson, 0.0f);
+
+	if (m_rapidparams.tp_barrel_enable && !m_rapidparams.tp_barrel_model.empty() && m_rapidparams.tp_barrel_hide_fp)
+	{
+		SetSlotRender(m_pWeapon->GetEntity(), m_rapidparams.tp_barrel_slot, false);
+	}
 
 	if (m_speed >= 0.00001f && m_soundId != INVALID_SOUNDID)
 	{
@@ -319,7 +336,8 @@ void CRapid::OnEnterFirstPerson()
 		m_pWeapon->StopSound(m_soundId);
 
 		//CryMP: We might not be first person untill next frame, so need to force it with flag
-		m_soundId = m_pWeapon->PlayAction(m_rapidactions.rapid_fire, 0, true,
+		m_soundId = m_pWeapon->PlayAction(
+			m_rapidactions.rapid_fire, 0, true,
 			CItem::eIPAF_ForceFirstPerson | (CItem::eIPAF_Default & (~CItem::eIPAF_Animation)));
 	}
 }
@@ -329,6 +347,11 @@ void CRapid::OnEnterThirdPerson()
 {
 	UpdateRotation(CItem::eIGS_ThirdPerson, 0.0f);
 
+	if (m_rapidparams.tp_barrel_enable && !m_rapidparams.tp_barrel_model.empty())
+	{
+		SetSlotRender(m_pWeapon->GetEntity(), m_rapidparams.tp_barrel_slot, true);
+	}
+
 	if (m_speed >= 0.00001f && m_soundId != INVALID_SOUNDID)
 	{
 		SetupEmitters(false);
@@ -336,7 +359,8 @@ void CRapid::OnEnterThirdPerson()
 
 		m_pWeapon->StopSound(m_soundId);
 
-		m_soundId = m_pWeapon->PlayAction(m_rapidactions.rapid_fire, 0, true, 
+		m_soundId = m_pWeapon->PlayAction(
+			m_rapidactions.rapid_fire, 0, true,
 			CItem::eIPAF_ForceThirdPerson | (CItem::eIPAF_Default & (~CItem::eIPAF_Animation)));
 	}
 }
@@ -411,13 +435,61 @@ void CRapid::Firing(bool firing)
 //------------------------------------------------------------------------
 void CRapid::UpdateRotation(CItem::eGeometrySlot slot, float frameTime)
 {
-	if (!m_hasBarrelAttachment && !m_hasEngineAttachment)
+	const bool wantsTpSlotSpin =
+		(slot == CItem::eIGS_ThirdPerson) &&
+		m_rapidparams.tp_barrel_enable &&
+		!m_rapidparams.tp_barrel_model.empty();
+
+	const bool wantsChrSpin = (m_hasBarrelAttachment || m_hasEngineAttachment);
+
+	if (!wantsTpSlotSpin && !wantsChrSpin)
 		return;
 
-	m_rotation_angle -= m_speed * frameTime * 2.0f * 3.141592f;
-	Ang3 angles(0, m_rotation_angle, 0);
+	const float spinMult = std::max(0.0f, m_rapidparams.barrel_spin_mult);
+	m_rotation_angle -= (m_speed * spinMult) * frameTime * 2.0f * gf_PI;
 
+	// --------------------------
+	// Third-person: optional geometry slot spinner (CGF)
+	// --------------------------
+	if (wantsTpSlotSpin)
+	{
+		const int barrelSlot = m_rapidparams.tp_barrel_slot;
+
+		if (!m_barrelBaseTMValid)
+		{
+			const int ok = m_pWeapon->GetEntity()->LoadGeometry(barrelSlot, m_rapidparams.tp_barrel_model.c_str());
+			SetSlotRender(m_pWeapon->GetEntity(), barrelSlot, true);
+
+			const Vec3 rDeg = m_rapidparams.tp_barrel_rotation;
+			Ang3 aRad(DEG2RAD(rDeg.x), DEG2RAD(rDeg.y), DEG2RAD(rDeg.z));
+			Matrix33 rot = Matrix33::CreateRotationXYZ(aRad);
+
+			if (fabsf(m_rapidparams.tp_barrel_scale - 1.0f) > 0.0001f)
+				rot *= m_rapidparams.tp_barrel_scale;
+
+			m_barrelBaseTM = Matrix34(rot, m_rapidparams.tp_barrel_offset);
+			m_barrelBaseTMValid = true;
+
+			m_pWeapon->GetEntity()->SetSlotLocalTM(barrelSlot, m_barrelBaseTM);
+
+			//CryLogAlways("$3Rapid TP barrel model loaded (%s) slot=%d ok=%d",
+			//	m_rapidparams.tp_barrel_model.c_str(), barrelSlot, ok);
+		}
+
+		Matrix33 spin = Matrix33::CreateRotationY(m_rotation_angle);
+		Matrix34 spinTM(spin, Vec3(ZERO));
+
+		Matrix34 finalTM = m_barrelBaseTM * spinTM;
+		m_pWeapon->GetEntity()->SetSlotLocalTM(barrelSlot, finalTM);
+		return;
+	}
+
+	// --------------------------
+	// CHR attachments rotation
+	// --------------------------
+	Ang3 angles(0, m_rotation_angle, 0);
 	Matrix34 tm = Matrix33::CreateRotationXYZ(angles);
+
 	if (m_hasBarrelAttachment)
 		m_pWeapon->SetCharacterAttachmentLocalTM(slot, m_rapidparams.barrel_attachment.c_str(), tm);
 
@@ -442,17 +514,19 @@ void CRapid::UpdateSound(float frameTime)
 
 			if (!OutOfAmmo())
 				ammo = 1.0f;
+
 			ISound* pSound = m_pWeapon->GetISound(m_soundId);
 			if (pSound)
 			{
 				if (g_pGameCVars->i_debug_sounds)
 				{
-					float color[] = { 1,1,1,0.5 };
+					float color[] = { 1,1,1,0.5f };
 					gEnv->pRenderer->Draw2dLabel(150, 500, 1.3f, color, false, "%s rpm_scale: %.2f", m_pWeapon->GetEntity()->GetName(), rpm_scale);
 				}
 
 				pSound->SetParam("rpm_scale", rpm_scale, false);
 				pSound->SetParam("ammo", ammo, false);
+
 				//Sound variations for FY71 (AI most common weapon)
 				if (m_fireparams.sound_variation && !m_pWeapon->IsOwnerFP())
 				{
@@ -469,6 +543,53 @@ void CRapid::UpdateSound(float frameTime)
 		m_pWeapon->StopSound(m_soundId);
 		m_soundId = INVALID_SOUNDID;
 	}
+}
+
+//------------------------------------------------------------------------
+void CRapid::SetSlotRender(IEntity* pEnt, int slot, bool render)
+{
+	if (!pEnt || slot < 0)
+		return;
+
+	int flags = pEnt->GetSlotFlags(slot);
+	if (render) 
+		flags |= ENTITY_SLOT_RENDER;
+	else        
+		flags &= ~ENTITY_SLOT_RENDER;
+
+	pEnt->SetSlotFlags(slot, flags);
+}
+
+//------------------------------------------------------------------------
+bool CRapid::ShouldShowTpBarrel() const
+{
+	const CWeapon::SStats& stats = m_pWeapon->GetStats();
+
+	if (stats.dropped)
+		return true;
+
+	if (m_rapidparams.tp_barrel_hide_fp && stats.fp)
+		return false;
+
+	const EntityId ownerId = m_pWeapon->GetOwnerId();
+	const bool hasOwner = (ownerId != 0);
+
+	if (hasOwner && !m_pWeapon->IsSelected())
+		return false;
+
+	return true;
+}
+
+//------------------------------------------------------------------------
+void CRapid::UpdateTpBarrelVisibility()
+{
+	if (!(m_rapidparams.tp_barrel_enable && !m_rapidparams.tp_barrel_model.empty()))
+		return;
+
+	const int slot = m_rapidparams.tp_barrel_slot;
+	const bool show = ShouldShowTpBarrel();
+
+	SetSlotRender(m_pWeapon->GetEntity(), slot, show);
 }
 
 //------------------------------------------------------------------------
