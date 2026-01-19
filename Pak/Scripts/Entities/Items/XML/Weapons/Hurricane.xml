@@ -196,6 +196,19 @@
 				
 				<param name="camshake_rotate" value=".005,0,0" />
 				<param name="camshake_perShot" value="4.0" />
+
+				<!-- Optional TP spinning geometry slot -->
+				<param name="tp_barrel_enable" value="1" />
+				<param name="tp_barrel_slot" value="8" /> <!-- Aux1 -->
+				<param name="tp_barrel_model" value="objects/weapons/us/hurricane/attachments/barrel.cgf" />
+
+				<param name="tp_barrel_hide_fp" value="1" />
+
+				<param name="tp_barrel_offset" value="0.0,0.845,-0.02" />
+				<param name="tp_barrel_rotation" value="0,0,180" />
+				<param name="tp_barrel_scale" value="1.3" />
+
+				<param name="barrel_spin_mult" value="2.0" />
 			</rapid>
 			<recoil>
 				<param name="angular_impulse" value="0.75" />
@@ -213,7 +226,8 @@
 			</recoil>
 			<muzzleflash>
 				<firstperson effect="muzzleflash.Machinegun.Hurricane" helper="muzzle_flash_effect" light_helper="muzzle_flash_light" light_time="0.01" light_radius="3" time="0.500" light_color="1,1,0.8" light_diffuse_mult="8" />
-				<thirdperson effect="muzzleflash.Machinegun.Hurricane_tp" helper="weapon_term" light_helper="weapon_term" light_time="0.01" light_radius="3" time="0.500" light_color="1,1,0.8" light_diffuse_mult="8" />
+				<!-- <thirdperson effect="muzzleflash.Machinegun.Hurricane_tp" helper="weapon_term" light_helper="weapon_term" light_time="0.01" light_radius="3" time="0.500" light_color="1,1,0.8" light_diffuse_mult="8" /> -->
+				<thirdperson effect="muzzleflash.Machinegun.Hurricane" helper="weapon_term" light_helper="weapon_term" light_time="0.01" light_radius="3" time="0.500" light_color="1,1,0.8" light_diffuse_mult="8" dir="-1,0,0" />
 			</muzzleflash>
 			<muzzlesmoke>
 				<firstperson effect="weapon_fx.gun.steam_on_barrel" helper="muzzle_flash_smoke" />

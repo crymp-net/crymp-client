@@ -1198,10 +1198,17 @@ void CGunTurret::UpdateOrientation(float deltaTime)
 		m_turretSound = INVALID_SOUNDID;
 	}
 
+	if (m_barrelRotationDirty)
+	{
+		changed = true;
+	}
+
 	if (changed)
 	{
 		turretTM.SetRotationXYZ(turretAngles, turretTM.GetTranslation());
 		GetEntity()->SetSlotLocalTM(eIGS_Aux0, turretTM);
+
+		m_barrelRotationDirty = false;
 	}
 
 	// update weapon  
@@ -1804,6 +1811,7 @@ void CGunTurret::SetCharacterAttachmentLocalTM(int slot, const char* name, const
 	if (slot == eIGS_ThirdPerson && !strcmp(name, "barrel"))
 	{
 		m_barrelRotation = tm;
+		m_barrelRotationDirty = true;
 	}
 	else
 		CWeapon::SetCharacterAttachmentLocalTM(slot, name, tm);

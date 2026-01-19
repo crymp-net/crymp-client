@@ -63,7 +63,7 @@
 			</reject>	
 			<tracer>
 				<!-- CryMP -->
-				<param name="geometry" 	value="objects/effects/tracer_standard_red_new.cgf" />
+				<param name="geometryFP" 	value="objects/effects/tracer_standard_red_new.cgf" />
 				<param name="geometry" 	value="objects/effects/tracer_standard_red_new.cgf" />
 				<param name="speed" 		value="230" />
 				<param name="speedFP"   value="300" />
