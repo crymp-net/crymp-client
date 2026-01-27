@@ -54,6 +54,7 @@ public:
   float v_slipSlopeRear;
   float v_slipFrictionModFront;
   float v_slipFrictionModRear;   
+  float v_enterDirRadius;
 
   int v_vehicle_quality;  
   int v_driverControlledMountedGuns;

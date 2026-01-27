@@ -93,6 +93,7 @@ CVehicleCVars::CVehicleCVars()
   REGISTER_CVAR(v_slipSlopeRear, 0.f, VF_CHEAT, "coefficient for slip friction slope calculation (rear wheels)");  
   REGISTER_CVAR(v_slipFrictionModFront, 0.f, VF_CHEAT, "if non-zero, used as slip friction modifier (front wheels)");
   REGISTER_CVAR(v_slipFrictionModRear, 0.f, VF_CHEAT, "if non-zero, used as slip friction modifier (rear wheels)");
+  REGISTER_CVAR(v_enterDirRadius, 7.0f, VF_CHEAT, "Maximum direction radius tolerated to enter with transition animation (AI only)");
   
   REGISTER_COMMAND("v_reload_system", "VehicleSystem.ReloadVehicleSystem()", 0, "Reloads VehicleSystem script");  
   REGISTER_COMMAND("v_exit_player", CmdExitPlayer, VF_CHEAT, "Makes the local player exit his current vehicle.");

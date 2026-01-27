@@ -305,7 +305,8 @@ protected:
   // ~ugly
 
 	bool m_isPlayerViewBlending;
-  bool m_isLocked;
+    bool m_isLocked;
+    bool m_useTransitionAnim;
   
 	int m_seatGroupIndex;
 

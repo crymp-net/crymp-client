@@ -87,16 +87,16 @@ void CVehicleSeatActionSound::PlaySound(bool play)
 	if (play && m_soundId != INVALID_SOUNDID)
 		PlaySound(false);
 
-	if (play!=m_enabled)
+	if (play != m_enabled)
 	{
-		CVehicleSeat *pSeat=static_cast<CVehicleSeat *>(m_pVehicle->GetSeatById(m_seatId));
+		CVehicleSeat* pSeat = static_cast<CVehicleSeat*>(m_pVehicle->GetSeatById(m_seatId));
 		if (pSeat)
 			pSeat->ChangedNetworkState(CVehicle::ASPECT_SEAT_ACTION);
 	}
 
 	if (play)
 	{
-		IEntitySoundProxy* pSoundProxy = (IEntitySoundProxy*) m_pVehicle->GetEntity()->CreateProxy(ENTITY_PROXY_SOUND);
+		IEntitySoundProxy* pSoundProxy = (IEntitySoundProxy*)m_pVehicle->GetEntity()->CreateProxy(ENTITY_PROXY_SOUND);
 		assert(pSoundProxy);
 
 		if (ISound* pSound = pSoundProxy->GetSound(m_soundId))
@@ -106,14 +106,13 @@ void CVehicleSeatActionSound::PlaySound(bool play)
 		}
 
 		Vec3 pos = m_pHelper->GetVehicleTM().GetTranslation();
-		m_soundId = pSoundProxy->PlaySound(m_soundName.c_str(), pos, Vec3(0.0f, -1.0f, 0.0f), FLAG_SOUND_3D|FLAG_SOUND_LOOP, eSoundSemantic_Vehicle);
+		m_soundId = pSoundProxy->PlaySound(m_soundName.c_str(), pos, Vec3(0.0f, -1.0f, 0.0f), FLAG_SOUND_3D | FLAG_SOUND_LOOP, eSoundSemantic_Vehicle);
 		m_enabled = true;
 
-		// Report the AI system about the vehicle movement sound.
 		if (!gEnv->bMultiplayer && gEnv->pAISystem)
 		{
-			//SAIStimulus stim(AISTIM_SOUND, AISOUND_MOVEMENT_LOUD, m_pVehicle->GetEntityId(), 0, pos, ZERO, 200.0f); //CryMP: fixme
-		//	gEnv->pAISystem->RegisterStimulus(stim);
+			IAIObject* pAI = m_pVehicle->GetEntity() ? m_pVehicle->GetEntity()->GetAI() : 0;
+			gEnv->pAISystem->SoundEvent(pos, 200.0f, AISE_MOVEMENT_LOUD, pAI);
 		}
 	}
 	else
@@ -125,8 +124,8 @@ void CVehicleSeatActionSound::PlaySound(bool play)
 				pSound->Stop();
 		}
 
-		m_soundId=INVALID_SOUNDID;
-		m_enabled=false;
+		m_soundId = INVALID_SOUNDID;
+		m_enabled = false;
 	}
 }
 

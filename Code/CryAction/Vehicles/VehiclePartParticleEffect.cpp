@@ -111,7 +111,7 @@ void CVehiclePartParticleEffect::OnVehicleEvent(EVehicleEvent event, const SVehi
 
 			break;
 		}
-		/* //CryMP: fixme
+		/* //CryMP: commented out, CVehiclePartParticleEffect not used in CE2
 		case eVE_StartParticleEffect:
 		case eVE_StopParticleEffect:
 		{

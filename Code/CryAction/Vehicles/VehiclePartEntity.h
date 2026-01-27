@@ -25,7 +25,7 @@ public:
 	virtual void InitClient(int channelId) {};
 	virtual void PostInit(IGameObject*) {}
 	virtual void PostInitClient(int channelId) {};
-	virtual void Release() {} // { delete this; } //CryMP: fixme
+	virtual void Release() { delete this; }
 
 	virtual void Serialize(TSerialize ser, unsigned aspects);
 	virtual void PostSerialize() {}

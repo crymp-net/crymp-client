@@ -192,7 +192,7 @@ bool CVehicleAnimation::StartAnimation()
 			if (animState.animation.empty())
 				return false;
 
-			if (!pSkeletonAnim->StartAnimation(animState.animation.c_str(), 0, 0, 0, animParams)) //CryMP: Fixme?
+			if (!pSkeletonAnim->StartAnimation(animState.animation.c_str(), nullptr, nullptr, nullptr, animParams))
 				return false;
 
 			if (!animState.sound.empty())

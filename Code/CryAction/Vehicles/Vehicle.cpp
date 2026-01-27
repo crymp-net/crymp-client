@@ -509,7 +509,7 @@ bool CVehicle::Init(IGameObject* pGameObject)
 				if (animTable.haveAttr("name") && pVehicleAnimation->Init(this, animTable))
 					m_animations.push_back(TVehicleStringAnimationPair(animTable.getAttr("name"), pVehicleAnimation));
 				else
-					delete pVehicleAnimation; //CryMP: fixme
+					delete pVehicleAnimation;
 			}
 		}
 	}
@@ -643,7 +643,7 @@ bool CVehicle::Init(IGameObject* pGameObject)
 					string type;
 					int capacity = 0;
 
-					if (!(type = ammoTable.getAttr("type")).empty() && ammoTable.getAttr("capacity", capacity)) //CryMP: fixme?
+					if (!(type = ammoTable.getAttr("type")).empty() && ammoTable.getAttr("capacity", capacity))
 					{
 						IEntityClass* pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(type.c_str());
 
@@ -3219,6 +3219,24 @@ bool CVehicle::InitParticles(const CVehicleParams& table)
 		}
 	}
 
+	// <ShatterEffect effect="vehicle_fx.frozen_shatter.small" />
+	if (CVehicleParams shatterTable = particleTable.findChild("ShatterEffect"))
+	{
+		// CVehicleParams::getAttr returns const char*, so assign directly (like you do elsewhere)
+		m_particleParams.m_shatterEffect = shatterTable.getAttr("effect");
+
+		if (!m_particleParams.m_shatterEffect.empty())
+		{
+			m_pParticleEffects.push_back(
+				gEnv->p3DEngine->FindParticleEffect(
+					m_particleParams.m_shatterEffect.c_str(),
+					"CVehicle::InitParticles"
+				)
+			);
+		}
+	}
+
+
 	if (CVehicleParams envTable = particleTable.findChild("EnvironmentLayers"))
 	{
 		int cnt = envTable.getChildCount();
@@ -3637,8 +3655,6 @@ void CVehicle::BroadcastVehicleEvent(EVehicleEvent event, const SVehicleEventPar
 		break;
 	}
 	case eVE_PassengerExit:
-		//m_pVehicleSystem->BroadcastVehicleUsageEvent(event, params.entityId/*playerId*/, this); //CryMP: fixme?
-		// fall through intentional.
 	case eVE_PassengerEnter:
 	{
 		if (params.iParam == 1) // driver seat

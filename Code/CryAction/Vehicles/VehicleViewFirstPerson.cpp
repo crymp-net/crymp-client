@@ -254,8 +254,11 @@ void CVehicleViewFirstPerson::OnStopUsing()
 		{
 			if (IWeapon* pWeapon = pItem->GetIWeapon())
 			{
-				if (pWeapon->IsZoomed()) //CryMP: Fixme || pWeapon->IsZoomingInOrOut())
+				//if (pWeapon->IsZoomed() || pWeapon->IsZoomingInOrOut()) //CryMP: CE3
+				if (pWeapon->IsZoomed() || pWeapon->IsZooming())
+				{
 					pWeapon->StopZoom(m_passengerId);
+				}
 			}
 
 		}

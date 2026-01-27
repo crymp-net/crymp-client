@@ -356,12 +356,13 @@ public:
   SExhaustParams* GetExhaustParams() { return &m_exhaustParams; }
   TDamageEffectMap* GetDamageEffectMap() { return &damageEffects; }
   SEnvironmentParticles* GetEnvironmentParticles() { return &m_envParams; }
-  virtual const char* GetShatterEffect() { return ""; }  //CryMP: fixme
+  virtual const char* GetShatterEffect() { return m_shatterEffect.c_str(); }
 
 protected:
   CExhaustParams m_exhaustParams;
   TDamageEffectMap damageEffects;
   CEnvironmentParticles m_envParams;
+  std::string m_shatterEffect;
 
   friend class CVehicle;
 };
