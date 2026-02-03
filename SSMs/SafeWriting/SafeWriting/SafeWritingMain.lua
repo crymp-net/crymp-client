@@ -2015,6 +2015,12 @@ function CheckPlayer(player, noevent)
         player.checkSkips = (player.checkSkips or 1) + 1
         return
     end
+    local players = g_gameRules.game:GetPlayers()
+    for j, w in pairs(players or {}) do
+        if w.profile and w.profile == player.profile and (player.id ~= w.id or player.actor:GetChannel() ~= w.actor:GetChannel()) then
+            KickPlayer(w, "Already connected")
+        end
+    end
     if player.desiredName then
         RenamePlayer(player, player.desiredName)
         player.desiredName = nil
@@ -2240,6 +2246,17 @@ function GetPlayers()
     return pl
 end
 
+function GetPlayersByTeamId(teamId)
+    local players = GetPlayers()
+    local out = {}
+    for i, v in pairs(players) do
+        if g_gameRules.game:GetTeam(v.id) == teamId then
+            table.insert(out, v)
+        end
+    end
+    return out
+end
+
 function GetPlayersByName(name)
     local players = GetPlayers()
     if (name == "*all") then
@@ -2441,6 +2458,7 @@ function ChangeTeam(player, newTeam)
                 player.rDeaths = rDeaths
             end
         end
+        player.last_team_change = _time
         g_gameRules.game:SetTeam(newTeamID, player.id)
         if (newTeamID ~= 0) then
             g_gameRules.Server.RequestSpawnGroup(g_gameRules, player.id,
