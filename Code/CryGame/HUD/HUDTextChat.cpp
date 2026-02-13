@@ -128,7 +128,7 @@ void CHUDTextChat::Update(float deltaTime)
 		}
 	}
 
-	if (m_inputText != m_lastInputText || m_chatTarget != m_lastChatTarget)
+	if (m_inputText != m_lastInputText || m_chatTarget != m_lastChatTarget || m_lastChatPMTargetId != m_chatPMTargetId || m_forceUpdate)
 	{
 		std::string text = StringTools::ToUtf8(m_inputText);
 
@@ -146,6 +146,8 @@ void CHUDTextChat::Update(float deltaTime)
 		m_flashChat->Invoke("setInputText", text.c_str());
 		m_lastInputText = m_inputText;
 		m_lastChatTarget = m_chatTarget;
+		m_lastChatPMTargetId = m_chatPMTargetId;
+		m_forceUpdate = false;
 	}
 }
 
@@ -378,8 +380,7 @@ void CHUDTextChat::OpenChat(int type)
 	if (type == 2)
 	{
 		m_chatTarget = IsFFA() ? eCT_All : eCT_Team;
-	} 
-	else if (g_pGameCVars->mp_chat == CHAT_BEHAVIOR_OLD) {
+	} else if (g_pGameCVars->mp_chat == CHAT_BEHAVIOR_OLD || m_chatTarget == eCT_Team) {
 		// we reset target only in old behavior, in new one we reuse previous one
 		m_chatTarget = eCT_All;
 	}
@@ -393,6 +394,7 @@ void CHUDTextChat::OpenChat(int type)
 	m_repeatEvent = SInputEvent();
 	m_inputText.clear();
 	m_cursor = 0;
+	m_forceUpdate = true;
 
 	m_history.ResetSelection();
 }
@@ -603,10 +605,10 @@ void CHUDTextChat::RotateTarget() {
 		// we move from TEAM to PMs (first selected player)
 		// optionally this applies also when in FFA ALL
 		m_chatTarget = eCT_PM;
-		CGameRules::TPlayers* players = m_pHUD->GetRadar()->GetSelectedTeamMates();
-		if (players && players->size() > 0) {
+		std::vector<EntityId> players = GetSelectedTeamMates();
+		if (players.size() > 0) {
 			m_chatTarget = eCT_PM;
-			m_chatPMTargetId = players->at(0);
+			m_chatPMTargetId = players.at(0);
 			m_flashChat->Invoke("setShowTeamChat");
 		} else {
 			m_chatTarget = eCT_All;
@@ -616,19 +618,24 @@ void CHUDTextChat::RotateTarget() {
 	}
 	else if (m_chatTarget == eCT_PM) {
 		// if already in PM and requested PM, rotate to next player, if there is no next player, rotate to ALL
-		CGameRules::TPlayers* players = m_pHUD->GetRadar()->GetSelectedTeamMates();
-		if (players && players->size() > 0) {
+		std::vector<EntityId> players = GetSelectedTeamMates();
+		if (players.size() > 0) {
 			size_t atNow = -1;
-			for (size_t i = 0; i < players->size(); i++) {
-				if (players->at(i) == m_chatPMTargetId) {
+			for (size_t i = 0; i < players.size(); i++) {
+				if (players.at(i) == m_chatPMTargetId) {
 					atNow = i;
 					break;
 				}
 			}
-			if (atNow >= 0 && atNow < players->size() - 1) {
+			if (atNow == -1) {
+				// previously selected player probably left
+				m_chatTarget = eCT_PM;
+				m_chatPMTargetId = players.at(0);
+				m_flashChat->Invoke("setShowTeamChat");
+			} else if (atNow >= 0 && atNow < players.size() - 1) {
 				// rotate to next selected player
 				m_chatTarget = eCT_PM;
-				m_chatPMTargetId = players->at(atNow + 1);
+				m_chatPMTargetId = players.at(atNow + 1);
 				m_flashChat->Invoke("setShowTeamChat");
 			} else {
 				// we rotated past last selected player and go back to ALL
@@ -673,4 +680,17 @@ bool CHUDTextChat::CanSeeMessageFrom(const IEntity* pSource) {
 
 bool CHUDTextChat::IsFFA() {
 	return g_pGame->GetGameRules()->GetTeamCount() < 2;
+}
+
+std::vector<EntityId> CHUDTextChat::GetSelectedTeamMates() {
+	std::vector<EntityId> mates;
+	auto players = m_pHUD->GetRadar()->GetSelectedTeamMates();
+	if (players) {
+		for (EntityId id : *players) {
+			if (gEnv->pEntitySystem->GetEntity(id)) {
+				mates.push_back(id);
+			}
+		}
+	}
+	return mates;
 }

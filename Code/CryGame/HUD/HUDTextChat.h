@@ -34,7 +34,9 @@ class CHUDTextChat : public CHUDObject, public IInputEventListener, public IFSCo
 	EChatTarget m_chatTarget = eCT_All;
 	EChatTarget m_lastChatTarget = eCT_All;
 	EntityId m_chatPMTargetId = 0;
+	EntityId m_lastChatPMTargetId = 0;
 	bool m_showVirtualKeyboard = false;
+	bool m_forceUpdate = false;
 
 	float m_repeatTimer = 0;
 	SInputEvent m_repeatEvent;
@@ -97,4 +99,5 @@ private:
 	void RotateTarget();
 	bool CanSeeMessageFrom(const IEntity* pEntity);
 	bool IsFFA();
+	std::vector<EntityId> GetSelectedTeamMates();
 };
