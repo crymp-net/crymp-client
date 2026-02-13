@@ -14,6 +14,15 @@
 #include "HUD.h"
 #include "HUDRadar.h"
 
+// old chat behavior
+#define CHAT_BEHAVIOR_OLD 0
+// new chat behavior without server explicitly support (resort to !pm)
+#define CHAT_BEHAVIOR_NEW 1
+// new chat behavior with partial server support (send message directly)
+#define CHAT_BEHAVIOR_NEW_WITH_PARTIAL_SERVER_SUPPORT 2
+// new chat behavior with full server support (server sends message also to originator)
+#define CHAT_BEHAVIOR_NEW_WITH_FULL_SERVER_SUPPORT 3
+
 void CHUDTextChat::History::Add(const std::wstring& message)
 {
 	if (message.empty() || this->messages[this->last] == message)
@@ -264,7 +273,7 @@ void CHUDTextChat::AddChatMessage(EntityId sourceId, EntityId targetId, const wc
 	IEntity* pSource = gEnv->pEntitySystem->GetEntity(sourceId);
 
 	std::string strNick{ pSource ? pSource->GetName() : "" };
-	if (targetId) {
+	if (targetId && g_pGameCVars->mp_chat >= CHAT_BEHAVIOR_NEW_WITH_PARTIAL_SERVER_SUPPORT) {
 		IEntity* pTarget = gEnv->pEntitySystem->GetEntity(targetId);
 		if (pTarget) {
 			if (sourceId == clientId) {
@@ -287,7 +296,7 @@ void CHUDTextChat::AddChatMessage(EntityId sourceId, EntityId targetId, const ch
 	IEntity* pSource = gEnv->pEntitySystem->GetEntity(sourceId);
 
 	std::string strNick{ pSource ? pSource->GetName() : "" };
-	if (targetId) {
+	if (targetId && g_pGameCVars->mp_chat >= CHAT_BEHAVIOR_NEW_WITH_PARTIAL_SERVER_SUPPORT) {
 		IEntity* pTarget = gEnv->pEntitySystem->GetEntity(targetId);
 		if (pTarget) {
 			if (sourceId == clientId) {
@@ -371,7 +380,7 @@ void CHUDTextChat::OpenChat(int type)
 	else
 	{
 		// keep previous target in new behavior (for Z chat only, U will still force team chat)
-		if (g_pGameCVars->mp_chat == 0) {
+		if (g_pGameCVars->mp_chat == CHAT_BEHAVIOR_OLD) {
 			m_chatTarget = eCT_All;
 		}
 	}
@@ -484,19 +493,31 @@ void CHUDTextChat::Flush()
 			break;
 		}
 
+		std::string prefix{};
 		const EntityId senderID = m_pHUD->m_pClientActor->GetEntityId();
+
+		// in case improved chat is enabled, but server doesn't support handling it or doesn't specify how to handle it
+		// use !pm system that most of SSMs support
+		if (chatType == eChatToTarget && g_pGameCVars->mp_chat == CHAT_BEHAVIOR_NEW) {
+			IEntity* pTarget = gEnv->pEntitySystem->GetEntity(targetId);
+			if (pTarget) {
+				targetId = 0;
+				chatType = eChatToAll;
+				prefix = std::string{ "!pm " } + pTarget->GetName() + " ";
+			}
+		}
 
 		m_pHUD->m_pGameRules->SendChatMessage(
 			chatType,
 			senderID,
 			targetId,
-			StringTools::ToUtf8(m_inputText).c_str()
+			(prefix + StringTools::ToUtf8(m_inputText)).c_str()
 		);
 
 		// delivery of messages is handled by servers and most of servers don't or won't implement
 		// delivering outgoing message to target back to sender, to handle that
 		// force displaying outgoing PM here manually
-		if (chatType == eChatToTarget) {
+		if (chatType == eChatToTarget && g_pGameCVars->mp_chat == CHAT_BEHAVIOR_NEW_WITH_PARTIAL_SERVER_SUPPORT) {
 			AddChatMessage(senderID, targetId, m_inputText.c_str(), 0, false);
 		}
 
@@ -566,7 +587,7 @@ void CHUDTextChat::VirtualKeyboardInput(const char* direction)
 }
 
 void CHUDTextChat::RotateTarget() {
-	if (g_pGameCVars->mp_chat == 0) {
+	if (g_pGameCVars->mp_chat == CHAT_BEHAVIOR_OLD) {
 		return;
 	}
 	if (m_chatTarget == eCT_All) {

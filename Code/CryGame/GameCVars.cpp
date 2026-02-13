@@ -624,7 +624,8 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_healthBars", &mp_healthBars, 0, OPTIONAL_SYNC, "Enable displaying health bars");
 	pConsole->Register("mp_deadPlayersOnMinimap", &mp_deadPlayersOnMinimap, 0, OPTIONAL_SYNC, "Display dead players on minimap");
 	pConsole->Register("mp_suitHitReaction", &mp_suitHitReaction, 0, OPTIONAL_SYNC, "Activates NanoHitReaction");
-
+	pConsole->Register("mp_chat", &mp_chat, 1, OPTIONAL_SYNC, "Sets chat features support (0: old chat, 1: new chat without server support, 2: new chat with partial server support, 3: new chat with full server support)");
+	 
 	//CryMP CVars (un-synced)
 	pConsole->Register("mp_newSpectator", &mp_newSpectator, 1, VF_NOT_NET_SYNCED, "");
 	pConsole->Register("mp_usePostProcessAimDir", &mp_usePostProcessAimDir, 1, VF_NOT_NET_SYNCED, "");
@@ -647,9 +648,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_explosiveRemovalTime", &mp_explosiveRemovalTime, 30.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds for explosive removal after death");
 	pConsole->Register("mp_explosion_mfx", &mp_explosion_mfx, 1, VF_NOT_NET_SYNCED, "Enable mfx via ClExplosion rmi for server controlled missiles");
 
-	pConsole->Register("mp_chat", &mp_chat, 1, VF_NOT_NET_SYNCED, "Enables improved chat");
 	pConsole->Register("cl_hud_chat", &cl_hud_chat, 1, VF_NOT_NET_SYNCED, "Shows / hides chat");
-
 	pConsole->Register("ads", &ads, 1, VF_NOT_NET_SYNCED, "Enable or disable (100h+) ads");
 }
 
