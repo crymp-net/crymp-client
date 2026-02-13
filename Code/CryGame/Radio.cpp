@@ -477,7 +477,7 @@ void CRadio::OnRadioMessage(SRadioMessageParams params)
 
 		CHUDTextChat* pChat = g_pGame->GetHUD()->GetMPChat();
 		if(pChat)
-			pChat->AddChatMessage(params.sourceId, completeMsg.c_str(), 1, true);	// hardcoded to 'same team'
+			pChat->AddChatMessage(params.sourceId, 0, completeMsg.c_str(), 1, true);	// hardcoded to 'same team'
 		//g_pGame->GetGameRules()->OnChatMessage(eChatToTeam, fromId, 0, completeMsg.c_str());
 
 		string sound = pSoundName;

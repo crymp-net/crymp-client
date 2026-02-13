@@ -17,6 +17,12 @@ class CHUDTextChat : public CHUDObject, public IInputEventListener, public IFSCo
 	// CryMP: default is 60
 	static constexpr std::size_t MAX_MESSAGE_LENGTH = 75;
 
+	enum EChatTarget {
+		eCT_All,
+		eCT_Team,
+		eCT_PM
+	};
+
 	CHUD* m_pHUD = nullptr;
 	CGameFlashAnimation* m_flashChat;
 
@@ -25,7 +31,9 @@ class CHUDTextChat : public CHUDObject, public IInputEventListener, public IFSCo
 	std::size_t m_cursor = 0;
 
 	bool m_isListening = false;
-	bool m_teamChat = false;
+	EChatTarget m_chatTarget = eCT_All;
+	EChatTarget m_lastChatTarget = eCT_All;
+	EntityId m_chatPMTargetId = 0;
 	bool m_showVirtualKeyboard = false;
 
 	float m_repeatTimer = 0;
@@ -64,10 +72,10 @@ public:
 	void HandleFSCommand(const char* command, const char* args) override;
 	// ~IFSCommandHandler
 
-	void AddChatMessage(EntityId sourceId, const wchar_t* msg, int teamFaction, bool teamChat);
-	void AddChatMessage(EntityId sourceId, const char* msg, int teamFaction, bool teamChat);
-	void AddChatMessage(const char* nick, const wchar_t* msg, int teamFaction, bool teamChat);
-	void AddChatMessage(const char* nick, const char* msg, int teamFaction, bool teamChat);
+	void AddChatMessage(EntityId sourceId, EntityId targetId, const wchar_t* msg, int teamFaction, bool teamChat);
+	void AddChatMessage(EntityId sourceId, EntityId targetId, const char* msg, int teamFaction, bool teamChat);
+	void AddChatMessage(const char* nick, EntityId targetId, const wchar_t* msg, int teamFaction, bool teamChat);
+	void AddChatMessage(const char* nick, EntityId targetId, const char* msg, int teamFaction, bool teamChat);
 
 	void ShutDown() { this->Flush(); }
 
@@ -86,4 +94,6 @@ private:
 	void Flush();
 	void ProcessInput(const SInputEvent& event);
 	void VirtualKeyboardInput(const char* direction);
+	void RotateTarget();
+	bool CanSeeMessageFrom(const IEntity* pEntity);
 };

@@ -276,7 +276,7 @@ void CHUDTagNames::DrawTagName(IActor* pActor, bool bLocalVehicle)
 
 	for (EntityId teamMateId : *m_pHUD->GetRadar()->GetSelectedTeamMates())
 	{
-		if (entityId == teamMateId)
+		if (entityId == teamMateId && pGameRules->GetTeam(teamMateId) == iClientTeam)
 		{
 			// Teammate is selected in radar, force the visibility of that name
 			bDrawOnTop = true;
@@ -411,7 +411,7 @@ void CHUDTagNames::DrawTagName(IVehicle* pVehicle)
 
 		for (EntityId teamMateId : *m_pHUD->GetRadar()->GetSelectedTeamMates())
 		{
-			if (uiEntityId == teamMateId)
+			if (uiEntityId == teamMateId && pGameRules->GetTeam(teamMateId) == iClientTeam)
 			{
 				// Teammate is selected in radar, force the visibility of that name
 				bDrawOnTop = true;
