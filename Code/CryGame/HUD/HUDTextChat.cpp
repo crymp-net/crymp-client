@@ -17,7 +17,7 @@
 // old chat behavior
 #define CHAT_BEHAVIOR_OLD 0
 // new chat behavior without server explicitly support (resort to !pm)
-#define CHAT_BEHAVIOR_NEW 1
+#define CHAT_BEHAVIOR_NEW_WITHOUT_SERVER_SUPPORT 1
 // new chat behavior with partial server support (send message directly)
 #define CHAT_BEHAVIOR_NEW_WITH_PARTIAL_SERVER_SUPPORT 2
 // new chat behavior with full server support (server sends message also to originator)
@@ -498,7 +498,7 @@ void CHUDTextChat::Flush()
 
 		// in case improved chat is enabled, but server doesn't support handling it or doesn't specify how to handle it
 		// use !pm system that most of SSMs support
-		if (chatType == eChatToTarget && g_pGameCVars->mp_chat == CHAT_BEHAVIOR_NEW) {
+		if (chatType == eChatToTarget && g_pGameCVars->mp_chat == CHAT_BEHAVIOR_NEW_WITHOUT_SERVER_SUPPORT) {
 			IEntity* pTarget = gEnv->pEntitySystem->GetEntity(targetId);
 			if (pTarget) {
 				targetId = 0;
