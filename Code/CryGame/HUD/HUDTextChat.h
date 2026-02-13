@@ -96,4 +96,5 @@ private:
 	void VirtualKeyboardInput(const char* direction);
 	void RotateTarget();
 	bool CanSeeMessageFrom(const IEntity* pEntity);
+	bool IsFFA();
 };

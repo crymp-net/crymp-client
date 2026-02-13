@@ -273,6 +273,7 @@ void CHUDTextChat::AddChatMessage(EntityId sourceId, EntityId targetId, const wc
 	IEntity* pSource = gEnv->pEntitySystem->GetEntity(sourceId);
 
 	std::string strNick{ pSource ? pSource->GetName() : "" };
+	// wrap player name in [From/To] envelope if the server at least partially supports new PM system
 	if (targetId && g_pGameCVars->mp_chat >= CHAT_BEHAVIOR_NEW_WITH_PARTIAL_SERVER_SUPPORT) {
 		IEntity* pTarget = gEnv->pEntitySystem->GetEntity(targetId);
 		if (pTarget) {
@@ -296,6 +297,7 @@ void CHUDTextChat::AddChatMessage(EntityId sourceId, EntityId targetId, const ch
 	IEntity* pSource = gEnv->pEntitySystem->GetEntity(sourceId);
 
 	std::string strNick{ pSource ? pSource->GetName() : "" };
+	// wrap player name in [From/To] envelope if the server at least partially supports new PM system
 	if (targetId && g_pGameCVars->mp_chat >= CHAT_BEHAVIOR_NEW_WITH_PARTIAL_SERVER_SUPPORT) {
 		IEntity* pTarget = gEnv->pEntitySystem->GetEntity(targetId);
 		if (pTarget) {
@@ -375,14 +377,11 @@ void CHUDTextChat::OpenChat(int type)
 
 	if (type == 2)
 	{
-		m_chatTarget = eCT_Team;
-	}
-	else
-	{
-		// keep previous target in new behavior (for Z chat only, U will still force team chat)
-		if (g_pGameCVars->mp_chat == CHAT_BEHAVIOR_OLD) {
-			m_chatTarget = eCT_All;
-		}
+		m_chatTarget = IsFFA() ? eCT_All : eCT_Team;
+	} 
+	else if (g_pGameCVars->mp_chat == CHAT_BEHAVIOR_OLD) {
+		// we reset target only in old behavior, in new one we reuse previous one
+		m_chatTarget = eCT_All;
 	}
 
 	if (m_chatTarget == eCT_All) {
@@ -590,12 +589,19 @@ void CHUDTextChat::RotateTarget() {
 	if (g_pGameCVars->mp_chat == CHAT_BEHAVIOR_OLD) {
 		return;
 	}
-	if (m_chatTarget == eCT_All) {
+
+	bool isFFA = IsFFA();
+
+	if (m_chatTarget == eCT_All && !isFFA) {
+		// we move from ALL to TEAM only if match isn't FFA
+		// if the match is FFA, we rotate directly to PMs
 		m_chatTarget = eCT_Team;
 		m_chatPMTargetId = 0;
 		m_flashChat->Invoke("setShowTeamChat");
 	}
-	else if (m_chatTarget == eCT_Team) {
+	else if (m_chatTarget == eCT_Team || (m_chatTarget == eCT_All && isFFA)) {
+		// we move from TEAM to PMs (first selected player)
+		// optionally this applies also when in FFA ALL
 		m_chatTarget = eCT_PM;
 		CGameRules::TPlayers* players = m_pHUD->GetRadar()->GetSelectedTeamMates();
 		if (players && players->size() > 0) {
@@ -620,15 +626,18 @@ void CHUDTextChat::RotateTarget() {
 				}
 			}
 			if (atNow >= 0 && atNow < players->size() - 1) {
+				// rotate to next selected player
 				m_chatTarget = eCT_PM;
 				m_chatPMTargetId = players->at(atNow + 1);
 				m_flashChat->Invoke("setShowTeamChat");
 			} else {
+				// we rotated past last selected player and go back to ALL
 				m_chatTarget = eCT_All;
 				m_chatPMTargetId = 0;
 				m_flashChat->Invoke("setShowGlobalChat");
 			}
 		} else {
+			// if there is no players, we fallback to ALL
 			m_chatTarget = eCT_All;
 			m_chatPMTargetId = 0;
 			m_flashChat->Invoke("setShowGlobalChat");
@@ -660,4 +669,8 @@ bool CHUDTextChat::CanSeeMessageFrom(const IEntity* pSource) {
 			return true;
 		}
 	}
+}
+
+bool CHUDTextChat::IsFFA() {
+	return g_pGame->GetGameRules()->GetTeamCount() < 2;
 }
