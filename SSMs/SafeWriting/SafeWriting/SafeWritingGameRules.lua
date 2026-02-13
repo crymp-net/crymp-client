@@ -1390,6 +1390,12 @@ if not SafeWritingGameRules.UpdatePings then
 						SpecialFormat(
 							"${t:ChatMsg1|5}[CHAT] ${t:ChatMsg2|8}%s ${t:ChatMsg3|6}to ${t:ChatMsg4|8}%s: ${t:ChatMsg5|6}%s",
 							srcname, tgtname, logMsg), TextMessageToClient, target.id);
+					if source and source.class == "Player" then
+						g_gameRules.game:SendTextMessage(TextMessageConsole,
+							SpecialFormat(
+								"${t:ChatMsg1|5}[CHAT] ${t:ChatMsg2|8}%s ${t:ChatMsg3|6}to ${t:ChatMsg4|8}%s: ${t:ChatMsg5|6}%s",
+								srcname, tgtname, logMsg), TextMessageToClient, source.id);
+					end
 					if (se.LogChatToAdmins) then
 						local players = g_gameRules.game:GetPlayers();
 						if (players) then
