@@ -128,7 +128,11 @@ void CHUDTextChat::Update(float deltaTime)
 		}
 	}
 
-	if (m_inputText != m_lastInputText || m_chatTarget != m_lastChatTarget || m_lastChatPMTargetId != m_chatPMTargetId || m_forceUpdate)
+	if (m_inputText != m_lastInputText 
+		|| m_chatTarget != m_lastChatTarget 
+		|| m_lastChatPMTargetId != m_chatPMTargetId 
+		|| m_cursor != m_lastCursor
+		|| m_forceUpdate)
 	{
 		std::wstring prefixTag = L"";
 
@@ -183,6 +187,7 @@ void CHUDTextChat::Update(float deltaTime)
 		m_lastInputText = m_inputText;
 		m_lastChatTarget = m_chatTarget;
 		m_lastChatPMTargetId = m_chatPMTargetId;
+		m_lastCursor = m_cursor;
 		m_forceUpdate = false;
 	}
 }

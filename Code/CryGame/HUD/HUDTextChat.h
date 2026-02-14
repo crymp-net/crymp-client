@@ -29,6 +29,7 @@ class CHUDTextChat : public CHUDObject, public IInputEventListener, public IFSCo
 	std::wstring m_inputText;
 	std::wstring m_lastInputText;
 	std::size_t m_cursor = 0;
+	std::size_t m_lastCursor = 0;
 
 	bool m_isListening = false;
 	EChatTarget m_chatTarget = eCT_All;
