@@ -418,13 +418,27 @@ void CHUDTextChat::OpenChat(int type)
 	m_flashChat->Invoke("setVisibleChatBox", 1);
 	m_flashChat->Invoke("GamepadAvailable", m_showVirtualKeyboard);
 
-	if (type == 2)
-	{
-		m_chatTarget = IsFFA() ? eCT_All : eCT_Team;
-	} else if (g_pGameCVars->mp_chat == CHAT_BEHAVIOR_OLD || m_chatTarget == eCT_Team) {
-		// we reset target only in old behavior, in new one we reuse previous one
-		m_chatTarget = eCT_All;
+	if (g_pGameCVars->mp_chat == CHAT_BEHAVIOR_OLD) {
+		if (type == 2)
+		{
+			m_chatTarget = IsFFA() ? eCT_All : eCT_Team;
+		}
+		else {
+			m_chatTarget = eCT_All;
+		}
 	}
+	else {
+		if (m_chatTarget != eCT_PM) {
+			if (type == 2)
+			{
+				m_chatTarget = IsFFA() ? eCT_All : eCT_Team;
+			}
+			else {
+				m_chatTarget = eCT_All;
+			}
+		}
+	}
+	
 
 	if (m_chatTarget == eCT_All) {
 		m_flashChat->Invoke("setShowGlobalChat");
