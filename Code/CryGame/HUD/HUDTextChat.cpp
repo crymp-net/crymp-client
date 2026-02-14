@@ -130,12 +130,12 @@ void CHUDTextChat::Update(float deltaTime)
 
 	if (m_inputText != m_lastInputText || m_chatTarget != m_lastChatTarget || m_lastChatPMTargetId != m_chatPMTargetId || m_forceUpdate)
 	{
-		std::string text = StringTools::ToUtf8(m_inputText);
+		std::wstring prefixTag = L"";
 
+		// Compute chat prefix tag if in PM mode
 		if (m_chatTarget == eCT_PM && m_chatPMTargetId) {
-			IEntity* pTarget = gEnv->pEntitySystem->GetEntity(m_chatPMTargetId);
-			if (pTarget) {
-				text = std::string{ "[To " } + pTarget->GetName() + "] " + text;
+			if (gEnv->pEntitySystem->GetEntity(m_chatPMTargetId)) {
+				prefixTag = L"[To " + StringTools::ToWide(gEnv->pEntitySystem->GetEntity(m_chatPMTargetId)->GetName()) + L"] ";
 			} else {
 				m_chatTarget = eCT_All;
 				m_chatPMTargetId = 0;
@@ -143,7 +143,43 @@ void CHUDTextChat::Update(float deltaTime)
 			}
 		}
 
-		m_flashChat->Invoke("setInputText", text.c_str());
+		std::wstring fullWText = prefixTag + m_inputText;
+
+		// If we exceed the length, then cut the text and put ... accordingly
+		if (fullWText.length() > MAX_MESSAGE_LENGTH) {
+			const std::wstring ellipsis = L"...";
+			const std::size_t prefixLen = prefixTag.length();
+			const std::size_t availableSpace = MAX_MESSAGE_LENGTH - prefixLen;
+
+			// Adjust cursor relative to the start of the actual message
+			// m_cursor is assumed to be the index within m_inputText
+			std::size_t start = 0;
+			if (m_cursor > (availableSpace / 2)) {
+				start = m_cursor - (availableSpace / 2);
+			}
+
+			// Clamp start to ensure we don't overflow the end of the string
+			if (start + availableSpace > m_inputText.length()) {
+				start = (m_inputText.length() > availableSpace) ? (m_inputText.length() - availableSpace) : 0;
+			}
+
+			std::wstring midSection = m_inputText.substr(start, availableSpace);
+
+			// Apply ellipsis markers
+			if (start > 0 && midSection.length() >= 3) {
+				midSection.replace(0, 3, ellipsis);
+			}
+			if (start + availableSpace < m_inputText.length() && midSection.length() >= 3) {
+				midSection.replace(midSection.length() - 3, 3, ellipsis);
+			}
+
+			fullWText = prefixTag + midSection;
+		}
+
+		// Convert back to UTF-8 and set text in Flash
+		std::string finalTagUtf8 = StringTools::ToUtf8(fullWText);
+		m_flashChat->Invoke("setInputText", finalTagUtf8.c_str());
+
 		m_lastInputText = m_inputText;
 		m_lastChatTarget = m_chatTarget;
 		m_lastChatPMTargetId = m_chatPMTargetId;
@@ -662,7 +698,6 @@ bool CHUDTextChat::CanSeeMessageFrom(const IEntity* pSource) {
 	}
 
 	if (g_pGameCVars->cl_hud_chat == 1) {
-		
 		return true;
 	} else {
 		// if cl_hud_chat is disabled, then player cannot see messages from other players
@@ -678,11 +713,13 @@ bool CHUDTextChat::CanSeeMessageFrom(const IEntity* pSource) {
 	}
 }
 
-bool CHUDTextChat::IsFFA() {
+bool CHUDTextChat::IsFFA()
+{
 	return g_pGame->GetGameRules()->GetTeamCount() < 2;
 }
 
-std::vector<EntityId> CHUDTextChat::GetSelectedTeamMates() {
+std::vector<EntityId> CHUDTextChat::GetSelectedTeamMates() 
+{
 	std::vector<EntityId> mates;
 	auto players = m_pHUD->GetRadar()->GetSelectedTeamMates();
 	if (players) {
