@@ -428,6 +428,8 @@ void CHUDTextChat::OpenChat(int type)
 
 	if (m_chatTarget == eCT_All) {
 		m_flashChat->Invoke("setShowGlobalChat");
+	} else if (m_chatTarget == eCT_PM) {
+		m_flashChat->Invoke("setShowPMChat");
 	} else {
 		m_flashChat->Invoke("setShowTeamChat");
 	}
@@ -650,7 +652,7 @@ void CHUDTextChat::RotateTarget() {
 		if (players.size() > 0) {
 			m_chatTarget = eCT_PM;
 			m_chatPMTargetId = players.at(0);
-			m_flashChat->Invoke("setShowTeamChat");
+			m_flashChat->Invoke("setShowPMChat");
 		} else {
 			m_chatTarget = eCT_All;
 			m_chatPMTargetId = 0;
@@ -672,12 +674,12 @@ void CHUDTextChat::RotateTarget() {
 				// previously selected player probably left
 				m_chatTarget = eCT_PM;
 				m_chatPMTargetId = players.at(0);
-				m_flashChat->Invoke("setShowTeamChat");
+				m_flashChat->Invoke("setShowPMChat");
 			} else if (atNow >= 0 && atNow < players.size() - 1) {
 				// rotate to next selected player
 				m_chatTarget = eCT_PM;
 				m_chatPMTargetId = players.at(atNow + 1);
-				m_flashChat->Invoke("setShowTeamChat");
+				m_flashChat->Invoke("setShowPMChat");
 			} else {
 				// we rotated past last selected player and go back to ALL
 				m_chatTarget = eCT_All;
