@@ -736,7 +736,7 @@ if(CRYMP_TRACY_ENABLED)
 	target_compile_definitions(Base PUBLIC TRACY_ENABLE)
 endif()
 
-target_compile_definitions(Base PUBLIC _CRT_SECURE_NO_WARNINGS)
+target_compile_definitions(Base PUBLIC _CRT_SECURE_NO_WARNINGS _WIN32_WINNT=0x0601)  # Win7+
 
 target_compile_options(Base PUBLIC /W4
 	/wd4018  # Disable - 'token' : signed/unsigned mismatch

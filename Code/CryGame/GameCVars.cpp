@@ -622,6 +622,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_netSerializeHolsteredItems", &mp_netSerializeHolsteredItems, 0, OPTIONAL_SYNC, "Serialize holstered items");
 	pConsole->Register("mp_radioTagging", &mp_radioTagging, 0, OPTIONAL_SYNC, "Enable tagging positions using radio");
 	pConsole->Register("mp_healthBars", &mp_healthBars, 0, OPTIONAL_SYNC, "Enable displaying health bars");
+	pConsole->Register("mp_ogCloakEffect", &mp_ogCloakEffect, 1, OPTIONAL_SYNC, "Enables old cloak function");
 	pConsole->Register("mp_deadPlayersOnMinimap", &mp_deadPlayersOnMinimap, 0, OPTIONAL_SYNC, "Display dead players on minimap");
 	pConsole->Register("mp_suitHitReaction", &mp_suitHitReaction, 0, OPTIONAL_SYNC, "Activates NanoHitReaction");
 	pConsole->Register("mp_chat", &mp_chat, 1, OPTIONAL_SYNC, "Sets chat features support (0: old chat, 1: new chat without server support, 2: new chat with partial server support, 3: new chat with full server support)");
