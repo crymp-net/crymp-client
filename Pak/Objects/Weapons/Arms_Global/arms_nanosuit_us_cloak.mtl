@@ -1,0 +1,42 @@
+<Material MtlFlags="256">
+ <SubMaterials>
+  <Material Name="arms" MtlFlags="128" Shader="Cloth" GenMask="268468480" SurfaceType="" Diffuse="0.50196081,0.50196081,0.50196081" Specular="0.44705886,0.47450984,0.54901963" Emissive="0,0,0" Shininess="55" Opacity="1">
+   <Textures>
+    <Texture Map="Diffuse" File="objects/weapons/arms_global/arms_nanosuit_us_strength.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Specular" File="objects/weapons/arms_global/arms_nanosuit_us_spec.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Normalmap" File="objects/weapons/arms_global/arms_nanosuit_us_ddn.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Environment" File="objects/weapons/us/socom/socom_env.tif">
+     <TexMod />
+    </Texture>
+   </Textures>
+   <PublicParams AnimFrequency="3" AnimAmplitudeWav0="0" AnimAmplitudeWav1="0" AnimAmplitudeWav2="0" AnimPhase="0" AnisotropicShape="0.40000001" SparksPow="9.5799999" SparksMultiplier="3" SparksPhase="8.20000" SparksFrequency="5" SparksColor="0.451,0.608,0.902" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="2" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.15000001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="1" FresnelScale="0.75" FresnelScaleShadowBias="1"/>
+   <MaterialLayers />
+  </Material>
+  <Material Name="nanosuit" MtlFlags="132" Shader="Cloth" GenMask="268468496" SurfaceType="mat_kevlar" Diffuse="0.50196081,0.50196081,0.50196081" Specular="1,1,1" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures>
+    <Texture Map="Diffuse" File="objects/characters/human/us/nanosuit/nanosuit_us.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Specular" File="objects/characters/human/us/nanosuit/nanosuit_us_spec.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Normalmap" File="objects/characters/human/us/nanosuit/nanosuit_us_ddn.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Environment" File="textures/cubemaps/camera_river_cubemap_bright.dds">
+     <TexMod />
+    </Texture>
+   </Textures>
+   <PublicParams AnimFrequency="0" AnimAmplitudeWav0="0" AnimAmplitudeWav1="0" AnimAmplitudeWav2="0" AnimPhase="1" AnisotropicShape="0.25" SparksPow="9.5799999" SparksMultiplier="3" SparksPhase="8.20000" SparksFrequency="5" SparksColor="0.451,0.608,0.902" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="1.35" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.31400001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.465" FresnelScale="27.870001" FresnelScaleShadowBias="1"/>
+   <MaterialLayers />
+  </Material>
+ </SubMaterials>
+ <PublicParams AmbientMultiplier="1"/>
+ <MaterialLayers />
+</Material>

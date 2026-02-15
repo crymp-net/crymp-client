@@ -479,6 +479,7 @@ struct SCVars
 	int         mp_deadPlayersOnMinimap;
     int         mp_suitHitReaction;
 	int         mp_recycleProjectiles;
+    int         mp_ogCloakEffect;
 	float		mp_abandonTime;
 	float		mp_explosiveRemovalTime;
 	int         mp_explosion_mfx;
