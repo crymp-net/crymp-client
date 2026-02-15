@@ -22,6 +22,7 @@ IScriptSystem *FunctionHandler::GetIScriptSystem()
 
 void *FunctionHandler::GetThis()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	void *self = nullptr;
 
 	// get implicit self table
@@ -45,6 +46,7 @@ void *FunctionHandler::GetThis()
 
 bool FunctionHandler::GetSelfAny(ScriptAnyValue & any)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	if (m_paramIdOffset > 0)
 	{
 		return m_pSS->ToAny(any, 1);
@@ -57,16 +59,19 @@ bool FunctionHandler::GetSelfAny(ScriptAnyValue & any)
 
 const char *FunctionHandler::GetFuncName()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	return m_funcName;
 }
 
 int FunctionHandler::GetParamCount()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	return std::max(lua_gettop(m_L) - m_paramIdOffset, 0);
 }
 
 ScriptVarType FunctionHandler::GetParamType(int index)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	const int realIndex = index + m_paramIdOffset;
 	const int type = lua_type(m_L, realIndex);
 
@@ -75,6 +80,7 @@ ScriptVarType FunctionHandler::GetParamType(int index)
 
 bool FunctionHandler::GetParamAny(int index, ScriptAnyValue & any)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	const int realIndex = index + m_paramIdOffset;
 
 	if (m_pSS->ToAny(any, realIndex))
@@ -96,6 +102,7 @@ bool FunctionHandler::GetParamAny(int index, ScriptAnyValue & any)
 
 int FunctionHandler::EndFunctionAny(const ScriptAnyValue & any)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	m_pSS->PushAny(any);
 
 	if (any.type == ANY_TNIL || any.type == ANY_ANY)
@@ -106,6 +113,7 @@ int FunctionHandler::EndFunctionAny(const ScriptAnyValue & any)
 
 int FunctionHandler::EndFunctionAny(const ScriptAnyValue & any1, const ScriptAnyValue & any2)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	m_pSS->PushAny(any1);
 	m_pSS->PushAny(any2);
 
@@ -114,6 +122,7 @@ int FunctionHandler::EndFunctionAny(const ScriptAnyValue & any1, const ScriptAny
 
 int FunctionHandler::EndFunctionAny(const ScriptAnyValue & any1, const ScriptAnyValue & any2, const ScriptAnyValue & any3)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	m_pSS->PushAny(any1);
 	m_pSS->PushAny(any2);
 	m_pSS->PushAny(any3);
@@ -123,5 +132,6 @@ int FunctionHandler::EndFunctionAny(const ScriptAnyValue & any1, const ScriptAny
 
 int FunctionHandler::EndFunction()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	return 0;
 }

@@ -51,12 +51,14 @@ ScriptTable *ScriptTable::Create(ScriptSystem *pSS, lua_State *L, bool empty)
 
 void ScriptTable::Init()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	lua_newtable(m_L);
 	Attach();
 }
 
 void ScriptTable::Attach()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	if (m_ref > 0)
 	{
 		lua_unref(m_L, m_ref);
@@ -67,6 +69,7 @@ void ScriptTable::Attach()
 
 void ScriptTable::PushRef()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	if (m_ref > 0)
 	{
 		lua_getref(m_L, m_ref);
@@ -81,6 +84,7 @@ void ScriptTable::PushRef()
 
 void ScriptTable::SetMetatable(IScriptTable *pMetatable)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	// -2
 	PushRef();
 	// -1
@@ -98,16 +102,19 @@ void ScriptTable::SetMetatable(IScriptTable *pMetatable)
 
 IScriptSystem *ScriptTable::GetScriptSystem() const
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	return m_pSS;
 }
 
 void ScriptTable::AddRef()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	m_refCount++;
 }
 
 void ScriptTable::Release()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	m_refCount--;
 
 	if (m_refCount <= 0)
@@ -124,6 +131,7 @@ void ScriptTable::Release()
 
 void ScriptTable::Delegate(IScriptTable *pMetatable)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	if (!pMetatable)
 		return;
 
@@ -138,6 +146,7 @@ void ScriptTable::Delegate(IScriptTable *pMetatable)
 
 void *ScriptTable::GetUserDataValue()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	PushRef();
 
 	void *data = lua_touserdata(m_L, -1);
@@ -149,6 +158,7 @@ void *ScriptTable::GetUserDataValue()
 
 void ScriptTable::SetValueAny(const char *key, const ScriptAnyValue & any, bool isChain)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	const int top = lua_gettop(m_L);
 
 	if (!isChain)
@@ -204,6 +214,7 @@ void ScriptTable::SetValueAny(const char *key, const ScriptAnyValue & any, bool 
 
 bool ScriptTable::GetValueAny(const char *key, ScriptAnyValue & any, bool isChain)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	const int top = lua_gettop(m_L);
 
 	if (!isChain)
@@ -221,6 +232,7 @@ bool ScriptTable::GetValueAny(const char *key, ScriptAnyValue & any, bool isChai
 
 bool ScriptTable::BeginSetGetChain()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	PushRef();
 
 	return true;
@@ -228,6 +240,7 @@ bool ScriptTable::BeginSetGetChain()
 
 void ScriptTable::EndSetGetChain()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	if (lua_istable(m_L, -1))
 	{
 		lua_pop(m_L, 1);
@@ -240,6 +253,7 @@ void ScriptTable::EndSetGetChain()
 
 ScriptVarType ScriptTable::GetValueType(const char *key)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	PushRef();
 	lua_pushstring(m_L, key);
 	lua_gettable(m_L, -2);
@@ -253,6 +267,7 @@ ScriptVarType ScriptTable::GetValueType(const char *key)
 
 ScriptVarType ScriptTable::GetAtType(int index)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	ScriptVarType type = svtNull;
 
 	PushRef();
@@ -273,6 +288,7 @@ ScriptVarType ScriptTable::GetAtType(int index)
 
 void ScriptTable::SetAtAny(int index, const ScriptAnyValue & any)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	PushRef();
 	m_pSS->PushAny(any);
 	lua_rawseti(m_L, -2, index);
@@ -281,6 +297,7 @@ void ScriptTable::SetAtAny(int index, const ScriptAnyValue & any)
 
 bool ScriptTable::GetAtAny(int index, ScriptAnyValue & any)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	PushRef();
 	lua_rawgeti(m_L, -1, index);
 
@@ -293,6 +310,7 @@ bool ScriptTable::GetAtAny(int index, ScriptAnyValue & any)
 
 ScriptTable::Iterator ScriptTable::BeginIteration()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	Iterator it;
 	it.nKey = -1;
 	it.sKey = nullptr;
@@ -306,6 +324,7 @@ ScriptTable::Iterator ScriptTable::BeginIteration()
 
 bool ScriptTable::MoveNext(Iterator & it)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	if (!it.nInternal)
 		return false;
 
@@ -353,6 +372,7 @@ bool ScriptTable::MoveNext(Iterator & it)
 
 void ScriptTable::EndIteration(const Iterator & it)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	if (it.nInternal)
 	{
 		lua_settop(m_L, it.nInternal - 1);
@@ -364,6 +384,7 @@ void ScriptTable::EndIteration(const Iterator & it)
 
 void ScriptTable::Clear()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	PushRef();
 
 	const int tableIndex = lua_gettop(m_L);
@@ -384,6 +405,7 @@ void ScriptTable::Clear()
 
 int ScriptTable::Count()
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	PushRef();
 
 	const int count = luaL_getn(m_L, -1);
@@ -395,6 +417,7 @@ int ScriptTable::Count()
 
 bool ScriptTable::Clone(IScriptTable *pSourceTable, bool isDeepCopy)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	const int top = lua_gettop(m_L);
 
 	static_cast<ScriptTable*>(pSourceTable)->PushRef();
@@ -420,6 +443,7 @@ bool ScriptTable::Clone(IScriptTable *pSourceTable, bool isDeepCopy)
 
 void ScriptTable::Dump(IScriptTableDumpSink *pSink)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	if (!pSink)
 		return;
 
@@ -448,6 +472,7 @@ void ScriptTable::Dump(IScriptTableDumpSink *pSink)
 
 bool ScriptTable::AddFunction(const SUserFunctionDesc & fd)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	PushRef();
 	lua_pushstring(m_L, fd.sFunctionName);
 
@@ -487,6 +512,7 @@ bool ScriptTable::AddFunction(const SUserFunctionDesc & fd)
 
 bool ScriptTable::GetValueRecursive(const char *path, IScriptTable *pTable)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	CryLogErrorAlways("[ScriptTable::GetValueRecursive] Should not be used");
 	return false;
 }
@@ -497,6 +523,7 @@ bool ScriptTable::GetValueRecursive(const char *path, IScriptTable *pTable)
 
 void ScriptTable::CloneTable(int srcTableIndex, int dstTableIndex)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	const int top = lua_gettop(m_L);
 
 	// first key
@@ -520,6 +547,7 @@ void ScriptTable::CloneTable(int srcTableIndex, int dstTableIndex)
 
 void ScriptTable::CloneTableRecursive(int srcTableIndex, int dstTableIndex)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	const int top = lua_gettop(m_L);
 
 	// first key
@@ -559,6 +587,7 @@ void ScriptTable::CloneTableRecursive(int srcTableIndex, int dstTableIndex)
 
 void ScriptTable::DumpTable(IScriptTableDumpSink *pSink)
 {
+	m_pSS->CheckThread(__FUNCTION__);
 	// first key
 	lua_pushnil(m_L);
 
@@ -609,6 +638,7 @@ void ScriptTable::DeallocateTable(ScriptTable *pTable, ScriptSystem *pSS)
 int ScriptTable::StdCFunction(lua_State *L)
 {
 	FunctionData *pData = static_cast<FunctionData*>(lua_touserdata(L, lua_upvalueindex(1)));
+	pData->pSS->CheckThread(__FUNCTION__);
 
 	FunctionHandler handler(L, pData->pSS, pData->signature, pData->paramIdOffset);
 
@@ -618,6 +648,7 @@ int ScriptTable::StdCFunction(lua_State *L)
 int ScriptTable::StdCUserDataFunction(lua_State *L)
 {
 	FunctionData *pData = static_cast<FunctionData*>(lua_touserdata(L, lua_upvalueindex(1)));
+	pData->pSS->CheckThread(__FUNCTION__);
 
 	FunctionHandler handler(L, pData->pSS, pData->signature, pData->paramIdOffset);
 

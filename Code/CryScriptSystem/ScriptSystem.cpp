@@ -10,6 +10,7 @@ extern "C"
 }
 
 #include <tracy/Tracy.hpp>
+#include <Windows.h>
 
 #include "CryCommon/CryCore/CryMalloc.h"
 #include "CryCommon/CrySystem/CryFile.h"
@@ -21,6 +22,7 @@ extern "C"
 #include "ScriptSystem.h"
 #include "ScriptTable.h"
 #include "ScriptUtil.h"
+
 
 static lua_State *g_L = nullptr;
 
@@ -72,6 +74,7 @@ void ScriptSystem::Init()
 void *ScriptSystem::Allocate(size_t size)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
+	CheckThread(__FUNCTION__);
 
 	// TODO: optimized memory allocator
 	void *block = CryMalloc(size);
@@ -90,6 +93,7 @@ void *ScriptSystem::Allocate(size_t size)
 void ScriptSystem::Deallocate(void *block)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
+	CheckThread(__FUNCTION__);
 
 	TracyFreeN(block, "ScriptSystem");
 	CryFree(block);
@@ -97,6 +101,7 @@ void ScriptSystem::Deallocate(void *block)
 
 void ScriptSystem::PushAny(const ScriptAnyValue & any)
 {
+	CheckThread(__FUNCTION__);
 	switch (any.type)
 	{
 		case ANY_ANY:
@@ -159,6 +164,7 @@ void ScriptSystem::PushAny(const ScriptAnyValue & any)
 
 void ScriptSystem::PushVec3(const Vec3 & vec)
 {
+	CheckThread(__FUNCTION__);
 	lua_newtable(m_L);
 
 	lua_pushlstring(m_L, "x", 1);
@@ -185,6 +191,7 @@ bool ScriptSystem::PopAny(ScriptAnyValue & any)
 
 bool ScriptSystem::PopAnys(ScriptAnyValue *anys, int count)
 {
+	CheckThread(__FUNCTION__);
 	for (int i = 0; i < count; i++)
 	{
 		if (!PopAny(anys[i]))
@@ -198,6 +205,7 @@ bool ScriptSystem::PopAnys(ScriptAnyValue *anys, int count)
 
 bool ScriptSystem::ToAny(ScriptAnyValue & any, int index)
 {
+	CheckThread(__FUNCTION__);
 	if (!lua_gettop(m_L))
 	{
 		return false;
@@ -332,6 +340,7 @@ bool ScriptSystem::ToAny(ScriptAnyValue & any, int index)
 
 bool ScriptSystem::ToVec3(Vec3 & vec, int index)
 {
+	CheckThread(__FUNCTION__);
 	if (index < 0)
 		index = lua_gettop(m_L) + index + 1;
 
@@ -434,6 +443,7 @@ bool ScriptSystem::ToVec3(Vec3 & vec, int index)
 
 void ScriptSystem::Update()
 {
+	CheckThread(__FUNCTION__);
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
 
 	ITimer *pTimer = gEnv->pTimer;
@@ -454,10 +464,12 @@ void ScriptSystem::Update()
 
 void ScriptSystem::SetGCFrequency(const float rate)
 {
+	CheckThread(__FUNCTION__);
 }
 
 bool ScriptSystem::ExecuteFile(const char *fileName, bool raiseError, bool forceReload)
 {
+	CheckThread(__FUNCTION__);
 	std::string fileNameCryMP("CryMP/");
 	fileNameCryMP += fileName;
 
@@ -521,6 +533,7 @@ bool ScriptSystem::ExecuteFile(const char *fileName, bool raiseError, bool force
 
 bool ScriptSystem::ExecuteBuffer(const char *buffer, size_t bufferSize, const char *bufferDescription)
 {
+	CheckThread(__FUNCTION__);
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
 
 	// compile
@@ -539,16 +552,19 @@ bool ScriptSystem::ExecuteBuffer(const char *buffer, size_t bufferSize, const ch
 
 void ScriptSystem::UnloadScript(const char *fileName)
 {
+	CheckThread(__FUNCTION__);
 	this->RemoveFromScripts(fileName);
 }
 
 void ScriptSystem::UnloadScripts()
 {
+	CheckThread(__FUNCTION__);
 	m_scripts.clear();
 }
 
 bool ScriptSystem::ReloadScript(const char *fileName, bool raiseError)
 {
+	CheckThread(__FUNCTION__);
 	const bool forceReload = false;
 
 	return ExecuteFile(fileName, raiseError, forceReload);
@@ -556,6 +572,7 @@ bool ScriptSystem::ReloadScript(const char *fileName, bool raiseError)
 
 bool ScriptSystem::ReloadScripts()
 {
+	CheckThread(__FUNCTION__);
 	bool status = true;
 
 	for (const Script& script : m_scripts)
@@ -571,6 +588,7 @@ bool ScriptSystem::ReloadScripts()
 
 void ScriptSystem::DumpLoadedScripts()
 {
+	CheckThread(__FUNCTION__);
 	CryLogAlways("=== LOADED SCRIPTS BEGIN ===");
 
 	for (const Script& script : m_scripts)
@@ -583,11 +601,13 @@ void ScriptSystem::DumpLoadedScripts()
 
 IScriptTable *ScriptSystem::CreateTable(bool empty)
 {
+	CheckThread(__FUNCTION__);
 	return ScriptTable::Create(this, m_L, empty);
 }
 
 int ScriptSystem::BeginCall(HSCRIPTFUNCTION func)
 {
+	CheckThread(__FUNCTION__);
 	m_funcParamCount = -1;
 
 	if (!func)
@@ -610,6 +630,7 @@ int ScriptSystem::BeginCall(HSCRIPTFUNCTION func)
 
 int ScriptSystem::BeginCall(const char *funcName)
 {
+	CheckThread(__FUNCTION__);
 	m_funcParamCount = -1;
 
 	lua_getglobal(m_L, funcName);
@@ -627,6 +648,7 @@ int ScriptSystem::BeginCall(const char *funcName)
 
 int ScriptSystem::BeginCall(const char *tableName, const char *funcName)
 {
+	CheckThread(__FUNCTION__);
 	m_funcParamCount = -1;
 
 	lua_getglobal(m_L, tableName);
@@ -654,6 +676,7 @@ int ScriptSystem::BeginCall(const char *tableName, const char *funcName)
 
 int ScriptSystem::BeginCall(IScriptTable *pTable, const char *funcName)
 {
+	CheckThread(__FUNCTION__);
 	m_funcParamCount = -1;
 
 	static_cast<ScriptTable*>(pTable)->PushRef();
@@ -675,21 +698,25 @@ int ScriptSystem::BeginCall(IScriptTable *pTable, const char *funcName)
 
 bool ScriptSystem::EndCall()
 {
+	CheckThread(__FUNCTION__);
 	return (m_funcParamCount >= 0) ? LuaCall(m_funcParamCount, 0) : false;
 }
 
 bool ScriptSystem::EndCallAny(ScriptAnyValue & any)
 {
+	CheckThread(__FUNCTION__);
 	return (m_funcParamCount >= 0) ? LuaCall(m_funcParamCount, 1) && PopAny(any) : false;
 }
 
 bool ScriptSystem::EndCallAnyN(int resultCount, ScriptAnyValue *anys)
 {
+	CheckThread(__FUNCTION__);
 	return (m_funcParamCount >= 0) ? LuaCall(m_funcParamCount, resultCount) && PopAnys(anys, resultCount) : false;
 }
 
 HSCRIPTFUNCTION ScriptSystem::GetFunctionPtr(const char *funcName)
 {
+	CheckThread(__FUNCTION__);
 	lua_getglobal(m_L, funcName);
 	if (!lua_isfunction(m_L, -1))
 	{
@@ -706,6 +733,7 @@ HSCRIPTFUNCTION ScriptSystem::GetFunctionPtr(const char *funcName)
 
 HSCRIPTFUNCTION ScriptSystem::GetFunctionPtr(const char *tableName, const char *funcName)
 {
+	CheckThread(__FUNCTION__);
 	lua_getglobal(m_L, tableName);
 	if (!lua_istable(m_L, -1))
 	{
@@ -731,6 +759,7 @@ HSCRIPTFUNCTION ScriptSystem::GetFunctionPtr(const char *tableName, const char *
 
 void ScriptSystem::ReleaseFunc(HSCRIPTFUNCTION func)
 {
+	CheckThread(__FUNCTION__);
 	if (func)
 	{
 		lua_unref(m_L, FunctionHandleToRef(func));
@@ -739,6 +768,7 @@ void ScriptSystem::ReleaseFunc(HSCRIPTFUNCTION func)
 
 void ScriptSystem::PushFuncParamAny(const ScriptAnyValue & any)
 {
+	CheckThread(__FUNCTION__);
 	if (m_funcParamCount >= 0)
 	{
 		PushAny(any);
@@ -748,6 +778,7 @@ void ScriptSystem::PushFuncParamAny(const ScriptAnyValue & any)
 
 void ScriptSystem::SetGlobalAny(const char *key, const ScriptAnyValue & any)
 {
+	CheckThread(__FUNCTION__);
 	const size_t key_length = strlen(key);
 
 	char key_buffer[256];
@@ -801,6 +832,7 @@ void ScriptSystem::SetGlobalAny(const char *key, const ScriptAnyValue & any)
 
 bool ScriptSystem::GetGlobalAny(const char *key, ScriptAnyValue & any)
 {
+	CheckThread(__FUNCTION__);
 	const size_t key_length = strlen(key);
 
 	char key_buffer[256];
@@ -864,11 +896,13 @@ bool ScriptSystem::GetGlobalAny(const char *key, ScriptAnyValue & any)
 
 void ScriptSystem::SetGlobalToNull(const char *key)
 {
+	CheckThread(__FUNCTION__);
 	SetGlobalAny(key, ScriptAnyValue(ANY_TNIL));
 }
 
 IScriptTable *ScriptSystem::CreateUserData(void *data, size_t dataSize)
 {
+	CheckThread(__FUNCTION__);
 	void *buffer = lua_newuserdata(m_L, dataSize);
 	memcpy(buffer, data, dataSize);
 
@@ -880,6 +914,7 @@ IScriptTable *ScriptSystem::CreateUserData(void *data, size_t dataSize)
 
 void ScriptSystem::ForceGarbageCollection()
 {
+	CheckThread(__FUNCTION__);
 	const int beforeKBytes = GetCGCount();
 
 	LuaGarbageCollectFull();
@@ -891,19 +926,23 @@ void ScriptSystem::ForceGarbageCollection()
 
 int ScriptSystem::GetCGCount()
 {
+	CheckThread(__FUNCTION__);
 	return lua_gc(m_L, LUA_GCCOUNT, 0);
 }
 
 void ScriptSystem::SetGCThreshhold(int kilobytes)
 {
+	CheckThread(__FUNCTION__);
 }
 
 void ScriptSystem::GetMemoryStatistics(ICrySizer *pSizer)
 {
+	CheckThread(__FUNCTION__);
 }
 
 void ScriptSystem::RaiseError(const char *format, ...)
 {
+	CheckThread(__FUNCTION__);
 	char buffer[1024];
 
 	va_list args;
@@ -925,21 +964,25 @@ void ScriptSystem::PostInit()
 
 void ScriptSystem::SerializeTimers(ISerialize *pSer)
 {
+	CheckThread(__FUNCTION__);
 	m_timers.Serialize(pSer);
 }
 
 void ScriptSystem::ResetTimers()
 {
+	CheckThread(__FUNCTION__);
 	m_timers.Reset();
 }
 
 int ScriptSystem::GetStackSize()
 {
+	CheckThread(__FUNCTION__);
 	return lua_gettop(m_L);
 }
 
 uint32_t ScriptSystem::GetScriptAllocSize()
 {
+	CheckThread(__FUNCTION__);
 	return 0;
 }
 
@@ -949,6 +992,7 @@ uint32_t ScriptSystem::GetScriptAllocSize()
 
 void ScriptSystem::LuaInit()
 {
+	m_threadId = GetCurrentThreadId();
 	LuaClose();
 
 	m_L = lua_newstate(ScriptSystem::LuaAllocator, this);
@@ -970,6 +1014,7 @@ void ScriptSystem::LuaInit()
 
 void ScriptSystem::LuaClose()
 {
+	CheckThread(__FUNCTION__);
 	if (m_L)
 	{
 		lua_close(m_L);
@@ -981,6 +1026,7 @@ void ScriptSystem::LuaClose()
 void ScriptSystem::LuaGarbageCollectStep()
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
+	CheckThread(__FUNCTION__);
 
 	const int stepSize = 2;
 
@@ -990,6 +1036,7 @@ void ScriptSystem::LuaGarbageCollectStep()
 void ScriptSystem::LuaGarbageCollectFull()
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
+	CheckThread(__FUNCTION__);
 
 	lua_gc(m_L, LUA_GCCOLLECT, 0);
 }
@@ -997,6 +1044,7 @@ void ScriptSystem::LuaGarbageCollectFull()
 bool ScriptSystem::LuaCall(int paramCount, int resultCount)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
+	CheckThread(__FUNCTION__);
 
 	const int errorHandlerIndex = lua_gettop(m_L) - paramCount;
 	lua_getref(m_L, m_errorHandlerRef);
@@ -1035,6 +1083,7 @@ static std::string SanitizeScriptFileName(const char *fileName)
 
 bool ScriptSystem::AddToScripts(const char *fileName)
 {
+	CheckThread(__FUNCTION__);
 	const std::string sanitizedName = SanitizeScriptFileName(fileName);
 
 	auto it = std::lower_bound(m_scripts.begin(), m_scripts.end(), sanitizedName);
@@ -1052,6 +1101,7 @@ bool ScriptSystem::AddToScripts(const char *fileName)
 
 bool ScriptSystem::RemoveFromScripts(const char *fileName)
 {
+	CheckThread(__FUNCTION__);
 	const std::string sanitizedName = SanitizeScriptFileName(fileName);
 
 	auto it = std::lower_bound(m_scripts.begin(), m_scripts.end(), sanitizedName);
@@ -1135,6 +1185,13 @@ void ScriptSystem::OnDumpScriptsCmd(IConsoleCmdArgs *pArgs)
 void ScriptSystem::OnGarbageCollectCmd(IConsoleCmdArgs *pArgs)
 {
 	gEnv->pScriptSystem->ForceGarbageCollection();
+}
+
+void ScriptSystem::CheckThread(const char *origin) {
+	uint32_t id = GetCurrentThreadId();
+	if (id != m_threadId) {
+		CryLogAlways("Accessing Lua from a different thread (origin: %s)", origin);
+	}
 }
 
 void DumpLuaStackTrace(std::FILE* file) {

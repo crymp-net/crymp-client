@@ -20,6 +20,8 @@ class ScriptSystem : public IScriptSystem
 	int m_errorHandlerRef = 0;
 	int m_nestedForceReload = 0;
 
+	uint32_t m_threadId = 0;
+
 	ScriptTimerManager m_timers;
 	ScriptBindings m_bindings;
 
@@ -115,6 +117,8 @@ public:
 
 	int GetStackSize() override;
 	uint32_t GetScriptAllocSize() override;
+
+	void CheckThread(const char* origin);
 
 private:
 	void LuaInit();
