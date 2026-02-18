@@ -6,6 +6,8 @@
 
 #include "CryCommon/CrySystem/ISystem.h"
 
+struct ICVar;
+
 class LocalizationManager final : public ILocalizationManager
 {
 public:
@@ -113,7 +115,14 @@ public:
 	void LocalizeDate(time_t time, bool isLocalTime, bool useShort, bool showWeekday, wstring& result) override;
 	void LocalizeDuration(int seconds, wstring& result) override;
 
+	void ChangeLanguage(const char* language) override;
+	bool LanguageExists(const char* language) const override;
+
 	////////////////////////////////////////////////////////////////////////////////
+
+	void CloseLanguagePak(const char* sLanguage);
+	void GetLocalizedPath(const char* sLanguage, std::string& sLocalizedPath, int index);
+	void OpenLanguagePak(const char* sLanguage);
 
 private:
 	const Label* FindLabelImpl(std::string_view loweredName) const;

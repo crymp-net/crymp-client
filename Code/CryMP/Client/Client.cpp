@@ -263,8 +263,9 @@ void Client::Init(IGameFramework *pGameFramework)
 	pScriptSystem->ExecuteFile("CryMP/Scripts/JSON.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/RPC.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/Client.lua", true, true);
-	pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/HandGripData.lua", true, true);
+
+	ReloadLocalizationLua();
 
 	InitMasters();
 
@@ -487,6 +488,11 @@ void Client::OnActionEvent(const SActionEvent & event)
 			m_pScriptCallbacks->OnLoadingStart();
 			break;
 		}
+		case eAE_languageChanged:
+		{
+			ReloadLocalizationLua();
+			break;
+		}
 		case eAE_channelCreated:
 		case eAE_channelDestroyed:
 		case eAE_connectFailed:
@@ -697,4 +703,12 @@ void Client::FixCVars()
 	// CryMP: these cvars are not net-synced and break terrain textures when set too low (zero)
 	LimitDetailMaterialsViewDistMinValue("e_detail_materials_view_dist_xy");
 	LimitDetailMaterialsViewDistMinValue("e_detail_materials_view_dist_z");
+}
+
+void Client::ReloadLocalizationLua()
+{
+	if (gEnv->pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true))
+	{
+		CryLogAlways("$3[CryMP] Loaded Localization.lua successfully");
+	}
 }

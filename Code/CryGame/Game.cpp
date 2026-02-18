@@ -606,6 +606,9 @@ void CGame::OnActionEvent(const SActionEvent& event)
 		if (gEnv->bServer && GetServerSynchedStorage())
 			GetServerSynchedStorage()->SetGlobalValue(GLOBAL_SERVER_NAME_KEY, string(event.m_description));
 		break;
+	case  eAE_languageChanged:
+		ReloadFlashInstances();
+		break;
 	}
 }
 
@@ -989,4 +992,41 @@ const char* CGame::GetMappedLevelName(const char* levelName) const
 {
 	TLevelMapMap::const_iterator iter = m_mapNames.find(CONST_TEMP_STRING(levelName));
 	return (iter == m_mapNames.end()) ? levelName : iter->second.c_str();
+}
+
+void CGame::ReloadFlashInstances()
+{
+	if (GetMenu())
+	{
+		if (GetMenu()->IsOnScreen(CFlashMenuObject::MENUSCREEN_FRONTENDSTART))
+		{
+			GetMenu()->DestroyStartMenu();
+			GetMenu()->InitStartMenu();
+
+			//CryLogAlways("$3[CryMP] Reloaded start-menu successfully");
+		}
+		if (GetMenu()->IsOnScreen(CFlashMenuObject::MENUSCREEN_FRONTENDINGAME))
+		{
+			GetMenu()->DestroyIngameMenu();
+			GetMenu()->InitIngameMenu();
+
+			//CryLogAlways("$3[CryMP] Reloaded in-game menu successfully");
+		}
+	}
+	if (m_pHUD && m_pFramework->GetClientActor())
+	{
+		SAFE_DELETE(m_pHUD);
+		g_pGame->InitHUD(m_pFramework->GetClientActor());
+
+		if (CHUD *pHUD = g_pGame->GetHUD())
+		{
+			pHUD->Reload();
+
+			//CryLogAlways("$3[CryMP] Reloaded HUD successfully");
+		}
+		else
+		{
+			CryLogAlways("$4[CryMP] Failed to load HUD");
+		}
+	}
 }

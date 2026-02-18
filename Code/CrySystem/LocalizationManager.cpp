@@ -11,6 +11,9 @@
 
 #include "LocalizationManager.h"
 
+#include "CryCommon/CrySystem/ICryPak.h"
+#include "CryAction/GameFramework.h"
+
 LocalizationManager LocalizationManager::s_globalInstance;
 
 enum class ColumnID
@@ -468,33 +471,37 @@ void LocalizationManager::LogInfo()
 
 std::string_view LocalizationManager::GetLanguageFromSystem()
 {
-	static constexpr struct { char code[2 + 1]; const char* name; } LANGUAGES[] = {
+	static constexpr struct { const char* code; const char* name; } LANGUAGES[] = {
 		{ "en", "English" },
 		{ "de", "German" },
 		{ "cs", "Czech" },
-		{ "sk", "Czech" },  // Slovak -> Czech
+		{ "sk", "Czech" },      // Slovak -> Czech
 		{ "pl", "Polish" },
 		{ "es", "Spanish" },
 		{ "fr", "French" },
 		{ "it", "Italian" },
 		{ "hu", "Hungarian" },
 		{ "ru", "Russian" },
-		{ "be", "Russian" },  // Belarusian -> Russian
-	//	{ "uk", "Russian" },  // Ukrainian -> Russian, disabled for political reasons
+		{ "be", "Russian" },    // Belarusian -> Russian
 		{ "tr", "Turkish" },
 		{ "ja", "Japanese" },
-		{ "zn", "Chinese" },
+		{ "zh", "Chinese" },
 		{ "th", "Thai" },
 	};
 
 	char code[8] = {};
 	WinAPI::GetSystemLanguageCode(code, sizeof(code));
 
-	for (const auto& language : LANGUAGES)
+	std::string_view sys(code);
+
+	if (sys.size() >= 2)
 	{
-		if (std::memcmp(language.code, code, 2 + 1) == 0)
+		std::string_view shortCode = sys.substr(0, 2);
+
+		for (const auto& language : LANGUAGES)
 		{
-			return language.name;
+			if (shortCode == language.code)
+				return language.name;
 		}
 	}
 
@@ -831,6 +838,61 @@ void LocalizationManager::LocalizeDuration(int seconds, wstring& result)
 	LocalizeString(buffer, result);
 }
 
+void LocalizationManager::ChangeLanguage(const char* language)
+{
+	if (!language || !*language)
+		return;
+
+	if (!LanguageExists(language))
+	{
+		CryLogAlways("$4[CryMP] Language '%s' not found!", language);
+		return;
+	}
+
+	const std::string requested = StringTools::ToLower(StringTools::SafeString(language));
+	const std::string current = StringTools::ToLower(StringTools::SafeString(GetLanguage()));
+
+	if (requested == current)
+	{
+		CryLogAlways("$4[CryMP] Language is already set to %s", language);
+		return;
+	}
+
+	CloseLanguagePak(GetLanguage());
+	OpenLanguagePak(language);
+
+	FreeData();
+	SetLanguage(language);
+
+	LoadExcelXmlSpreadsheet("Languages/dialog_recording_list.xml");
+	LoadExcelXmlSpreadsheet("Languages/ai_dialog_recording_list.xml");
+	LoadExcelXmlSpreadsheet("Languages/ui_dialog_recording_list.xml");
+	LoadExcelXmlSpreadsheet("Languages/ui_text_messages.xml");
+	LoadExcelXmlSpreadsheet("Languages/mp_text_messages.xml");
+	LoadExcelXmlSpreadsheet("Languages/game_text_messages.xml");
+	LoadExcelXmlSpreadsheet("Languages/game_controls.xml");
+	LoadExcelXmlSpreadsheet("Languages/ps_basic_tutorial_subtitles.xml");
+	LoadExcelXmlSpreadsheet("Languages/ui_credit_list.xml");
+
+	gEnv->pSoundSystem->Silence(false, true);
+	GameFramework::GetInstance()->OnActionEvent(SActionEvent(eAE_languageChanged));
+
+	CryLogAlways("$3[CryMP] Changed game language to %s", language);
+}
+
+bool LocalizationManager::LanguageExists(const char* language) const
+{
+	if (!language || !*language)
+		return false;
+
+	const std::string path = StringTools::Format(
+		"Localized/%s.pak",
+		language
+	);
+
+	return gEnv->pCryPak->IsFileExist(path.c_str());
+}
+
 const LocalizationManager::Label* LocalizationManager::FindLabelImpl(std::string_view loweredName) const
 {
 	if (loweredName.length() > 0 && loweredName[0] == '@')
@@ -1114,4 +1176,36 @@ void LocalizationManager::AssignLocalizedSoundInfo(SLocalizedSoundInfo& soundInf
 	soundInfo.fRadioBackground = label.soundRadioBackground;
 	soundInfo.fRadioSquelch = label.soundRadioSquelch;
 	soundInfo.bUseSubtitle = label.useSubtitle;
+}
+
+void LocalizationManager::GetLocalizedPath(const char* sLanguage, std::string& sLocalizedPath, int index)
+{
+	if (index)
+		sLocalizedPath = StringTools::Format("Game/Localized/%s%d.pak", sLanguage, index);
+	else
+		sLocalizedPath = StringTools::Format("Game/Localized/%s.pak", sLanguage);
+}
+
+void LocalizationManager::OpenLanguagePak(const char* sLanguage)
+{
+	const int nPakFlags = 0;
+	for (int i = 0; i < 7; ++i)
+	{
+		std::string sLocalizedPath;
+		GetLocalizedPath(sLanguage, sLocalizedPath, i);
+		if (!gEnv->pCryPak->OpenPacks("", sLocalizedPath.c_str(), nPakFlags))
+		{
+			//CryLogAlways("Localized language content(%s) not available or modified from the original installation.", sLanguage);
+		}
+	}
+}
+
+void LocalizationManager::CloseLanguagePak(const char* sLanguage)
+{
+	for (int i = 0; i < 7; ++i)
+	{
+		std::string sLocalizedPath;
+		GetLocalizedPath(sLanguage, sLocalizedPath, i);
+		gEnv->pCryPak->ClosePacks(sLocalizedPath.c_str());
+	}
 }

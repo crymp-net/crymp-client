@@ -648,9 +648,93 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_abandonTime", &mp_abandonTime, 10.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds after which vehicles explode");
 	pConsole->Register("mp_explosiveRemovalTime", &mp_explosiveRemovalTime, 30.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds for explosive removal after death");
 	pConsole->Register("mp_explosion_mfx", &mp_explosion_mfx, 1, VF_NOT_NET_SYNCED, "Enable mfx via ClExplosion rmi for server controlled missiles");
+	mp_language = pConsole->RegisterString("mp_language", "", VF_NOT_NET_SYNCED, "Change game language",
+		[](ICVar* pVar)
+		{
+			if (!pVar)
+				return;
+
+			const char* language = pVar->GetString();
+			if (!language || !language[0])
+				return;
+
+			ILocalizationManager* pLoc = gEnv->pSystem->GetLocalizationManager();
+			if (pLoc)
+			{
+				pLoc->ChangeLanguage(language);
+			}
+		}
+	);
 
 	pConsole->Register("cl_hud_chat", &cl_hud_chat, 1, VF_NOT_NET_SYNCED, "Shows / hides chat");
 	pConsole->Register("ads", &ads, 1, VF_NOT_NET_SYNCED, "Enable or disable (100h+) ads");
+
+	pConsole->RegisterAutoComplete(
+		"mp_language",
+		[]() -> IConsoleArgumentAutoComplete*
+		{
+			struct AutoComplete final : IConsoleArgumentAutoComplete
+			{
+				mutable std::vector<std::string> values;
+				mutable bool built = false;
+
+				void BuildOnce() const
+				{
+					if (built)
+						return;
+
+					built = true;
+					values.clear();
+
+					ILocalizationManager* pLoc = gEnv->pSystem->GetLocalizationManager();
+					if (!pLoc)
+						return;
+
+					const char* codes[] =
+					{
+						"English",
+						"Czech",
+						"French",
+						"German",
+						"Hungarian",
+						"Italian",
+						"Japanese",
+						"Chinese",
+						"Korean",
+						"Polish",
+						"Russian",
+						"Spanish",
+						"Turkish",
+						"Thai",
+					};
+
+					values.reserve(sizeof(codes) / sizeof(codes[0]));
+
+					for (const char* code : codes)
+					{
+						if (pLoc->LanguageExists(code))
+							values.emplace_back(code);
+					}
+				}
+
+				int GetCount() const override
+				{
+					BuildOnce();
+					return static_cast<int>(values.size());
+				}
+
+				const char* GetValue(int nIndex) const override
+				{
+					BuildOnce();
+					return values[static_cast<size_t>(nIndex)].c_str();
+				}
+			};
+
+			static AutoComplete s_instance;
+			return &s_instance;
+		}()
+	);
+
 }
 
 //------------------------------------------------------------------------

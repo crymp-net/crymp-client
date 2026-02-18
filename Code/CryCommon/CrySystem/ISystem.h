@@ -289,6 +289,10 @@ struct ILocalizationManager
 	virtual void LocalizeTime(time_t t, bool bMakeLocalTime, bool bShowSeconds, wstring& outTimeString) = 0;
 	virtual void LocalizeDate(time_t t, bool bMakeLocalTime, bool bShort, bool bIncludeWeekday, wstring& outDateString) = 0;
 	virtual void LocalizeDuration(int seconds, wstring& outDurationString) = 0;
+
+	//CryMP
+	virtual void ChangeLanguage(const char* language) = 0;
+	virtual bool LanguageExists(const char* language) const = 0;
 };
 
 // User defined callback, which can be passed to ISystem.
