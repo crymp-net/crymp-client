@@ -721,6 +721,18 @@ bool CHUD::Init(IActor* pActor)
 
 //-----------------------------------------------------------------------------------------------------
 
+void CHUD::Reload()
+{
+	ILevelSystem* pLevelSystem = g_pGame->GetIGameFramework()->GetILevelSystem();
+	ILevel* pLevel = pLevelSystem->GetCurrentLevel();
+	if (pLevel)
+	{
+		OnLoadingComplete(pLevel);
+	}
+}
+
+//-----------------------------------------------------------------------------------------------------
+
 void CHUD::OnAmmoChanged(CActor *pActor)
 {
 	if (pActor && pActor->IsClient() && IsBuyMenuActive() && GetPowerStruggleHUD())

@@ -210,6 +210,8 @@ public:
 		return m_lastSpawnId;
 	}
 
+	void ReloadLocalizationLua();
+
 private:
 
 	enum Timers

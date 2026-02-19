@@ -6,6 +6,8 @@
 
 #include "CryCommon/CrySystem/ISystem.h"
 
+struct ICVar;
+
 class LocalizationManager final : public ILocalizationManager
 {
 public:
@@ -112,6 +114,9 @@ public:
 	void LocalizeTime(time_t time, bool isLocalTime, bool showSeconds, wstring& result) override;
 	void LocalizeDate(time_t time, bool isLocalTime, bool useShort, bool showWeekday, wstring& result) override;
 	void LocalizeDuration(int seconds, wstring& result) override;
+
+	void ChangeLanguage(const char* language) override;
+	bool LanguageExists(const char* language) const override;
 
 	////////////////////////////////////////////////////////////////////////////////
 

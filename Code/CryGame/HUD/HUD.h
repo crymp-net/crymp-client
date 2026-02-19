@@ -112,6 +112,7 @@ public:
 
 	//HUD initialisation
 	bool Init(IActor* pActor);
+	void Reload();
 	//setting local actor / player id
 	void ResetPostSerElements();
 	void PlayerIdSet(EntityId playerId);

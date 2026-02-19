@@ -651,6 +651,87 @@ void SCVars::InitCVars(IConsole* pConsole)
 
 	pConsole->Register("cl_hud_chat", &cl_hud_chat, 1, VF_NOT_NET_SYNCED, "Shows / hides chat");
 	pConsole->Register("ads", &ads, 1, VF_NOT_NET_SYNCED, "Enable or disable (100h+) ads");
+
+	mp_language = pConsole->RegisterString("mp_language", "", VF_NOT_NET_SYNCED, "Change game language",
+		[](ICVar* pVar)
+		{
+			if (!pVar)
+				return;
+
+			const char* language = pVar->GetString();
+			if (!language || !language[0])
+				return;
+
+			ILocalizationManager* pLoc = gEnv->pSystem->GetLocalizationManager();
+			if (pLoc)
+			{
+				pLoc->ChangeLanguage(language);
+			}
+		}
+	);
+
+	const char* lang = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
+	mp_language->Set(lang);
+
+	pConsole->RegisterAutoComplete(
+		"mp_language",
+		[]() -> IConsoleArgumentAutoComplete*
+		{
+			struct AutoComplete final : IConsoleArgumentAutoComplete
+			{
+				std::vector<const char*> values;
+
+				AutoComplete()
+				{
+					ILocalizationManager* pLoc = gEnv->pSystem->GetLocalizationManager();
+					if (!pLoc)
+						return;
+
+					const char* languages[] =
+					{
+						"English",
+						"Czech",
+						"French",
+						"German",
+						"Hungarian",
+						"Italian",
+						"Japanese",
+						"Chinese",
+						"Korean",
+						"Polish",
+						"Russian",
+						"Spanish",
+						"Turkish",
+						"Thai",
+					};
+
+					values.reserve(std::size(languages));
+
+					for (const char* lang : languages)
+					{
+						if (pLoc->LanguageExists(lang))
+						{
+							values.emplace_back(lang);
+						}
+					}
+				}
+
+				int GetCount() const override
+				{
+					return static_cast<int>(values.size());
+				}
+
+				const char* GetValue(int index) const override
+				{
+					return values[index];
+				}
+			};
+
+			static AutoComplete s_instance;
+			return &s_instance;
+		}()
+	);
+
 }
 
 //------------------------------------------------------------------------

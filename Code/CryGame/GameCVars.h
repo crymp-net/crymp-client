@@ -483,6 +483,7 @@ struct SCVars
 	float		mp_abandonTime;
 	float		mp_explosiveRemovalTime;
 	int         mp_explosion_mfx;
+	ICVar*      mp_language;
 
 	int			mp_chat;
 	int			cl_hud_chat;
