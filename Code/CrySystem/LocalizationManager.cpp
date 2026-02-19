@@ -848,7 +848,7 @@ void LocalizationManager::ChangeLanguage(const char* language)
 
 	if (StringTools::IsEqualNoCase(language, GetLanguage()))
 	{
-		CryLogAlways("$4[CryMP] Language is already set to %s", language);
+		//CryLogAlways("$4[CryMP] Language is already set to %s", language);
 		return;
 	}
 
