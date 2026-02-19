@@ -1184,35 +1184,3 @@ void LocalizationManager::AssignLocalizedSoundInfo(SLocalizedSoundInfo& soundInf
 	soundInfo.fRadioSquelch = label.soundRadioSquelch;
 	soundInfo.bUseSubtitle = label.useSubtitle;
 }
-
-void LocalizationManager::GetLocalizedPath(const char* sLanguage, std::string& sLocalizedPath, int index)
-{
-	if (index)
-		sLocalizedPath = StringTools::Format("Game/Localized/%s%d.pak", sLanguage, index);
-	else
-		sLocalizedPath = StringTools::Format("Game/Localized/%s.pak", sLanguage);
-}
-
-void LocalizationManager::OpenLanguagePak(const char* sLanguage)
-{
-	const int nPakFlags = 0;
-	for (int i = 0; i < 7; ++i)
-	{
-		std::string sLocalizedPath;
-		GetLocalizedPath(sLanguage, sLocalizedPath, i);
-		if (!gEnv->pCryPak->OpenPacks("", sLocalizedPath.c_str(), nPakFlags))
-		{
-			//CryLogAlways("Localized language content(%s) not available or modified from the original installation.", sLanguage);
-		}
-	}
-}
-
-void LocalizationManager::CloseLanguagePak(const char* sLanguage)
-{
-	for (int i = 0; i < 7; ++i)
-	{
-		std::string sLocalizedPath;
-		GetLocalizedPath(sLanguage, sLocalizedPath, i);
-		gEnv->pCryPak->ClosePacks(sLocalizedPath.c_str());
-	}
-}

@@ -120,10 +120,6 @@ public:
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	void CloseLanguagePak(const char* sLanguage);
-	void GetLocalizedPath(const char* sLanguage, std::string& sLocalizedPath, int index);
-	void OpenLanguagePak(const char* sLanguage);
-
 private:
 	const Label* FindLabelImpl(std::string_view loweredName) const;
 
