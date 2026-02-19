@@ -471,7 +471,7 @@ void LocalizationManager::LogInfo()
 
 std::string_view LocalizationManager::GetLanguageFromSystem()
 {
-	static constexpr struct { const char* code; const char* name; } LANGUAGES[] = {
+	static constexpr struct { std::string_view code; std::string_view name; } LANGUAGES[] = {
 		{ "en", "English" },
 		{ "de", "German" },
 		{ "cs", "Czech" },
@@ -489,19 +489,16 @@ std::string_view LocalizationManager::GetLanguageFromSystem()
 		{ "th", "Thai" },
 	};
 
-	char code[8] = {};
-	WinAPI::GetSystemLanguageCode(code, sizeof(code));
+	char code[8 + 1] = {};
+	WinAPI::GetSystemLanguageCode(code, sizeof(code) - 1);
 
-	std::string_view sys(code);
+	const std::string_view sysLangCode(code);
 
-	if (sys.size() >= 2)
+	for (const auto& language : LANGUAGES)
 	{
-		std::string_view shortCode = sys.substr(0, 2);
-
-		for (const auto& language : LANGUAGES)
+		if (language.code == sysLangCode)
 		{
-			if (shortCode == language.code)
-				return language.name;
+			return language.name;
 		}
 	}
 
