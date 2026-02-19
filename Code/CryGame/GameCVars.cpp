@@ -675,22 +675,15 @@ void SCVars::InitCVars(IConsole* pConsole)
 		{
 			struct AutoComplete final : IConsoleArgumentAutoComplete
 			{
-				mutable std::vector<std::string> values;
-				mutable bool built = false;
+				std::vector<const char*> values;
 
-				void BuildOnce() const
+				AutoComplete()
 				{
-					if (built)
-						return;
-
-					built = true;
-					values.clear();
-
 					ILocalizationManager* pLoc = gEnv->pSystem->GetLocalizationManager();
 					if (!pLoc)
 						return;
 
-					const char* codes[] =
+					const char* languages[] =
 					{
 						"English",
 						"Czech",
@@ -708,25 +701,25 @@ void SCVars::InitCVars(IConsole* pConsole)
 						"Thai",
 					};
 
-					values.reserve(sizeof(codes) / sizeof(codes[0]));
+					values.reserve(std::size(languages));
 
-					for (const char* code : codes)
+					for (const char* lang : languages)
 					{
-						if (pLoc->LanguageExists(code))
-							values.emplace_back(code);
+						if (pLoc->LanguageExists(lang))
+						{
+							values.emplace_back(lang);
+						}
 					}
 				}
 
 				int GetCount() const override
 				{
-					BuildOnce();
 					return static_cast<int>(values.size());
 				}
 
-				const char* GetValue(int nIndex) const override
+				const char* GetValue(int index) const override
 				{
-					BuildOnce();
-					return values[static_cast<size_t>(nIndex)].c_str();
+					return values[index];
 				}
 			};
 

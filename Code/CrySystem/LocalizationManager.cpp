@@ -849,17 +849,24 @@ void LocalizationManager::ChangeLanguage(const char* language)
 		return;
 	}
 
-	const std::string requested = StringTools::ToLower(StringTools::SafeString(language));
-	const std::string current = StringTools::ToLower(StringTools::SafeString(GetLanguage()));
-
-	if (requested == current)
+	if (StringTools::IsEqualNoCase(language, GetLanguage()))
 	{
 		CryLogAlways("$4[CryMP] Language is already set to %s", language);
 		return;
 	}
 
-	CloseLanguagePak(GetLanguage());
-	OpenLanguagePak(language);
+	const auto langToPaksPath = [](const char* lang) -> std::string {
+		std::string path = "Localized/";
+		path += lang;
+		path += "*.pak";  // match English.pak, English1.pak, English2.pak, etc.
+		return path;
+	};
+
+	const std::string oldPaks = langToPaksPath(GetLanguage());
+	const std::string newPaks = langToPaksPath(language);
+
+	gEnv->pCryPak->ClosePacks(oldPaks.c_str());
+	gEnv->pCryPak->OpenPacks("Game/", newPaks.c_str());
 
 	FreeData();
 	SetLanguage(language);

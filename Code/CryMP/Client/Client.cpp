@@ -707,8 +707,8 @@ void Client::FixCVars()
 
 void Client::ReloadLocalizationLua()
 {
-	if (gEnv->pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true))
+	if (!gEnv->pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true))
 	{
-		CryLogAlways("$3[CryMP] Loaded Localization.lua successfully");
+		CryLogAlways("$4[CryMP] Failed to load Localization.lua");
 	}
 }
