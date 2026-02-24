@@ -5,14 +5,13 @@
 #include <cwchar>
 #include <type_traits>
 
+#include "CryAction/GameFramework.h"
 #include "CryCommon/CryInput/IInput.h"
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
+#include "CryPak.h"
 #include "LocalizationManager.h"
-
-#include "CryCommon/CrySystem/ICryPak.h"
-#include "CryAction/GameFramework.h"
 
 LocalizationManager LocalizationManager::s_globalInstance;
 
@@ -512,6 +511,8 @@ bool LocalizationManager::SetLanguage(const char* name)
 	m_language.id = LanguageNameToID(loweredName);
 	m_language.name = loweredName;
 	m_language.prettyName = name;
+
+	PatchFlashFont();
 
 	return true;
 }
@@ -1152,6 +1153,33 @@ void LocalizationManager::FormatStringMessageImpl(ResultString& result,
 				format.remove_prefix(2);
 			}
 		}
+	}
+}
+
+void LocalizationManager::PatchFlashFont()
+{
+	CryPak& pak = CryPak::GetInstance();
+
+	const std::string& lang = m_language.name;
+
+	// these languages have their own special font
+	if (lang == "japanese" || lang == "korean" || lang == "chinese" || lang == "thai")
+	{
+		// use the original font
+		pak.RemoveRedirect("Languages/HUD_Font_LocFont.gfx");
+		pak.RemoveRedirect("Languages/HUD_Font_LocFont_glyphs.gfx");
+	}
+	else
+	{
+		// use the unified font from the client pak for all other languages
+		pak.AddRedirect(
+			"Languages/HUD_Font_LocFont.gfx",
+			"Languages/HUD_Font_LocFont_override.gfx"
+		);
+		pak.AddRedirect(
+			"Languages/HUD_Font_LocFont_glyphs.gfx",
+			"Languages/HUD_Font_LocFont_glyphs_override.gfx"
+		);
 	}
 }
 

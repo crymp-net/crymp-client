@@ -136,6 +136,8 @@ private:
 	void FormatStringMessageImpl(ResultString& result,
 	                             std::basic_string_view<T> format, const T** args, int count) const;
 
+	void PatchFlashFont();
+
 	static void AssignLocalizedInfo(SLocalizedInfo& info, const Label& label);
 	static void AssignLocalizedSoundInfo(SLocalizedSoundInfo& soundInfo, const Label& label);
 };
