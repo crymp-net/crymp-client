@@ -1824,6 +1824,17 @@ if not SafeWritingGameRules.UpdatePings then
 			revive.tk = true;
 		end
 	end
+	SafeWritingGameRules.AwardKillCP = function(self, hit)
+		local cp=self:CalcKillCP(hit);
+		local playerId = hit.shooter.id;
+		local award = {
+			hit = hit,
+			cp = cp
+		};
+		MakePluginEvent("OnKillAwardCP", award)
+		cp = award.cp
+		self:AwardCPCount(playerId, cp)
+	end
 	SafeWritingGameRules.ProcessVehicleScores = function(self, hit)
 		local target = hit.target;
 		local shooter = hit.shooter;

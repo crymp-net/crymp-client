@@ -929,7 +929,9 @@ function HookVehicles()
             end
         end
     end
-    VehicleBase.Server.OnHit = VehHookFunc
+    if VehicleBase ~= nil then
+        VehicleBase.Server.OnHit = VehHookFunc
+    end
     return c
 end
 
