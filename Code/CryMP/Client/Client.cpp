@@ -50,7 +50,11 @@ void Client::InitMasters()
 
 	if (m_masters.empty())
 	{
-		m_masters.emplace_back("crymp.org");
+		std::string defaultMaster{ "crymp.org" };
+		if (WinAPI::GetLocale() == "ru-RU") {
+			defaultMaster = "proxy.crymp.org";
+		}
+		m_masters.emplace_back(defaultMaster);
 	}
 
 	m_pScriptCallbacks->OnMasterResolved();
