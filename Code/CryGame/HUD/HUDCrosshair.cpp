@@ -345,6 +345,48 @@ void CHUDCrosshair::SetUsability(int usable, const char* actionLabel, const char
 	}
 }
 
+// =====================================================================================
+// CryMP – Synched Usability Keys (10–13)
+// =====================================================================================
+//
+// -------------------------------------------------------------------------------------
+// KEY DEFINITIONS
+// -------------------------------------------------------------------------------------
+//
+// 10 (EntityId) – Vehicle Locked By
+//     Shows "@use_vehicle_locked_by" and actor name.
+//     Vehicle only.
+//     Ignored if Key 13 is set.
+//
+// 11 (EntityId) – Vehicle Reserved For
+//     Shows "@use_vehicle_reserved_for" and actor name.
+//     Vehicle only.
+//     Ignored if Key 13 is set.
+//
+// 12 (bool) – Enable Lock icon 
+//     Works on ANY entity.
+//     Forces: usable = 2 and lockIcon = true.
+//     Applied LAST so it can override normal logic.
+//     Does NOT change text by itself.
+//
+// 13 (string) – Override Message (Generic)
+//     Works on ANY entity.
+//     If non-empty, forces textLabel to this value.
+//     For vehicles: completely disables evaluation of keys 10 and 11.
+//     Has highest text priority.
+//
+// -------------------------------------------------------------------------------------
+// Example Usage:
+//
+// Vehicles only:
+// SetSynchedEntityValue(vehicleId, 10, ownerId);     // Vehicle locked by playername + lock icon
+// SetSynchedEntityValue(vehicleId, 11, ownerId);     // Vehicle reserved by playername + lock icon
+// ownerId can be set to NULL_ENTITY to reset display
+// All entities:
+// SetSynchedEntityValue(id, 12, true);                // Force lock icon
+// SetSynchedEntityValue(id, 13, "Access Denied");     // Custom message
+//
+// =====================================================================================
 void CHUDCrosshair::UpdateUsabilityMessage(const EntityId objId, const char* message)
 {
 	IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(objId);
@@ -364,11 +406,36 @@ void CHUDCrosshair::UpdateUsabilityMessage(const EntityId objId, const char* mes
 	const char* param = nullptr;
 	bool lockIcon = false;
 
+	const TSynchedKey genericLockKey = 12;
+	const TSynchedKey genericMsgKey = 13;
+
+	bool forceLock = false;
+	bool hasOverrideMsg = false;
+
+	if (usable == 1)
+	{
+		string overrideStr;
+		if (pGameRules && pGameRules->GetSynchedEntityValue(objId, genericMsgKey, overrideStr) && !overrideStr.empty())
+		{
+			hasOverrideMsg = true;
+			textLabel = overrideStr.c_str();
+		}
+
+		bool lockVal = false;
+		if (pGameRules && pGameRules->GetSynchedEntityValue(objId, genericLockKey, lockVal) && lockVal)
+		{
+			forceLock = true;
+		}
+	}
+
+	const bool gotAnyMessage = gotMessage || hasOverrideMsg;
+
 	if (usable == 1)
 	{
 		if (pVehicle)
 		{
-			textLabel = "@use_vehicle";
+			if (!hasOverrideMsg)
+				textLabel = "@use_vehicle";
 
 			if (gEnv->bMultiplayer)
 			{
@@ -378,53 +445,53 @@ void CHUDCrosshair::UpdateUsabilityMessage(const EntityId objId, const char* mes
 				if (vteamId && vteamId != pteamId)
 				{
 					usable = 2;
-					textLabel = "@use_vehicle_locked";
+					if (!hasOverrideMsg)
+						textLabel = "@use_vehicle_locked";
 					lockIcon = true;
 				}
 				else
 				{
-					const TSynchedKey lockedKey = 10;
-					const TSynchedKey reservedKey = 11;
-					//CryMP:
-					//Option to show HUD display "Locked by name" or "Reserved for name" instead of "ENTER VEHICLE"
-					//Server sets SetSynchedEntityValue(vehicleId, 10/11, ownerId);
-					//ownerId can be set to NULL_ENTITY to reset display
-					EntityId lockedId = 0;
-					if (pGameRules->GetSynchedEntityValue(objId, lockedKey, lockedId))
+					if (!hasOverrideMsg)
 					{
-						IActor* pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(lockedId);
-						if (pActor)
+						const TSynchedKey lockedKey = 10;
+						const TSynchedKey reservedKey = 11;
+						EntityId lockedId = 0;
+						if (pGameRules->GetSynchedEntityValue(objId, lockedKey, lockedId))
 						{
-							if (pActor != pClientPlayer)
+							IActor* pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(lockedId);
+							if (pActor)
 							{
-								lockIcon = true;
-								usable = 2;
-								textLabel = "@use_vehicle_locked_by";
-								param = pActor->GetEntity()->GetName();
+								if (pActor != pClientPlayer)
+								{
+									lockIcon = true;
+									usable = 2;
+									textLabel = "@use_vehicle_locked_by";
+									param = pActor->GetEntity()->GetName();
+								}
 							}
 						}
-					}
-					EntityId reservedId = 0;
-					if (pGameRules->GetSynchedEntityValue(objId, reservedKey, reservedId))
-					{
-						IActor* pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(reservedId);
-						if (pActor)
+						EntityId reservedId = 0;
+						if (pGameRules->GetSynchedEntityValue(objId, reservedKey, reservedId))
 						{
-							if (pActor != pClientPlayer)
+							IActor* pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(reservedId);
+							if (pActor)
 							{
-								lockIcon = true;
-								usable = 2;
-								textLabel = "@use_vehicle_reserved_for";
-								param = pActor->GetEntity()->GetName();
+								if (pActor != pClientPlayer)
+								{
+									lockIcon = true;
+									usable = 2;
+									textLabel = "@use_vehicle_reserved_for";
+									param = pActor->GetEntity()->GetName();
+								}
 							}
 						}
-					}
-					if (!lockedId && !reservedId)
-					{
-						if (pVehicle->GetStatus().passengerCount == static_cast<int>(pVehicle->GetSeatCount()))
+						if (!lockedId && !reservedId)
 						{
-							usable = 2;
-							textLabel = "@use_vehicle_full";
+							if (pVehicle->GetStatus().passengerCount == static_cast<int>(pVehicle->GetSeatCount()))
+							{
+								usable = 2;
+								textLabel = "@use_vehicle_full";
+							}
 						}
 					}
 				}
@@ -432,7 +499,7 @@ void CHUDCrosshair::UpdateUsabilityMessage(const EntityId objId, const char* mes
 		}
 		else if (IItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(objId))
 		{
-			if (!gotMessage)
+			if (!gotAnyMessage)
 				return;
 
 			//Offhand controls pick up messages
@@ -449,14 +516,21 @@ void CHUDCrosshair::UpdateUsabilityMessage(const EntityId objId, const char* mes
 		}
 		else
 		{
-			if (gEnv->bMultiplayer && !gotMessage)
+			if (gEnv->bMultiplayer && !gotAnyMessage)
 			{
 				usable = 0;
 			}
-			else if (!gotMessage)
+			else if (!gotAnyMessage)
 			{
 				textLabel = "@pick_object";
 			}
+		}
+
+		//Apply Key 12 (forced lock icon)
+		if (forceLock && usable != 0)
+		{
+			usable = 2;
+			lockIcon = true;
 		}
 	}
 	else
