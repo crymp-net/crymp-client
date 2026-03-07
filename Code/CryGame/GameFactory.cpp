@@ -239,8 +239,8 @@ void InitGameFactory(IGameFramework* pFramework)
 #endif //spdemo
 
 	#ifndef  //CryMP added by Sagitta11
-    pFramework->GetIGameRulesSystem()->RegisterGameRules("DefuseAction", "GameRules");
-	pFramework->GetIGameRulesSystem()->AddGameRulesAlias("DefuseAction", "dfa"); //Boom!
-	pFramework->GetIGameRulesSystem()->AddGameRulesLevelLocation("DefuseAction", "multiplayer/dfa/");
+    pFramework->GetIGameRulesSystem()->RegisterGameRules("Co-op", "GameRules");
+	pFramework->GetIGameRulesSystem()->AddGameRulesAlias("Co-op", "co-op"); //Boom!
+	pFramework->GetIGameRulesSystem()->AddGameRulesLevelLocation("Co-op", "multiplayer/Co-op/");
 #endif
 }
