@@ -132,6 +132,7 @@ public:
 
 	void OnEnterFirstPerson() override;
 	void OnEnterThirdPerson() override;
+	void OnSetViewMode(int mode) override;
 
 protected:
 	virtual void Accelerate(float acc);
@@ -141,8 +142,7 @@ protected:
 	virtual void FinishDeceleration();
 
 	void SetSlotRender(IEntity* pEnt, int slot, bool render);
-	bool ShouldShowTpBarrel() const;
-	void UpdateTpBarrelVisibility();
+	void UpdateTpBarrelVisibility(bool show);
 
 	SRapidActions m_rapidactions;
 	SRapidParams  m_rapidparams;

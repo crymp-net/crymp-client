@@ -352,3 +352,15 @@ void CWeapon::OnEnterThirdPerson()
 		pZM->OnEnterThirdPerson();
 	}
 }
+
+//------------------------------------------------------
+void CWeapon::SetViewMode(int mode)
+{
+	CItem::SetViewMode(mode);
+
+	IFireMode* pFM = GetActiveFireMode();
+	if (pFM)
+	{
+		pFM->OnSetViewMode(mode);
+	}
+}

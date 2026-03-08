@@ -953,7 +953,7 @@ public:
 	void UpdateMounted(float frameTime);
 	void OnPreProcessBonesRotation(IActor* pActor, const float frameTime);
 	void CheckViewChange();
-	void SetViewMode(int mode);
+	virtual void SetViewMode(int mode);
 	void CopyRenderFlags(IEntity *pOwner);
 	void ResetRenderFlags();
 	virtual void UseManualBlending(bool enable);
