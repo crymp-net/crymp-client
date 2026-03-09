@@ -113,6 +113,9 @@ void ServerConnector::ResetCVars()
 	pGameCVars->mp_healthBars = 0;
 	pGameCVars->mp_deadPlayersOnMinimap = 0;
 	pGameCVars->mp_netSerializeHolsteredItems = 0;
+	pGameCVars->mp_chat = 1;
+	pGameCVars->mp_aaLockOn = 0;
+	pGameCVars->mp_strafeJump = 1;
 }
 
 void ServerConnector::Step1_RequestServerInfo()
