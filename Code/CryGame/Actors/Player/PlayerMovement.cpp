@@ -1288,7 +1288,7 @@ void CPlayerMovement::ProcessOnGroundOrJumping(CPlayer& player)
 			}
 		}
 	}
-	else if (move.len2() > 0.01f)//"passive" air control, the player can air control as long as it is to decelerate
+	else if (move.len2() > 0.01f && g_pGameCVars->mp_strafeJump)//"passive" air control, the player can air control as long as it is to decelerate
 	{
 		Vec3 currVelFlat(m_stats.velocity - m_stats.velocity * baseMtxZ);
 		Vec3 moveFlat(move - move * baseMtxZ);

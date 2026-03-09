@@ -439,6 +439,7 @@ struct SCVars
 	int			mp_crymp;
 	float		mp_circleJump;
 	float		mp_wallJump;
+	int			mp_strafeJump;
 	int			mp_flyMode;
 	int			mp_pickupObjects;
 	int			mp_pickupVehicles;

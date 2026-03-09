@@ -626,7 +626,8 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_deadPlayersOnMinimap", &mp_deadPlayersOnMinimap, 0, OPTIONAL_SYNC, "Display dead players on minimap");
 	pConsole->Register("mp_suitHitReaction", &mp_suitHitReaction, 0, OPTIONAL_SYNC, "Activates NanoHitReaction");
 	pConsole->Register("mp_chat", &mp_chat, 1, OPTIONAL_SYNC, "Sets chat features support (0: old chat, 1: new chat without server support, 2: new chat with partial server support, 3: new chat with full server support)");
-	 
+	pConsole->Register("mp_strafeJump", &mp_strafeJump, 1, OPTIONAL_SYNC, "Enables or disables strafe jumping");
+
 	//CryMP CVars (un-synced)
 	pConsole->Register("mp_newSpectator", &mp_newSpectator, 1, VF_NOT_NET_SYNCED, "");
 	pConsole->Register("mp_usePostProcessAimDir", &mp_usePostProcessAimDir, 1, VF_NOT_NET_SYNCED, "");
@@ -1041,6 +1042,7 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("mp_crymp", true);
 	pConsole->UnregisterVariable("mp_circleJump", true);
 	pConsole->UnregisterVariable("mp_wallJump", true);
+	pConsole->UnregisterVariable("mp_strafeJump", true);
 	pConsole->UnregisterVariable("mp_flyMode", true);
 	pConsole->UnregisterVariable("mp_messageCenterColor", true);
 	pConsole->UnregisterVariable("mp_radioTagging", true);
