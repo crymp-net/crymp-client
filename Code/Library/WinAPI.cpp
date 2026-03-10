@@ -8,6 +8,8 @@
 #include "WinAPI.h"
 #include "StringTools.h"
 
+#pragma comment(lib, "winmm.lib")
+
 //////////////////
 // Command line //
 //////////////////
@@ -1021,4 +1023,40 @@ std::string WinAPI::GetIP(const std::string& hostName) {
 		iaddr.s_addr=*(unsigned long*)result->h_addr;
 		return inet_ntoa(iaddr);
 	}
+}
+
+void WinAPI::Wait(double seconds) {
+	if (seconds <= 0.0) return;
+
+	LARGE_INTEGER frequency, start, current;
+	QueryPerformanceFrequency(&frequency);
+	QueryPerformanceCounter(&start);
+
+	// 1. Tell Windows we need higher timer resolution (1ms)
+	// This makes Sleep(1) much more reliable.
+	timeBeginPeriod(1);
+
+	double targetTime = seconds;
+	double elapsed = 0;
+
+	// 2. The "Lazy" Phase: Sleep until we are within 2ms of the target
+	while (true) {
+		QueryPerformanceCounter(&current);
+		elapsed = (double)(current.QuadPart - start.QuadPart) / (double)frequency.QuadPart;
+
+		double remaining = targetTime - elapsed;
+		if (remaining <= 0.002) break; // If less than 2ms left, stop sleeping
+
+		Sleep(1); // Give the CPU a break
+	}
+
+	// 3. The "Precision" Phase: Busy-wait for the final microseconds
+	do {
+		YieldProcessor(); // Low-power hint for the CPU
+		QueryPerformanceCounter(&current);
+		elapsed = (double)(current.QuadPart - start.QuadPart) / (double)frequency.QuadPart;
+	} while (elapsed < targetTime);
+
+	// 4. Restore system timer resolution
+	timeEndPeriod(1);
 }

@@ -60,6 +60,8 @@
 #include "CryMP/Client/Advertising.h"
 #include "CryMP/Client/HealthManager.h"
 
+#include "Library/WinAPI.h"
+
 #if defined(CRYSIS_BETA)
 #define CRYSIS_GUID "{CDC82B4A-7540-45A5-B92E-9A7C7033DBF4}"
 #elif defined(SP_DEMO)
@@ -368,6 +370,13 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 	ZoneScoped;
 
 	bool bRun = m_pFramework->PreUpdate(true, updateFlags);
+	if (g_pGameCVars->mp_fpsLimit > 0) {
+		double target = 1.0 / g_pGameCVars->mp_fpsLimit;
+		double elapsed = (double)gEnv->pTimer->GetFrameTime();
+		if (elapsed < target) {
+			WinAPI::Wait(target - elapsed);
+		}
+	}
 	float frameTime = gEnv->pTimer->GetFrameTime();
 
 	if (m_pFramework->IsGamePaused() == false)

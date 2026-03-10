@@ -116,6 +116,7 @@ void ServerConnector::ResetCVars()
 	pGameCVars->mp_chat = 1;
 	pGameCVars->mp_aaLockOn = 0;
 	pGameCVars->mp_strafeJump = 1;
+	pGameCVars->mp_fpsLimit = 0;
 }
 
 void ServerConnector::Step1_RequestServerInfo()
