@@ -764,7 +764,7 @@ target_include_directories(Base SYSTEM PUBLIC
 	ThirdParty/tracy/public
 )
 
-target_link_libraries(Base PUBLIC dbghelp ws2_32 winhttp)
+target_link_libraries(Base PUBLIC dbghelp ws2_32 winhttp winmm)
 
 # disable ASLR and unlock memory above 2 GB
 target_link_options(Base PUBLIC /DYNAMICBASE:NO /LARGEADDRESSAWARE)

@@ -370,7 +370,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 	ZoneScoped;
 
 	bool bRun = m_pFramework->PreUpdate(true, updateFlags);
-	if (!gEnv->bServer && g_pGameCVars->mp_fpsLimit > 0) {
+	if (gEnv->bClient && g_pGameCVars->mp_fpsLimit > 0) {
 		double target = 1.0 / g_pGameCVars->mp_fpsLimit;
 		double elapsed = (double)gEnv->pTimer->GetFrameTime();
 		if (elapsed < target) {

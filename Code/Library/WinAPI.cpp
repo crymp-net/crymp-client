@@ -8,8 +8,6 @@
 #include "WinAPI.h"
 #include "StringTools.h"
 
-#pragma comment(lib, "winmm.lib")
-
 //////////////////
 // Command line //
 //////////////////
