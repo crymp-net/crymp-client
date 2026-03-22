@@ -8,6 +8,7 @@
 #include "CryCommon/CrySystem/IHardwareMouse.h"
 #include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryCommon/CryInput/IInput.h"
+#include "CryCommon/CrySoundSystem/IMusicSystem.h"
 #include "CryGame/Game.h"
 #include "CryGame/Menus/OptionsManager.h"
 #include "Launcher/Resources.h"
@@ -209,10 +210,15 @@ static LRESULT CALLBACK WindowProc(HWND window, UINT msg, WPARAM wParam, LPARAM 
 			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(
 				ESYSTEM_EVENT_CHANGE_FOCUS, hasFocus ? 1 : 0, 0);
 
-			// Pause sound when unfocused (alt-tab / Start menu / click other app)
+			//Pause sound and music when unfocused (alt-tab / click other app)
 			if (gEnv->pSoundSystem)
 			{
 				gEnv->pSoundSystem->Pause(!hasFocus);
+			}
+
+			if (gEnv->pMusicSystem)
+			{
+				gEnv->pMusicSystem->Pause(!hasFocus);
 			}
 			return 0;
 		}
