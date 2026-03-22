@@ -197,7 +197,7 @@ void CHUDPowerStruggle::Update(float fDeltaTime)
 		_itoa(ihq[0], chq[0], 10);
 		_itoa(ihq[1], chq[1], 10);
 
-		wstring hqFormatter[2];
+		std::wstring hqFormatter[2];
 		hqFormatter[0] = g_pGame->GetHUD()->LocalizeWithParams("@mp_HQLife", false, chq[0]);
 		hqFormatter[1] = g_pGame->GetHUD()->LocalizeWithParams("@mp_HQLife", false, chq[1]);
 
@@ -1426,8 +1426,7 @@ void CHUDPowerStruggle::PopulateBuyList(bool clearEntitites)
 	char buffer[10];
 	itoa(m_lastPurchase.iPrice, buffer, 10);
 
-	wstring localized;
-	localized = g_pHUD->LocalizeWithParams("@ui_buy_REPEATLASTBUY", true, buffer);
+	std::wstring localized = g_pHUD->LocalizeWithParams("@ui_buy_REPEATLASTBUY", true, buffer);
 
 	g_pBuyMenu->Invoke("setLastPurchase", SFlashVarValue(localized.c_str()));
 

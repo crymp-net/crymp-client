@@ -622,8 +622,12 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_netSerializeHolsteredItems", &mp_netSerializeHolsteredItems, 0, OPTIONAL_SYNC, "Serialize holstered items");
 	pConsole->Register("mp_radioTagging", &mp_radioTagging, 0, OPTIONAL_SYNC, "Enable tagging positions using radio");
 	pConsole->Register("mp_healthBars", &mp_healthBars, 0, OPTIONAL_SYNC, "Enable displaying health bars");
+	pConsole->Register("mp_ogCloakEffect", &mp_ogCloakEffect, 1, OPTIONAL_SYNC, "Enables old cloak function");
 	pConsole->Register("mp_deadPlayersOnMinimap", &mp_deadPlayersOnMinimap, 0, OPTIONAL_SYNC, "Display dead players on minimap");
 	pConsole->Register("mp_suitHitReaction", &mp_suitHitReaction, 0, OPTIONAL_SYNC, "Activates NanoHitReaction");
+	pConsole->Register("mp_chat", &mp_chat, 1, OPTIONAL_SYNC, "Sets chat features support (0: old chat, 1: new chat without server support, 2: new chat with partial server support, 3: new chat with full server support)");
+	pConsole->Register("mp_strafeJump", &mp_strafeJump, 1, OPTIONAL_SYNC, "Enables or disables strafe jumping");
+	pConsole->Register("mp_fpsLimit", &mp_fpsLimit, 0, OPTIONAL_SYNC, "Sets FPS upper boundary (0: disabled)");
 
 	//CryMP CVars (un-synced)
 	pConsole->Register("mp_newSpectator", &mp_newSpectator, 1, VF_NOT_NET_SYNCED, "");
@@ -646,7 +650,90 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_abandonTime", &mp_abandonTime, 10.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds after which vehicles explode");
 	pConsole->Register("mp_explosiveRemovalTime", &mp_explosiveRemovalTime, 30.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds for explosive removal after death");
 	pConsole->Register("mp_explosion_mfx", &mp_explosion_mfx, 1, VF_NOT_NET_SYNCED, "Enable mfx via ClExplosion rmi for server controlled missiles");
+
+	pConsole->Register("cl_hud_chat", &cl_hud_chat, 1, VF_NOT_NET_SYNCED, "Shows / hides chat");
 	pConsole->Register("ads", &ads, 1, VF_NOT_NET_SYNCED, "Enable or disable (100h+) ads");
+
+	mp_language = pConsole->RegisterString("mp_language", "", VF_NOT_NET_SYNCED, "Change game language",
+		[](ICVar* pVar)
+		{
+			if (!pVar)
+				return;
+
+			const char* language = pVar->GetString();
+			if (!language || !language[0])
+				return;
+
+			ILocalizationManager* pLoc = gEnv->pSystem->GetLocalizationManager();
+			if (pLoc)
+			{
+				pLoc->ChangeLanguage(language);
+			}
+		}
+	);
+
+	const char* lang = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
+	mp_language->Set(lang);
+
+	pConsole->RegisterAutoComplete(
+		"mp_language",
+		[]() -> IConsoleArgumentAutoComplete*
+		{
+			struct AutoComplete final : IConsoleArgumentAutoComplete
+			{
+				std::vector<const char*> values;
+
+				AutoComplete()
+				{
+					ILocalizationManager* pLoc = gEnv->pSystem->GetLocalizationManager();
+					if (!pLoc)
+						return;
+
+					const char* languages[] =
+					{
+						"English",
+						"Czech",
+						"French",
+						"German",
+						"Hungarian",
+						"Italian",
+						"Japanese",
+						"Chinese",
+						"Korean",
+						"Polish",
+						"Russian",
+						"Spanish",
+						"Turkish",
+						"Thai",
+					};
+
+					values.reserve(std::size(languages));
+
+					for (const char* lang : languages)
+					{
+						if (pLoc->LanguageExists(lang))
+						{
+							values.emplace_back(lang);
+						}
+					}
+				}
+
+				int GetCount() const override
+				{
+					return static_cast<int>(values.size());
+				}
+
+				const char* GetValue(int index) const override
+				{
+					return values[index];
+				}
+			};
+
+			static AutoComplete s_instance;
+			return &s_instance;
+		}()
+	);
+
 }
 
 //------------------------------------------------------------------------
@@ -956,10 +1043,14 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("mp_crymp", true);
 	pConsole->UnregisterVariable("mp_circleJump", true);
 	pConsole->UnregisterVariable("mp_wallJump", true);
+	pConsole->UnregisterVariable("mp_strafeJump", true);
 	pConsole->UnregisterVariable("mp_flyMode", true);
 	pConsole->UnregisterVariable("mp_messageCenterColor", true);
 	pConsole->UnregisterVariable("mp_radioTagging", true);
 	pConsole->UnregisterVariable("mp_healthBars", true);
+	pConsole->UnregisterVariable("mp_fpsLimit", true);
+	pConsole->UnregisterVariable("mp_chat", true);
+	pConsole->UnregisterVariable("cl_hud_chat", true);
 }
 
 //------------------------------------------------------------------------

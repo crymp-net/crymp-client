@@ -307,7 +307,8 @@ void CHUDCrosshair::SetUsability(int usable, const char* actionLabel, const char
 				}
 			}
 
-			m_animInterActiveIcons.Invoke("setText", m_pHUD->LocalizeWithParams(actionLabel, true, paramLocA.c_str(), paramLocB.c_str()));
+			std::wstring localized = m_pHUD->LocalizeWithParams(actionLabel, true, paramLocA.c_str(), paramLocB.c_str());
+			m_animInterActiveIcons.Invoke("setText", localized.c_str());
 		}
 		else
 		{

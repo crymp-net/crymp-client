@@ -16,7 +16,6 @@
 #include "CrySystem/Logger.h"
 #include "CrySystem/RandomGenerator.h"
 #include "Launcher/Resources.h"
-#include "Library/StdFile.h"
 #include "Library/Util.h"
 #include "Library/WinAPI.h"
 
@@ -39,27 +38,23 @@
 
 void Client::InitMasters()
 {
-	std::string content;
+	m_masters.clear();
 
-	if (StdFile file("masters.txt", "r"); file.IsOpen())  // Crysis main directory
+	if (const std::string_view mastersArg(WinAPI::CmdLine::GetArgValue("-masters")); !mastersArg.empty())
 	{
-		CryLogAlways("$6[CryMP] Using local masters.txt as the master server list provider");
-
-		content = file.ReadAll();
-	}
-	else
-	{
-		content = WinAPI::GetDataResource(nullptr, RESOURCE_MASTERS_TXT);
-	}
-
-	for (const std::string_view & master : Util::SplitWhitespace(content))
-	{
-		m_masters.emplace_back(master);
+		for (const std::string_view& master : Util::Split(mastersArg, ","))
+		{
+			m_masters.emplace_back(master);
+		}
 	}
 
 	if (m_masters.empty())
 	{
-		m_masters.emplace_back("crymp.org");
+		std::string defaultMaster{ "crymp.org" };
+		if (WinAPI::GetLocale() == "ru-RU") {
+			defaultMaster = "proxy.crymp.org";
+		}
+		m_masters.emplace_back(defaultMaster);
 	}
 
 	m_pScriptCallbacks->OnMasterResolved();
@@ -272,8 +267,9 @@ void Client::Init(IGameFramework *pGameFramework)
 	pScriptSystem->ExecuteFile("CryMP/Scripts/JSON.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/RPC.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/Client.lua", true, true);
-	pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/HandGripData.lua", true, true);
+
+	ReloadLocalizationLua();
 
 	InitMasters();
 
@@ -496,6 +492,11 @@ void Client::OnActionEvent(const SActionEvent & event)
 			m_pScriptCallbacks->OnLoadingStart();
 			break;
 		}
+		case eAE_languageChanged:
+		{
+			ReloadLocalizationLua();
+			break;
+		}
 		case eAE_channelCreated:
 		case eAE_channelDestroyed:
 		case eAE_connectFailed:
@@ -521,14 +522,8 @@ void Client::OnLevelNotFound(const char *levelName)
 
 void Client::OnLoadingStart(ILevelInfo *pLevel)
 {
-	ICVar* pLodMin = gEnv->pConsole->GetCVar("e_lod_min");
-	if (pLodMin && pLodMin->GetIVal())
-	{
-		//CryMP: Temporary fix for invisible objects
-		pLodMin->Set(0);
-		CryLogAlways("$3[CryMP] Setting Min LOD to zero");
-	}
-	
+	this->FixCVars();
+
 	gEnv->pScriptSystem->ForceGarbageCollection();
 
 	m_pServerPAK->OnLoadingStart(pLevel);
@@ -647,5 +642,77 @@ void Client::SynchWithPhysicsPosition(IEntity* pEntity)
 			awake.bAwake = 1;
 			pPhysEnt->Action(&awake);
 		}
+	}
+}
+
+template<int Value>
+static void LockCVarValueTo(const char* cvar)
+{
+	ICVar* pCVar = gEnv->pConsole->GetCVar(cvar);
+	if (pCVar)
+	{
+		if (gEnv->bMultiplayer)
+		{
+			pCVar->Set(Value);
+		}
+
+		pCVar->SetOnChangeCallback([](ICVar* pCVar) {
+			if (gEnv->bMultiplayer)
+			{
+				pCVar->Set(Value);
+			}
+		});
+	}
+}
+
+static void LimitDetailMaterialsViewDistMinValue(const char* cvar)
+{
+	constexpr float MIN_VALUE = 64.f;  // low spec
+
+	ICVar* pCVar = gEnv->pConsole->GetCVar(cvar);
+	if (pCVar)
+	{
+		if (gEnv->bMultiplayer && pCVar->GetFVal() < MIN_VALUE)
+		{
+			pCVar->Set(MIN_VALUE);
+		}
+
+		// can't be net-synced because the value is not the same in all specs:
+		// ... e_detail_materials_view_dist_xy = 64/2048/2048/2048/2048
+		// ... e_detail_materials_view_dist_z = 64/128/128/128/128
+		pCVar->SetOnChangeCallback([](ICVar* pCVar) {
+			if (gEnv->bMultiplayer && pCVar->GetFVal() < MIN_VALUE)
+			{
+				pCVar->Set(MIN_VALUE);
+			}
+		});
+	}
+}
+
+void Client::FixCVars()
+{
+	ICVar* pLodMin = gEnv->pConsole->GetCVar("e_lod_min");
+	if (pLodMin && pLodMin->GetIVal())
+	{
+		// CryMP: Temporary fix for invisible objects
+		pLodMin->Set(0);
+		CryLogAlways("$3[CryMP] Setting Min LOD to zero");
+	}
+
+	// CryMP: problematic cvars that aren't net-synced
+	LockCVarValueTo<0>("r_ATOC");  // non-zero value hides vegetation
+	LockCVarValueTo<1>("e_decals");  // zero value hides roads and stuff
+	LockCVarValueTo<1>("r_WaterReflections");  // zero value makes the ocean black
+
+	// CryMP: these cvars are not net-synced and break terrain textures when set too low (zero)
+	LimitDetailMaterialsViewDistMinValue("e_detail_materials_view_dist_xy");
+	LimitDetailMaterialsViewDistMinValue("e_detail_materials_view_dist_z");
+}
+
+void Client::ReloadLocalizationLua()
+{
+	if (!gEnv->pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true))
+	{
+		CryLogAlways("$4[CryMP] Failed to load Localization.lua");
 	}
 }

@@ -599,6 +599,8 @@ public:
 	virtual void OnEnterFirstPerson() override;
 	virtual void OnEnterThirdPerson() override;
 
+	void SetViewMode(int mode) override;
+
 protected:
 	virtual bool ReadItemParams(const IItemParamsNode* params);
 	const IItemParamsNode* GetFireModeParams(const char* name);

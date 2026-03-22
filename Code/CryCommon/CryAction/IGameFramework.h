@@ -264,6 +264,9 @@ enum EActionEvent
 	eAE_serverName, //started server 
 	eAE_serverIp,		//obtained server ip
 	eAE_earlyPreUpdate,  // called from CryAction's PreUpdate loop after System has been updated, but before subsystems
+
+	//CryMP
+	eAE_languageChanged,
 };
 
 struct SActionEvent

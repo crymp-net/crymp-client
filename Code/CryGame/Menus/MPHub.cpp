@@ -19,6 +19,7 @@
 #include "OptionsManager.h"
 #include "FlashMenuObject.h"
 #include "CryCommon/CryRenderer/IVideoPlayer.h"
+#include "Library/StringTools.h"
 
 static TKeyValuePair<EGsUiCommand, const char*>
 gUiCommands[] = {
@@ -658,17 +659,6 @@ void CMPHub::SetLoginInfo(const char* nick)
 	}
 }
 
-void ExpandToWChar(const char* charString, wstring& outString)
-{
-	outString.resize(strlen(charString));
-	wchar_t* dst = outString.begin();
-	const char* src = charString;
-	while (const wchar_t c = (wchar_t)(*src++))
-	{
-		*dst++ = c;
-	}
-}
-
 void CMPHub::DisconnectError(EDisconnectionCause dc, bool connecting, const char* serverMsg/*=NULL*/)
 {
 	const char* msg = VALUE_BY_KEY(dc, gDisconnectErrors);
@@ -696,7 +686,7 @@ void CMPHub::DisconnectError(EDisconnectionCause dc, bool connecting, const char
 			{
 				wstring final;
 				wstring localised, tmp;
-				ExpandToWChar(serverMsg + 21, tmp);
+				StringTools::AppendTo(tmp, serverMsg + 21);
 				pLoc->LocalizeLabel(msg, localised);
 				wstring newstring = L"%1\n@{ui_reason}: %2";
 				pLoc->FormatStringMessage(final, newstring, localised.c_str(), tmp.c_str());
@@ -731,7 +721,7 @@ void CMPHub::DisconnectError(EDisconnectionCause dc, bool connecting, const char
 			if (strlen(serverMsg) > 21 && strncmp(serverMsg + 21, "None", 4) != 0)
 			{
 				wstring localised, tmp;
-				ExpandToWChar(serverMsg + 21, tmp);
+				StringTools::AppendTo(tmp, serverMsg + 21);
 				pLoc->LocalizeLabel(msg, localised);
 				pLoc->FormatStringMessage(final, localised, tmp.c_str());
 			}
@@ -755,7 +745,7 @@ void CMPHub::DisconnectError(EDisconnectionCause dc, bool connecting, const char
 			{
 				wstring final;
 				wstring localised, tmp;
-				ExpandToWChar(serverMsg, tmp);
+				StringTools::AppendTo(tmp, serverMsg);
 				pLoc->LocalizeLabel(msg, localised);
 				pLoc->FormatStringMessage(final, localised, tmp.c_str());
 

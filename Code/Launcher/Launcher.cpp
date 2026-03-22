@@ -29,6 +29,7 @@
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
+#include "DsoalDeployer.h"
 #include "Launcher.h"
 #include "MemoryPatch.h"
 #include "Resources.h"
@@ -505,27 +506,6 @@ static std::string_view ChooseLanguage(std::string_view defaultLanguage, ICVar* 
 	return language;
 }
 
-static void PatchFlashFont()
-{
-	const std::string_view lang = LocalizationManager::GetInstance().GetCurrentLanguage().name;
-
-	// these languages have their own special font
-	if (lang != "japanese" && lang != "korean" && lang != "chinese" && lang != "thai")
-	{
-		CryPak& cryPak = CryPak::GetInstance();
-
-		// the same font for all other languages
-		cryPak.AddRedirect(
-			"Languages/HUD_Font_LocFont.gfx",
-			"Languages/HUD_Font_LocFont_override.gfx"
-		);
-		cryPak.AddRedirect(
-			"Languages/HUD_Font_LocFont_glyphs.gfx",
-			"Languages/HUD_Font_LocFont_glyphs_override.gfx"
-		);
-	}
-}
-
 static void ReplaceLocalizationManager(void* pCrySystem)
 {
 	struct DummyCSystem
@@ -550,8 +530,6 @@ static void ReplaceLocalizationManager(void* pCrySystem)
 			}
 
 			LocalizationManager::GetInstance().SetLanguage(language.data());
-
-			PatchFlashFont();
 		}
 	};
 
@@ -1198,6 +1176,13 @@ void Launcher::PatchEngine()
 	if (m_dlls.pFmodEx)
 	{
 		MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(m_dlls.pFmodEx);
+
+#ifdef CLIENT_LAUNCHER
+		if (WinAPI::CmdLine::HasArg("-dsoal"))
+		{
+			DsoalDeployer::Init(m_dlls.pFmodEx);
+		}
+#endif
 	}
 }
 

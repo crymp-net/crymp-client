@@ -121,6 +121,9 @@ struct IFireMode
 	virtual void OnEnterThirdPerson()
 	{
 	}
+	virtual void OnSetViewMode(int mode)
+	{
+	}
 };
 
 

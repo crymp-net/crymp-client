@@ -721,6 +721,18 @@ bool CHUD::Init(IActor* pActor)
 
 //-----------------------------------------------------------------------------------------------------
 
+void CHUD::Reload()
+{
+	ILevelSystem* pLevelSystem = g_pGame->GetIGameFramework()->GetILevelSystem();
+	ILevel* pLevel = pLevelSystem->GetCurrentLevel();
+	if (pLevel)
+	{
+		OnLoadingComplete(pLevel);
+	}
+}
+
+//-----------------------------------------------------------------------------------------------------
+
 void CHUD::OnAmmoChanged(CActor *pActor)
 {
 	if (pActor && pActor->IsClient() && IsBuyMenuActive() && GetPowerStruggleHUD())
@@ -2996,8 +3008,8 @@ void CHUD::GetGPSPosition(wchar_t* szN, wchar_t* szW)
 	int iW3 = (iW - iW1 * 1000000 - iW2 * 10000) / 100;
 	int iW4 = (iW - iW1 * 1000000 - iW2 * 10000 - iW3 * 100);
 
-	wstring strNorth = LocalizeWithParams("@ui_N");
-	wstring strWest = LocalizeWithParams("@ui_W");
+	std::wstring strNorth = LocalizeWithParams("@ui_N");
+	std::wstring strWest = LocalizeWithParams("@ui_W");
 
 	CrySwprintf(szN, 32, L"%.2d\"%.2d'%.2d.%.2d %s", iN1, iN2, iN3, iN4, strNorth.c_str());
 	CrySwprintf(szW, 32, L"%.2d\"%.2d'%.2d.%.2d %s", iW1, iW2, iW3, iW4, strWest.c_str());
@@ -3709,7 +3721,7 @@ void CHUD::UpdateSpectator(CPlayer* pSpectatorTarget, float frameTime)
 		m_prevSpectatorMode = specMode;
 		m_prevSpectatorTarget = m_pClientActor->GetSpectatorTarget();
 
-		wstring mapText, functionalityText;
+		std::wstring mapText, functionalityText;
 		// don't want the 'press m to...' text if waiting to respawn
 		if (!m_pGameRules->IsPlayerActivelyPlaying(m_pClientActor->GetEntityId()))
 		{
@@ -3742,7 +3754,7 @@ void CHUD::UpdateSpectator(CPlayer* pSpectatorTarget, float frameTime)
 			}
 
 			// waiting to respawn - must be in 3rd person mode. Just show 'press left/right to switch player'
-			mapText = L"";
+			mapText.clear();
 			functionalityText = LocalizeWithParams("@ui_spectate_functionality_dead");
 		}
 		SFlashVarValue textArgs[3] = { mapText.c_str(), functionalityText.c_str(), true };
@@ -4606,11 +4618,9 @@ void CHUD::UpdateObjective(CHUDMissionObjective* pObjective)
 		{
 			if (!pObjective->IsSilent() /*&& pObjective->GetStatus() != CHUDMissionObjective::DEACTIVATED*/)
 			{
-				const wchar_t* localizedText = LocalizeWithParams(description.c_str());
-				wstring text = localizedText;
-				localizedText = LocalizeWithParams(status);
-				text.append(L" ");
-				text.append(localizedText);
+				std::wstring text = LocalizeWithParams(description.c_str());
+				text += L" ";
+				text += LocalizeWithParams(status);
 				SFlashVarValue args[3] = { text.c_str(), 1, Col_White.pack_rgb888() };
 				m_animMessages.Invoke("setMessageText", args, 3);
 				if (pObjective->GetStatus() == CHUDMissionObjective::COMPLETED)
@@ -5448,9 +5458,8 @@ void CHUD::GameOver(int localWinner, int winnerTeam, EntityId id)
 		}
 	}
 
-	const wchar_t* localizedText = L"";
-	localizedText = LocalizeWithParams(message, false, param);
-	m_animScoreBoard.Invoke("setWinText", localizedText);
+	std::wstring localizedText = LocalizeWithParams(message, false, param);
+	m_animScoreBoard.Invoke("setWinText", localizedText.c_str());
 
 	//SFlashVarValue args[2] = { localizedText, false };
 	//m_animMPMessages.Invoke("addKillLog", args, 2);

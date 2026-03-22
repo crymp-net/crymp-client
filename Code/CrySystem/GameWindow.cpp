@@ -207,9 +207,14 @@ static LRESULT CALLBACK WindowProc(HWND window, UINT msg, WPARAM wParam, LPARAM 
 		{
 			const bool hasFocus = (LOWORD(wParam) != WA_INACTIVE);
 
-			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(
-				ESYSTEM_EVENT_CHANGE_FOCUS, hasFocus ? 1 : 0, 0);
+			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS, hasFocus ? 1 : 0, 0);
 
+			if (hasFocus && gEnv->pInput)
+			{
+				//CryMP: Fixes scoreboard open on Win11 after Alt-tab
+				gEnv->pInput->Update(true);
+			}
+      
 			//Pause sound and music when unfocused (alt-tab / click other app)
 			if (gEnv->pSoundSystem)
 			{

@@ -128,6 +128,8 @@ namespace WinAPI
 
 	long GetTimeZoneBias();
 
+	void Wait(double seconds);
+
 	/////////////
 	// Strings //
 	/////////////

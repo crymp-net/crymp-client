@@ -196,6 +196,8 @@ public:
 
   ILINE SCVars *GetCVars() {return m_pCVars;}
 
+  void ReloadFlashInstances();
+
 protected:
 	virtual void LoadActionMaps(const char* filename = "libs/config/defaultProfile.xml");
 

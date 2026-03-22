@@ -210,6 +210,8 @@ public:
 		return m_lastSpawnId;
 	}
 
+	void ReloadLocalizationLua();
+
 private:
 
 	enum Timers
@@ -218,6 +220,7 @@ private:
 	};
 
 	void SynchWithPhysicsPosition(IEntity* pEntity);
+	void FixCVars();
 };
 
 ///////////////////////

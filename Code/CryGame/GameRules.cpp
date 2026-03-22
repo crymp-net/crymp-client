@@ -840,7 +840,7 @@ void CGameRules::OnChatMessage(EChatMessageType type, EntityId sourceId, EntityI
 	}
 
 	if (CHUDTextChat* pChat = SAFE_HUD_FUNC_RET(GetMPChat()))
-		pChat->AddChatMessage(sourceId, msg, teamFaction, teamChatOnly);
+		pChat->AddChatMessage(sourceId, targetId, msg, teamFaction, teamChatOnly);
 }
 
 //------------------------------------------------------------------------

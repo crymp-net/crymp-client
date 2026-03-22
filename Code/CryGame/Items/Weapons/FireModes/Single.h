@@ -53,53 +53,86 @@ public:
 	struct SEffectParams
 	{
 		SEffectParams() { Reset(); };
-		void Reset(const IItemParamsNode *params=0, bool defaultInit=true)
-		{ 
+
+		void Reset(const IItemParamsNode* params = 0, bool defaultInit = true)
+		{
 			if (defaultInit)
 			{
 				effect[0].clear(); effect[1].clear();
 				helper[0].clear(); helper[1].clear();
-				scale[0]=scale[1]=1.0f;
-				time[0]=time[1]=0.060f;
+				scale[0] = scale[1] = 1.0f;
+				time[0] = time[1] = 0.060f;
+
 				light_helper[0].clear(); light_helper[1].clear();
-				light_radius[0]=light_radius[1]=0.0f;
-				light_color[0]=light_color[1]=Vec3(1,1,1);        
-				light_time[0]=light_time[1]=0.060f;   
-				offset.Set(0.0f,0.0f,0.0f);
+				light_radius[0] = light_radius[1] = 0.0f;
+				light_color[0] = light_color[1] = Vec3(1, 1, 1);
+				light_time[0] = light_time[1] = 0.060f;
+
+				offset[0].Set(0.0f, 0.0f, 0.0f);
+				offset[1].Set(0.0f, 0.0f, 0.0f);
+
+				dir[0] = Vec3(0.0f, 1.0f, 0.0f);
+				dir[1] = Vec3(0.0f, 1.0f, 0.0f);
 			}
 
 			if (params)
 			{
-				const IItemParamsNode *fp=params->GetChild("firstperson");
+				const IItemParamsNode* fp = params->GetChild("firstperson");
 				if (fp)
-				{ 
+				{
 					effect[0] = fp->GetAttribute("effect");
-					helper[0] = fp->GetAttribute("helper");					
+					helper[0] = fp->GetAttribute("helper");
+
 					fp->GetAttribute("scale", scale[0]);
 					fp->GetAttribute("time", time[0]);
-					light_helper[0] = fp->GetAttribute("light_helper");					
+
+					light_helper[0] = fp->GetAttribute("light_helper");
 					fp->GetAttribute("light_radius", light_radius[0]);
-					fp->GetAttribute("light_color", light_color[0]);          
+					fp->GetAttribute("light_color", light_color[0]);
 					fp->GetAttribute("light_time", light_time[0]);
-					fp->GetAttribute("offset", offset);
+
+					fp->GetAttribute("offset", offset[0]);
+
+					Vec3 tmpDir;
+					if (fp->GetAttribute("dir", tmpDir))
+					{
+						if (tmpDir.GetLengthSquared() > 1e-6f)
+						{
+							tmpDir.Normalize();
+							dir[0] = tmpDir;
+						}
+					}
 
 					float diffuse_mult = 1.f;
 					fp->GetAttribute("light_diffuse_mult", diffuse_mult);
 					light_color[0] *= diffuse_mult;
 				}
 
-				const IItemParamsNode *tp=params->GetChild("thirdperson");
+				const IItemParamsNode* tp = params->GetChild("thirdperson");
 				if (tp)
-				{ 
+				{
 					effect[1] = tp->GetAttribute("effect");
-					helper[1] = tp->GetAttribute("helper");					
+					helper[1] = tp->GetAttribute("helper");
+
 					tp->GetAttribute("scale", scale[1]);
 					tp->GetAttribute("time", time[1]);
-					light_helper[1] = tp->GetAttribute("light_helper");					
+
+					light_helper[1] = tp->GetAttribute("light_helper");
 					tp->GetAttribute("light_radius", light_radius[1]);
-					tp->GetAttribute("light_color", light_color[1]);          
+					tp->GetAttribute("light_color", light_color[1]);
 					tp->GetAttribute("light_time", light_time[1]);
-					tp->GetAttribute("offset",offset);
+
+					tp->GetAttribute("offset", offset[1]);
+
+					Vec3 tmpDir;
+					if (tp->GetAttribute("dir", tmpDir))
+					{
+						if (tmpDir.GetLengthSquared() > 1e-6f)
+						{
+							tmpDir.Normalize();
+							dir[1] = tmpDir;
+						}
+					}
 
 					float diffuse_mult = 1.f;
 					tp->GetAttribute("light_diffuse_mult", diffuse_mult);
@@ -109,10 +142,12 @@ public:
 				PreLoadAssets();
 			}
 		}
+
 		void PreLoadAssets();
-		void GetMemoryStatistics(ICrySizer * s)
+
+		void GetMemoryStatistics(ICrySizer* s)
 		{
-			for (int i=0; i<2; i++)
+			for (int i = 0; i < 2; i++)
 			{
 				s->Add(effect[i]);
 				s->Add(helper[i]);
@@ -120,16 +155,20 @@ public:
 			}
 		}
 
-		float	scale[2];
-		float	time[2];
+		float      scale[2];
+		float      time[2];
 		ItemString effect[2];
 		ItemString helper[2];
-		float light_radius[2];
-		float light_time[2];
-		Vec3 light_color[2]; 
-		Vec3 offset;
-		ItemString light_helper[2];    
+
+		float      light_radius[2];
+		float      light_time[2];
+		Vec3       light_color[2];
+		ItemString light_helper[2];
+
+		Vec3       offset[2];
+		Vec3       dir[2];
 	};
+
 
 protected:
 

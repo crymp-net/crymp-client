@@ -1,0 +1,28 @@
+<Material MtlFlags="256">
+ <SubMaterials>
+  <Material Name="hurricane" MtlFlags="132" Shader="Metal" GenMask="268443664" SurfaceType="" Diffuse="0.30588236,0.30588236,0.30588236" Specular="0.56078434,0.56078434,0.56078434" Emissive="0.070588201,0.070588201,0.070588201" Shininess="4" Opacity="1">
+   <Textures>
+    <Texture Map="Diffuse" File="objects/weapons/us/hurricane/hurricane_tp.tif">
+     <TexMod />
+    </Texture>
+    <Texture Map="Specular" File="objects/weapons/us/hurricane/hurricane_tp_spec.tif">
+     <TexMod />
+    </Texture>
+    <Texture Map="Normalmap" File="objects/weapons/us/hurricane/hurricane_tp_ddn.tif">
+     <TexMod />
+    </Texture>
+    <Texture Map="Environment" File="objects/weapons/us/socom/socom_env.tif">
+     <TexMod />
+    </Texture>
+   </Textures>
+   <PublicParams SpecularMultiplier="0.289" AnisotropicShape="0.58399999" ReflectionAmount="0.23" FresnelBias="0.214" FresnelScale="3"/>
+  </Material>
+  <Material Name="nodraw" MtlFlags="128" Shader="Nodraw" GenMask="268443664" SurfaceType="" Diffuse="0.35294119,0.35294119,0.35294119" Specular="0.52156866,0.57254905,0.58823532" Emissive="0,0,0" Shininess="1.5" Opacity="1">
+   <Textures />
+  </Material>
+  <Material Name="proxy" MtlFlags="1152" Shader="Nodraw" GenMask="0" SurfaceType="mat_metal_thick_weapons" Diffuse="0.588,0.588,0.588" Specular="0,0,0" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures />
+  </Material>
+ </SubMaterials>
+ <PublicParams AmbientMultiplier="1"/>
+</Material>

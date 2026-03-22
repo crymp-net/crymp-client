@@ -1,0 +1,67 @@
+{
+	"version": 2,
+	"configurePresets": [
+		{
+			"name": "base-bin32",
+			"hidden": true,
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/Build/${presetName}",
+			"architecture": {
+				"value": "x86",
+				"strategy": "external"
+			},
+			"cacheVariables": {
+				"CMAKE_C_COMPILER": "cl",
+				"CMAKE_CXX_COMPILER": "cl"
+			}
+		},
+		{
+			"name": "base-bin64",
+			"hidden": true,
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/Build/${presetName}",
+			"architecture": {
+				"value": "x64",
+				"strategy": "external"
+			},
+			"cacheVariables": {
+				"CMAKE_C_COMPILER": "cl",
+				"CMAKE_CXX_COMPILER": "cl"
+			}
+		},
+		{
+			"name": "default-bin32",
+			"inherits": "base-bin32",
+			"displayName": "Default (32-bit)",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo"
+			}
+		},
+		{
+			"name": "default-bin64",
+			"inherits": "base-bin64",
+			"displayName": "Default (64-bit)",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo"
+			}
+		},
+		{
+			"name": "hot-reload-bin32",
+			"inherits": "base-bin32",
+			"displayName": "Hot Reload (32-bit)",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
+				"CRYMP_PAK_HOT_RELOADING_ENABLED": "ON"
+			}
+		},
+		{
+			"name": "hot-reloading-bin64",
+			"inherits": "base-bin64",
+			"displayName": "Hot Reload (64-bit)",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
+				"CRYMP_PAK_HOT_RELOADING_ENABLED": "ON"
+			}
+		}
+	]
+}

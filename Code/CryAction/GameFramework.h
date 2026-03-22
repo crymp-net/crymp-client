@@ -307,7 +307,20 @@ private:
 
 		for (Listener& listener : *m_pListenersCopy)
 		{
-			lambda(listener.pListener);
+			bool exists = false;
+			for (Listener& existing : *m_pListeners)
+			{
+				if (listener.pListener == existing.pListener)
+				{
+					exists = true;
+					break;
+				}
+			}
+
+			if (exists)
+			{
+				lambda(listener.pListener);
+			}
 		}
 	}
 };

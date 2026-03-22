@@ -20,201 +20,188 @@
 
 #include <array>
 
-namespace NSKeyTranslation
+static bool LookupKeyBinding(const char* actionMap, const char* actionId, bool preferXI, std::string& result)
 {
-	typedef CryFixedStringT<512> TFixedString;
-	typedef CryFixedWStringT<512> TFixedWString;
+	constexpr int MAX_KEYS = 3;
 
-	static const int MAX_KEYS = 3;
-	SActionMapBindInfo gBindInfo = { 0, 0, 0 };
-
-	// truncate wchar_t to char
-	template<class T> void TruncateToChar(const wchar_t* wcharString, T& outString)
+	IActionMapManager* pActionMapManager = g_pGame->GetIGameFramework()->GetIActionMapManager();
+	if (!pActionMapManager)
 	{
-		outString.resize(TFixedWString::_strlen(wcharString));
-		char* dst = outString.begin();
-		const wchar_t* src = wcharString;
-
-		while (char c=(char)(*src++ & 0xFF))
-		{
-			*dst++ = c;
-		}
+		return false;
 	}
 
-	// simple expand wchar_t to char
-	template<class T> void ExpandToWChar(const char* charString, T& outString)
+	IActionMap* pAM = pActionMapManager->GetActionMap(actionMap);
+	if (!pAM)
 	{
-		outString.resize(TFixedString::_strlen(charString));
-		wchar_t* dst = outString.begin();
-		const char* src = charString;
-		while (const wchar_t c=(wchar_t)(*src++))
-		{
-			*dst++ = c;
-		}
+		return false;
 	}
 
+	SActionMapBindInfo bindInfo{};
+	std::array<const char*, MAX_KEYS> keysBuffer{};
+	bindInfo.keys = keysBuffer.data();
+	const bool found = pAM->GetBindInfo(ActionId(actionId), bindInfo, MAX_KEYS);
 
-	bool LookupBindInfo(const char* actionMap, const char* actionName, bool bPreferXI, SActionMapBindInfo& bindInfo)
+	if (preferXI)
 	{
-		std::array<const char*, MAX_KEYS> keysBuffer = {};
-
-		if (bindInfo.keys == nullptr)
-		{
-			bindInfo.keys = keysBuffer.data();
-		}
-
-		IActionMapManager* pAmMgr = g_pGame->GetIGameFramework()->GetIActionMapManager();
-		if (pAmMgr == 0)
-			return false;
-		IActionMap* pAM = pAmMgr->GetActionMap(actionMap);
-		if (pAM == 0)
-			return false;
-
-		ActionId actionId (actionName);
-		bool bFound = pAM->GetBindInfo(actionId, bindInfo, MAX_KEYS);
-
-		// if no XI lookup required -> return result
-		if (!bPreferXI)
-			return bFound;
-
 		// it's either found or not found, but XI needs to be looked up anyway
-
 		// we found it, so now look if there are xi keys in
-		if (bFound)
+		if (found)
 		{
-			for (int i = 0; i<bindInfo.nKeys; ++i)
+			for (int i = 0; i < bindInfo.nKeys; i++)
 			{
 				const char* keyName = bindInfo.keys[i];
 				if (keyName && keyName[0] == 'x' && keyName[1] == 'i' && keyName[2] == '_')
 				{
-					// ok, this is an xi key, put it into front of list and return
-					std::swap(bindInfo.keys[0], bindInfo.keys[i]);
+					// ok, this is an xi key, return
+					result = keyName;
 					return true;
 				}
 			}
 		}
 
-		// we didn't find an XI key in the same action, so use for an action named xi_actionName
-		CryFixedStringT<64> xiActionName ("xi_");
-		xiActionName+=actionName;
-		bFound = pAM->GetBindInfo(ActionId(xiActionName.c_str()), bindInfo, MAX_KEYS);
-		if (bFound) // ok, we found an xi action
-			return true;
+		// we didn't find an XI key in the same action, so use for an action named xi_actionId
+		std::string xiActionId = "xi_";
+		xiActionId += actionId;
 
-		// no, we didn't find an xi key nor an xi action, re-do first lookup and return
-		bFound = pAM->GetBindInfo(actionId, bindInfo, MAX_KEYS);
-		return bFound;
-	}
-
-	bool LookupBindInfo(const wchar_t* actionMap, const wchar_t* actionName, bool bPreferXI, SActionMapBindInfo& bindInfo)
-	{
-		CryFixedStringT<64> actionMapString;
-		TruncateToChar(actionMap, actionMapString);
-		CryFixedStringT<64> actionNameString;
-		TruncateToChar(actionName, actionNameString);
-		return LookupBindInfo(actionMapString.c_str(), actionNameString.c_str(), bPreferXI, bindInfo);
-	}
-
-	template<class T>
-	void InsertString(T& inString, size_t pos, const wchar_t* s)
-	{
-		inString.insert(pos, s);
-	}
-
-	template<size_t S>
-	void InsertString(CryFixedWStringT<S>& inString, size_t pos, const char* s)
-	{
-		CryFixedWStringT<64> wcharString;
-		ExpandToWChar(s, wcharString);
-		inString.insert(pos, wcharString.c_str());
-	}
-
-	/*
-	template<size_t S>
-	void InsertString(CryFixedStringT<S>& inString, size_t pos, const wchar_t* s)
-	{
-		CryFixedStringT<64> charString;
-		TruncateToChar(s, charString);
-		inString.insert(pos, charString.c_str());
-	}
-
-	template<size_t S>
-	void InsertString(CryFixedStringT<S>& inString, size_t pos, const char* s)
-	{
-		inString.insert(pos, s);
-	}
-	*/
-
-	// Replaces all occurrences of %[actionmap:actionid] with the current key binding
-	template<size_t S>
-	void ReplaceActions(ILocalizationManager* pLocMgr, CryFixedWStringT<S>& inString)
-	{
-		typedef CryFixedWStringT<S> T;
-		static const typename T::value_type* actionPrefix = L"%[";
-		static const size_t actionPrefixLen = T::_strlen(actionPrefix);
-		static const typename T::value_type actionDelim = L':';
-		static const typename T::value_type actionDelimEnd = L']';
-		static const char* keyPrefix = "@cc_"; // how keys appear in the localization sheet
-		static const size_t keyPrefixLen = strlen(keyPrefix);
-		CryFixedStringT<32> fullKeyName;
-		static wstring realKeyName;
-
-		size_t pos = inString.find(actionPrefix, 0);
-		const bool bPreferXI = g_pGame && g_pGame->GetMenu() && g_pGame->GetMenu()->IsControllerConnected() ? true : false;
-
-		while (pos != T::npos)
+		SActionMapBindInfo xiBindInfo{};
+		std::array<const char*, MAX_KEYS> xiKeysBuffer{};
+		xiBindInfo.keys = xiKeysBuffer.data();
+		const bool xiFound = pAM->GetBindInfo(ActionId(xiActionId.c_str()), xiBindInfo, MAX_KEYS);
+		if (xiFound && xiBindInfo.nKeys > 0 && xiBindInfo.keys[0])
 		{
-			size_t pos1 = inString.find(actionDelim, pos+actionPrefixLen);
-			if (pos1 != T::npos)
-			{
-				size_t pos2 = inString.find(actionDelimEnd, pos1+1);
-				if (pos2 != T::npos)
-				{
-					// found end of action descriptor
-					typename T::value_type* t1 = inString.begin()+pos1;
-					typename T::value_type* t2 = inString.begin()+pos2;
-					*t1 = 0;
-					*t2 = 0;
-					const typename T::value_type* actionMapName = inString.begin()+pos+actionPrefixLen;
-					const typename T::value_type* actionName = inString.begin()+pos1+1;
-					// CryLogAlways("Found: '%S' '%S'", actionMapName, actionName);
-					bool bFound = LookupBindInfo(actionMapName, actionName, bPreferXI, gBindInfo);
-					*t1 = actionDelim; // re-replace ':'
-					*t2 = actionDelimEnd; // re-replace ']'
-					if (bFound && gBindInfo.nKeys >= 1)
-					{
-						inString.erase(pos, pos2-pos+1);
-						const char* keyName = gBindInfo.keys[0]; // first key
-						fullKeyName.assign(keyPrefix, keyPrefixLen);
-						fullKeyName.append(keyName);
-						bFound = pLocMgr->LocalizeLabel(fullKeyName.c_str(), realKeyName);
-						if (bFound)
-						{
-							InsertString(inString, pos, realKeyName.c_str());
-						}
-						else
-						{
-							// not found, insert original (untranslated name from actionmap)
-							InsertString(inString, pos, keyName);
-						}
-					}
-				}
-			}
-			pos = inString.find(actionPrefix, pos+1);
+			// ok, we found an xi action
+			result = xiBindInfo.keys[0];
+			return true;
 		}
 	}
-}; // namespace NSKeyTranslation
 
-const wchar_t*
-CHUD::LocalizeWithParams(const char* label, bool bAdjustActions, const char* param1, const char* param2, const char* param3, const char* param4)
-{
-	static NSKeyTranslation::TFixedWString finalLocalizedString;
-
-	if (label[0] == '@')
+	if (found && bindInfo.nKeys > 0 && bindInfo.keys[0])
 	{
-		ILocalizationManager* pLocMgr = gEnv->pSystem->GetLocalizationManager();
-		wstring localizedString, finalString;
-		pLocMgr->LocalizeLabel(label, localizedString);
+		result = bindInfo.keys[0];
+		return true;
+	}
+
+	return false;
+}
+
+struct FoundAction
+{
+	std::size_t beginPos = 0;
+	std::size_t endPos = 0;
+	std::string actionMap;
+	std::string actionId;
+};
+
+static bool FindNextAction(std::wstring& text, std::wstring::size_type pos, FoundAction& result)
+{
+	// %[actionmap:actionid]
+	constexpr std::wstring_view PREFIX = L"%[";
+	constexpr std::wstring_view DELIM = L":";
+	constexpr std::wstring_view SUFFIX = L"]";
+
+	const auto prefixPos = text.find(PREFIX, pos);
+	if (prefixPos == std::wstring::npos)
+	{
+		return false;
+	}
+
+	const auto delimPos = text.find(DELIM, prefixPos + PREFIX.length());
+	if (delimPos == std::wstring::npos)
+	{
+		return false;
+	}
+
+	const auto suffixPos = text.find(SUFFIX, delimPos + DELIM.length());
+	if (suffixPos == std::wstring::npos)
+	{
+		return false;
+	}
+
+	const auto actionMapString = text.c_str() + prefixPos + PREFIX.length();
+	const auto actionMapLength = delimPos - prefixPos - PREFIX.length();
+
+	const auto actionIdString = text.c_str() + delimPos + DELIM.length();
+	const auto actionIdLength = suffixPos - delimPos - DELIM.length();
+
+	result.beginPos = prefixPos;
+	result.endPos = suffixPos + SUFFIX.length();
+
+	// convert to UTF-8
+	StringTools::AssignTo(result.actionMap, std::wstring_view(actionMapString, actionMapLength));
+	StringTools::AssignTo(result.actionId, std::wstring_view(actionIdString, actionIdLength));
+
+	return true;
+}
+
+// Replaces all occurrences of %[actionmap:actionid] with the current key binding
+static void ReplaceActions(ILocalizationManager* pLocalizationManager, std::wstring& text)
+{
+	const bool preferXI = g_pGame->GetMenu() && g_pGame->GetMenu()->IsControllerConnected();
+
+	std::size_t pos = 0;
+	FoundAction found;
+	while (FindNextAction(text, pos, found))
+	{
+		std::string key;
+		if (LookupKeyBinding(found.actionMap.c_str(), found.actionId.c_str(), preferXI, key))
+		{
+			std::wstring replacement;
+
+			wstring localizedKey;
+			if (pLocalizationManager->LocalizeLabel(("@cc_" + key).c_str(), localizedKey))
+			{
+				StringTools::AppendTo(replacement, localizedKey);
+			}
+			else
+			{
+				StringTools::AppendTo(replacement, key);
+			}
+
+			text.replace(found.beginPos, found.endPos - found.beginPos, replacement);
+			pos = found.beginPos + replacement.length();
+		}
+		else
+		{
+			pos = found.endPos;
+		}
+	}
+}
+
+// Replaces "\\n" with "\n"
+static void ExpandNewlineInPlace(std::wstring& text)
+{
+	auto src = text.begin();
+	auto dst = text.begin();
+
+	while (src != text.end())
+	{
+		if (*src == L'\\' && (src + 1) != text.end() && *(src + 1) == L'n')
+		{
+			*dst = L'\n';
+			++src;
+		}
+		else [[likely]]
+		{
+			*dst = *src;
+		}
+
+		++src;
+		++dst;
+	}
+
+	text.resize(text.length() - (src - dst));
+}
+
+std::wstring CHUD::LocalizeWithParams(const char* label, bool bAdjustActions, const char* param1, const char* param2, const char* param3, const char* param4)
+{
+	std::wstring result;
+
+	ILocalizationManager* pLocalizationManager = gEnv->pSystem->GetLocalizationManager();
+
+	if (label && label[0] == '@')
+	{
+		wstring localizedString;
+		pLocalizationManager->LocalizeLabel(label, localizedString);
 		const bool bFormat = param1 || param2 || param3 || param4;
 		if(bFormat)
 		{
@@ -222,59 +209,60 @@ CHUD::LocalizeWithParams(const char* label, bool bAdjustActions, const char* par
 			if(param1)
 			{
 				if (param1[0] == '@')
-					pLocMgr->LocalizeLabel(param1, p1);
+					pLocalizationManager->LocalizeLabel(param1, p1);
 				else
-					NSKeyTranslation::ExpandToWChar(param1, p1);
+					StringTools::AppendTo(p1, param1);
 			}
 			if(param2)
 			{
 				if (param2[0] == '@')
-					pLocMgr->LocalizeLabel(param2, p2);
+					pLocalizationManager->LocalizeLabel(param2, p2);
 				else
-					NSKeyTranslation::ExpandToWChar(param2, p2);
+					StringTools::AppendTo(p2, param2);
 			}
 			if(param3)
 			{
 				if (param3[0] == '@')
-					pLocMgr->LocalizeLabel(param3, p3);
+					pLocalizationManager->LocalizeLabel(param3, p3);
 				else
-					NSKeyTranslation::ExpandToWChar(param3, p3);
+					StringTools::AppendTo(p3, param3);
 			}
 			if(param4)
 			{
 				if (param4[0] == '@')
-					pLocMgr->LocalizeLabel(param4, p4);
+					pLocalizationManager->LocalizeLabel(param4, p4);
 				else
-					NSKeyTranslation::ExpandToWChar(param4, p4);
+					StringTools::AppendTo(p4, param4);
 			}
-			pLocMgr->FormatStringMessage(finalString, localizedString,
-				p1.empty()?0:p1.c_str(),
-				p2.empty()?0:p2.c_str(),
-				p3.empty()?0:p3.c_str(),
-				p4.empty()?0:p4.c_str());
+
+			wstring finalString;
+			pLocalizationManager->FormatStringMessage(finalString, localizedString,
+				p1.empty() ? nullptr : p1.c_str(),
+				p2.empty() ? nullptr : p2.c_str(),
+				p3.empty() ? nullptr : p3.c_str(),
+				p4.empty() ? nullptr : p4.c_str()
+			);
+
+			StringTools::AppendTo(result, finalString);
 		}
 		else
-			finalString = localizedString;
-
-		finalLocalizedString.assign(finalString.c_str(), finalString.length());
-		if (bAdjustActions)
 		{
-			NSKeyTranslation::ReplaceActions(pLocMgr, finalLocalizedString);
+			StringTools::AppendTo(result, localizedString);
 		}
 	}
-	else
+	else if (label)
 	{
-		// we expand always to wchar_t, as Flash will translate into wchar anyway
-		NSKeyTranslation::ExpandToWChar(label, finalLocalizedString);
+		StringTools::AppendTo(result, label);
 		// in non-localized case replace potential line-breaks
-		finalLocalizedString.replace(L"\\n",L"\n");
-		if (bAdjustActions)
-		{
-			ILocalizationManager* pLocMgr = gEnv->pSystem->GetLocalizationManager();
-			NSKeyTranslation::ReplaceActions(pLocMgr, finalLocalizedString);
-		}
+		ExpandNewlineInPlace(result);
 	}
-	return finalLocalizedString.c_str();
+
+	if (bAdjustActions)
+	{
+		ReplaceActions(pLocalizationManager, result);
+	}
+
+	return result;
 }
 
 
@@ -291,17 +279,17 @@ void CHUD::DisplayFlashMessage(const char* label, int pos /* = 1 */, const Color
 	if(pos == 2 && m_fMiddleTextLineTimeout <= 0.0f)
 		m_fMiddleTextLineTimeout = gEnv->pTimer->GetFrameStartTime().GetSeconds() + 3.0f;
 
-	const wchar_t* localizedText = L"";
+	std::wstring localizedText;
 	if(formatWStringWithParams)
 		localizedText = LocalizeWithParams(label, true, paramLabel1, paramLabel2, paramLabel3, paramLabel4);
 	else
 		localizedText = LocalizeWithParams(label, true);
 
 	if(m_animSpectate.GetVisible())
-		m_animSpectate.Invoke("setInfoText", localizedText);
+		m_animSpectate.Invoke("setInfoText", localizedText.c_str());
 	else
 	{
-		SFlashVarValue args[3] = {localizedText, pos, packedColor};
+		SFlashVarValue args[3] = {localizedText.c_str(), pos, packedColor};
 		m_animMessages.Invoke("setMessageText", args, 3);
 	}
 }
@@ -316,16 +304,16 @@ void CHUD::DisplayOverlayFlashMessage(const char* label, const ColorF &col /* = 
 	if(m_fOverlayTextLineTimeout <= 0.0f)
 		m_fOverlayTextLineTimeout = gEnv->pTimer->GetFrameStartTime().GetSeconds() + 3.0f;
 
-	const wchar_t* localizedText = L"";
+	std::wstring localizedText;
 	if(formatWStringWithParams)
 		localizedText = LocalizeWithParams(label, true, paramLabel1, paramLabel2, paramLabel3, paramLabel4);
 	else
 		localizedText = LocalizeWithParams(label, true);
 
-	SFlashVarValue args[3] = {localizedText, 2, packedColor}; // hard-coded pos 2 = middle
+	SFlashVarValue args[3] = {localizedText.c_str(), 2, packedColor}; // hard-coded pos 2 = middle
 	m_animOverlayMessages.Invoke("setMessageText", args, 3);
 
-	if (localizedText && *localizedText == 0)
+	if (localizedText.empty())
 		m_animOverlayMessages.SetVisible(false);
 	else
 		if (m_animOverlayMessages.GetVisible() == false)
@@ -354,7 +342,7 @@ void CHUD::DisplayBigOverlayFlashMessage(const char* label, float duration, int 
 	else
 		m_fBigOverlayTextLineTimeout = now + duration;
 
-	const wchar_t* localizedText = L"";
+	std::wstring localizedText;
 	if (label && *label)
 	{
 		bool bFound = false;
@@ -404,10 +392,10 @@ void CHUD::DisplayBigOverlayFlashMessage(const char* label, float duration, int 
 	m_animBigOverlayMessages.RepositionFlashAnimation();
 	// End of the big workaround
 
-	SFlashVarValue args[4] = {localizedText, 2, packedColor, szTextAlignment}; // hard-coded pos 2 = middle
+	SFlashVarValue args[4] = {localizedText.c_str(), 2, packedColor, szTextAlignment}; // hard-coded pos 2 = middle
 	m_animBigOverlayMessages.Invoke("setMessageText", args, 4);
 
-	if (localizedText && *localizedText == 0)
+	if (localizedText.empty())
 	{
 		if (m_bigOverlayText.empty())
 			m_animBigOverlayMessages.SetVisible(false);
@@ -755,9 +743,8 @@ void CHUD::InternalShowSubtitle(const char* subtitleLabel, ISound* pSound, bool 
 				}
 
 				// replace actions
-				NSKeyTranslation::TFixedWString finalDisplayString;
-				finalDisplayString.assign(localizedString.c_str(), localizedString.length());
-				NSKeyTranslation::ReplaceActions(pLocMgr, finalDisplayString);
+				// TODO: is this needed?
+				//ReplaceActions(pLocMgr, localizedString);
 
 				if (pSound)
 					SubtitleCreateChunks(entry, localizedString);
@@ -867,10 +854,10 @@ void CHUD::SetRadioButtons(bool active, int buttonNo /* = 0 */, bool extended)
 		m_animRadioButtons.Invoke(flashCmd, buttonNo);
 
 		m_animRadioButtons.SetVisible(true);
-		wstring group0(LocalizeWithParams("@mp_radio_group_0"));
-		wstring group1(LocalizeWithParams("@mp_radio_group_1"));
-		wstring group2(LocalizeWithParams("@mp_radio_group_2"));
-		wstring group3(LocalizeWithParams("@mp_radio_group_3"));
+		std::wstring group0 = LocalizeWithParams("@mp_radio_group_0");
+		std::wstring group1 = LocalizeWithParams("@mp_radio_group_1");
+		std::wstring group2 = LocalizeWithParams("@mp_radio_group_2");
+		std::wstring group3 = LocalizeWithParams("@mp_radio_group_3");
 		SFlashVarValue args[4] = {group0.c_str(), group1.c_str(), group2.c_str(), group3.c_str()};
 		m_animRadioButtons.Invoke("setRadioButtonText", args, 4);
 	}

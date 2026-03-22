@@ -384,6 +384,7 @@ private:
   unsigned int m_lightId;
 
   Matrix34 m_barrelRotation;
+  bool m_barrelRotationDirty = false;
 
   string m_radarHelper;
   string m_barrelHelper;
