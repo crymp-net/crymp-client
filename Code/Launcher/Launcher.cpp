@@ -1007,7 +1007,7 @@ void Launcher::PatchEngine()
 		MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(m_dlls.pFmodEx);
 
 #ifdef CLIENT_LAUNCHER
-		if (!WinAPI::CmdLine::HasArg("-nodsoal"))
+		if (WinAPI::CmdLine::HasArg("-dsoal"))
 		{
 			DsoalDeployer::Init(m_dlls.pFmodEx);
 		}
