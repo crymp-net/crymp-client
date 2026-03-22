@@ -204,8 +204,15 @@ static LRESULT CALLBACK WindowProc(HWND window, UINT msg, WPARAM wParam, LPARAM 
 		}
 		case WM_ACTIVATE:
 		{
-			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS,
-				LOWORD(wParam) != WA_INACTIVE, 0);
+			const bool active = (LOWORD(wParam) != WA_INACTIVE);
+
+			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS, active, 0);
+
+			if (active && gEnv->pInput)
+			{
+				//CryMP: Fixes scoreboard open on Win11 after Alt-tab
+				gEnv->pInput->Update(true);
+			}
 
 			return 0;
 		}
