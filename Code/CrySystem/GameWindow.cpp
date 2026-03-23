@@ -8,6 +8,7 @@
 #include "CryCommon/CrySystem/IHardwareMouse.h"
 #include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryCommon/CryInput/IInput.h"
+#include "CryCommon/CrySoundSystem/IMusicSystem.h"
 #include "CryGame/Game.h"
 #include "CryGame/Menus/OptionsManager.h"
 #include "Launcher/Resources.h"
@@ -218,6 +219,13 @@ static LRESULT CALLBACK WindowProc(HWND window, UINT msg, WPARAM wParam, LPARAM 
 		}
 		case WM_SETFOCUS:
 		{
+			//CryMP: Fix scratching noises in MusicSystem after Alt-Tab back into the game
+			if (gEnv->pMusicSystem)
+			{
+				gEnv->pMusicSystem->Pause(true);
+				gEnv->pMusicSystem->Pause(false);
+			}
+
 			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS, 1, 0);
 
 			break;
