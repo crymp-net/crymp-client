@@ -218,7 +218,7 @@ static LRESULT CALLBACK WindowProc(HWND window, UINT msg, WPARAM wParam, LPARAM 
 			{
 				gEnv->pMusicSystem->Pause(true);
 				gEnv->pMusicSystem->Pause(false);
-      }
+			}
       
 			//CryMP: Fixes scoreboard opening on Win11 after Alt-tab
 			if (gEnv->pInput)
