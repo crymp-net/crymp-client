@@ -178,6 +178,9 @@ struct IZoomMode
 	virtual void OnEnterThirdPerson()
 	{
 	}
+	virtual void NetSetZoomStep(int step)
+	{
+	}
 };
 
 

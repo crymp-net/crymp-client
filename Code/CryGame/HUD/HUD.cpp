@@ -627,9 +627,6 @@ bool CHUD::Init(IActor* pActor)
 		{
 			m_pHUDTeamInstantAction = new CHUDTeamInstantAction(this);
 			m_hudObjectsList.push_back(m_pHUDTeamInstantAction);
-
-			if (m_pHUDTeamInstantAction)
-				m_pHUDTeamInstantAction->Show(true);
 		}
 		else if (m_currentGameRules == EHUD_INSTANTACTION)
 		{
@@ -2793,7 +2790,7 @@ bool CHUD::ShowPDA(bool show, bool buyMenu)
 		{
 			if (m_pHUDTeamInstantAction)
 			{
-				m_pHUDTeamInstantAction->Show(!show);
+				m_pHUDTeamInstantAction->SetTIAScoreHidden(CHUDTeamInstantAction::eTIAScoreHideReason_PDA, show);
 			}
 
 			if (!buyMenu && show && m_pModalHUD == NULL)
@@ -2850,7 +2847,7 @@ bool CHUD::ShowPDA(bool show, bool buyMenu)
 		}
 
 		if (m_pHUDPowerStruggle)
-			m_pHUDPowerStruggle->HideSOM(true);
+			m_pHUDPowerStruggle->SetSOMHidden(CHUDPowerStruggle::eSOMHideReason_PDA, true);
 
 		if (m_pClientActor->GetHealth() <= 0 && !gEnv->bMultiplayer)
 			return false;
@@ -2925,7 +2922,7 @@ bool CHUD::ShowPDA(bool show, bool buyMenu)
 		}
 
 		if (m_pHUDPowerStruggle)
-			m_pHUDPowerStruggle->HideSOM(false);
+			m_pHUDPowerStruggle->SetSOMHidden(CHUDPowerStruggle::eSOMHideReason_PDA, false);
 
 		PlaySound(ESound_MapClose);
 		HUD_CALL_LISTENERS(PDAClosed());

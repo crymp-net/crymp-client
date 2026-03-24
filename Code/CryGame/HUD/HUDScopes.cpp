@@ -17,6 +17,8 @@ History:
 #include "HUD.h"
 #include "HUDRadar.h"
 #include "HUDSilhouettes.h"
+#include "HUDPowerStruggle.h"
+#include "HUDTeamInstantAction.h"
 #include "GameFlashAnimation.h"
 #include "CryGame/Actors/Actor.h"
 #include "CryCommon/CryAction/IWorldQuery.h"
@@ -127,6 +129,14 @@ void CHUDScopes::DisplayBinoculars(CPlayer* pPlayerActor)
 {
 	if (!pPlayerActor)
 		return;
+
+	if (CPlayer* pSpectatorTargetPlayer = CPlayer::FromIActor(pPlayerActor->GetSpectatorTargetActor()))
+	{
+		pPlayerActor = pSpectatorTargetPlayer;
+
+		//CryMP: No radar in spectator mode, need to update it here
+		UpdateBinocularsDistance(pPlayerActor);
+	}
 
 	CCamera& rCamera = gEnv->pSystem->GetViewCamera();
 
@@ -274,6 +284,121 @@ void CHUDScopes::DisplayBinoculars(CPlayer* pPlayerActor)
 
 //-----------------------------------------------------------------------------------------------------
 
+EntityId CHUDScopes::RayCastBinoculars(CPlayer* pPlayer, ray_hit& rayHit)
+{
+	rayHit = ray_hit();
+
+	if (!pPlayer)
+		return 0;
+
+	Vec3 pos, dir, up, right;
+
+	const Matrix34& rmatCamera = gEnv->pSystem->GetViewCamera().GetMatrix();
+	pos = rmatCamera.GetTranslation();
+	dir = rmatCamera.GetColumn1();
+	up = rmatCamera.GetColumn2();
+	right = (dir % up).GetNormalizedSafe();
+
+	IEntity* pPlayerEntity = pPlayer->GetEntity();
+	if (!pPlayerEntity)
+		return 0;
+
+	IPhysicalEntity* pPhysEnt = pPlayerEntity->GetPhysics();
+	if (!pPhysEnt)
+		return 0;
+
+	const int objTypes = ent_all;
+	const unsigned int flags = (13 & rwi_pierceability_mask);
+
+	right = right * g_pGameCVars->hud_binocsScanningWidth;
+	up = up * g_pGameCVars->hud_binocsScanningWidth;
+
+	Vec3 positions[4];
+	positions[0] = pos + right + up;
+	positions[1] = pos + right - up;
+	positions[2] = pos - right - up;
+	positions[3] = pos - right + up;
+
+	ray_hit bestHit = ray_hit();
+	bool hasHit = false;
+
+	for (int i = 0; i < 4; ++i)
+	{
+		ray_hit hit = ray_hit();
+
+		if (gEnv->pPhysicalWorld->RayWorldIntersection(positions[i], 300.0f * dir, objTypes, flags, &hit, 1, &pPhysEnt, 1))
+		{
+			IEntity* pLookAt = gEnv->pEntitySystem->GetEntityFromPhysics(hit.pCollider);
+
+			if (pLookAt)
+			{
+				rayHit = hit;
+				return pLookAt->GetId();
+			}
+
+			if (!hasHit || hit.dist < bestHit.dist)
+			{
+				bestHit = hit;
+				hasHit = true;
+			}
+		}
+	}
+
+	if (hasHit)
+		rayHit = bestHit;
+
+	return 0;
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+EntityId CHUDScopes::UpdateBinocularsDistance(CPlayer* pPlayer)
+{
+	if (!pPlayer)
+		return 0;
+
+	EntityId lookAtObjectID = 0;
+
+	IWorldQuery* pWorldQuery = pPlayer->GetGameObject()->GetWorldQuery();
+	if (pWorldQuery)
+	{
+		lookAtObjectID = pWorldQuery->GetLookAtEntityId();
+	}
+
+	ray_hit rayHit;
+
+	if (!lookAtObjectID)
+	{
+		lookAtObjectID = RayCastBinoculars(pPlayer, rayHit);
+	}
+
+	// When in a cinematic, pActor view doesn't move (it's faked), so let's not use the lookAtEntityId
+	if (lookAtObjectID && !g_pHUD->IsInCinematic())
+	{
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(lookAtObjectID);
+		if (pEntity)
+		{
+			const Vec3 playerPos = pPlayer->GetEntity()->GetWorldPos();
+			const Vec3 targetPos = pEntity->GetWorldPos();
+
+			float fDistance = (targetPos - playerPos).GetLength();
+			SetBinocularsDistance(fDistance);
+
+			return lookAtObjectID;
+		}
+	}
+	else if (rayHit.pCollider)
+	{
+		SetBinocularsDistance(rayHit.dist);
+		return lookAtObjectID; 
+	}
+
+	SetBinocularsDistance(0.0f);
+	return 0;
+}
+
+//-----------------------------------------------------------------------------------------------------
+
 void CHUDScopes::DisplayScope(CPlayer* pPlayerActor)
 {
 	if (GetCurrentScope() != CHUDScopes::ESCOPE_NONE)
@@ -396,6 +521,16 @@ void CHUDScopes::ShowBinoculars(bool bVisible, bool bShowIfNoHUD, bool bNoFadeOu
 	}
 
 	g_pHUD->m_pHUDSilhouettes->SetType((IsBinocularsShown() && !m_bThirdPerson) ? 1 : 0);
+
+	if (g_pHUD->GetPowerStruggleHUD())
+	{
+		//CryMP: Hide SwingOMeter when binoculars are shown
+		g_pHUD->GetPowerStruggleHUD()->SetSOMHidden(CHUDPowerStruggle::eSOMHideReason_Binoculars, bVisible);
+	}
+	else if (g_pHUD->GetTeamInstantActionHUD())
+	{
+		g_pHUD->GetTeamInstantActionHUD()->SetTIAScoreHidden(CHUDTeamInstantAction::eTIAScoreHideReason_Binoculars, bVisible);
+	}
 
 	HUD_CALL_LISTENERS(OnBinoculars(bVisible));
 }

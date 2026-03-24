@@ -2322,24 +2322,15 @@ void CPlayer::EnableFpSpectatorTarget(bool activate)
 		if (activate)
 		{
 			const float zoomFov = GetActorParams()->zoomFoV;
-			int currentZoomStep = pWeapon->GetZoomStepFromFoV(zoomFov);
-			if (!currentZoomStep)
-				return;
+			const int currentZoomStep = pWeapon->GetZoomStepFromFoV(zoomFov);
 
-			const bool zoomed = pZoomMode->IsZoomed();
-			if (zoomed)
-				pZoomMode->ExitZoom();
-
-			pWeapon->StartZoom(GetEntityId(), 1);
-
-			//Weapons with more than 1 step
 			if (currentZoomStep > 0)
 			{
-				//are we zooming in or out
-				for (int i = 0, n = currentZoomStep; i < n; ++i)
-				{
-					pZoomMode->ZoomIn();
-				}
+				pZoomMode->NetSetZoomStep(currentZoomStep);
+			}
+			else
+			{
+				pWeapon->ExitZoom();
 			}
 		}
 		else

@@ -54,6 +54,8 @@ public:
 	ILINE EScopeMode GetCurrentScope() const { return m_eShowScope; }
 	void Serialize(TSerialize &ser);
 	void DestroyBinocularsAtNextFrame() { m_bDestroyBinocularsAtNextFrame = true; }
+	EntityId RayCastBinoculars(CPlayer* pPlayer, ray_hit& pRayHit);
+	EntityId UpdateBinocularsDistance(CPlayer* pPlayer);
 
 private:
 

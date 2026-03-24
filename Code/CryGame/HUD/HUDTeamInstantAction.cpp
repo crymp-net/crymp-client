@@ -24,7 +24,7 @@ CHUDTeamInstantAction::CHUDTeamInstantAction(CHUD *pHUD) :
 g_pHUD(pHUD)
 {
 	m_animTIAScore.Load("Libs/UI/HUD_TIAScore.gfx", eFD_Center, eFAF_ManualRender|eFAF_Visible);
-	m_animTIAScore.SetVisible(false);
+	m_animTIAScore.SetVisible(true);
 }
 
 CHUDTeamInstantAction::~CHUDTeamInstantAction()
@@ -132,6 +132,21 @@ void CHUDTeamInstantAction::UpdateStats()
 void CHUDTeamInstantAction::Show(bool show)
 {
 	m_animTIAScore.SetVisible(show);
+}
+
+void CHUDTeamInstantAction::SetTIAScoreHidden(ETIAScoreHideReason reason, bool hide)
+{
+	if (hide)
+		m_tiaScoreHideFlags |= reason;
+	else
+		m_tiaScoreHideFlags &= ~reason;
+
+	const bool shouldBeVisible = (m_tiaScoreHideFlags == 0);
+
+	if (m_animTIAScore.GetVisible() != shouldBeVisible)
+	{
+		m_animTIAScore.SetVisible(shouldBeVisible);
+	}
 }
 
 void CHUDTeamInstantAction::PushToFlash()

@@ -203,6 +203,24 @@ void CIronSight::Update(float frameTime, unsigned int frameId)
 		keepUpdating = true;
 	}
 
+	if (m_pendingNetZoomStep > 1)
+	{
+		CActor* pActor = m_pWeapon->GetOwnerActor();
+		if (pActor && pActor->IsFpSpectatorTarget())
+		{
+			if (m_zoomed && m_currentStep == 1 && !IsZooming())
+			{
+				const int targetStep = m_pendingNetZoomStep;
+				m_pendingNetZoomStep = 0;
+
+				for (int i = 1; i < targetStep; ++i)
+				{
+					ZoomIn();
+				}
+			}
+		}
+	}
+
 	if (keepUpdating)
 	{
 		m_pWeapon->RequireUpdate(eIUS_Zooming);
@@ -1301,4 +1319,38 @@ void CIronSight::OnEnterFirstPerson()
 		m_pWeapon->SetActionSuffix(m_zoomparams.suffix.c_str());
 
 	m_pWeapon->PlayAction(m_actions.zoom_in, 0, false, CItem::eIPAF_Default);
+}
+
+//======================================================
+void CIronSight::NetSetZoomStep(int step)
+{
+	CActor* pActor = m_pWeapon->GetOwnerActor();
+	if (!pActor || !pActor->IsFpSpectatorTarget())
+		return;
+
+	const int maxStep = (int)m_zoomparams.stages.size();
+	step = CLAMP(step, 0, maxStep);
+
+	m_skipRequestZoomOnce = true;
+	m_pendingNetZoomStep = 0;
+
+	if (step <= 0)
+	{
+		ExitZoom();
+		return;
+	}
+
+	m_zoomTime = 0.0f;
+	m_zoomTimer = 0.0f;
+	m_zoomed = false;
+	m_zoomingIn = false;
+	m_currentStep = 0;
+
+	StartZoom(true, false, 1);
+
+	if (step > 1)
+	{
+		m_pendingNetZoomStep = step;
+		m_pWeapon->RequireUpdate(eIUS_Zooming);
+	}
 }

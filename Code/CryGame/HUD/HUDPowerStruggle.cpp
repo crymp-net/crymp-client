@@ -25,6 +25,9 @@ History:
 #include "HUDVehicleInterface.h"
 #include "CryGame/Menus/OptionsManager.h"
 #include "CryCommon/CryGame/GameUtils.h"
+#include "Library/StringTools.h"
+
+#include <array>
 
 #define HUD_CALL_LISTENERS_PS(func) \
 { \
@@ -105,246 +108,292 @@ void DrawBar(float x, float y, float width, float height, float border, float pr
 		gEnv->pRenderer->Draw2dLabel(sx, sy, 1.6f, (float*)&textColor, true, "%s", text);
 }
 
+//-----------------------------------------------------------------------------------------------------
+
 void CHUDPowerStruggle::Update(float fDeltaTime)
 {
-	if (m_animSwingOMeter.IsLoaded() && m_pGameRules->GetTeamCount() > 1)
+	if (m_pGameRules->GetTeamCount() <= 1)
+		return;
+
+	UpdatePlayerPP();
+	UpdateSwingOMeter(fDeltaTime);
+	UpdateHexIcons(fDeltaTime);
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CHUDPowerStruggle::UpdatePlayerPP()
+{
+	const int pp = GetPlayerPP();
+	const bool buyMenu = (g_pHUD->m_pModalHUD == &g_pHUD->m_animBuyMenu);
+
+	if (g_pHUD->m_lastPlayerPPSet != pp)
 	{
-		int pp = GetPlayerPP();
-		const bool buymenu = g_pHUD->m_pModalHUD == &g_pHUD->m_animBuyMenu;
-		if (g_pHUD->m_lastPlayerPPSet != pp)
+		g_pHUD->m_animPlayerPP.Invoke("setPPoints", pp);
+		g_pHUD->m_lastPlayerPPSet = pp;
+	}
+
+	if (buyMenu)
+	{
+		g_pHUD->m_animBuyMenu.Invoke("setPP", pp);
+	}
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CHUDPowerStruggle::UpdateSwingOMeter(float fDeltaTime)
+{
+	if (!m_animSwingOMeter.GetVisible())
+		return;
+
+	int teamId = m_pGameRules->GetTeam(g_pHUD->m_pClientActor->GetEntityId());
+
+	if (g_pHUD->m_pClientActor->GetSpectatorMode() == CActor::eASM_Follow)
+	{
+		teamId = m_pGameRules->GetTeam(g_pHUD->m_pClientActor->GetSpectatorTarget());
+	}
+
+	if (!m_gotpowerpoints)
+	{
+		m_powerpoints.clear();
+		m_hqs.clear();
+
+		IEntityClass* pAlienEnergyPoint = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AlienEnergyPoint");
+		IEntityClass* pHQ = gEnv->pEntitySystem->GetClassRegistry()->FindClass("HQ");
+		IEntityClass* pFactory = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Factory");
+
+		IEntityItPtr pIt = gEnv->pEntitySystem->GetEntityIterator();
+		while (!pIt->IsEnd())
 		{
-			g_pHUD->m_animPlayerPP.Invoke("setPPoints", pp);
-			g_pHUD->m_lastPlayerPPSet = pp;
-		}
-
-		if (buymenu)
-		{
-			g_pHUD->m_animBuyMenu.Invoke("setPP", pp);
-		}
-
-		int teamId = m_pGameRules->GetTeam(g_pHUD->m_pClientActor->GetEntityId());
-
-		// if local actor is currently spectating another player, use the team of the player we're watching...
-		if (g_pHUD->m_pClientActor->GetSpectatorMode() == CActor::eASM_Follow)
-		{
-			teamId = m_pGameRules->GetTeam(g_pHUD->m_pClientActor->GetSpectatorTarget());
-		}
-		
-
-		if (!m_gotpowerpoints)
-		{
-			m_powerpoints.resize(0);
-
-			IEntityClass* pAlienEnergyPoint = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AlienEnergyPoint");
-			IEntityClass* pHQ = gEnv->pEntitySystem->GetClassRegistry()->FindClass("HQ");
-			IEntityClass* pFactory = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Factory");
-
-			IEntityItPtr pIt = gEnv->pEntitySystem->GetEntityIterator();
-			while (!pIt->IsEnd())
+			if (IEntity* pEntity = pIt->Next())
 			{
-				if (IEntity* pEntity = pIt->Next())
-				{
-					IEntityClass* pClass = pEntity->GetClass();
+				IEntityClass* pClass = pEntity->GetClass();
 
-					if (pClass == pAlienEnergyPoint)
+				if (pClass == pAlienEnergyPoint)
+				{
+					m_powerpoints.push_back(pEntity->GetId());
+				}
+				else if (pClass == pFactory)
+				{
+					SmartScriptTable props;
+					if (pEntity->GetScriptTable() && pEntity->GetScriptTable()->GetValue("Properties", props))
 					{
-						m_powerpoints.push_back(pEntity->GetId());
+						int proto = 0;
+						if (props->GetValue("bPowerStorage", proto) && proto)
+							m_protofactory = pEntity->GetId();
 					}
-					else if (pClass == pFactory)
-					{
-						SmartScriptTable props;
-						if (pEntity->GetScriptTable() && pEntity->GetScriptTable()->GetValue("Properties", props))
-						{
-							int proto = 0;
-							if (props->GetValue("bPowerStorage", proto) && proto)
-								m_protofactory = pEntity->GetId();
-						}
-					}
-					else if (pClass == pHQ)
-						m_hqs.push_back(pEntity->GetId());
+				}
+				else if (pClass == pHQ)
+				{
+					m_hqs.push_back(pEntity->GetId());
 				}
 			}
-
-			m_gotpowerpoints = true;
-			int points = (int)m_powerpoints.size();
-			if (m_lastPowerPoints != points)
-			{
-				m_animSwingOMeter.Invoke("setAliens", SFlashVarValue((int)m_powerpoints.size()));
-				m_lastPowerPoints = points;
-			}
 		}
 
-		if (teamId == 0)
-			teamId = 1;
-
-		if (teamId != m_teamId)
+		m_gotpowerpoints = true;
+		const int points = static_cast<int>(m_powerpoints.size());
+		if (m_lastPowerPoints != points)
 		{
-			m_animSwingOMeter.Invoke("setOwnTeam", teamId == 1 ? "NK" : "US");
-			m_teamId = teamId;
+			m_animSwingOMeter.Invoke("setAliens", SFlashVarValue(points));
+			m_lastPowerPoints = points;
 		}
+	}
 
-		float power[2] = { 0.0f };
-		float hq[2] = { 0.0f };
-		int aliens[2] = { 0 };
-		EntityId proto[2] = { 0 };
+	if (teamId == 0)
+		teamId = 1;
 
-		GetTeamStatus(1, power[0], hq[0], aliens[0], proto[0]);
-		GetTeamStatus(2, power[1], hq[1], aliens[1], proto[1]);
+	if (teamId != m_teamId)
+	{
+		m_animSwingOMeter.Invoke("setOwnTeam", teamId == 1 ? "NK" : "US");
+		m_teamId = teamId;
+	}
 
-		int ihq[2] = { (int)(hq[0] * 100.0f), (int)(hq[1] * 100.0f) };
-		static char chq[2][16];
-		memset(chq, 0, 2 * 16);
-		_itoa(ihq[0], chq[0], 10);
-		_itoa(ihq[1], chq[1], 10);
+	std::array<float, 2> power = { 0.0f, 0.0f };
+	std::array<float, 2> hq = { 0.0f, 0.0f };
+	std::array<int, 2> aliens = { 0, 0 };
+	std::array<EntityId, 2> proto = { 0, 0 };
 
-		std::wstring hqFormatter[2];
-		hqFormatter[0] = g_pGame->GetHUD()->LocalizeWithParams("@mp_HQLife", false, chq[0]);
-		hqFormatter[1] = g_pGame->GetHUD()->LocalizeWithParams("@mp_HQLife", false, chq[1]);
+	GetTeamStatus(1, power[0], hq[0], aliens[0], proto[0]);
+	GetTeamStatus(2, power[1], hq[1], aliens[1], proto[1]);
 
-		SFlashVarValue aliensarg[2] = { aliens[(teamId == 1) ? 0 : 1], aliens[(teamId == 1) ? 1 : 0] };
+	const int ownIndex = (teamId == 1) ? 0 : 1;
+	const int otherIndex = (teamId == 1) ? 1 : 0;
+
+	{
+		SFlashVarValue aliensarg[2] = { aliens[ownIndex], aliens[otherIndex] };
 		if (aliensarg[0].GetInt() != m_lastAlienArg1 || aliensarg[1].GetInt() != m_lastAlienArg2)
 		{
 			m_animSwingOMeter.Invoke("showAliens", aliensarg, 2);
 			m_lastAlienArg1 = aliensarg[0].GetInt();
 			m_lastAlienArg2 = aliensarg[1].GetInt();
 		}
+	}
 
-		SFlashVarValue hqarg[2] = { hqFormatter[(teamId == 1) ? 0 : 1].c_str(), hqFormatter[(teamId == 1) ? 1 : 0].c_str() };
+	{
+		const int ihqOwn = static_cast<int>(hq[ownIndex] * 100.0f);
+		const int ihqOther = static_cast<int>(hq[otherIndex] * 100.0f);
+
+		const std::wstring ownText = g_pGame->GetHUD()->LocalizeWithParams(
+			"@mp_HQLife",
+			false,
+			StringTools::Format("%d", ihqOwn).c_str());
+
+		const std::wstring otherText = g_pGame->GetHUD()->LocalizeWithParams(
+			"@mp_HQLife",
+			false,
+			StringTools::Format("%d", ihqOther).c_str());
+
+		SFlashVarValue hqarg[2] = { ownText.c_str(), otherText.c_str() };
 		if (wcscmp(hqarg[0].GetConstWstrPtr(), m_lastHQArg1.c_str()) || wcscmp(hqarg[1].GetConstWstrPtr(), m_lastHQArg2.c_str()))
 		{
 			m_animSwingOMeter.Invoke("setStatusBars", hqarg, 2);
 			m_lastHQArg1 = hqarg[0].GetConstWstrPtr();
 			m_lastHQArg2 = hqarg[1].GetConstWstrPtr();
 		}
+	}
 
-		SFlashVarValue powerarg[2] = { int(cry_floorf(power[(teamId == 1) ? 0 : 1])), int(cry_floorf(power[(teamId == 1) ? 1 : 0])) };
+	{
+		SFlashVarValue powerarg[2] =
+		{
+			static_cast<int>(cry_floorf(power[ownIndex])),
+			static_cast<int>(cry_floorf(power[otherIndex]))
+		};
+
 		if (powerarg[0].GetInt() != m_lastPowerArg1 || powerarg[1].GetInt() != m_lastPowerArg2)
 		{
 			if (teamId == 1 && m_lastPowerArg1 != power[0])
 				UpdateEnergyBuyList(m_lastPowerArg1, power[0]);
 			else if (teamId == 2 && m_lastPowerArg2 != power[1])
-				UpdateEnergyBuyList(m_lastPowerArg1, power[1]);
+				UpdateEnergyBuyList(m_lastPowerArg2, power[1]); //CryMP fix: use correct previous value for team 2
+
 			m_animSwingOMeter.Invoke("setLoadBar", powerarg, 2);
 			m_lastPowerArg1 = powerarg[0].GetInt();
 			m_lastPowerArg2 = powerarg[1].GetInt();
 		}
+	}
 
-		if (teamId != 0)
+	if (teamId != 0)
+	{
+		int teamCol = 0;
+		const bool blue = (teamId == 1 && proto[0]) || (teamId == 2 && proto[1]);
+		const bool red = (teamId == 1 && !proto[0] && proto[1]) || (teamId == 2 && !proto[1] && proto[0]);
+
+		if (blue)
+			teamCol = 1;
+		else if (red)
+			teamCol = 2;
+
+		if (teamCol != m_lastTeamCol)
 		{
-			int teamCol = 0;
-			bool blue = (teamId == 1 && proto[0]) || (teamId == 2 && proto[1]);
-			bool red = (teamId == 1 && !proto[0] && proto[1]) || (teamId == 2 && !proto[1] && proto[0]);
-			if (blue)
-				teamCol = 1;
-			else if (red)
-				teamCol = 2;
-			if (teamCol != m_lastTeamCol)
-			{
-				m_animSwingOMeter.Invoke("showGlow", teamCol);
-				m_lastTeamCol = teamCol;
-			}
+			m_animSwingOMeter.Invoke("showGlow", teamCol);
+			m_lastTeamCol = teamCol;
+		}
+	}
+
+	if (m_pGameRules->GetCurrentStateId() == 3/*InGame*/ && m_pGameRules->IsTimeLimited())
+	{
+		const int time = static_cast<int>(m_pGameRules->GetRemainingGameTime());
+		if (time != m_lastTimer)
+		{
+			const int mins = time / 60;
+			const int secs = time - (mins * 60);
+			const std::string timeText = StringTools::Format("%02d:%02d", mins, secs);
+
+			SFlashVarValue timearg(timeText.c_str());
+			m_animSwingOMeter.Invoke("setTimer", &timearg, 1);
+
+			m_lastTimer = time;
+		}
+	}
+	else
+	{
+		if (m_lastTimer != -2)
+		{
+			m_animSwingOMeter.Invoke("setTimer", "");
+			m_lastTimer = -2;
+		}
+	}
+
+	m_animSwingOMeter.GetFlashPlayer()->Advance(fDeltaTime);
+	m_animSwingOMeter.GetFlashPlayer()->Render();
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CHUDPowerStruggle::UpdateHexIcons(float fDeltaTime)
+{
+	if (m_capturing)
+	{
+		if (m_updateCaptureProgress)
+		{
+			m_captureProgressSmooth = m_captureProgress;
+			m_updateCaptureProgress = false;
 		}
 
-		if (m_pGameRules->GetCurrentStateId() == 3/*InGame*/ && m_pGameRules->IsTimeLimited())
+		Interpolate(m_captureProgressSmooth, m_captureProgress, 15.f, fDeltaTime);
+
+		const int icap = static_cast<int>(m_captureProgressSmooth * 100.0f);
+		//DrawBar(16.0f, 80.0f, 72.0f, 14.0f, 2.0f, m_captureProgress, Col_DarkGray, Col_LightGray, StringTools::Format("%d%%", icap).c_str(), Col_White, fabsf(cry_sinf(gEnv->pTimer->GetCurrTime()*2.5f)));
+
+		if (icap != m_lastBuildingTime)
 		{
-			const int time = (int)(m_pGameRules->GetRemainingGameTime());
-			if (time != m_lastTimer)
-			{
-				int mins = time / 60;
-				int secs = time - (mins * 60);
-				CryFixedStringT<32> timeFormatter;
-				timeFormatter.Format("%02d:%02d", mins, secs);
-				SFlashVarValue timearg(timeFormatter.c_str());
-				m_animSwingOMeter.Invoke("setTimer", &timearg, 1);
-
-				m_lastTimer = time;
-			}
+			m_currentHexIconState = E_HEX_ICON_CAPTURING;
+			g_pHexIcon->Invoke("setHexIcon", m_currentHexIconState);
+			g_pHexIcon->Invoke("setHexProgress", icap);
+			m_lastBuildingTime = icap;
 		}
-		else
+	}
+	else if (m_currentHexIconState == E_HEX_ICON_CAPTURING)
+	{
+		m_currentHexIconState = E_HEX_ICON_NONE;
+		g_pHexIcon->Invoke("setHexIcon", m_currentHexIconState);
+	}
+
+	bool constructing = false;
+	if (m_constructing)
+	{
+		if (!m_constructionQueued)
 		{
-			if (m_lastTimer != -2)
+			constructing = true;
+			int conTime = 0;
+			if (m_constructionTime != 0.0f)
+				conTime = static_cast<int>(100.0f * (1.0f - (m_constructionTimer / m_constructionTime)));
+
+			if (conTime != m_lastConstructionTime)
 			{
-				m_animSwingOMeter.Invoke("setTimer", "");
-				m_lastTimer = -2;
+				if (m_currentHexIconState != E_HEX_ICON_CAPTURING)
+				{
+					m_currentHexIconState = E_HEX_ICON_BUILDING;
+					g_pHexIcon->Invoke("setHexIcon", m_currentHexIconState);
+					g_pHexIcon->Invoke("setHexProgress", conTime);
+					m_lastConstructionTime = conTime;
+				}
 			}
+
+			m_constructionTimer -= fDeltaTime;
+			if (m_constructionTimer < 0.0f)
+				m_constructionTimer = 0.0f;
 		}
+	}
 
-		m_animSwingOMeter.GetFlashPlayer()->Advance(fDeltaTime);
-		m_animSwingOMeter.GetFlashPlayer()->Render();
-
-		static char text[32];
-		if (m_capturing)
+	if (!constructing)
+	{
+		if (m_currentHexIconState == E_HEX_ICON_BUILDING)
 		{
-			if (m_updateCaptureProgress)
-			{
-				m_captureProgressSmooth = m_captureProgress;
-				m_updateCaptureProgress = false;
-			}
-
-			Interpolate(m_captureProgressSmooth, m_captureProgress, 15.f, fDeltaTime);
-
-			int icap = (int)(m_captureProgressSmooth * 100.0f);
-			//sprintf(text, "%d%%", icap);
-			//DrawBar(16.0f, 80.0f, 72.0f, 14.0f, 2.0f, m_captureProgress, Col_DarkGray, Col_LightGray, text, Col_White, fabsf(cry_sinf(gEnv->pTimer->GetCurrTime()*2.5f)));
-			if (icap != m_lastBuildingTime)
-			{
-				m_currentHexIconState = E_HEX_ICON_CAPTURING;
-				g_pHexIcon->Invoke("setHexIcon", m_currentHexIconState);
-				g_pHexIcon->Invoke("setHexProgress", icap);
-				m_lastBuildingTime = icap;
-			}
+			m_currentHexIconState = E_HEX_ICON_BUY;
+			g_pHexIcon->Invoke("setHexIcon", m_currentHexIconState);
 		}
-		else if (m_currentHexIconState == E_HEX_ICON_CAPTURING)
+
+		if (!m_bInBuyZone && !(m_bInServiceZone && g_pHUD->GetVehicleInterface()->IsAbleToBuy()) && m_currentHexIconState == E_HEX_ICON_BUY)
 		{
 			m_currentHexIconState = E_HEX_ICON_NONE;
 			g_pHexIcon->Invoke("setHexIcon", m_currentHexIconState);
 		}
-
-		bool constructing = false;
-		if (m_constructing)
+		else if (!m_capturing && m_currentHexIconState != E_HEX_ICON_BUY && (m_bInBuyZone || (m_bInServiceZone && g_pHUD->GetVehicleInterface()->IsAbleToBuy())))
 		{
-			if (!m_constructionQueued)
-			{
-				constructing = true;
-				int conTime = 0;
-				if (m_constructionTime != 0.0f)
-					conTime = int(100.0f * (1.0f - (m_constructionTimer / m_constructionTime)));
-				if (conTime != m_lastConstructionTime)
-				{
-					if (m_currentHexIconState != E_HEX_ICON_CAPTURING) //capturing overwrites building by design
-					{
-						m_currentHexIconState = E_HEX_ICON_BUILDING;
-						g_pHexIcon->Invoke("setHexIcon", m_currentHexIconState);
-						g_pHexIcon->Invoke("setHexProgress", conTime);
-						m_lastConstructionTime = conTime;
-					}
-				}
-				m_constructionTimer -= fDeltaTime;
-				if (m_constructionTimer < 0.0f)
-					m_constructionTimer = 0.0f;
-			}
+			m_currentHexIconState = E_HEX_ICON_BUY;
+			g_pHexIcon->Invoke("setHexIcon", m_currentHexIconState);
 		}
-
-		if (!constructing)
-		{
-			if (m_currentHexIconState == E_HEX_ICON_BUILDING)
-			{
-				m_currentHexIconState = E_HEX_ICON_BUY;
-				g_pHexIcon->Invoke("setHexIcon", m_currentHexIconState);
-			}
-			if (!m_bInBuyZone && !(m_bInServiceZone && g_pHUD->GetVehicleInterface()->IsAbleToBuy()) && m_currentHexIconState == E_HEX_ICON_BUY)
-			{
-				m_currentHexIconState = E_HEX_ICON_NONE;
-				g_pHexIcon->Invoke("setHexIcon", m_currentHexIconState);
-			}
-			else if (!m_capturing && m_currentHexIconState != E_HEX_ICON_BUY && (m_bInBuyZone || (m_bInServiceZone && g_pHUD->GetVehicleInterface()->IsAbleToBuy())))
-			{
-				m_currentHexIconState = E_HEX_ICON_BUY;
-				g_pHexIcon->Invoke("setHexIcon", m_currentHexIconState);
-			}
-
-		}
-		//gEnv->pRenderer->Set2DMode(false, 0, 0);
 	}
 }
 
@@ -1890,27 +1939,38 @@ bool CHUDPowerStruggle::IsPlayerSpecial()
 	return false;
 }
 
-//-----------------------------------------------------------------------------------------------------
-void CHUDPowerStruggle::HideSOM(bool hide)
+//------------------------------------------------------------------------
+void CHUDPowerStruggle::SetSOMHidden(ESOMHideReason reason, bool hide)
 {
 	if (hide)
 	{
-		if (m_animSwingOMeter.IsLoaded() && m_animSwingOMeter.GetFlashPlayer()->GetVisible())
-			m_animSwingOMeter.GetFlashPlayer()->SetVisible(false);
+		m_somHideFlags |= reason;
 	}
 	else
 	{
-		if (m_animSwingOMeter.IsLoaded())
-			if (!m_animSwingOMeter.GetFlashPlayer()->GetVisible())
-				m_animSwingOMeter.GetFlashPlayer()->SetVisible(true);
+		if (reason & eSOMHideReason_PDA)
+		{
+			//CryMP start
+			//Closing buymenu - save buypage state
+			SetLastBuyMenuPage(m_eCurBuyMenuPage, true);
+			//CryMP end
+		}
 
-		//CryMP start
-		//Closing buymenu - save buypage state
-		SetLastBuyMenuPage(m_eCurBuyMenuPage, true);
-		//CryMP end
+		m_somHideFlags &= ~reason;
 	}
+
+	const bool shouldHide = (m_somHideFlags != 0);
+
+	if (!m_animSwingOMeter.IsLoaded())
+		return;
+
+	if (m_animSwingOMeter.GetFlashPlayer()->GetVisible() == !shouldHide)
+		return;
+
+	m_animSwingOMeter.GetFlashPlayer()->SetVisible(!shouldHide);
 }
 
+//------------------------------------------------------------------------
 void CHUDPowerStruggle::SetLastBuyMenuPage(BuyMenuPage page, bool updateTime)
 {
 	if (g_pGameCVars->mp_buyPageKeepTime < 1)
