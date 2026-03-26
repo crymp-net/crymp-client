@@ -237,4 +237,10 @@ void InitGameFactory(IGameFramework* pFramework)
 	pFramework->GetIGameRulesSystem()->AddGameRulesAlias("PowerStruggle", "ps");
 	pFramework->GetIGameRulesSystem()->AddGameRulesLevelLocation("PowerStruggle", "multiplayer/ps/");
 #endif //spdemo
+
+	#ifndef  //CryMP added by Sagitta11
+    pFramework->GetIGameRulesSystem()->RegisterGameRules("Co-op", "GameRules");
+	pFramework->GetIGameRulesSystem()->AddGameRulesAlias("Co-op", "co-op"); //Boom!
+	pFramework->GetIGameRulesSystem()->AddGameRulesLevelLocation("Co-op", "multiplayer/Co-op/");
+#endif
 }
