@@ -1130,7 +1130,7 @@ void Launcher::PatchEngine()
 		//MemoryPatch::CrySystem::MakeDX9Default(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::RemoveSecuROM(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::UnhandledExceptions(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::EnableServerPhysicsThread(m_dlls.pCrySystem);
+		//MemoryPatch::CrySystem::EnableServerPhysicsThread(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::HookCryWarning(m_dlls.pCrySystem, &OnCryWarning);
 
 		InstallEarlyEngineInitHook(m_dlls.pCrySystem);
