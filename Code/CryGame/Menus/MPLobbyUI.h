@@ -175,6 +175,7 @@ public:
 public:
   CMPLobbyUI(IFlashPlayer* plr);
   virtual ~CMPLobbyUI();
+  void SetFlashPlayer(IFlashPlayer* plr);
   bool  HandleFSCommand(EGsUiCommand cmd, const char* pArgs);
   void  ClearServerList();
   void  AddServer(const SServerInfo& srv);

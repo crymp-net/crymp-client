@@ -1073,6 +1073,10 @@ CMPLobbyUI::~CMPLobbyUI()
 	gSortType = m_serverlist->m_sorttype;
 }
 
+void CMPLobbyUI::SetFlashPlayer(IFlashPlayer* plr)
+{
+	m_player = plr;
+}
 
 bool CMPLobbyUI::HandleFSCommand(EGsUiCommand cmd, const char* pArgs)
 {
@@ -1336,6 +1340,7 @@ bool  CMPLobbyUI::GetSelectedServer(SServerInfo& srv)
 	if (m_serverlist->m_selectedServer == -1)
 		return false;
 	srv = m_serverlist->GetSelectedServer();
+
 	return true;
 }
 

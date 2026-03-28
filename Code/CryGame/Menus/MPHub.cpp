@@ -336,7 +336,13 @@ bool CMPHub::HandleFSCommand(const char* pCmd, const char* pArgs)
 	case eGUC_enterlobby:
 		if (m_currentScreen)
 		{
-			m_menu = std::make_unique<CMultiPlayerMenu>(false, m_currentScreen, this);
+			if (!m_menu)
+			{
+				m_menu = std::make_unique<CMultiPlayerMenu>(false, m_currentScreen, this);
+			}
+
+			m_menu->UpdateButtonModes();
+
 			if (!IsIngame())
 				m_lastMenu = 2;
 		}
@@ -466,7 +472,9 @@ void CMPHub::SetCurrentFlashScreen(IFlashPlayer* screen, bool ingame)
 			OnUIEvent(SUIEvent(eUIE_destroy, ingame ? 0 : 1));
 			for (int i = m_dialogs.size() - 1;i >= 0;--i)
 				m_dialogs[i]->Close();
-			m_menu = nullptr;
+			
+			//CryMP: Don't delete m_menu incase we disconnect from game
+			///m_menu = nullptr;
 		}
 	}
 
@@ -480,13 +488,28 @@ void CMPHub::SetCurrentFlashScreen(IFlashPlayer* screen, bool ingame)
 	}
 
 	m_menuOpened = false;
+
+	bool updateWindow = false;
+	IFlashPlayer* pPreviousFlash = m_currentScreen;
+
 	m_currentScreen = screen ? screen : (m_currentStartScreen ? m_currentStartScreen : m_currentIngameScreen);
+
+	//Crymp:
+	if (m_menu)
+	{
+		m_menu->SetFlashPlayer(m_currentScreen);
+	}
+
+	if (pPreviousFlash != m_currentScreen)
+	{
+		updateWindow = true;
+	}
 
 	if (m_currentScreen)
 	{
 		if (gEnv->bMultiplayer)
 		{
-			OnShowIngameMenu();
+			OnShowIngameMenu(updateWindow);
 		}
 	}
 
@@ -662,16 +685,6 @@ void CMPHub::SetLoginInfo(const char* nick)
 void CMPHub::DisconnectError(EDisconnectionCause dc, bool connecting, const char* serverMsg/*=NULL*/)
 {
 	const char* msg = VALUE_BY_KEY(dc, gDisconnectErrors);
-
-	//CryMP: Default to ServerList, if server disconnected us
-	if (!connecting)
-	{
-		CFlashMenuObject* pMenu = g_pGame->GetMenu();
-		if (pMenu)
-		{
-			pMenu->ShowInGameMenu(true);
-		}
-	}
 
 	switch (dc)
 	{
@@ -965,15 +978,17 @@ void CMPHub::OnMenuOpened()
 	}
 }
 
-void CMPHub::OnShowIngameMenu()
+void CMPHub::OnShowIngameMenu(bool updateWindow)
 {
-	if (!m_currentScreen)
+	if (!updateWindow || !m_currentScreen)
 		return;
+
 	m_currentScreen->SetVariable("MainWindow", 2);
 	if (m_lastMenu)
+	{
 		m_currentScreen->SetVariable("SubWindow", m_lastMenu);
+	}
 }
-
 
 bool CMPHub::IsIngame()const
 {
