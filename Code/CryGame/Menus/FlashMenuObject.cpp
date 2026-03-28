@@ -1338,8 +1338,8 @@ void CFlashMenuObject::ShowInGameMenu(bool bShow)
 		m_pMusicSystem->SerializeInternal(true);
 
 		m_pMusicSystem->EndTheme(EThemeFade_StopAtOnce, 0, true);
-		m_pMusicSystem->SetTheme("menu", true, true, 5);
-		m_pMusicSystem->SetMood("menu_music", true, true);
+		m_pMusicSystem->SetTheme("menu", false, true, 5);
+		m_pMusicSystem->SetMood("menu_music", false, true);
 	}
 
 	SAFE_HUD_FUNC(SetInMenu(m_bUpdate));
