@@ -2066,11 +2066,11 @@ void CFlashMenuObject::HandleFSCommand(const char* szCommand, const char* szArgs
 	}
 	else if (!_stricmp(szCommand, "menu_winopen"))
 	{
-		///PlaySound(ESound_MenuOpen);
+		PlaySound(ESound_MenuOpen);
 	}
 	else if (!_stricmp(szCommand, "menu_winclose"))
 	{
-		//PlaySound(ESound_MenuClose);
+		PlaySound(ESound_MenuClose);
 	}
 	else if (!_stricmp(szCommand, "main_start"))
 	{
