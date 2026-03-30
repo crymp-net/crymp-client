@@ -37,14 +37,17 @@ private:
 public:
 	CMultiPlayerMenu(bool lan, IFlashPlayer* plr, CMPHub* hub);
 	~CMultiPlayerMenu();
+	void SetFlashPlayer(IFlashPlayer* pPlayer);
 	bool HandleFSCommand(EGsUiCommand cmd, const char* pArgs);
 	void OnUIEvent(const SUIEvent& event);
+	void UpdateButtonModes();
 
 private:
 	void    DisplayServerList();
 	void    SetServerListPos(double sb_pos);
 	void    ChangeServerListPos(int dir);//either +1 or -1
 	void    UpdateServerList();
+	void    SetResumeEnabled(bool enable);
 	void    StopServerListUpdate();
 	void    SelectServer(int id);
 	void    JoinServer();

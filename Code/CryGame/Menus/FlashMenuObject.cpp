@@ -233,6 +233,7 @@ CFlashMenuObject::CFlashMenuObject()
 
 }
 
+
 //-----------------------------------------------------------------------------------------------------
 
 CFlashMenuObject::~CFlashMenuObject()
@@ -350,7 +351,7 @@ void CFlashMenuObject::PlaySound(ESound eSound, bool bPlay)
 {
 	if (!gEnv->pSoundSystem) return;
 
-	const char* szSound = NULL;
+	const char* szSound = nullptr;
 
 	ESoundSemantic eSoundSemantic = eSoundSemantic_None;
 	uint32 nFlags = 0;
@@ -928,6 +929,9 @@ void CFlashMenuObject::MP_ResetEnd()
 		{
 			m_apFlashMenuScreens[MENUSCREEN_FRONTENDRESET]->Unload();
 			m_bUpdate = false;
+
+			//CryMP: Preload
+			PreloadIngameMenu();
 		}
 		SAFE_DELETE(m_apFlashMenuScreens[MENUSCREEN_FRONTENDRESET]);
 		m_pCurrentFlashMenuScreen = NULL;
@@ -1320,7 +1324,9 @@ void CFlashMenuObject::ShowInGameMenu(bool bShow)
 	{
 		// prevents to play ambience if window got minimized or alt-tapped
 		if (!gEnv->pSoundSystem->IsPaused())
+		{
 			PlaySound(ESound_MenuAmbience);
+		}
 	}
 
 	if (!gEnv->bMultiplayer)
@@ -1330,9 +1336,10 @@ void CFlashMenuObject::ShowInGameMenu(bool bShow)
 	if (bShow && m_pMusicSystem)
 	{
 		m_pMusicSystem->SerializeInternal(true);
-		m_pMusicSystem->EndTheme(EThemeFade_FadeOut, 0, true);
-		m_pMusicSystem->SetTheme("menu", true, false);
-		m_pMusicSystem->SetMood("menu_music", true, true);
+
+		m_pMusicSystem->EndTheme(EThemeFade_StopAtOnce, 0, true);
+		m_pMusicSystem->SetTheme("menu", false, true, 5);
+		m_pMusicSystem->SetMood("menu_music", false, true);
 	}
 
 	SAFE_HUD_FUNC(SetInMenu(m_bUpdate));
@@ -1344,13 +1351,20 @@ void CFlashMenuObject::ShowInGameMenu(bool bShow)
 
 //-----------------------------------------------------------------------------------------------------
 
-void CFlashMenuObject::HideInGameMenuNextFrame(bool bRestoreGameMusic)
+void CFlashMenuObject::HideInGameMenuNextFrame(bool bRestoreGameMusic, bool doNotUnload)
 {
 	if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->IsLoaded())
 	{
 		if (gEnv->pInput) gEnv->pInput->ClearKeyState();
 
 		m_bDestroyInGameMenuPending = true;
+
+		const bool inGame = g_pGame->GetIGameFramework()->IsGameStarted();
+		if (doNotUnload && inGame)
+		{
+			m_doNotUnloadInGameMenu = true;
+		}
+
 		m_bUpdate = false;
 		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->SetVisible(false);
 
@@ -1359,7 +1373,7 @@ void CFlashMenuObject::HideInGameMenuNextFrame(bool bRestoreGameMusic)
 		// stop menu music *before* pausing the game
 		if (m_pMusicSystem)
 		{
-			m_pMusicSystem->EndTheme(EThemeFade_FadeOut, 0, true);
+			m_pMusicSystem->EndTheme(EThemeFade_StopAtOnce, 0, true);
 			if (bRestoreGameMusic)
 				m_pMusicSystem->SerializeInternal(false);
 			PlaySound(ESound_MenuAmbience, false);
@@ -2283,9 +2297,13 @@ void CFlashMenuObject::HandleFSCommand(const char* szCommand, const char* szArgs
 		m_bVirtualKeyboardFocus = false;
 		m_bUpdate = !m_bUpdate;
 		if (m_bUpdate)
+		{
 			ShowInGameMenu(m_bUpdate);
+		}
 		else
-			HideInGameMenuNextFrame(true);
+		{
+			HideInGameMenuNextFrame(true, true);
+		}
 
 		if (IActor* pPlayer = g_pGame->GetIGameFramework()->GetClientActor())
 		{
@@ -2325,6 +2343,8 @@ void CFlashMenuObject::HandleFSCommand(const char* szCommand, const char* szArgs
 	}
 	else if (!strcmp(szCommand, "Return"))
 	{
+		m_returnToStartMenu = true;
+
 		m_bIsEndingGameContext = true;
 		if (INetChannel* pCh = g_pGame->GetIGameFramework()->GetClientChannel())
 			pCh->Disconnect(eDC_UserRequested, "User left the game");
@@ -2812,78 +2832,94 @@ void CFlashMenuObject::DestroyStartMenu()
 
 //-----------------------------------------------------------------------------------------------------
 
-void CFlashMenuObject::InitIngameMenu()
+void CFlashMenuObject::PreloadIngameMenu()
 {
-	for (int iSound = 0; iSound < ESound_Last; iSound++)
+	//CryLogAlways("PreloadIngameMenu $3Preloading In Game Menu!");
+
+	for (int iSound = 0; iSound < ESound_Last; ++iSound)
 	{
 		m_soundIDs[iSound] = INVALID_SOUNDID;
 	}
 
 	if (!m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME])
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME] = new CFlashMenuScreen;
-
-	if (!m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->IsLoaded())
 	{
-		this->ShowMouseCursor(true);
+		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME] = new CFlashMenuScreen;
+	}
 
-#ifdef CRYSIS_BETA
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Load("Libs/UI/Menus_IngameMenu_Beta.gfx");
-#else
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Load("Libs/UI/Menus_IngameMenu.gfx");
-#endif
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->GetFlashPlayer()->SetFSCommandHandler(this);
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("setLineColor", SFlashVarValue(g_pGameCVars->hud_colorLine));
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("setOverColor", SFlashVarValue(g_pGameCVars->hud_colorOver));
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("setTextColor", SFlashVarValue(g_pGameCVars->hud_colorText));
+	CFlashMenuScreen* pScreen = m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME];
+	if (!pScreen)
+	{
+		return;
+	}
 
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->SetVariable("GamepadAvailableVar", m_iGamepadsConnected ? true : false);
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("setGameMode", gEnv->bMultiplayer ? "MP" : "SP");
+	if (!pScreen->IsLoaded())
+	{
+		pScreen->Load("Libs/UI/Menus_IngameMenu.gfx");
+
+		pScreen->GetFlashPlayer()->SetFSCommandHandler(this);
+		pScreen->Invoke("setLineColor", SFlashVarValue(g_pGameCVars->hud_colorLine));
+		pScreen->Invoke("setOverColor", SFlashVarValue(g_pGameCVars->hud_colorOver));
+		pScreen->Invoke("setTextColor", SFlashVarValue(g_pGameCVars->hud_colorText));
+
+		pScreen->SetVariable("GamepadAvailableVar", m_iGamepadsConnected ? true : false);
+		pScreen->Invoke("setGameMode", gEnv->bMultiplayer ? "MP" : "SP");
 
 		if (g_pGame->GetIGameFramework()->CanSave() == false)
-			m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("disableSaveGame", true);
+		{
+			pScreen->Invoke("disableSaveGame", true);
+		}
 
 		char strProductVersion[256];
 		gEnv->pSystem->GetProductVersion().ToString(strProductVersion);
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("setGameVersion", strProductVersion);
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->SetVariable("PBLoaded", gEnv->pNetwork->IsPbInstalled());
+		pScreen->Invoke("setGameVersion", strProductVersion);
+
+		pScreen->SetVariable("PBLoaded", gEnv->pNetwork->IsPbInstalled());
+
 #if defined(WIN64)
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("set64Bit", true);
+		pScreen->Invoke("set64Bit", true);
 #endif
 
-		//SModInfo info;
-		//if(g_pGame->GetIGameFramework()->GetModInfo(&info))
-		//{
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("addLoadedModText", CRYMP_MOD_TEXT);
-		//}
+		pScreen->Invoke("addLoadedModText", CRYMP_MOD_TEXT);
 
 		if (m_pPlayerProfileManager)
 		{
 			IPlayerProfile* pProfile = m_pPlayerProfileManager->GetCurrentProfile(m_pPlayerProfileManager->GetCurrentUser());
 			if (pProfile)
-				m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("setActiveProfile", GetMappedProfileName(pProfile->GetName()));
+			{
+				pScreen->Invoke("setActiveProfile", GetMappedProfileName(pProfile->GetName()));
+			}
 		}
 
-		//m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("Directx10", (gEnv->pRenderer->GetRenderType() == eRT_DX10)?true:false);
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("Directx10", true);
+		pScreen->Invoke("Directx10", true);
+
 		time_t today = time(NULL);
 		struct tm theTime;
 		theTime = *localtime(&today);
-		SFlashVarValue args[3] = { (theTime.tm_mon + 1),theTime.tm_mday, (theTime.tm_year + 1900) };
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("setToday", args, 3);
+		SFlashVarValue args[3] = { (theTime.tm_mon + 1), theTime.tm_mday, (theTime.tm_year + 1900) };
+		pScreen->Invoke("setToday", args, 3);
 
-
-		if (m_pPlayerProfileManager)
-		{
-			IPlayerProfile* pProfile = m_pPlayerProfileManager->GetCurrentProfile(m_pPlayerProfileManager->GetCurrentUser());
-			if (pProfile)
-				m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("setActiveProfile", GetMappedProfileName(pProfile->GetName()));
-		}
+		pScreen->GetFlashPlayer()->Advance(1.0f);
 	}
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CFlashMenuObject::InitIngameMenu()
+{
+	PreloadIngameMenu();
+
+	this->ShowMouseCursor(true);
+
 	m_pCurrentFlashMenuScreen = m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME];
+
 	HardwareEvaluation();
+
 	if (m_multiplayerMenu)
 	{
 		m_multiplayerMenu->SetCurrentFlashScreen(m_pCurrentFlashMenuScreen->GetFlashPlayer(), true);
+
+		//CryMP: Update server list when opening
+		m_multiplayerMenu->HandleFSCommand("UpdateServerList", "");
 	}
 
 	g_pGame->GetOptions()->UpdateFlashOptions();
@@ -2893,16 +2929,23 @@ void CFlashMenuObject::InitIngameMenu()
 
 //-----------------------------------------------------------------------------------------------------
 
-void CFlashMenuObject::DestroyIngameMenu()
+void CFlashMenuObject::DestroyIngameMenu(bool unload)
 {
 	if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->IsLoaded())
 	{
-		if (m_multiplayerMenu)
-			m_multiplayerMenu->SetCurrentFlashScreen(0, true);
-
 		this->ShowMouseCursor(false);
-		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Unload();
+
+		if (unload)
+		{
+			if (m_multiplayerMenu)
+			{
+				m_multiplayerMenu->SetCurrentFlashScreen(nullptr, true);
+			}
+
+			m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Unload();
+		}	
 	}
+
 	if (g_pGame->GetIGameFramework()->IsGameStarted())
 		ReloadHUDMovies();
 }
@@ -3005,8 +3048,11 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 		// Do no stop update if user hasn't asked the game to start!
 		if (!m_apFlashMenuScreens[MENUSCREEN_FRONTENDLOADING]->IsLoaded())
 			m_bUpdate = false;
-		DestroyIngameMenu();
+
+		DestroyIngameMenu(m_doNotUnloadInGameMenu == false);
+
 		m_bDestroyInGameMenuPending = false;
+		m_doNotUnloadInGameMenu = false;
 	}
 
 	if (m_bDestroyStartMenuPending && !m_bIgnorePendingEvents)
@@ -3461,11 +3507,12 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 					}
 				}
 			}
-			else
+			else if (m_pCurrentFlashMenuScreen != m_apFlashMenuScreens[MENUSCREEN_FRONTENDRESET])
 			{
 				// TODO: use Localize instead of LocalizeEnglish once we have the new CryFont
 				const std::string loadingMsg = LocalizationManager::GetInstance().LocalizeEnglish(status);
-				gEnv->pRenderer->Draw2dLabel(sx, sy, size, color, false, "%s", loadingMsg.c_str());
+
+				DisplayLoadingMessage(fDeltaTime, loadingMsg.c_str());
 			}
 		}
 	}
@@ -3855,9 +3902,22 @@ void CFlashMenuObject::OnActionEvent(const SActionEvent& event)
 		if (m_multiplayerMenu) m_multiplayerMenu->OnUIEvent(SUIEvent(eUIE_connectFailed, event.m_value, event.m_description));
 		break;
 	case eAE_disconnected:
-		//TODO: Show start menu if game not started
-		if (m_multiplayerMenu) m_multiplayerMenu->OnUIEvent(SUIEvent(eUIE_disconnect, event.m_value, event.m_description));
+	{
+		if (!m_returnToStartMenu)
+		{
+			//DestroyIngameMenu();
+			InitStartMenu();
+		}
+
+		m_returnToStartMenu = false;
+
+		if (m_multiplayerMenu)
+		{
+			m_multiplayerMenu->OnUIEvent(SUIEvent(eUIE_disconnect, event.m_value, event.m_description));
+		}
+
 		break;
+	}
 	case eAE_channelCreated:
 		if (m_multiplayerMenu) m_multiplayerMenu->OnUIEvent(SUIEvent(eUIE_connect));
 		break;
@@ -3886,6 +3946,8 @@ void CFlashMenuObject::OnActionEvent(const SActionEvent& event)
 			m_apFlashMenuScreens[MENUSCREEN_FRONTENDLOADING]->Unload();
 			m_bLoadingDone = false;
 			m_bUpdate = false;
+			//CryMP: Preload
+			PreloadIngameMenu();
 		}
 		break;
 	case eAE_earlyPreUpdate:
@@ -3984,6 +4046,26 @@ void CFlashMenuObject::SetDifficulty(int level)
 			LoadDifficultyConfig(iDiff);
 		}
 	}
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CFlashMenuObject::DisplayLoadingMessage(float fDeltaTime, const char *message)
+{
+	if (m_pLoadingMessage == nullptr)
+	{
+		m_pLoadingMessage = new CFlashMenuScreen;
+		m_pLoadingMessage->Load("Libs/UI/HUD_LoadingMessage.gfx");
+	}
+
+	SFlashVarValue args[1] = { message };
+	m_pLoadingMessage->GetFlashPlayer()->Invoke("setText", args, sizeof(args) / sizeof(args[0]));
+
+	SFlashVarValue colorArgs[1] = { (int)(g_pGameCVars->hud_colorOver & 0x00FFFFFF) };
+	m_pLoadingMessage->GetFlashPlayer()->Invoke("setTextColor", colorArgs, 1);
+
+	m_pLoadingMessage->GetFlashPlayer()->Advance(fDeltaTime);
+	m_pLoadingMessage->GetFlashPlayer()->Render();
 }
 
 //-----------------------------------------------------------------------------------------------------

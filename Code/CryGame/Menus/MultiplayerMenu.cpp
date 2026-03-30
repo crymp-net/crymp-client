@@ -1000,6 +1000,12 @@ CMultiPlayerMenu::~CMultiPlayerMenu()
 	}
 }
 
+void CMultiPlayerMenu::SetFlashPlayer(IFlashPlayer* pPlayer)
+{
+	m_ui->SetFlashPlayer(pPlayer);
+	m_creategame->SetFlashPlayer(pPlayer);
+}
+
 bool CMultiPlayerMenu::HandleFSCommand(EGsUiCommand cmd, const char* pArgs)
 {
 	if (!m_browser)
@@ -1061,7 +1067,18 @@ void    CMultiPlayerMenu::UpdateServerList()
 	}
 }
 
-void    CMultiPlayerMenu::StopServerListUpdate()
+void CMultiPlayerMenu::UpdateButtonModes()
+{
+	m_ui->SetJoinButtonMode(m_hub->IsIngame() ? eJBM_disconnect : eJBM_default);
+	m_ui->EnableTabs(false, false, false);
+}
+
+void CMultiPlayerMenu::SetResumeEnabled(bool enable)
+{
+	m_ui->EnableResume(enable);
+}
+
+void CMultiPlayerMenu::StopServerListUpdate()
 {
 	m_browser->Stop();
 	m_ui->FinishUpdate();
