@@ -676,11 +676,16 @@ bool CFlashMenuObject::OnInputEvent(const SInputEvent& rInputEvent)
 	{
 		if (eIS_Pressed == rInputEvent.state)
 		{
-			//CryMP: F5 for refreshing serverlist
-			if (rInputEvent.keyId == eKI_F5)
+			if (IsActive())
 			{
-				if (m_multiplayerMenu)
-					m_multiplayerMenu->HandleFSCommand("UpdateServerList", "");
+				//CryMP: F5 for refreshing serverlist
+				if (rInputEvent.keyId == eKI_F5)
+				{
+					if (m_pCurrentFlashMenuScreen && m_multiplayerMenu)
+					{
+						m_multiplayerMenu->HandleFSCommand("UpdateServerList", "");
+					}
+				}
 			}
 
 			//CryMP: KeyBinds
@@ -698,7 +703,7 @@ bool CFlashMenuObject::OnInputEvent(const SInputEvent& rInputEvent)
 			return false;
 		}
 
-		if (m_bUpdate && (eIS_Pressed == rInputEvent.state || eIS_Released == rInputEvent.state))
+		if (IsActive() && (eIS_Pressed == rInputEvent.state || eIS_Released == rInputEvent.state))
 		{
 			if (rInputEvent.state == eIS_Released)
 				m_repeatEvent.keyId = eKI_Unknown;
@@ -745,12 +750,12 @@ bool CFlashMenuObject::OnInputEvent(const SInputEvent& rInputEvent)
 			if (connected != m_bControllerConnected)
 			{
 				bool handled = false;
-				if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->IsLoaded())
+				if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->GetVisible())
 				{
 					m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("GamepadAvailable", m_iGamepadsConnected ? true : false);
 					handled = true;
 				}
-				if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART]->IsLoaded())
+				if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART]->GetVisible())
 				{
 					m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART]->Invoke("GamepadAvailable", m_iGamepadsConnected ? true : false);
 					handled = true;
@@ -809,13 +814,13 @@ bool CFlashMenuObject::OnInputEvent(const SInputEvent& rInputEvent)
 		// Virtual keyboard navigation
 		if (move && commit)
 		{
-			if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->IsLoaded())
+			if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->GetVisible())
 				m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Invoke("moveCursor", direction);
-			if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART]->IsLoaded())
+			if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART]->GetVisible())
 				m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART]->Invoke("moveCursor", direction);
 		}
 	}
-	else if (m_pCurrentFlashMenuScreen && m_pCurrentFlashMenuScreen->IsLoaded())
+	else if (m_pCurrentFlashMenuScreen && m_pCurrentFlashMenuScreen->GetVisible())
 	{
 		// Controller menu navigation:
 		//	Select menu item
@@ -2943,7 +2948,7 @@ void CFlashMenuObject::DestroyIngameMenu(bool unload)
 			}
 
 			m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Unload();
-		}	
+		}
 	}
 
 	if (g_pGame->GetIGameFramework()->IsGameStarted())
@@ -2962,7 +2967,7 @@ void CFlashMenuObject::DestroyMenusAtNextFrame()
 
 void CFlashMenuObject::HardwareEvaluation()
 {
-	if (!m_pCurrentFlashMenuScreen->IsLoaded())
+	if (!m_pCurrentFlashMenuScreen->GetVisible())
 		return;
 
 	int hardware = gEnv->pSystem->GetMaxConfigSpec();
@@ -3492,7 +3497,7 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 						{
 							SFlashVarValue args[2] = { "@ui_circle_jump", "@ui_menu_ON" };
 							pLS->Invoke("setServerInfo3", args, 2);
-						} 
+						}
 						else
 						{
 							SFlashVarValue args[2] = { "@ui_circle_jump", pCVar3->GetFVal() };
