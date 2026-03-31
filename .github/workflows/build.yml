@@ -49,7 +49,8 @@ jobs:
           'artifact_name=CryMP-Client${{ inputs.bits }}-' + $version >> $env:GITHUB_OUTPUT
 
       - name: Sign
-        if: github.repository_owner == 'crymp-net'
+        # skip code signing in PRs from forked repositories due to missing secrets
+        if: github.secret_source == 'Actions'
         run: |
           Get-ChildItem -Path '${{ env.BUILD_DIR }}' | Where-Object { $_.Extension -eq '.exe' } | ForEach-Object {
             $checksum = (Get-FileHash -Path $_.FullName -Algorithm SHA256).Hash.ToLower()
