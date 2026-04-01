@@ -226,11 +226,6 @@ CFlashMenuObject::CFlashMenuObject()
 	// create the avi reader;
 	//m_pAVIReader = g_pISystem->CreateAVIReader();
 	//m_pAVIReader->OpenFile("Crysis_main_menu_background.avi");
-
-
-
-
-
 }
 
 
@@ -3449,19 +3444,6 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 
 		if (show)
 		{
-			const float y = 580.f;
-			const float x = 235.f;
-			const float sy = gEnv->pRenderer->ScaleCoordY(y);
-			const float sx = gEnv->pRenderer->ScaleCoordX(x + x * 0.5f);
-			const auto ct = g_pGameCVars->hud_colorOver + 50;
-
-			const float r = ((ct >> 16) & 0xFF) / 255.0f;
-			const float g = ((ct >> 8) & 0xFF) / 255.0f;
-			const float b = ((ct >> 0) & 0xFF) / 255.0f;
-
-			float color[]{ r, g, b, 1.0 };
-			const float size = 1.0f + (width / 800.f) * 0.3f;
-
 			if (!skipDots)
 			{
 				status.append(m_dotCounter, '.');

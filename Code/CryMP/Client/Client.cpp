@@ -7,6 +7,7 @@
 #include "CryCommon/CryNetwork/INetwork.h"
 #include "CryCommon/CryScriptSystem/IScriptSystem.h"
 #include "CryCommon/Cry3DEngine/I3DEngine.h"
+#include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryGame/Game.h"
 #include "CryMP/Common/Executor.h"
 #include "CryMP/Common/GSMasterHook.h"
@@ -281,6 +282,8 @@ void Client::Init(IGameFramework *pGameFramework)
 	m_pGame->Init(pGameFramework);
 
 	m_pFileCache->Cleanup(86400);
+
+	WarmupRendererTextPath();
 }
 
 void Client::UpdateLoop()
@@ -715,4 +718,22 @@ void Client::ReloadLocalizationLua()
 	{
 		CryLogAlways("$4[CryMP] Failed to load Localization.lua");
 	}
+}
+
+void Client::WarmupRendererTextPath()
+{
+	// TEMP WORKAROUND for black console bug (mainly DX10).
+	//
+	// Queues one 2D text draw so the renderer/CryFont text path is initialized
+	// early. Without this, the console can render black on some maps
+	// (for example Poolday) because the text pipeline was not touched yet.
+	//
+	// Note:
+	// - The string must not be empty, otherwise fix won't work
+	// - This draw only happens for one frame and is effectively not visible.
+	//
+	// Proper fix belongs in the renderer / CryFont initialization path.
+
+	float color[] = { 1.f, 1.f, 1.f, 0.f };
+	gEnv->pRenderer->Draw2dLabel(1.f, 1.f, 1.f, color, false, ".");
 }
