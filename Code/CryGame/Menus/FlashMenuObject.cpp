@@ -431,7 +431,9 @@ void CFlashMenuObject::PlaySound(ESound eSound, bool bPlay)
 		{
 			ISound* pOldSound = gEnv->pSoundSystem->GetSound(m_soundIDs[eSound]);
 			if (pOldSound)
+			{
 				pOldSound->Stop();
+			}
 
 			m_soundIDs[eSound] = INVALID_SOUNDID;
 		}
@@ -442,7 +444,6 @@ void CFlashMenuObject::PlaySound(ESound eSound, bool bPlay)
 			pSound->SetSemantic(eSoundSemantic);
 			m_soundIDs[eSound] = pSound->GetId();
 			pSound->Play();
-
 		}
 	}
 	else if (m_soundIDs[eSound] != INVALID_SOUNDID)
@@ -1116,7 +1117,7 @@ void CFlashMenuObject::OnLoadingStart(ILevelInfo* pLevel)
 	m_bUpdate = true;
 	m_nBlackGraceFrames = 0;
 
-	if (m_pMusicSystem && m_fMusicFirstTime == -1.0f)
+	if (m_pMusicSystem && m_multiplayerMenu && m_multiplayerMenu->IsConnectingToPopulatedServer())
 	{
 		m_pMusicSystem->SetMood("multiplayer_high");
 	}
@@ -1371,6 +1372,21 @@ void CFlashMenuObject::HideInGameMenuNextFrame(bool bRestoreGameMusic, bool doNo
 		}
 
 		m_bUpdate = false;
+
+		if (m_pCurrentFlashMenuScreen && m_pCurrentFlashMenuScreen->GetFlashPlayer())
+		{
+			//CryMP: Stop credits if active
+			SFlashVarValue value[1] = { "" };
+			if (m_pCurrentFlashMenuScreen->GetFlashPlayer()->GetVariable("_root.CreditStartsAlpha._visible", value))
+			{
+				const int openCredits = value->GetInt();
+				if (openCredits)
+				{
+					m_pCurrentFlashMenuScreen->Invoke("stopCredits", true);
+				}
+			}
+		}
+
 		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->SetVisible(false);
 
 		LockPlayerInputs(m_bUpdate);
@@ -2526,12 +2542,25 @@ void CFlashMenuObject::HandleFSCommand(const char* szCommand, const char* szArgs
 			m_pMusicSystem->SetTheme("reactor_slow", false, false);
 			m_pMusicSystem->SetMood("ambient", true, false);
 		}
+
+		m_creditsPlaying = true;
 	}
 	else if (!strcmp(szCommand, "credits_stop"))
 	{
 		PlaySound(ESound_MenuAmbience);
 		m_pMusicSystem->SetTheme("menu", true, false);
 		m_pMusicSystem->SetMood("menu_music", true, true);
+
+		m_creditsPlaying = false;
+	}
+	else if (!strcmp(szCommand, "credits_stop_ingame"))
+	{
+		//CryMP: We're closing menu, don't start menu music
+		/*PlaySound(ESound_MenuAmbience);
+		m_pMusicSystem->SetTheme("menu", true, false);
+		m_pMusicSystem->SetMood("menu_music", true, true);*/
+
+		m_creditsPlaying = false;
 	}
 	else if (!strcmp(szCommand, "credit_group1"))
 	{
@@ -2737,11 +2766,14 @@ bool CFlashMenuObject::Load()
 
 //-----------------------------------------------------------------------------------------------------
 
-void CFlashMenuObject::InitStartMenu()
+void CFlashMenuObject::InitStartMenu(bool fromDisconnect)
 {
-	for (int iSound = 0; iSound < ESound_Last; iSound++)
+	if (!fromDisconnect)
 	{
-		m_soundIDs[iSound] = INVALID_SOUNDID;
+		for (int iSound = 0; iSound < ESound_Last; iSound++)
+		{
+			m_soundIDs[iSound] = INVALID_SOUNDID;
+		}
 	}
 
 	if (!m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART])
@@ -3137,7 +3169,12 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 		{
 			m_pMusicSystem->LoadFromXML("music/act1.xml", true, false);
 			m_pMusicSystem->SetTheme("menu", true, false);
-			m_pMusicSystem->SetDefaultMood("menu_music_1st_time");
+			if (!m_firstTimeMusic)
+			{
+				m_pMusicSystem->SetDefaultMood("menu_music_1st_time");
+				m_firstTimeMusic = true;
+			}
+
 			m_fMusicFirstTime = gEnv->pTimer->GetAsyncTime().GetSeconds();
 		}
 
@@ -3145,7 +3182,9 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 		{
 			// prevents to play ambience if window got minimized or alt-tapped
 			if (!gEnv->pSoundSystem->IsPaused())
+			{
 				PlaySound(ESound_MenuAmbience);
+			}
 		}
 	}
 
@@ -3347,7 +3386,11 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 		if (m_bExclusiveVideo == false && m_pCurrentFlashMenuScreen && m_pCurrentFlashMenuScreen->IsLoaded())
 		{
 			//CryMP: Custom menu animations speed
-			m_pCurrentFlashMenuScreen->GetFlashPlayer()->Advance(fDeltaTime * g_pGameCVars->mp_menuSpeed);
+			//Keep default menu speed for credits
+
+			const float menuSpeed = m_creditsPlaying ? fDeltaTime : fDeltaTime * g_pGameCVars->mp_menuSpeed;
+
+			m_pCurrentFlashMenuScreen->GetFlashPlayer()->Advance(menuSpeed);
 			m_pCurrentFlashMenuScreen->GetFlashPlayer()->Render();
 		}
 	}
@@ -3911,7 +3954,7 @@ void CFlashMenuObject::OnActionEvent(const SActionEvent& event)
 		if (!m_returnToStartMenu)
 		{
 			//DestroyIngameMenu();
-			InitStartMenu();
+			InitStartMenu(true);
 		}
 
 		m_returnToStartMenu = false;

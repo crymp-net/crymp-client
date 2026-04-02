@@ -136,7 +136,7 @@ public:
 	void ShowMenuMessage(const char *message);
   bool IsOnScreen(EMENUSCREEN screen);
 	bool IsControllerConnected() const { return m_bControllerConnected; }
-	void InitStartMenu();
+	void InitStartMenu(bool fromDisconnect = false);
 	void InitIngameMenu();
 	void PreloadIngameMenu();
 	void DestroyMenusAtNextFrame();
@@ -406,6 +406,8 @@ private:
 private:
 	unsigned int m_dotCounter = 0;
 	bool m_returnToStartMenu = false;
+	bool m_creditsPlaying = false;
+	bool m_firstTimeMusic = false;
 
 };
 

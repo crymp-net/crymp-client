@@ -1112,6 +1112,8 @@ void CMultiPlayerMenu::JoinServer()
 		serv.m_recent = true;
 		m_ui->UpdateServer(serv);
 		m_hub->ShowLoadingDlg("@ui_connecting_to", serv.m_hostName.c_str());
+
+		m_connectingToPopulatedServer = serv.m_numPlayers > 1;
 	}
 }
 
