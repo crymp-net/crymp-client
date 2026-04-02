@@ -211,6 +211,7 @@ public:
 	}
 
 	void ReloadLocalizationLua();
+	void WarmupRendererTextPath();
 
 private:
 
