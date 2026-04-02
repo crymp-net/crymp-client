@@ -116,7 +116,7 @@ CFlashMenuObject* CFlashMenuObject::s_pFlashMenuObject = NULL;
 CFlashMenuObject::CFlashMenuObject()
 	: m_pFlashPlayer(0)
 	, m_pVideoPlayer(0)
-	, m_multiplayerMenu(0)
+	, m_mpHub(0)
 {
 	s_pFlashMenuObject = this;
 
@@ -217,7 +217,7 @@ CFlashMenuObject::CFlashMenuObject()
 
 	m_pMusicSystem = gEnv->pSystem->GetIMusicSystem();
 
-	m_multiplayerMenu = new CMPHub();
+	m_mpHub = new CMPHub();
 	m_bExclusiveVideo = false;
 
 	if (gEnv->bEditor)
@@ -238,7 +238,7 @@ CFlashMenuObject::CFlashMenuObject()
 
 CFlashMenuObject::~CFlashMenuObject()
 {
-	SAFE_DELETE(m_multiplayerMenu);
+	SAFE_DELETE(m_mpHub);
 
 	SAFE_RELEASE(m_pFlashPlayer);
 	SAFE_RELEASE(m_pVideoPlayer);
@@ -682,9 +682,9 @@ bool CFlashMenuObject::OnInputEvent(const SInputEvent& rInputEvent)
 				//CryMP: F5 for refreshing serverlist
 				if (rInputEvent.keyId == eKI_F5)
 				{
-					if (m_pCurrentFlashMenuScreen && m_multiplayerMenu)
+					if (m_pCurrentFlashMenuScreen && m_mpHub)
 					{
-						m_multiplayerMenu->HandleFSCommand("UpdateServerList", "");
+						m_mpHub->HandleFSCommand("UpdateServerList", "");
 					}
 				}
 			}
@@ -1117,7 +1117,7 @@ void CFlashMenuObject::OnLoadingStart(ILevelInfo* pLevel)
 	m_bUpdate = true;
 	m_nBlackGraceFrames = 0;
 
-	if (m_pMusicSystem && m_multiplayerMenu && m_multiplayerMenu->IsConnectingToPopulatedServer())
+	if (m_pMusicSystem && m_mpHub && m_mpHub->IsConnectingToPopulatedServer())
 	{
 		m_pMusicSystem->SetMood("multiplayer_high");
 	}
@@ -2131,11 +2131,11 @@ void CFlashMenuObject::HandleFSCommand(const char* szCommand, const char* szArgs
 	}
 	else if (!strcmp(szCommand, "EnterLoginScreen"))
 	{
-		m_multiplayerMenu->SetIsInLogin(true);
+		m_mpHub->SetIsInLogin(true);
 	}
 	else if (!strcmp(szCommand, "LeaveLoginScreen"))
 	{
-		m_multiplayerMenu->SetIsInLogin(false);
+		m_mpHub->SetIsInLogin(false);
 	}
 	else if (!strcmp(szCommand, "GotoLink_Terms"))
 	{
@@ -2296,8 +2296,8 @@ void CFlashMenuObject::HandleFSCommand(const char* szCommand, const char* szArgs
 		  gEnv->pConsole->ExecuteString("g_quickGameStop");
 		  m_QuickGame = false;
 		}*/
-		if (m_multiplayerMenu)
-			m_multiplayerMenu->HandleFSCommand(szCommand, szArgs);
+		if (m_mpHub)
+			m_mpHub->HandleFSCommand(szCommand, szArgs);
 
 		m_pCurrentFlashMenuScreen = m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART];
 		if (m_pMusicSystem)
@@ -2735,7 +2735,7 @@ void CFlashMenuObject::HandleFSCommand(const char* szCommand, const char* szArgs
 
 	// Credits End
 
-	else if (m_multiplayerMenu && m_multiplayerMenu->HandleFSCommand(szCommand, szArgs))
+	else if (m_mpHub && m_mpHub->HandleFSCommand(szCommand, szArgs))
 	{
 		//handled by Multiplayer menu
 	}
@@ -2833,9 +2833,9 @@ void CFlashMenuObject::InitStartMenu(bool fromDisconnect)
 
 	m_pCurrentFlashMenuScreen = m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART];
 	HardwareEvaluation();
-	if (m_multiplayerMenu)
+	if (m_mpHub)
 	{
-		m_multiplayerMenu->SetCurrentFlashScreen(m_pCurrentFlashMenuScreen->GetFlashPlayer(), false);
+		m_mpHub->SetCurrentFlashScreen(m_pCurrentFlashMenuScreen->GetFlashPlayer(), false);
 	}
 	m_bIgnoreEsc = true;
 	m_bExclusiveVideo = false;
@@ -2854,8 +2854,8 @@ void CFlashMenuObject::DestroyStartMenu()
 {
 	if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART]->IsLoaded())
 	{
-		if (m_multiplayerMenu)
-			m_multiplayerMenu->SetCurrentFlashScreen(0, false);
+		if (m_mpHub)
+			m_mpHub->SetCurrentFlashScreen(0, false);
 
 		this->ShowMouseCursor(false);
 		m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART]->Unload();
@@ -2951,12 +2951,12 @@ void CFlashMenuObject::InitIngameMenu()
 
 	HardwareEvaluation();
 
-	if (m_multiplayerMenu)
+	if (m_mpHub)
 	{
-		m_multiplayerMenu->SetCurrentFlashScreen(m_pCurrentFlashMenuScreen->GetFlashPlayer(), true);
+		m_mpHub->SetCurrentFlashScreen(m_pCurrentFlashMenuScreen->GetFlashPlayer(), true);
 
 		//CryMP: Update server list when opening
-		m_multiplayerMenu->HandleFSCommand("UpdateServerList", "");
+		m_mpHub->HandleFSCommand("UpdateServerList", "");
 	}
 
 	g_pGame->GetOptions()->UpdateFlashOptions();
@@ -2974,9 +2974,9 @@ void CFlashMenuObject::DestroyIngameMenu(bool unload)
 
 		if (unload)
 		{
-			if (m_multiplayerMenu)
+			if (m_mpHub)
 			{
-				m_multiplayerMenu->SetCurrentFlashScreen(nullptr, true);
+				m_mpHub->SetCurrentFlashScreen(nullptr, true);
 			}
 
 			m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Unload();
@@ -3012,7 +3012,7 @@ void CFlashMenuObject::HardwareEvaluation()
 
 CMPHub* CFlashMenuObject::GetMPHub()const
 {
-	return m_multiplayerMenu;
+	return m_mpHub;
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -3947,7 +3947,7 @@ void CFlashMenuObject::OnActionEvent(const SActionEvent& event)
 	switch (event.m_event)
 	{
 	case eAE_connectFailed:
-		if (m_multiplayerMenu) m_multiplayerMenu->OnUIEvent(SUIEvent(eUIE_connectFailed, event.m_value, event.m_description));
+		if (m_mpHub) m_mpHub->OnUIEvent(SUIEvent(eUIE_connectFailed, event.m_value, event.m_description));
 		break;
 	case eAE_disconnected:
 	{
@@ -3959,15 +3959,15 @@ void CFlashMenuObject::OnActionEvent(const SActionEvent& event)
 
 		m_returnToStartMenu = false;
 
-		if (m_multiplayerMenu)
+		if (m_mpHub)
 		{
-			m_multiplayerMenu->OnUIEvent(SUIEvent(eUIE_disconnect, event.m_value, event.m_description));
+			m_mpHub->OnUIEvent(SUIEvent(eUIE_disconnect, event.m_value, event.m_description));
 		}
 
 		break;
 	}
 	case eAE_channelCreated:
-		if (m_multiplayerMenu) m_multiplayerMenu->OnUIEvent(SUIEvent(eUIE_connect));
+		if (m_mpHub) m_mpHub->OnUIEvent(SUIEvent(eUIE_connect));
 		break;
 	case eAE_resetBegin:
 		MP_ResetBegin();
@@ -4172,12 +4172,12 @@ void CFlashMenuObject::CloseWaitingScreen()
 
 void CFlashMenuObject::UpdateNetwork(float fDeltaTime)
 {
-	if (!gEnv || !gEnv->pNetwork || !m_pCurrentFlashMenuScreen || !m_multiplayerMenu)
+	if (!gEnv || !gEnv->pNetwork || !m_pCurrentFlashMenuScreen || !m_mpHub)
 	{
 		return;
 	}
 
-	if (!m_multiplayerMenu->IsInLobby() && !m_multiplayerMenu->IsInLogin() && !gEnv->bMultiplayer)
+	if (!m_mpHub->IsInLobby() && !m_mpHub->IsInLogin() && !gEnv->bMultiplayer)
 	{
 		m_pCurrentFlashMenuScreen->CheckedInvoke("setNetwork", true);
 	}

@@ -388,7 +388,7 @@ private:
 	//last known savegame
 	string	m_sLastSaveGame;
 
-	CMPHub*      m_multiplayerMenu;
+	CMPHub*      m_mpHub;
 
 	// key repeat
 	float					m_repeatTimer;
