@@ -342,6 +342,7 @@ bool CMPHub::HandleFSCommand(const char* pCmd, const char* pArgs)
 			}
 
 			m_menu->UpdateButtonModes();
+			m_menu->UpdateServerList();
 
 			if (!IsIngame())
 				m_lastMenu = 2;
@@ -1096,4 +1097,9 @@ void CMPHub::ShowRetrivePasswordResult(bool ok)
 	{
 		ShowError("@ui_menu_EmailWasNotSend");
 	}
+}
+
+bool CMPHub::IsConnectingToPopulatedServer()
+{
+	return m_menu && m_menu->IsConnectingToPopulatedServer();
 }

@@ -819,7 +819,7 @@ void CGameRules::OnChatMessage(EChatMessageType type, EntityId sourceId, EntityI
 	{
 		//CryMP: Mute check
 		IVoiceContext* pVoiceContext = gEnv->pGame->GetIGameFramework()->GetNetContext()->GetVoiceContext();
-		const bool muted = pVoiceContext->IsMuted(pClientActor->GetEntityId(), sourceId);
+		const bool muted = pVoiceContext ? pVoiceContext->IsMuted(pClientActor->GetEntityId(), sourceId): false;
 		if (muted)
 		{
 			return;
