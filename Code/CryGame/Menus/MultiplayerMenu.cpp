@@ -56,10 +56,11 @@ enum EServerInfoKey
 
 	//crymp
 	eSIK_connectable,
+	eSIK_teams,
 
 	//mods
 	eSIK_modName,
-	eSIK_modVersion
+	eSIK_modVersion,
 };
 
 
@@ -259,6 +260,7 @@ struct CMultiPlayerMenu::SGSBrowser : public IServerListener
 		si.m_ping = 10000;
 		si.m_modName = info->m_modName;
 		si.m_modVersion = info->m_modVersion;
+		si.m_teams = info->m_teams;
 		for (int i = 0;i < m_menu->m_favouriteServers.size();++i)
 		{
 			SStoredServer& srv = m_menu->m_favouriteServers[i];
@@ -344,6 +346,9 @@ struct CMultiPlayerMenu::SGSBrowser : public IServerListener
 			case eSIK_modVersion:
 				si.m_modVersion = value;
 				break;
+			case eSIK_teams:
+				si.m_teams = atoi(value);
+				break;
 			default:
 				basic = false;
 			}
@@ -391,6 +396,9 @@ struct CMultiPlayerMenu::SGSBrowser : public IServerListener
 			break;
 		case eSIK_modVersion:
 			m_details.m_modversion = value;
+			break;
+		case eSIK_teams:
+			m_details.m_teams = atoi(value);
 			break;
 		default:
 			return;

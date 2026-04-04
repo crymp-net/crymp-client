@@ -121,6 +121,7 @@ namespace
 		info.m_hostPort   =                  GetInt(serverInfo, "local_port");
 		info.m_official   =                  GetInt(serverInfo, "ranked") != 0;
 		info.m_private    =               GetString(serverInfo, "pass") != "0";
+		info.m_teams	  =					 GetInt(serverInfo, "teams");
 
 		const std::string version = "1.1.1." + std::to_string(GetInt(serverInfo, "ver"));
 		info.m_gameVersion = version.c_str();
