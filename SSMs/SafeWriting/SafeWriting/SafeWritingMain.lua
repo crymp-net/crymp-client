@@ -182,7 +182,7 @@ function SafeWriting:OnTimerTick()
 			-- printf("local ip: %s",local_ip);
 			local pak = se.PAK or ""
 			if not TOLD_EXISTENTION and (not MASTER_COOKIE) then
-				local rules = GetGameRulesName()
+				local rules = GetGameRules()
 				local page = urlfmt(
 					"/api/reg.php?port=%d&maxpl=%d&numpl=%d&name=%s&pass=%s&map=%s&timel=%d&mapdl=%s&ver=%d&ranked=%d&desc=%s&mappic=%s&local=%s&pak=%s&rules=%s&teams=%d",
 					port, maxpl, numpl, svn, svp, map, g_gameRules.game:GetRemainingGameTime(), mapdl, ver, rnk, desc,
