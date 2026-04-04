@@ -1698,7 +1698,6 @@ void  CMPLobbyUI::SetServerDetails(const SServerDetails& sd)
 
 	m_cmd = MPPath;
 	m_cmd += "SetPlayerGameMode";
-	std::size_t pos = sd.m_gamemode.find("\n");
 	if (sd.m_gamemode == "PowerStruggle" || sd.m_gamemode == "InstantAction" || sd.m_gamemode == "TeamInstantAction") {
 		m_player->Invoke1(m_cmd.c_str(), sd.m_gamemode.c_str());
 	} else {
