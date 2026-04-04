@@ -281,7 +281,7 @@ void Client::Init(IGameFramework *pGameFramework)
 	m_pGame = new CGame();
 	m_pGame->Init(pGameFramework);
 
-	m_pFileCache->Cleanup(86400);
+	m_pFileCache->Cleanup(14 * 86400);
 
 	WarmupRendererTextPath();
 }
