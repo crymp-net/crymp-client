@@ -122,11 +122,6 @@ namespace
 		info.m_official   =                  GetInt(serverInfo, "ranked") != 0;
 		info.m_private    =               GetString(serverInfo, "pass") != "0";
 
-		// let's use m_modName to carry metadata since it's not being used for anything anyway
-		const std::string metadata = json::object({ {"teams", GetInt(serverInfo, "teams")} }).dump();
-		info.m_modName    = metadata.c_str();
-		info.m_modVersion = "";
-
 		const std::string version = "1.1.1." + std::to_string(GetInt(serverInfo, "ver"));
 		info.m_gameVersion = version.c_str();
 
@@ -143,7 +138,10 @@ namespace
 		}
 
 		// not used
-		info.m_country = "";
+		info.m_country = ""; 
+		
+		info.m_modName = "";
+		info.m_modVersion = "";
 
 		if (isUpdate)
 			pListener->UpdateServer(serverID, &info);
@@ -152,6 +150,7 @@ namespace
 
 		// custom stuff
 		pListener->UpdateValue(serverID, "connectable", GetInt(serverInfo, "available") ? "1" : "0");
+		pListener->UpdateValue(serverID, "teams", std::to_string(GetInt(serverInfo, "teams")).c_str());
 	}
 }
 

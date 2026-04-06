@@ -93,7 +93,8 @@ static TKeyValuePair<EServerInfoKey, const char*> gServerKeyNames[] = {
 	{eSIK_playerDeaths,"deaths"},
 	{eSIK_connectable,"connectable"},
 	{eSIK_modName,"modname"},
-	{eSIK_modVersion,"modversion"}
+	{eSIK_modVersion,"modversion"},
+	{eSIK_teams,"teams"}
 };
 
 static EServerInfoKey StringToServerInfoKey(const char *value)
@@ -264,12 +265,6 @@ struct CMultiPlayerMenu::SGSBrowser : public IServerListener
 		si.m_ping = 10000;
 		si.m_modName = info->m_modName;
 		si.m_modVersion = info->m_modVersion;
-
-		if (si.m_modName.length() > 0 && si.m_modName[0] == '{') {
-			auto metadata = json::parse(si.m_modName);
-			si.m_modName = "";
-			si.m_teams = metadata["teams"].get<int>();
-		}
 
 		for (int i = 0;i < m_menu->m_favouriteServers.size();++i)
 		{
