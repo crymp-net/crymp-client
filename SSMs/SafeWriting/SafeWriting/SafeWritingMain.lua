@@ -212,7 +212,7 @@ function SafeWriting:OnTimerTick()
 							local name = v:GetName()
 							local k, d = GetPlayerScore(v)
 							local rank = 0
-							local team = "0"
+							local team = "1"
 							if g_gameRules.class == "PowerStruggle" and g_gameRules.GetPlayerRank and v and v.id then
 								rank = g_gameRules:GetPlayerRank(v.id) or 1
 								team = g_gameRules.game:GetTeam(v.id)
