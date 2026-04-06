@@ -27,6 +27,10 @@ History:
 #include "CryMP/Client/Client.h"
 #include "CryMP/Client/ServerBrowser.h"
 
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 enum EServerInfoKey
 {
 	eSIK_unknown,
@@ -260,7 +264,13 @@ struct CMultiPlayerMenu::SGSBrowser : public IServerListener
 		si.m_ping = 10000;
 		si.m_modName = info->m_modName;
 		si.m_modVersion = info->m_modVersion;
-		si.m_teams = info->m_teams;
+
+		if (si.m_modName.length() > 0 && si.m_modName[0] == '{') {
+			auto metadata = json::parse(si.m_modName);
+			si.m_modName = "";
+			si.m_teams = metadata["teams"].get<int>();
+		}
+
 		for (int i = 0;i < m_menu->m_favouriteServers.size();++i)
 		{
 			SStoredServer& srv = m_menu->m_favouriteServers[i];

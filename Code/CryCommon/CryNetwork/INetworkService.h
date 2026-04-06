@@ -117,7 +117,6 @@ struct SBasicServerInfo
 	const char *m_country;
 	const char *m_modName;
 	const char *m_modVersion;
-	int m_teams;
 };
 
 enum EServerBrowserError

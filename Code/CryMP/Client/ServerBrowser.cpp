@@ -121,10 +121,15 @@ namespace
 		info.m_hostPort   =                  GetInt(serverInfo, "local_port");
 		info.m_official   =                  GetInt(serverInfo, "ranked") != 0;
 		info.m_private    =               GetString(serverInfo, "pass") != "0";
-		info.m_teams	  =					 GetInt(serverInfo, "teams");
+
+		// let's use m_modName to carry metadata since it's not being used for anything anyway
+		const std::string metadata = json::object({ {"teams", GetInt(serverInfo, "teams")} }).dump();
+		info.m_modName    = metadata.c_str();
+		info.m_modVersion = "";
 
 		const std::string version = "1.1.1." + std::to_string(GetInt(serverInfo, "ver"));
 		info.m_gameVersion = version.c_str();
+
 
 		if (GetBool(serverInfo, "gs"))
 		{
@@ -139,10 +144,6 @@ namespace
 
 		// not used
 		info.m_country = "";
-
-		// TODO: add optional SSM info?
-		info.m_modName = "";
-		info.m_modVersion = "";
 
 		if (isUpdate)
 			pListener->UpdateServer(serverID, &info);
