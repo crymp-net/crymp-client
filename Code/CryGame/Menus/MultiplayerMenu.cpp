@@ -27,9 +27,6 @@ History:
 #include "CryMP/Client/Client.h"
 #include "CryMP/Client/ServerBrowser.h"
 
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
 
 enum EServerInfoKey
 {
