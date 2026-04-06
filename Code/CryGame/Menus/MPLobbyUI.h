@@ -102,6 +102,7 @@ public:
 
 		string    m_modName;
 		string    m_modVersion;
+    int       m_teams;
 
     uint32    m_publicIP;
     unsigned short    m_publicPort;
@@ -138,7 +139,8 @@ public:
     m_voicecomm(false),
     m_anticheat(false),
     m_gamepadsonly(false),
-		m_dx10(false)
+		m_dx10(false),
+        m_teams(2)
     {
     }
 
@@ -157,6 +159,8 @@ public:
     
 		string  m_modname;
 		string  m_modversion;
+
+    int m_teams;
 
 		struct  SPlayerDetails
     {
