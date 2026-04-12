@@ -1009,6 +1009,10 @@ struct ITimeOfDay
 	static const int NETSER_COMPENSATELAG = BIT(1);
 	static const int NETSER_STATICPROPS = BIT(2);
 	virtual void NetSerialize( TSerialize ser, float lag, uint32 flags ) = 0;
+
+	//CryMP:
+	virtual bool IsPaused() const = 0;
+	virtual void DebugDraw() = 0;
 };
 
 

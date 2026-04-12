@@ -64,6 +64,8 @@ void CWeatherSystem::Reset(bool deapply) {
 	m_activeEmitters.clear();
 	m_activeValues.clear();
 	m_activeMask.reset();
+
+	m_lastTodXmlPath.clear();
 }
 
 void CWeatherSystem::Update(float frameTime) {
@@ -96,7 +98,25 @@ void CWeatherSystem::Update(float frameTime) {
 				if (todPath != m_lastTodXmlPath)
 				{
 					TimeOfDay* pTODImpl = static_cast<TimeOfDay*>(pTOD);
-					pTODImpl->LoadCustomSettings(todPath);
+
+					//CryMP: Allow optional blend duration override from SSS, fallback to default if not specified.
+					float blendDuration = 10.0f;
+
+					float customBlendFloat = 0.0f;
+					if (pSSS->GetGlobalValue(WEATHER_TOD_BLEND_DURATION_SECONDS_ID, customBlendFloat))
+					{
+						blendDuration = std::max(customBlendFloat, 0.0f);
+					}
+					else
+					{
+						int customBlendInt = 0;
+						if (pSSS->GetGlobalValue(WEATHER_TOD_BLEND_DURATION_SECONDS_ID, customBlendInt))
+						{
+							blendDuration = std::max((float)customBlendInt, 0.0f);
+						}
+					}
+
+					pTODImpl->LoadCustomSettings(todPath, blendDuration);
 
 					m_lastTodXmlPath = todPath;
 				}
