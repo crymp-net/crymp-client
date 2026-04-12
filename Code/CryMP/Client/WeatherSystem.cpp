@@ -97,8 +97,6 @@ void CWeatherSystem::Update(float frameTime) {
 			{
 				if (todPath != m_lastTodXmlPath)
 				{
-					TimeOfDay* pTODImpl = static_cast<TimeOfDay*>(pTOD);
-
 					//CryMP: Allow optional blend duration override from SSS, fallback to default if not specified.
 					float blendDuration = 10.0f;
 
@@ -116,7 +114,7 @@ void CWeatherSystem::Update(float frameTime) {
 						}
 					}
 
-					pTODImpl->LoadCustomSettings(todPath, blendDuration);
+					pTOD->LoadCustomSettings(todPath, blendDuration);
 
 					m_lastTodXmlPath = todPath;
 				}

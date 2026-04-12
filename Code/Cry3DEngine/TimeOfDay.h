@@ -189,11 +189,10 @@ public:
 	}
 
 	void DebugDraw() override;
+	void LoadCustomSettings(string xmlPath, float blendDuration = 0.0f) override;
 
 	////////////////////////////////////////////////////////////////////////////////
 
-	void LoadCustomSettings(string xmlPath);
-	void LoadCustomSettings(string xmlPath, float blendDuration);
 	void RestoreLevelDefaults();
 	void RestoreLevelDefaults(float blendDuration);
 

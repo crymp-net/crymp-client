@@ -1034,11 +1034,6 @@ Vec3 TimeOfDay::CalculateSunDirection(const Vec3& sunRotation) const
 	return sunDirection;
 }
 
-void TimeOfDay::LoadCustomSettings(string xmlPath)
-{
-	this->LoadCustomSettings(xmlPath, 0.0f);
-}
-
 void TimeOfDay::LoadCustomSettings(string xmlPath, float blendDuration)
 {
 	if (xmlPath.empty())

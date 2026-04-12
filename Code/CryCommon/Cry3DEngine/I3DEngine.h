@@ -1013,6 +1013,7 @@ struct ITimeOfDay
 	//CryMP:
 	virtual bool IsPaused() const = 0;
 	virtual void DebugDraw() = 0;
+	virtual void LoadCustomSettings(string xmlPath, float blendDuration = 0.0f) = 0;
 };
 
 
