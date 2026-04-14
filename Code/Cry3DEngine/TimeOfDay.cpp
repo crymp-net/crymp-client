@@ -1158,20 +1158,13 @@ void TimeOfDay::DebugDraw()
 
 	auto S = [&](float v) { return v * UI_SCALE; };
 
-	auto DrawAlignedLabel = [=](float x, float y, float size, const ColorF& color, bool centered, const char* fmt, ...)
-		{
-			char buffer[256];
-
-			va_list args;
-			va_start(args, fmt);
-			std::vsnprintf(buffer, sizeof(buffer), fmt, args);
-			va_end(args);
-
+	template<typename... Args>
+	const auto DrawAlignedLabel = [](float x, float y, float size, const ColorF& color, bool centered, const char* fmt, Args... args) {
 			const float sx = gEnv->pRenderer->ScaleCoordX(x + X_OFFSET);
 			const float sy = gEnv->pRenderer->ScaleCoordY(y);
 
-			gEnv->pRenderer->Draw2dLabel(sx, sy, size * UI_SCALE * FONT_SCALE, (float*)&color, centered, "%s", buffer);
-		};
+			gEnv->pRenderer->Draw2dLabel(sx, sy, size * UI_SCALE * FONT_SCALE, (float*)&color, centered, fmt, args...);
+	};
 
 	auto DrawValueBox = [=](float x, float y, float width, const char* text, const ColorF& textColor)
 		{
