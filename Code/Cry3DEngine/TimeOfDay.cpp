@@ -384,8 +384,6 @@ void TimeOfDay::Update(bool interpolate, bool forceUpdate)
 		const float exponent = vars[HDR_DYNAMIC_POWER_FACTOR].value[0];
 
 		m_HDRMultiplier = std::pow(base, exponent);
-
-		m_HDRMultiplier = std::max(m_HDRMultiplier, 0.2f);
 	}
 	else
 	{
