@@ -29,7 +29,7 @@ jobs:
       artifact_name: ${{ steps.build.outputs.artifact_name }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # for version generator
           fetch-depth: 0
@@ -71,7 +71,7 @@ jobs:
           }
 
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.build.outputs.artifact_name }}
           path: |
