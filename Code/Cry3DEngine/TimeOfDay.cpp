@@ -1156,8 +1156,7 @@ void TimeOfDay::DebugDraw()
 
 	auto S = [&](float v) { return v * UI_SCALE; };
 
-	template<typename... Args>
-	const auto DrawAlignedLabel = [](float x, float y, float size, const ColorF& color, bool centered, const char* fmt, Args... args) {
+	const auto DrawAlignedLabel = [&]<typename... Args>(float x, float y, float size, const ColorF& color, bool centered, const char* fmt, Args... args) {
 			const float sx = gEnv->pRenderer->ScaleCoordX(x + X_OFFSET);
 			const float sy = gEnv->pRenderer->ScaleCoordY(y);
 
