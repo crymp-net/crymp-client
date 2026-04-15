@@ -781,17 +781,16 @@ void TimeOfDay::InitVariables()
 {
 	m_vars.resize(VARIABLE_COUNT);
 
-	const auto init = [this](int id, std::string_view name, EVariableType type, float val1, float val2, float val3)
-		{
-			Variable& var = m_vars[id];
-			var.name = name;
-			var.type = type;
-			var.value[0] = val1;
-			var.value[1] = val2;
-			var.value[2] = val3;
+	const auto init = [this](int id, std::string_view name, EVariableType type, float val1, float val2, float val3) {
+		Variable& var = m_vars[id];
+		var.name = name;
+		var.type = type;
+		var.value[0] = val1;
+		var.value[1] = val2;
+		var.value[2] = val3;
 
-			switch (type)
-			{
+		switch (type)
+		{
 			case TYPE_FLOAT:
 			{
 				var.interpolator.emplace<FloatSpline>();
@@ -807,8 +806,8 @@ void TimeOfDay::InitVariables()
 				std::visit([&](auto& i) { return i.InsertKey(1, values); }, var.interpolator);
 				break;
 			}
-			}
-		};
+		}
+	};
 
 	init(HDR_DYNAMIC_POWER_FACTOR, "HDR dynamic power factor", TYPE_FLOAT, 0, -4, 4);
 	init(SKY_BRIGHTENING, "Sky brightening (terrain occlusion)", TYPE_FLOAT, 0.3f, 0, 1);
@@ -1154,7 +1153,7 @@ void TimeOfDay::DebugDraw()
 	constexpr float VALUE_BOX_WIDTH_TARGET = 32.0f;
 	constexpr float VALUE_EPSILON = 0.001f;
 
-	auto S = [&](float v) { return v * UI_SCALE; };
+	const auto S = [](float v) { return v * UI_SCALE; };
 
 	const auto DrawAlignedLabel = [&]<typename... Args>(float x, float y, float size, const ColorF& color, bool centered, const char* fmt, Args... args) {
 			const float sx = gEnv->pRenderer->ScaleCoordX(x + X_OFFSET);
@@ -1163,172 +1162,165 @@ void TimeOfDay::DebugDraw()
 			gEnv->pRenderer->Draw2dLabel(sx, sy, size * UI_SCALE * FONT_SCALE, (float*)&color, centered, fmt, args...);
 	};
 
-	auto DrawValueBox = [=](float x, float y, float width, const char* text, const ColorF& textColor)
+	const auto DrawValueBox = [&](float x, float y, float width, const char* text, const ColorF& textColor) {
+		if (!text || !text[0])
 		{
-			if (!text || !text[0])
-			{
-				return;
-			}
+			return;
+		}
 
-			const float paddingY = S(1.0f);
-			const float fontSize = 1.2f;
+		const float paddingY = S(1.0f);
+		const float fontSize = 1.2f;
 
-			gEnv->pRenderer->Draw2dImage(
-				x + X_OFFSET,
-				y,
-				width,
-				S(VALUE_BOX_H),
-				0, 0, 0, 0, 0, 0,
-				0.0f, 0.0f, 0.0f, 0.60f
-			);
+		gEnv->pRenderer->Draw2dImage(
+			x + X_OFFSET,
+			y,
+			width,
+			S(VALUE_BOX_H),
+			0, 0, 0, 0, 0, 0,
+			0.0f, 0.0f, 0.0f, 0.60f
+		);
 
-			const float sx = gEnv->pRenderer->ScaleCoordX(x + X_OFFSET + S(VALUE_BOX_PAD_X));
-			const float sy = gEnv->pRenderer->ScaleCoordY(y + paddingY);
+		const float sx = gEnv->pRenderer->ScaleCoordX(x + X_OFFSET + S(VALUE_BOX_PAD_X));
+		const float sy = gEnv->pRenderer->ScaleCoordY(y + paddingY);
 
-			gEnv->pRenderer->Draw2dLabel(sx, sy, fontSize * UI_SCALE * FONT_SCALE, (float*)&textColor, false, "%s", text);
-		};
+		gEnv->pRenderer->Draw2dLabel(sx, sy, fontSize * UI_SCALE * FONT_SCALE, (float*)&textColor, false, "%s", text);
+	};
 
-	auto DrawBar = [&](float x, float y, float width, float height, float border, float progress, const ColorF& color0, const ColorF& color1, const char* desc, const char* currText, const char* targetText, const ColorF& textColor, const ColorF& targetColor, float bgalpha, bool showTarget)
+	const auto DrawBar = [&](float x, float y, float width, float height, float border, float progress, const ColorF& color0, const ColorF& color1, const char* desc, const char* currText, const char* targetText, const ColorF& textColor, const ColorF& targetColor, float bgalpha, bool showTarget) {
+		progress = std::clamp(progress, 0.0f, 1.0f);
+
+		ColorF interp;
+		interp.lerpFloat(color0, color1, progress);
+
+		const float currw = width * progress;
+		const float barX = x + X_OFFSET;
+		const float sy = gEnv->pRenderer->ScaleCoordY(y);
+
+		gEnv->pRenderer->Draw2dImage(barX - border, y - border, width + border + border, height + border + border, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, bgalpha);
+		gEnv->pRenderer->Draw2dImage(barX, y, currw, height, 0, 0, 0, 0, 0, 0, interp.r, interp.g, interp.b, 0.75f);
+		gEnv->pRenderer->Draw2dImage(barX + currw, y, width - currw, height, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.35f);
+
+		if (desc && desc[0])
 		{
-			progress = std::clamp(progress, 0.0f, 1.0f);
+			const float descX = gEnv->pRenderer->ScaleCoordX(barX);
+			gEnv->pRenderer->Draw2dLabel(descX, sy, 1.2f * UI_SCALE * FONT_SCALE, (float*)&textColor, false, "%s", desc);
+		}
 
-			ColorF interp;
-			interp.lerpFloat(color0, color1, progress);
+		const float valueY = y - S(VALUE_BOX_Y_OFFSET);
 
-			const float currw = width * progress;
-			const float barX = x + X_OFFSET;
-			const float sy = gEnv->pRenderer->ScaleCoordY(y);
+		const float currBoxW = S(VALUE_BOX_WIDTH);
+		const float targetBoxW = S(VALUE_BOX_WIDTH_TARGET);
 
-			gEnv->pRenderer->Draw2dImage(barX - border, y - border, width + border + border, height + border + border, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, bgalpha);
-			gEnv->pRenderer->Draw2dImage(barX, y, currw, height, 0, 0, 0, 0, 0, 0, interp.r, interp.g, interp.b, 0.75f);
-			gEnv->pRenderer->Draw2dImage(barX + currw, y, width - currw, height, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.35f);
+		const float currBoxX = x + width + S(VALUE_BOX_GAP);
+		const float targetBoxX = currBoxX + currBoxW + S(VALUE_BOX_GAP);
 
-			if (desc && desc[0])
-			{
-				const float descX = gEnv->pRenderer->ScaleCoordX(barX);
-				gEnv->pRenderer->Draw2dLabel(descX, sy, 1.2f * UI_SCALE * FONT_SCALE, (float*)&textColor, false, "%s", desc);
-			}
-
-			const float valueY = y - S(VALUE_BOX_Y_OFFSET);
-
-			const float currBoxW = S(VALUE_BOX_WIDTH);
-			const float targetBoxW = S(VALUE_BOX_WIDTH_TARGET);
-
-			const float currBoxX = x + width + S(VALUE_BOX_GAP);
-			const float targetBoxX = currBoxX + currBoxW + S(VALUE_BOX_GAP);
-
-			if (currText && currText[0])
-			{
-				DrawValueBox(currBoxX, valueY, currBoxW, currText, Col_White);
-			}
-
-			if (showTarget && targetText && targetText[0])
-			{
-				DrawValueBox(targetBoxX, valueY, targetBoxW, targetText, targetColor);
-			}
-		};
-
-	auto DrawCenteredMultiplierBar = [&](float x, float y, float width, float height, float border, float value, float neutralValue, float maxValue, const ColorF& leftColor, const ColorF& rightColor, const char* desc, const char* valueText, const ColorF& textColor, float bgalpha)
+		if (currText && currText[0])
 		{
-			const float clampedValue = std::clamp(value, 0.0f, maxValue);
-			const float barX = x + X_OFFSET;
-			const float sy = gEnv->pRenderer->ScaleCoordY(y);
+			DrawValueBox(currBoxX, valueY, currBoxW, currText, Col_White);
+		}
 
-			const float neutralT = std::clamp(neutralValue / maxValue, 0.0f, 1.0f);
-			const float valueT = std::clamp(clampedValue / maxValue, 0.0f, 1.0f);
-
-			const float neutralX = barX + width * neutralT;
-			const float valueX = barX + width * valueT;
-
-			gEnv->pRenderer->Draw2dImage(barX - border, y - border, width + border + border, height + border + border, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, bgalpha);
-			gEnv->pRenderer->Draw2dImage(barX, y, width, height, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.35f);
-
-			if (valueX >= neutralX)
-			{
-				const float fillW = valueX - neutralX;
-				if (fillW > 0.0f)
-				{
-					gEnv->pRenderer->Draw2dImage(neutralX, y, fillW, height, 0, 0, 0, 0, 0, 0, rightColor.r, rightColor.g, rightColor.b, 0.80f);
-				}
-			}
-			else
-			{
-				const float fillW = neutralX - valueX;
-				if (fillW > 0.0f)
-				{
-					gEnv->pRenderer->Draw2dImage(valueX, y, fillW, height, 0, 0, 0, 0, 0, 0, leftColor.r, leftColor.g, leftColor.b, 0.80f);
-				}
-			}
-
-			gEnv->pRenderer->Draw2dImage(neutralX - S(1.0f), y - S(1.0f), S(2.0f), height + S(2.0f), 0, 0, 0, 0, 0, 0, 1.0f, 1.0f, 1.0f, 0.65f);
-
-			if (desc && desc[0])
-			{
-				const float descX = gEnv->pRenderer->ScaleCoordX(barX);
-				gEnv->pRenderer->Draw2dLabel(descX, sy, 1.2f * UI_SCALE * FONT_SCALE, (float*)&textColor, false, "%s", desc);
-			}
-
-			const float valueY = y - S(VALUE_BOX_Y_OFFSET);
-			const float currBoxW = S(VALUE_BOX_WIDTH);
-			const float currBoxX = x + width + S(VALUE_BOX_GAP);
-
-			if (valueText && valueText[0])
-			{
-				DrawValueBox(currBoxX, valueY, currBoxW, valueText, Col_White);
-			}
-		};
-
-	auto SafeComponentMul = [&](float finalValue, float baseValue)
+		if (showTarget && targetText && targetText[0])
 		{
-			constexpr float EPS = 0.0001f;
-			if (std::fabs(baseValue) < EPS)
+			DrawValueBox(targetBoxX, valueY, targetBoxW, targetText, targetColor);
+		}
+	};
+
+	const auto DrawCenteredMultiplierBar = [&](float x, float y, float width, float height, float border, float value, float neutralValue, float maxValue, const ColorF& leftColor, const ColorF& rightColor, const char* desc, const char* valueText, const ColorF& textColor, float bgalpha) {
+		const float clampedValue = std::clamp(value, 0.0f, maxValue);
+		const float barX = x + X_OFFSET;
+		const float sy = gEnv->pRenderer->ScaleCoordY(y);
+
+		const float neutralT = std::clamp(neutralValue / maxValue, 0.0f, 1.0f);
+		const float valueT = std::clamp(clampedValue / maxValue, 0.0f, 1.0f);
+
+		const float neutralX = barX + width * neutralT;
+		const float valueX = barX + width * valueT;
+
+		gEnv->pRenderer->Draw2dImage(barX - border, y - border, width + border + border, height + border + border, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, bgalpha);
+		gEnv->pRenderer->Draw2dImage(barX, y, width, height, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.35f);
+
+		if (valueX >= neutralX)
+		{
+			const float fillW = valueX - neutralX;
+			if (fillW > 0.0f)
 			{
-				return 1.0f;
+				gEnv->pRenderer->Draw2dImage(neutralX, y, fillW, height, 0, 0, 0, 0, 0, 0, rightColor.r, rightColor.g, rightColor.b, 0.80f);
 			}
-			return finalValue / baseValue;
-		};
-
-	auto ComputePostMultiplier = [&](const Vec3& baseColor, const Vec3& finalColor)
+		}
+		else
 		{
-			return Vec3(
-				SafeComponentMul(finalColor.x, baseColor.x),
-				SafeComponentMul(finalColor.y, baseColor.y),
-				SafeComponentMul(finalColor.z, baseColor.z)
-			);
-		};
-
-	auto DrawPostMulBar = [&](float& yPos, const char* desc, float value, const ColorF& leftColor, const ColorF& rightColor)
-		{
-			char currLabel[64];
-			std::snprintf(currLabel, sizeof(currLabel), "%.2f", value);
-
-			DrawCenteredMultiplierBar(
-				S(BAR_X), yPos,
-				S(BAR_W), S(12.0f), S(2.0f),
-				value, 1.0f, 2.0f,
-				leftColor, rightColor,
-				desc,
-				currLabel,
-				Col_White,
-				0.40f
-			);
-
-			yPos += S(16.0f);
-		};
-
-	auto DrawModeHeader = [&](float& yPos, const char* title, const ColorF& modeColor)
-		{
-			DrawAlignedLabel(S(BAR_X), yPos, 1.4f, Col_Yellow, false, "TimeOfDay");
-			DrawAlignedLabel(S(BAR_X) + S(110.0f), yPos, 1.25f, modeColor, false, "[Mode %d] %s", m_debug, title);
-
-			if (!m_activeCustomTodFile.empty())
+			const float fillW = neutralX - valueX;
+			if (fillW > 0.0f)
 			{
-				yPos += S(15.0f);
-				DrawAlignedLabel(S(BAR_X), yPos, 1.15f, Col_SpringGreen, false, "XML: %s", m_activeCustomTodFile.c_str());
+				gEnv->pRenderer->Draw2dImage(valueX, y, fillW, height, 0, 0, 0, 0, 0, 0, leftColor.r, leftColor.g, leftColor.b, 0.80f);
 			}
+		}
 
-			yPos += S(26.0f);
-		};
+		gEnv->pRenderer->Draw2dImage(neutralX - S(1.0f), y - S(1.0f), S(2.0f), height + S(2.0f), 0, 0, 0, 0, 0, 0, 1.0f, 1.0f, 1.0f, 0.65f);
+
+		if (desc && desc[0])
+		{
+			const float descX = gEnv->pRenderer->ScaleCoordX(barX);
+			gEnv->pRenderer->Draw2dLabel(descX, sy, 1.2f * UI_SCALE * FONT_SCALE, (float*)&textColor, false, "%s", desc);
+		}
+
+		const float valueY = y - S(VALUE_BOX_Y_OFFSET);
+		const float currBoxW = S(VALUE_BOX_WIDTH);
+		const float currBoxX = x + width + S(VALUE_BOX_GAP);
+
+		if (valueText && valueText[0])
+		{
+			DrawValueBox(currBoxX, valueY, currBoxW, valueText, Col_White);
+		}
+	};
+
+	const auto SafeComponentMul = [&](float finalValue, float baseValue) {
+		constexpr float EPS = 0.0001f;
+		if (std::fabs(baseValue) < EPS)
+		{
+			return 1.0f;
+		}
+		return finalValue / baseValue;
+	};
+
+	const auto ComputePostMultiplier = [&](const Vec3& baseColor, const Vec3& finalColor) {
+		return Vec3(
+			SafeComponentMul(finalColor.x, baseColor.x),
+			SafeComponentMul(finalColor.y, baseColor.y),
+			SafeComponentMul(finalColor.z, baseColor.z)
+		);
+	};
+
+	const auto DrawPostMulBar = [&](float& yPos, const char* desc, float value, const ColorF& leftColor, const ColorF& rightColor) {
+		char currLabel[64];
+		std::snprintf(currLabel, sizeof(currLabel), "%.2f", value);
+
+		DrawCenteredMultiplierBar(
+			S(BAR_X), yPos,
+			S(BAR_W), S(12.0f), S(2.0f),
+			value, 1.0f, 2.0f,
+			leftColor, rightColor,
+			desc,
+			currLabel,
+			Col_White,
+			0.40f
+		);
+
+		yPos += S(16.0f);
+	};
+
+	const auto DrawModeHeader = [&](float& yPos, const char* title, const ColorF& modeColor) {
+		DrawAlignedLabel(S(BAR_X), yPos, 1.4f, Col_Yellow, false, "TimeOfDay");
+		DrawAlignedLabel(S(BAR_X) + S(110.0f), yPos, 1.25f, modeColor, false, "[Mode %d] %s", m_debug, title);
+
+		if (!m_activeCustomTodFile.empty())
+		{
+			yPos += S(15.0f);
+			DrawAlignedLabel(S(BAR_X), yPos, 1.15f, Col_SpringGreen, false, "XML: %s", m_activeCustomTodFile.c_str());
+		}
+
+		yPos += S(26.0f);
+	};
 
 	const float time = m_currentTime / 24.0f;
 
@@ -1357,105 +1349,103 @@ void TimeOfDay::DebugDraw()
 		blendedVars[i].value[2] = sourceVars[i].value[2] + (targetVars[i].value[2] - sourceVars[i].value[2]) * blend;
 	}
 
-	auto drawValueBar = [&](float& y, int id, const ColorF& c0, const ColorF& c1, float forcedMax = -1.0f)
+	const auto drawValueBar = [&](float& y, int id, const ColorF& c0, const ColorF& c1, float forcedMax = -1.0f) {
+		const Variable& blendedVar = blendedVars[id];
+		const Variable& targetVar = targetVars[id];
+
+		const float currentValue = blendedVar.value[0];
+		const float targetValue = targetVar.value[0];
+
+		float displayMax = forcedMax;
+		if (displayMax <= 0.0f)
 		{
-			const Variable& blendedVar = blendedVars[id];
-			const Variable& targetVar = targetVars[id];
-
-			const float currentValue = blendedVar.value[0];
-			const float targetValue = targetVar.value[0];
-
-			float displayMax = forcedMax;
-			if (displayMax <= 0.0f)
-			{
-				displayMax = std::max(std::fabs(currentValue), 1.0f);
-				if (hasTransition)
-				{
-					displayMax = std::max(displayMax, std::fabs(targetValue));
-				}
-			}
-
-			const float progress = std::clamp(currentValue / displayMax, 0.0f, 1.0f);
-			const bool showTarget = hasTransition && (std::fabs(targetValue - currentValue) > VALUE_EPSILON);
-
-			char desc[128];
-			std::snprintf(desc, sizeof(desc), "%s", blendedVar.name.data());
-
-			char currLabel[64];
-			std::snprintf(currLabel, sizeof(currLabel), "%.2f", currentValue);
-
-			char targetLabel[64] = "";
-			if (showTarget)
-			{
-				std::snprintf(targetLabel, sizeof(targetLabel), "%.2f", targetValue);
-			}
-
-			const ColorF targetColor = (targetValue < currentValue) ? Col_Orange : Col_Green;
-
-			DrawBar(
-				S(BAR_X), y,
-				S(BAR_W), S(14.0f), S(2.0f),
-				progress,
-				c0, c1,
-				desc,
-				currLabel,
-				targetLabel,
-				Col_White,
-				targetColor,
-				0.45f,
-				showTarget
-			);
-
-			y += S(18.0f);
-		};
-
-	auto drawColorBar = [&](float& y, int id, int component, const char* suffix, const ColorF& c0, const ColorF& c1)
-		{
-			const Variable& blendedVar = blendedVars[id];
-			const Variable& targetVar = targetVars[id];
-
-			const float currentValue = blendedVar.value[component];
-			const float targetValue = targetVar.value[component];
-
-			float displayMax = std::max(currentValue, 1.0f);
+			displayMax = std::max(std::fabs(currentValue), 1.0f);
 			if (hasTransition)
 			{
-				displayMax = std::max(displayMax, targetValue);
+				displayMax = std::max(displayMax, std::fabs(targetValue));
 			}
+		}
 
-			const float progress = std::clamp(currentValue / displayMax, 0.0f, 1.0f);
-			const bool showTarget = hasTransition && (std::fabs(targetValue - currentValue) > VALUE_EPSILON);
+		const float progress = std::clamp(currentValue / displayMax, 0.0f, 1.0f);
+		const bool showTarget = hasTransition && (std::fabs(targetValue - currentValue) > VALUE_EPSILON);
 
-			char desc[128];
-			std::snprintf(desc, sizeof(desc), "%s %s", blendedVar.name.data(), suffix);
+		char desc[128];
+		std::snprintf(desc, sizeof(desc), "%s", blendedVar.name.data());
 
-			char currLabel[64];
-			std::snprintf(currLabel, sizeof(currLabel), "%.2f", currentValue);
+		char currLabel[64];
+		std::snprintf(currLabel, sizeof(currLabel), "%.2f", currentValue);
 
-			char targetLabel[64] = "";
-			if (showTarget)
-			{
-				std::snprintf(targetLabel, sizeof(targetLabel), "%.2f", targetValue);
-			}
+		char targetLabel[64] = "";
+		if (showTarget)
+		{
+			std::snprintf(targetLabel, sizeof(targetLabel), "%.2f", targetValue);
+		}
 
-			const ColorF targetColor = (targetValue < currentValue) ? Col_Orange : Col_Green;
+		const ColorF targetColor = (targetValue < currentValue) ? Col_Orange : Col_Green;
 
-			DrawBar(
-				S(BAR_X), y,
-				S(BAR_W), S(12.0f), S(2.0f),
-				progress,
-				c0, c1,
-				desc,
-				currLabel,
-				targetLabel,
-				Col_White,
-				targetColor,
-				0.40f,
-				showTarget
-			);
+		DrawBar(
+			S(BAR_X), y,
+			S(BAR_W), S(14.0f), S(2.0f),
+			progress,
+			c0, c1,
+			desc,
+			currLabel,
+			targetLabel,
+			Col_White,
+			targetColor,
+			0.45f,
+			showTarget
+		);
 
-			y += S(16.0f);
-		};
+		y += S(18.0f);
+	};
+
+	const auto drawColorBar = [&](float& y, int id, int component, const char* suffix, const ColorF& c0, const ColorF& c1) {
+		const Variable& blendedVar = blendedVars[id];
+		const Variable& targetVar = targetVars[id];
+
+		const float currentValue = blendedVar.value[component];
+		const float targetValue = targetVar.value[component];
+
+		float displayMax = std::max(currentValue, 1.0f);
+		if (hasTransition)
+		{
+			displayMax = std::max(displayMax, targetValue);
+		}
+
+		const float progress = std::clamp(currentValue / displayMax, 0.0f, 1.0f);
+		const bool showTarget = hasTransition && (std::fabs(targetValue - currentValue) > VALUE_EPSILON);
+
+		char desc[128];
+		std::snprintf(desc, sizeof(desc), "%s %s", blendedVar.name.data(), suffix);
+
+		char currLabel[64];
+		std::snprintf(currLabel, sizeof(currLabel), "%.2f", currentValue);
+
+		char targetLabel[64] = "";
+		if (showTarget)
+		{
+			std::snprintf(targetLabel, sizeof(targetLabel), "%.2f", targetValue);
+		}
+
+		const ColorF targetColor = (targetValue < currentValue) ? Col_Orange : Col_Green;
+
+		DrawBar(
+			S(BAR_X), y,
+			S(BAR_W), S(12.0f), S(2.0f),
+			progress,
+			c0, c1,
+			desc,
+			currLabel,
+			targetLabel,
+			Col_White,
+			targetColor,
+			0.40f,
+			showTarget
+		);
+
+		y += S(16.0f);
+	};
 
 	float y = S(40.0f);
 
