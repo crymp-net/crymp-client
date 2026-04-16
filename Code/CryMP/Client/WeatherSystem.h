@@ -49,6 +49,7 @@ class CWeatherSystem {
 	static constexpr int WEATHER_NAMESPACE = 2000;
 	static constexpr int WEATHER_ENV_NAMESPACE = 2100;
 	static constexpr int WEATHER_TOD_PATH_ID = 2300;
+	static constexpr int WEATHER_TOD_BLEND_DURATION_SECONDS_ID = 2301;
 
 	static constexpr std::array<EERType, 1> static_entities = {
 		eERType_Brush,
