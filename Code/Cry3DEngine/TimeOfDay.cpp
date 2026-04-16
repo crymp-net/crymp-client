@@ -1139,8 +1139,7 @@ void TimeOfDay::DebugDraw()
 	}
 
 	constexpr float UI_SCALE = 0.9f;
-	const float screenH = (float)gEnv->pRenderer->GetHeight();
-	const float FONT_SCALE = std::clamp(screenH / 1200.0f, 1.0f, 1.2f);
+	constexpr float TEXT_SCALE = 0.55f;
 
 	constexpr float X_OFFSET = 550.0f;
 	constexpr float BAR_X = 16.0f;
@@ -1155,11 +1154,23 @@ void TimeOfDay::DebugDraw()
 
 	const auto S = [](float v) { return v * UI_SCALE; };
 
-	const auto DrawAlignedLabel = [&]<typename... Args>(float x, float y, float size, const ColorF& color, bool centered, const char* fmt, Args... args) {
-			const float sx = gEnv->pRenderer->ScaleCoordX(x + X_OFFSET);
-			const float sy = gEnv->pRenderer->ScaleCoordY(y);
+	const auto DrawText = [&](float x, float y, float size, const ColorF& color, const char* text, bool centered = false) {
+		SDrawTextInfo ti;
+		ti.color[0] = color.r;
+		ti.color[1] = color.g;
+		ti.color[2] = color.b;
+		ti.color[3] = color.a;
+		ti.xscale = size * UI_SCALE * TEXT_SCALE;
+		ti.yscale = size * UI_SCALE * TEXT_SCALE;
+		ti.flags = centered ? (int)eDrawText_Center : 0;
 
-			gEnv->pRenderer->Draw2dLabel(sx, sy, size * UI_SCALE * FONT_SCALE, (float*)&color, centered, fmt, args...);
+		gEnv->pRenderer->Draw2dText(x, y, text, ti);
+	};
+
+	const auto DrawAlignedLabel = [&]<typename... Args>(float x, float y, float size, const ColorF & color, bool centered, const char* fmt, Args... args) {
+		char buffer[512];
+		std::snprintf(buffer, sizeof(buffer), fmt, args...);
+		DrawText(x + X_OFFSET, y, size, color, buffer, centered);
 	};
 
 	const auto DrawValueBox = [&](float x, float y, float width, const char* text, const ColorF& textColor) {
@@ -1180,10 +1191,7 @@ void TimeOfDay::DebugDraw()
 			0.0f, 0.0f, 0.0f, 0.60f
 		);
 
-		const float sx = gEnv->pRenderer->ScaleCoordX(x + X_OFFSET + S(VALUE_BOX_PAD_X));
-		const float sy = gEnv->pRenderer->ScaleCoordY(y + paddingY);
-
-		gEnv->pRenderer->Draw2dLabel(sx, sy, fontSize * UI_SCALE * FONT_SCALE, (float*)&textColor, false, "%s", text);
+		DrawText(x + X_OFFSET + S(VALUE_BOX_PAD_X), y + paddingY, fontSize, textColor, text);
 	};
 
 	const auto DrawBar = [&](float x, float y, float width, float height, float border, float progress, const ColorF& color0, const ColorF& color1, const char* desc, const char* currText, const char* targetText, const ColorF& textColor, const ColorF& targetColor, float bgalpha, bool showTarget) {
@@ -1194,7 +1202,6 @@ void TimeOfDay::DebugDraw()
 
 		const float currw = width * progress;
 		const float barX = x + X_OFFSET;
-		const float sy = gEnv->pRenderer->ScaleCoordY(y);
 
 		gEnv->pRenderer->Draw2dImage(barX - border, y - border, width + border + border, height + border + border, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, bgalpha);
 		gEnv->pRenderer->Draw2dImage(barX, y, currw, height, 0, 0, 0, 0, 0, 0, interp.r, interp.g, interp.b, 0.75f);
@@ -1202,8 +1209,7 @@ void TimeOfDay::DebugDraw()
 
 		if (desc && desc[0])
 		{
-			const float descX = gEnv->pRenderer->ScaleCoordX(barX);
-			gEnv->pRenderer->Draw2dLabel(descX, sy, 1.2f * UI_SCALE * FONT_SCALE, (float*)&textColor, false, "%s", desc);
+			DrawText(barX, y, 1.2f, textColor, desc);
 		}
 
 		const float valueY = y - S(VALUE_BOX_Y_OFFSET);
@@ -1228,7 +1234,6 @@ void TimeOfDay::DebugDraw()
 	const auto DrawCenteredMultiplierBar = [&](float x, float y, float width, float height, float border, float value, float neutralValue, float maxValue, const ColorF& leftColor, const ColorF& rightColor, const char* desc, const char* valueText, const ColorF& textColor, float bgalpha) {
 		const float clampedValue = std::clamp(value, 0.0f, maxValue);
 		const float barX = x + X_OFFSET;
-		const float sy = gEnv->pRenderer->ScaleCoordY(y);
 
 		const float neutralT = std::clamp(neutralValue / maxValue, 0.0f, 1.0f);
 		const float valueT = std::clamp(clampedValue / maxValue, 0.0f, 1.0f);
@@ -1260,8 +1265,7 @@ void TimeOfDay::DebugDraw()
 
 		if (desc && desc[0])
 		{
-			const float descX = gEnv->pRenderer->ScaleCoordX(barX);
-			gEnv->pRenderer->Draw2dLabel(descX, sy, 1.2f * UI_SCALE * FONT_SCALE, (float*)&textColor, false, "%s", desc);
+			DrawText(barX, y, 1.2f, textColor, desc);
 		}
 
 		const float valueY = y - S(VALUE_BOX_Y_OFFSET);
@@ -1621,7 +1625,7 @@ void TimeOfDay::DebugDraw()
 
 	if (m_debug == 5)
 	{
-		DrawModeHeader(y, "WeatherSystem Post Multipliers", Col_SpringGreen);
+		DrawModeHeader(y, "WeatherSystem Post Mult", Col_SpringGreen);
 
 		I3DEngine* p3DEngine = gEnv->p3DEngine;
 
@@ -1714,5 +1718,5 @@ void TimeOfDay::DebugDraw()
 	}
 
 	DrawModeHeader(y, "Unknown", Col_Orange);
-	DrawAlignedLabel(S(BAR_X), y, 1.2f, Col_White, false, "Valid modes: 1=Overview 2=Atmosphere 3=Night 4=PostFX 5=WeatherSystem");
+	DrawAlignedLabel(S(BAR_X), y, 1.2f, Col_White, false, "1=Overview 2=Atmosphere 3=Night 4=PostFX 5=WeatherSystem");
 }
