@@ -1154,6 +1154,25 @@ void TimeOfDay::DebugDraw()
 
 	const auto S = [](float v) { return v * UI_SCALE; };
 
+	auto FormatHourMinute = [&](float timeValue, char* outText, size_t outSize) {
+		float wrapped = std::fmod(timeValue, 24.0f);
+		if (wrapped < 0.0f)
+		{
+			wrapped += 24.0f;
+		}
+
+		int hours = (int)wrapped;
+		int minutes = (int)(((wrapped - (float)hours) * 60.0f) + 0.5f);
+
+		if (minutes >= 60)
+		{
+			minutes = 0;
+			hours = (hours + 1) % 24;
+		}
+
+		std::snprintf(outText, outSize, "%02d:%02d", hours, minutes);
+	};
+
 	const auto DrawText = [&](float x, float y, float size, const ColorF& color, const char* text, bool centered = false) {
 		SDrawTextInfo ti;
 		ti.color[0] = color.r;
@@ -1486,7 +1505,7 @@ void TimeOfDay::DebugDraw()
 			const float timeProgress = std::clamp(m_currentTime / 24.0f, 0.0f, 1.0f);
 
 			char currLabel[64];
-			std::snprintf(currLabel, sizeof(currLabel), "%.2f", m_currentTime);
+			FormatHourMinute(m_currentTime, currLabel, sizeof(currLabel));
 
 			DrawBar(S(BAR_X), y, S(BAR_W), S(14.0f), S(2.0f), timeProgress, Col_DarkGray, Col_Cyan, "Clock", currLabel, "", Col_White, Col_Green, 0.5f, false);
 			y += S(22.0f);
