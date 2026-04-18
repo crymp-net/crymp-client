@@ -524,6 +524,7 @@ void CGame::OnPostUpdate(float fDeltaTime)
 			if (ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay())
 			{
 				pTOD->DebugDraw();
+				m_pWeatherSystem->PostUpdate();
 			}
 		}
 	}

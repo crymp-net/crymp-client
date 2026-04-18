@@ -157,6 +157,13 @@ TimeOfDay::TimeOfDay(void* pCry3DEngine)
 		VF_NOT_NET_SYNCED,
 		"Enable TimeOfDay Debug mode. 0=Off, 1=Overview, 2=Atmosphere/Fog/Skylight, 3=Night Sky/Moon, 4=Color Grading/PostFX, 5=WeatherSystem Post Multipliers."
 	);
+	gEnv->pConsole->Register(
+		"e_time_of_day_hq_transitions",
+		&m_highQualityTransitions,
+		0,
+		VF_NOT_NET_SYNCED,
+		"Enable TimeOfDay High Quality transitions (reduces fps)."
+	);
 }
 
 TimeOfDay::~TimeOfDay()
@@ -229,8 +236,6 @@ void TimeOfDay::Tick()
 			m_startTime = m_transitionTargetStartTime;
 			m_endTime = m_transitionTargetEndTime;
 
-			*m_speedCVarValue = m_speed;
-
 			this->Update(true, true);
 		}
 	}
@@ -239,7 +244,7 @@ void TimeOfDay::Tick()
 	{
 		if (m_isTransitioning)
 		{
-			this->Update(true, true);
+			this->Update(true, m_highQualityTransitions != 0);
 		}
 		return;
 	}

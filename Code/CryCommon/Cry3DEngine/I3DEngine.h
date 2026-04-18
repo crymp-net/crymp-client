@@ -1014,6 +1014,10 @@ struct ITimeOfDay
 	virtual bool IsPaused() const = 0;
 	virtual void DebugDraw() = 0;
 	virtual void LoadCustomSettings(string xmlPath, float blendDuration = 0.0f) = 0;
+	virtual float GetTransitionTime() const = 0;
+	virtual float GetTransitionDuration() const = 0;
+	virtual bool IsTransitioning() const = 0;
+	virtual const string& GetActiveCustomTodFile() const = 0;
 };
 
 

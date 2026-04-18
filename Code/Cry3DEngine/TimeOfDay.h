@@ -126,6 +126,7 @@ private:
 	float* m_speedCVarValue = nullptr;        // e_time_of_day_speed
 
 	int m_debug = 0;
+	int m_highQualityTransitions = 0;
 
 	ITimer* m_timer = nullptr;
 	ITimer** m_someOtherTimer = nullptr;
@@ -147,11 +148,6 @@ public:
 	~TimeOfDay();
 
 	float GetHDRMultiplier() const { return m_HDRMultiplier; }
-	float GetCurrentTime() const { return m_currentTime; }
-	float GetTransitionTime() const { return m_transitionTime; }
-	float GetTransitionDuration() const { return m_transitionDuration; }
-	bool IsTransitioning() const { return m_transitionDuration > 0.0f && m_transitionTime < m_transitionDuration; }
-	const string& GetActiveCustomTodFile() const { return m_activeCustomTodFile; }
 
 	////////////////////////////////////////////////////////////////////////////////
 	// ITimeOfDay
@@ -190,6 +186,22 @@ public:
 
 	void DebugDraw() override;
 	void LoadCustomSettings(string xmlPath, float blendDuration = 0.0f) override;
+	float GetTransitionTime() const override 
+	{ 
+		return m_transitionTime; 
+	} 
+	float GetTransitionDuration() const override 
+	{ 
+		return m_transitionDuration;
+	}
+	bool IsTransitioning() const override 
+	{
+		return m_transitionDuration > 0.0f && m_transitionTime < m_transitionDuration; 
+	}
+	const string& GetActiveCustomTodFile() const override 
+	{
+		return m_activeCustomTodFile;
+	}
 
 	////////////////////////////////////////////////////////////////////////////////
 
