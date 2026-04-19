@@ -419,14 +419,10 @@ ILINE int8 float_to_ifrac8( float f )
 }
 
 
-static int32 inc_mod3[]={1,2,0}, dec_mod3[]={2,0,1};
-#ifdef PHYSICS_EXPORTS
+constexpr int32 inc_mod3[] = {1,2,0};
+constexpr int32 dec_mod3[] = {2,0,1};
 #define incm3(i) inc_mod3[i]
 #define decm3(i) dec_mod3[i]
-#else
-inline int32 incm3(int32 i) { return i+1 & (i-2)>>31; }
-inline int32 decm3(int32 i) { return i-1 + ((i-1)>>31&3); }
-#endif
 
 
 template<class F> inline F square(F fOp) { return(fOp*fOp); }
