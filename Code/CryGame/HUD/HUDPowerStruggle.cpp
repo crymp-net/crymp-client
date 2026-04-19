@@ -1473,7 +1473,7 @@ void CHUDPowerStruggle::PopulateBuyList(bool clearEntitites)
 	ActivateBuyMenuTabs();
 
 	char buffer[10];
-	itoa(m_lastPurchase.iPrice, buffer, 10);
+	_itoa(m_lastPurchase.iPrice, buffer, 10);
 
 	std::wstring localized = g_pHUD->LocalizeWithParams("@ui_buy_REPEATLASTBUY", true, buffer);
 
