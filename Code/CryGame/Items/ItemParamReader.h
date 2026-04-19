@@ -103,7 +103,7 @@ private:
 				if (node)
 				{
 					const char *nodeName = node->GetNameAttribute();
-					if (nodeName && nodeName[0] && !strcmpi(nodeName, name))
+					if (nodeName && nodeName[0] && !_stricmp(nodeName, name))
 						return node;
 				}
 			}

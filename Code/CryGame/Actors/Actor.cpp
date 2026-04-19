@@ -875,9 +875,9 @@ void CActor::SetActorModel()
 		{
 			//entity:LoadObject
 			const char* ext = CryPath::GetExt(m_frozenModel.c_str());
-			if (stricmp(ext, CRY_CHARACTER_FILE_EXT) == 0 ||
-				stricmp(ext, CRY_CHARACTER_DEFINITION_FILE_EXT) == 0 ||
-				stricmp(ext, CRY_ANIM_GEOMETRY_FILE_EXT) == 0)
+			if (_stricmp(ext, CRY_CHARACTER_FILE_EXT) == 0 ||
+				_stricmp(ext, CRY_CHARACTER_DEFINITION_FILE_EXT) == 0 ||
+				_stricmp(ext, CRY_ANIM_GEOMETRY_FILE_EXT) == 0)
 			{
 				GetEntity()->LoadCharacter(EntitySlot::FROZEN, m_frozenModel.c_str());
 			}

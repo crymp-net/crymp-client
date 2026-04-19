@@ -291,15 +291,15 @@ void SAmmoParams::LoadPhysics()
 	const char* typ = physics->GetAttribute("type");
 	if (typ)
 	{
-		if (!strcmpi(typ, "particle"))
+		if (!_stricmp(typ, "particle"))
 		{
 			physicalizationType = ePT_Particle;
 		}
-		else if (!strcmpi(typ, "rigid"))
+		else if (!_stricmp(typ, "rigid"))
 		{
 			physicalizationType = ePT_Rigid;
 		}
-		else if (!strcmpi(typ, "static"))
+		else if (!_stricmp(typ, "static"))
 		{
 			physicalizationType = ePT_Static;
 		}

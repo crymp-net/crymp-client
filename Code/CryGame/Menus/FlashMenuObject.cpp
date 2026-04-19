@@ -736,7 +736,7 @@ bool CFlashMenuObject::OnInputEvent(const SInputEvent& rInputEvent)
 
 		if (ICVar* requireinputdevice = gEnv->pConsole->GetCVar("sv_requireinputdevice"))
 		{
-			if (!strcmpi(requireinputdevice->GetString(), "gamepad") && !m_iGamepadsConnected && !IsActive())
+			if (!_stricmp(requireinputdevice->GetString(), "gamepad") && !m_iGamepadsConnected && !IsActive())
 				ShowInGameMenu(true);
 		}
 
@@ -3065,7 +3065,7 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 
 	if (ICVar* requireinputdevice = gEnv->pConsole->GetCVar("sv_requireinputdevice"))
 	{
-		if (!strcmpi(requireinputdevice->GetString(), "gamepad") && !m_iGamepadsConnected && !IsActive())
+		if (!_stricmp(requireinputdevice->GetString(), "gamepad") && !m_iGamepadsConnected && !IsActive())
 			ShowInGameMenu(true);
 	}
 

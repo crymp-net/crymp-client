@@ -20,12 +20,9 @@
 //========================================================================================
 
 #include "CryCommon/CryCore/platform.h"
+#include <float.h>
 #include <math.h>
 #include "Cry_ValidNumber.h"
-
-#ifdef LINUX
-#include <values.h>
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // Forward declarations                                                      //
