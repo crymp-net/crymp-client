@@ -2,6 +2,7 @@
 #include "CryCommon/CryAction/IGameplayRecorder.h"
 #include "CryCommon/CryAISystem/IAISystem.h"
 #include "CryCommon/CryAnimation/ICryAnimation.h"
+#include "CryCommon/CryCore/CryMalloc.h" // CryMalloc
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 #include "CryCommon/CryScriptSystem/IScriptSystem.h"
 #include "CryCommon/CrySoundSystem/ISound.h"
@@ -294,7 +295,9 @@ void ItemSystem::Scan(const char* folderName)
 
 IItemParamsNode* ItemSystem::CreateParams()
 {
-	return new ItemParamsNode();
+	// use CryMalloc to match CryFree used by the original ItemParamsNode destructor
+	void* mem = CryMalloc(sizeof(ItemParamsNode));
+	return new (mem) ItemParamsNode;
 }
 
 const IItemParamsNode* ItemSystem::GetItemParams(const char* itemName) const
