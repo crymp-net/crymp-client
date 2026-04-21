@@ -27,6 +27,7 @@ History:
 #include "CryMP/Client/Client.h"
 #include "CryMP/Client/ServerBrowser.h"
 
+
 enum EServerInfoKey
 {
 	eSIK_unknown,
@@ -56,10 +57,11 @@ enum EServerInfoKey
 
 	//crymp
 	eSIK_connectable,
+	eSIK_teams,
 
 	//mods
 	eSIK_modName,
-	eSIK_modVersion
+	eSIK_modVersion,
 };
 
 
@@ -88,7 +90,8 @@ static TKeyValuePair<EServerInfoKey, const char*> gServerKeyNames[] = {
 	{eSIK_playerDeaths,"deaths"},
 	{eSIK_connectable,"connectable"},
 	{eSIK_modName,"modname"},
-	{eSIK_modVersion,"modversion"}
+	{eSIK_modVersion,"modversion"},
+	{eSIK_teams,"teams"}
 };
 
 static EServerInfoKey StringToServerInfoKey(const char *value)
@@ -259,6 +262,7 @@ struct CMultiPlayerMenu::SGSBrowser : public IServerListener
 		si.m_ping = 10000;
 		si.m_modName = info->m_modName;
 		si.m_modVersion = info->m_modVersion;
+
 		for (int i = 0;i < m_menu->m_favouriteServers.size();++i)
 		{
 			SStoredServer& srv = m_menu->m_favouriteServers[i];
@@ -344,6 +348,9 @@ struct CMultiPlayerMenu::SGSBrowser : public IServerListener
 			case eSIK_modVersion:
 				si.m_modVersion = value;
 				break;
+			case eSIK_teams:
+				si.m_teams = atoi(value);
+				break;
 			default:
 				basic = false;
 			}
@@ -391,6 +398,9 @@ struct CMultiPlayerMenu::SGSBrowser : public IServerListener
 			break;
 		case eSIK_modVersion:
 			m_details.m_modversion = value;
+			break;
+		case eSIK_teams:
+			m_details.m_teams = atoi(value);
 			break;
 		default:
 			return;
@@ -1112,6 +1122,8 @@ void CMultiPlayerMenu::JoinServer()
 		serv.m_recent = true;
 		m_ui->UpdateServer(serv);
 		m_hub->ShowLoadingDlg("@ui_connecting_to", serv.m_hostName.c_str());
+
+		m_connectingToPopulatedServer = serv.m_numPlayers > 1;
 	}
 }
 

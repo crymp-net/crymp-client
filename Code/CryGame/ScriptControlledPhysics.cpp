@@ -11,6 +11,7 @@ History:
 
 *************************************************************************/
 #include "CryCommon/CrySystem/ISystem.h"
+#include "CryCommon/CryCore/CrySizer.h"
 #include "CryCommon/CryCore/TArray.h"  // CLAMP
 #include "CryCommon/CryPhysics/IPhysics.h"
 #include "ScriptControlledPhysics.h"

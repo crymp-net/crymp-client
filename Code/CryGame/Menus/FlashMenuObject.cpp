@@ -116,7 +116,7 @@ CFlashMenuObject* CFlashMenuObject::s_pFlashMenuObject = NULL;
 CFlashMenuObject::CFlashMenuObject()
 	: m_pFlashPlayer(0)
 	, m_pVideoPlayer(0)
-	, m_multiplayerMenu(0)
+	, m_mpHub(0)
 {
 	s_pFlashMenuObject = this;
 
@@ -217,7 +217,7 @@ CFlashMenuObject::CFlashMenuObject()
 
 	m_pMusicSystem = gEnv->pSystem->GetIMusicSystem();
 
-	m_multiplayerMenu = new CMPHub();
+	m_mpHub = new CMPHub();
 	m_bExclusiveVideo = false;
 
 	if (gEnv->bEditor)
@@ -226,11 +226,6 @@ CFlashMenuObject::CFlashMenuObject()
 	// create the avi reader;
 	//m_pAVIReader = g_pISystem->CreateAVIReader();
 	//m_pAVIReader->OpenFile("Crysis_main_menu_background.avi");
-
-
-
-
-
 }
 
 
@@ -238,7 +233,7 @@ CFlashMenuObject::CFlashMenuObject()
 
 CFlashMenuObject::~CFlashMenuObject()
 {
-	SAFE_DELETE(m_multiplayerMenu);
+	SAFE_DELETE(m_mpHub);
 
 	SAFE_RELEASE(m_pFlashPlayer);
 	SAFE_RELEASE(m_pVideoPlayer);
@@ -431,7 +426,9 @@ void CFlashMenuObject::PlaySound(ESound eSound, bool bPlay)
 		{
 			ISound* pOldSound = gEnv->pSoundSystem->GetSound(m_soundIDs[eSound]);
 			if (pOldSound)
+			{
 				pOldSound->Stop();
+			}
 
 			m_soundIDs[eSound] = INVALID_SOUNDID;
 		}
@@ -442,7 +439,6 @@ void CFlashMenuObject::PlaySound(ESound eSound, bool bPlay)
 			pSound->SetSemantic(eSoundSemantic);
 			m_soundIDs[eSound] = pSound->GetId();
 			pSound->Play();
-
 		}
 	}
 	else if (m_soundIDs[eSound] != INVALID_SOUNDID)
@@ -681,9 +677,9 @@ bool CFlashMenuObject::OnInputEvent(const SInputEvent& rInputEvent)
 				//CryMP: F5 for refreshing serverlist
 				if (rInputEvent.keyId == eKI_F5)
 				{
-					if (m_pCurrentFlashMenuScreen && m_multiplayerMenu)
+					if (m_pCurrentFlashMenuScreen && m_mpHub)
 					{
-						m_multiplayerMenu->HandleFSCommand("UpdateServerList", "");
+						m_mpHub->HandleFSCommand("UpdateServerList", "");
 					}
 				}
 			}
@@ -740,7 +736,7 @@ bool CFlashMenuObject::OnInputEvent(const SInputEvent& rInputEvent)
 
 		if (ICVar* requireinputdevice = gEnv->pConsole->GetCVar("sv_requireinputdevice"))
 		{
-			if (!strcmpi(requireinputdevice->GetString(), "gamepad") && !m_iGamepadsConnected && !IsActive())
+			if (!_stricmp(requireinputdevice->GetString(), "gamepad") && !m_iGamepadsConnected && !IsActive())
 				ShowInGameMenu(true);
 		}
 
@@ -1116,7 +1112,7 @@ void CFlashMenuObject::OnLoadingStart(ILevelInfo* pLevel)
 	m_bUpdate = true;
 	m_nBlackGraceFrames = 0;
 
-	if (m_pMusicSystem && m_fMusicFirstTime == -1.0f)
+	if (m_pMusicSystem && m_mpHub && m_mpHub->IsConnectingToPopulatedServer())
 	{
 		m_pMusicSystem->SetMood("multiplayer_high");
 	}
@@ -1371,6 +1367,21 @@ void CFlashMenuObject::HideInGameMenuNextFrame(bool bRestoreGameMusic, bool doNo
 		}
 
 		m_bUpdate = false;
+
+		if (m_pCurrentFlashMenuScreen && m_pCurrentFlashMenuScreen->GetFlashPlayer())
+		{
+			//CryMP: Stop credits if active
+			SFlashVarValue value[1] = { "" };
+			if (m_pCurrentFlashMenuScreen->GetFlashPlayer()->GetVariable("_root.CreditStartsAlpha._visible", value))
+			{
+				const int openCredits = value->GetInt();
+				if (openCredits)
+				{
+					m_pCurrentFlashMenuScreen->Invoke("stopCredits", true);
+				}
+			}
+		}
+
 		m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->SetVisible(false);
 
 		LockPlayerInputs(m_bUpdate);
@@ -2115,11 +2126,11 @@ void CFlashMenuObject::HandleFSCommand(const char* szCommand, const char* szArgs
 	}
 	else if (!strcmp(szCommand, "EnterLoginScreen"))
 	{
-		m_multiplayerMenu->SetIsInLogin(true);
+		m_mpHub->SetIsInLogin(true);
 	}
 	else if (!strcmp(szCommand, "LeaveLoginScreen"))
 	{
-		m_multiplayerMenu->SetIsInLogin(false);
+		m_mpHub->SetIsInLogin(false);
 	}
 	else if (!strcmp(szCommand, "GotoLink_Terms"))
 	{
@@ -2280,8 +2291,8 @@ void CFlashMenuObject::HandleFSCommand(const char* szCommand, const char* szArgs
 		  gEnv->pConsole->ExecuteString("g_quickGameStop");
 		  m_QuickGame = false;
 		}*/
-		if (m_multiplayerMenu)
-			m_multiplayerMenu->HandleFSCommand(szCommand, szArgs);
+		if (m_mpHub)
+			m_mpHub->HandleFSCommand(szCommand, szArgs);
 
 		m_pCurrentFlashMenuScreen = m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART];
 		if (m_pMusicSystem)
@@ -2526,12 +2537,25 @@ void CFlashMenuObject::HandleFSCommand(const char* szCommand, const char* szArgs
 			m_pMusicSystem->SetTheme("reactor_slow", false, false);
 			m_pMusicSystem->SetMood("ambient", true, false);
 		}
+
+		m_creditsPlaying = true;
 	}
 	else if (!strcmp(szCommand, "credits_stop"))
 	{
 		PlaySound(ESound_MenuAmbience);
 		m_pMusicSystem->SetTheme("menu", true, false);
 		m_pMusicSystem->SetMood("menu_music", true, true);
+
+		m_creditsPlaying = false;
+	}
+	else if (!strcmp(szCommand, "credits_stop_ingame"))
+	{
+		//CryMP: We're closing menu, don't start menu music
+		/*PlaySound(ESound_MenuAmbience);
+		m_pMusicSystem->SetTheme("menu", true, false);
+		m_pMusicSystem->SetMood("menu_music", true, true);*/
+
+		m_creditsPlaying = false;
 	}
 	else if (!strcmp(szCommand, "credit_group1"))
 	{
@@ -2706,7 +2730,7 @@ void CFlashMenuObject::HandleFSCommand(const char* szCommand, const char* szArgs
 
 	// Credits End
 
-	else if (m_multiplayerMenu && m_multiplayerMenu->HandleFSCommand(szCommand, szArgs))
+	else if (m_mpHub && m_mpHub->HandleFSCommand(szCommand, szArgs))
 	{
 		//handled by Multiplayer menu
 	}
@@ -2737,11 +2761,14 @@ bool CFlashMenuObject::Load()
 
 //-----------------------------------------------------------------------------------------------------
 
-void CFlashMenuObject::InitStartMenu()
+void CFlashMenuObject::InitStartMenu(bool fromDisconnect)
 {
-	for (int iSound = 0; iSound < ESound_Last; iSound++)
+	if (!fromDisconnect)
 	{
-		m_soundIDs[iSound] = INVALID_SOUNDID;
+		for (int iSound = 0; iSound < ESound_Last; iSound++)
+		{
+			m_soundIDs[iSound] = INVALID_SOUNDID;
+		}
 	}
 
 	if (!m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART])
@@ -2801,9 +2828,9 @@ void CFlashMenuObject::InitStartMenu()
 
 	m_pCurrentFlashMenuScreen = m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART];
 	HardwareEvaluation();
-	if (m_multiplayerMenu)
+	if (m_mpHub)
 	{
-		m_multiplayerMenu->SetCurrentFlashScreen(m_pCurrentFlashMenuScreen->GetFlashPlayer(), false);
+		m_mpHub->SetCurrentFlashScreen(m_pCurrentFlashMenuScreen->GetFlashPlayer(), false);
 	}
 	m_bIgnoreEsc = true;
 	m_bExclusiveVideo = false;
@@ -2822,8 +2849,8 @@ void CFlashMenuObject::DestroyStartMenu()
 {
 	if (m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART] && m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART]->IsLoaded())
 	{
-		if (m_multiplayerMenu)
-			m_multiplayerMenu->SetCurrentFlashScreen(0, false);
+		if (m_mpHub)
+			m_mpHub->SetCurrentFlashScreen(0, false);
 
 		this->ShowMouseCursor(false);
 		m_apFlashMenuScreens[MENUSCREEN_FRONTENDSTART]->Unload();
@@ -2919,12 +2946,12 @@ void CFlashMenuObject::InitIngameMenu()
 
 	HardwareEvaluation();
 
-	if (m_multiplayerMenu)
+	if (m_mpHub)
 	{
-		m_multiplayerMenu->SetCurrentFlashScreen(m_pCurrentFlashMenuScreen->GetFlashPlayer(), true);
+		m_mpHub->SetCurrentFlashScreen(m_pCurrentFlashMenuScreen->GetFlashPlayer(), true);
 
 		//CryMP: Update server list when opening
-		m_multiplayerMenu->HandleFSCommand("UpdateServerList", "");
+		m_mpHub->HandleFSCommand("UpdateServerList", "");
 	}
 
 	g_pGame->GetOptions()->UpdateFlashOptions();
@@ -2942,9 +2969,9 @@ void CFlashMenuObject::DestroyIngameMenu(bool unload)
 
 		if (unload)
 		{
-			if (m_multiplayerMenu)
+			if (m_mpHub)
 			{
-				m_multiplayerMenu->SetCurrentFlashScreen(nullptr, true);
+				m_mpHub->SetCurrentFlashScreen(nullptr, true);
 			}
 
 			m_apFlashMenuScreens[MENUSCREEN_FRONTENDINGAME]->Unload();
@@ -2980,7 +3007,7 @@ void CFlashMenuObject::HardwareEvaluation()
 
 CMPHub* CFlashMenuObject::GetMPHub()const
 {
-	return m_multiplayerMenu;
+	return m_mpHub;
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -3038,7 +3065,7 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 
 	if (ICVar* requireinputdevice = gEnv->pConsole->GetCVar("sv_requireinputdevice"))
 	{
-		if (!strcmpi(requireinputdevice->GetString(), "gamepad") && !m_iGamepadsConnected && !IsActive())
+		if (!_stricmp(requireinputdevice->GetString(), "gamepad") && !m_iGamepadsConnected && !IsActive())
 			ShowInGameMenu(true);
 	}
 
@@ -3137,7 +3164,12 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 		{
 			m_pMusicSystem->LoadFromXML("music/act1.xml", true, false);
 			m_pMusicSystem->SetTheme("menu", true, false);
-			m_pMusicSystem->SetDefaultMood("menu_music_1st_time");
+			if (!m_firstTimeMusic)
+			{
+				m_pMusicSystem->SetDefaultMood("menu_music_1st_time");
+				m_firstTimeMusic = true;
+			}
+
 			m_fMusicFirstTime = gEnv->pTimer->GetAsyncTime().GetSeconds();
 		}
 
@@ -3145,7 +3177,9 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 		{
 			// prevents to play ambience if window got minimized or alt-tapped
 			if (!gEnv->pSoundSystem->IsPaused())
+			{
 				PlaySound(ESound_MenuAmbience);
+			}
 		}
 	}
 
@@ -3347,7 +3381,11 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 		if (m_bExclusiveVideo == false && m_pCurrentFlashMenuScreen && m_pCurrentFlashMenuScreen->IsLoaded())
 		{
 			//CryMP: Custom menu animations speed
-			m_pCurrentFlashMenuScreen->GetFlashPlayer()->Advance(fDeltaTime * g_pGameCVars->mp_menuSpeed);
+			//Keep default menu speed for credits
+
+			const float menuSpeed = m_creditsPlaying ? fDeltaTime : fDeltaTime * g_pGameCVars->mp_menuSpeed;
+
+			m_pCurrentFlashMenuScreen->GetFlashPlayer()->Advance(menuSpeed);
 			m_pCurrentFlashMenuScreen->GetFlashPlayer()->Render();
 		}
 	}
@@ -3449,19 +3487,6 @@ void CFlashMenuObject::OnPostUpdate(float fDeltaTime)
 
 		if (show)
 		{
-			const float y = 580.f;
-			const float x = 235.f;
-			const float sy = gEnv->pRenderer->ScaleCoordY(y);
-			const float sx = gEnv->pRenderer->ScaleCoordX(x + x * 0.5f);
-			const auto ct = g_pGameCVars->hud_colorOver + 50;
-
-			const float r = ((ct >> 16) & 0xFF) / 255.0f;
-			const float g = ((ct >> 8) & 0xFF) / 255.0f;
-			const float b = ((ct >> 0) & 0xFF) / 255.0f;
-
-			float color[]{ r, g, b, 1.0 };
-			const float size = 1.0f + (width / 800.f) * 0.3f;
-
 			if (!skipDots)
 			{
 				status.append(m_dotCounter, '.');
@@ -3904,27 +3929,27 @@ void CFlashMenuObject::OnActionEvent(const SActionEvent& event)
 	switch (event.m_event)
 	{
 	case eAE_connectFailed:
-		if (m_multiplayerMenu) m_multiplayerMenu->OnUIEvent(SUIEvent(eUIE_connectFailed, event.m_value, event.m_description));
+		if (m_mpHub) m_mpHub->OnUIEvent(SUIEvent(eUIE_connectFailed, event.m_value, event.m_description));
 		break;
 	case eAE_disconnected:
 	{
 		if (!m_returnToStartMenu)
 		{
 			//DestroyIngameMenu();
-			InitStartMenu();
+			InitStartMenu(true);
 		}
 
 		m_returnToStartMenu = false;
 
-		if (m_multiplayerMenu)
+		if (m_mpHub)
 		{
-			m_multiplayerMenu->OnUIEvent(SUIEvent(eUIE_disconnect, event.m_value, event.m_description));
+			m_mpHub->OnUIEvent(SUIEvent(eUIE_disconnect, event.m_value, event.m_description));
 		}
 
 		break;
 	}
 	case eAE_channelCreated:
-		if (m_multiplayerMenu) m_multiplayerMenu->OnUIEvent(SUIEvent(eUIE_connect));
+		if (m_mpHub) m_mpHub->OnUIEvent(SUIEvent(eUIE_connect));
 		break;
 	case eAE_resetBegin:
 		MP_ResetBegin();
@@ -4129,12 +4154,12 @@ void CFlashMenuObject::CloseWaitingScreen()
 
 void CFlashMenuObject::UpdateNetwork(float fDeltaTime)
 {
-	if (!gEnv || !gEnv->pNetwork || !m_pCurrentFlashMenuScreen || !m_multiplayerMenu)
+	if (!gEnv || !gEnv->pNetwork || !m_pCurrentFlashMenuScreen || !m_mpHub)
 	{
 		return;
 	}
 
-	if (!m_multiplayerMenu->IsInLobby() && !m_multiplayerMenu->IsInLogin() && !gEnv->bMultiplayer)
+	if (!m_mpHub->IsInLobby() && !m_mpHub->IsInLogin() && !gEnv->bMultiplayer)
 	{
 		m_pCurrentFlashMenuScreen->CheckedInvoke("setNetwork", true);
 	}

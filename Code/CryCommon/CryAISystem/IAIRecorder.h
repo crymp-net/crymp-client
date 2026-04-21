@@ -27,8 +27,6 @@ struct IAIRecorder
 
 };
 
-class CStream;
-
 struct IAIDebugRecord;
 
 struct IAIRecordable

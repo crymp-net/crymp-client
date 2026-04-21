@@ -257,6 +257,7 @@ public:
 	bool IsInLogin() const;
 	void SetIsInLogin(bool isInLogin);
 	void ShowRetrivePasswordResult(bool ok);
+	bool IsConnectingToPopulatedServer();
 
 private:
   IFlashPlayer*                   m_currentScreen;

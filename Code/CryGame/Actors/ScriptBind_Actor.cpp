@@ -1316,7 +1316,7 @@ int CScriptBind_Actor::GetClosestAttachment(IFunctionHandler* pH, int characterS
 	if (pDotChar)
 		*pDotChar = 0;
 
-	strlwr(attachmentName);
+	_strlwr(attachmentName);
 	//
 
 	return pH->EndFunction(attachmentName);

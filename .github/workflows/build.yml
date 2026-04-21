@@ -36,6 +36,8 @@ jobs:
 
       - name: Build
         id: build
+        env:
+          CXXFLAGS: /WX
         run: |
           $PSNativeCommandUseErrorActionPreference = $true
           $vs_path = & 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe' `

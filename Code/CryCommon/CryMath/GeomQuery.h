@@ -13,8 +13,10 @@
 #ifndef GEOM_QUERY_H
 #define GEOM_QUERY_H
 
+#include "Cry_Math.h"
 #include "Cry_Geo.h"
 #include "CryCommon/CryCore/CryArray.h"
+#include "CryCommon/CrySystem/ISystem.h" // FSystemAlloc
 
 // Implementation for efficient repeated queries.
 struct GeomQuery
@@ -163,8 +165,6 @@ inline float BoxExtent(EGeomForm eForm, Vec3 const& vSize)
 {
 	switch (eForm)
 	{
-		default:
-			assert(0);
 		case GeomForm_Vertices:
 			return 8.f;
 		case GeomForm_Edges:
@@ -303,8 +303,6 @@ inline float TriExtent(EGeomForm eForm, Vec3 const& v0, Vec3 const& v1, Vec3 con
 {
 	switch (eForm)
 	{
-		default:
-			assert(0);
 		case GeomForm_Edges:
 			return (v1-v0).GetLength() + (v2-v1).GetLength() + (v0-v2).GetLength();
 		case GeomForm_Surface:
