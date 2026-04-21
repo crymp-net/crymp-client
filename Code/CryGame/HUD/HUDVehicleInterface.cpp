@@ -197,10 +197,10 @@ CHUDVehicleInterface::EVehicleHud CHUDVehicleInterface::ChooseVehicleHUD(IVehicl
 
 void CHUDVehicleInterface::OnEnterVehicle(IActor* pActor, const char* szVehicleClassName, const char* szSeatName)
 {
-	m_bParachute = (bool)(!strcmpi(szVehicleClassName, "Parachute"));
+	m_bParachute = (bool)(!_stricmp(szVehicleClassName, "Parachute"));
 	if (m_bParachute)
 	{
-		bool open = (bool)(!strcmpi(szSeatName, "Open"));
+		bool open = (bool)(!_stricmp(szSeatName, "Open"));
 		m_animStats.Reload();
 		assert(NULL == m_pVehicle);  // Attempt to enter in parachute while already in a vehicle!
 		m_animStats.Invoke("setActiveParachute", open);

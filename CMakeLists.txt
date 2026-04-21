@@ -748,6 +748,8 @@ target_compile_options(Base PUBLIC /W4
 	/wd4245  # Disable - 'conversion' : conversion from 'type1' to 'type2', signed/unsigned mismatch
 	/wd4267  # Disable - 'var' : conversion from 'size_t' to 'type', possible loss of data
 	/wd4305  # Disable - 'conversion': truncation from 'type1' to 'type2'
+	/wd4324  # Disable - structure was padded due to alignment specifier
+	/wd4334  # Disable - '<<': result of 32-bit shift implicitly converted to 64 bits
 	/wd4456  # Disable - declaration of 'identifier' hides previous local declaration
 	/wd4458  # Disable - declaration of 'identifier' hides class member
 	/wd4702  # Disable - unreachable code

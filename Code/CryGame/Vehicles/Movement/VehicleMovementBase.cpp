@@ -1620,7 +1620,7 @@ bool CVehicleMovementBase::IsProfilingMovement()
 
 	static ICVar* pDebugVehicle = gEnv->pConsole->GetCVar("v_debugVehicle");
 
-	if (g_pGameCVars->v_profileMovement && (m_pVehicle->IsPlayerDriving() || 0 == strcmpi(pDebugVehicle->GetString(), m_pVehicle->GetEntity()->GetName())))
+	if (g_pGameCVars->v_profileMovement && (m_pVehicle->IsPlayerDriving() || 0 == _stricmp(pDebugVehicle->GetString(), m_pVehicle->GetEntity()->GetName())))
 		return true;
 
 	return false;
@@ -2090,7 +2090,7 @@ void CVehicleMovementBase::DebugDraw(const float deltaTime)
 
 	while (g_pGameCVars->v_debugSounds)
 	{
-		if (!m_pVehicle->IsPlayerPassenger() && 0 != strcmpi(m_pVehicle->GetEntity()->GetName(), pDebugVehicle->GetString()))
+		if (!m_pVehicle->IsPlayerPassenger() && 0 != _stricmp(m_pVehicle->GetEntity()->GetName(), pDebugVehicle->GetString()))
 			break;
 
 		gEnv->pRenderer->Draw2dLabel(500, y, 1.5f, color, false, "vehicle rpm: %.2f", m_rpmScale);
@@ -2174,7 +2174,7 @@ void CVehicleMovementBase::DebugDraw(const float deltaTime)
 
 	while (g_pGameCVars->v_sprintSpeed != 0.f)
 	{
-		if (!m_pVehicle->IsPlayerPassenger() && 0 != strcmpi(m_pVehicle->GetEntity()->GetName(), pDebugVehicle->GetString()))
+		if (!m_pVehicle->IsPlayerPassenger() && 0 != _stricmp(m_pVehicle->GetEntity()->GetName(), pDebugVehicle->GetString()))
 			break;
 
 		float speed = m_pVehicle->GetStatus().speed;

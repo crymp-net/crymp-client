@@ -600,7 +600,7 @@ bool CItem::ReadAccessoryAmmo(const IItemParamsNode *ammos)
 	for (int i=0; i<ammos->GetChildCount(); i++)
 	{
 		const IItemParamsNode *ammo = ammos->GetChild(i);
-		if (!strcmpi(ammo->GetName(), "ammo"))
+		if (!_stricmp(ammo->GetName(), "ammo"))
 		{
 			int amount=0;
 

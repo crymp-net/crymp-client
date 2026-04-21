@@ -16,29 +16,7 @@
 
 #pragma once
 
-// Temporary here
-#define _CRT_SECURE_NO_DEPRECATE
-#define _CRT_NONSTDC_NO_DEPRECATE
-
-// Debug STL turned off so we can use intermixed debug/release versions of DLL.
-//#undef _HAS_ITERATOR_DEBUGGING
-//#define _HAS_ITERATOR_DEBUGGING 0
-//#undef _SECURE_SCL
-//#define _SECURE_SCL 0
-
-#if defined(_DEBUG) && !defined(PS3) && !defined(LINUX)
-	#include <crtdbg.h>
-#endif
-
-//////////////////////////////////////////////////////////////////////////
-// Available predefined compiler macros for Visual C++.
-// _MSC_VER                   // Indicates MS Visual C compiler version
-// _WIN32, _WIN64, _XBOX_VER  // Indicates target OS
-// _M_IX86, _M_PPC            // Indicates target processor
-// _DEBUG                     // Building in Debug mode
-// _DLL                       // Linking with DLL runtime libs
-// _MT                        // Linking with multi-threaded runtime libs
-//////////////////////////////////////////////////////////////////////////
+#include <stdint.h>
 
 //
 // Translate some predefined macros.
@@ -111,12 +89,16 @@
 //////////////////////////////////////////////////////////////////////////
 // Platform: WIN23,WIN64,LINUX32,LINUX64,_XBOX
 //////////////////////////////////////////////////////////////////////////
+#ifdef _MSC_VER
 #define ILINE __forceinline
+#else
+#define ILINE inline
+#endif
 
+#ifdef _MSC_VER
 #define DEPRICATED __declspec(deprecated)
-
-#ifndef _WIN32_WINNT
-# define _WIN32_WINNT 0x501
+#else
+#define DEPRICATED
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -125,15 +107,17 @@
 typedef signed char         int8;
 typedef signed short        int16;
 typedef signed int          int32;
-typedef signed __int64      int64;
+typedef int64_t             int64;
 typedef unsigned char       uint8;
 typedef unsigned short      uint16;
 typedef unsigned int        uint32;
-typedef unsigned __int64    uint64;
+typedef uint64_t            uint64;
 typedef float               f32;
 typedef double              f64;
 typedef double              real;  //biggest float-type on this machine
 typedef unsigned long       DWORD;
+
+#ifdef _MSC_VER
 
 #ifdef WIN64
 typedef __int64 INT_PTR, *PINT_PTR;
@@ -147,6 +131,16 @@ typedef __w64 unsigned int UINT_PTR, *PUINT_PTR;
 
 typedef __w64 long LONG_PTR, *PLONG_PTR;
 typedef __w64 unsigned long ULONG_PTR, *PULONG_PTR;
+#endif
+
+#else
+
+typedef intptr_t INT_PTR, *PINT_PTR;
+typedef uintptr_t UINT_PTR, *PUINT_PTR;
+
+typedef intptr_t LONG_PTR, *PLONG_PTR;
+typedef uintptr_t ULONG_PTR, *PULONG_PTR;
+
 #endif
 
 typedef ULONG_PTR DWORD_PTR, *PDWORD_PTR;

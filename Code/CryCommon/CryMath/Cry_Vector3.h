@@ -829,7 +829,7 @@ template <typename F> struct Ang3_tpl
 	Ang3_tpl(type_zero) { x=y=z=0; }
 
 	void operator () ( F vx, F vy,F vz ) { x=vx; y=vy; z=vz; };
-	ILINE Ang3_tpl<F>( F vx, F vy, F vz )	{	x=vx; y=vy; z=vz;	}  
+	ILINE Ang3_tpl( F vx, F vy, F vz )	{	x=vx; y=vy; z=vz;	}
 
 	explicit ILINE Ang3_tpl(const Vec3_tpl<F>& v) : x((F)v.x), y((F)v.y), z((F)v.z) { assert(this->IsValid()); }
 

@@ -21,6 +21,8 @@ History:
 #include <cstdint>
 #include <utility>
 
+#include "CryCommon/CryCore/CryMalloc.h" // CryMalloc
+#include "CryCommon/CryCore/CrySizer.h"
 #include "CryCommon/CryEntitySystem/IEntity.h"
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 #include "CryCommon/CryScriptSystem/IScriptSystem.h"
@@ -1732,18 +1734,35 @@ struct IVehicleIterator
 };
 typedef _smart_ptr<IVehicleIterator> IVehicleIteratorPtr;
 
+// use CryMalloc to match CryFree used by original destructors in CryAction.dll
+#define DECLARE_GAMEOBJECT_FACTORY_VEHICLE_SYSTEM(impl) \
+public: \
+	virtual void RegisterFactory(const char* name, impl* (*)(), bool isAI) = 0; \
+	template <class T> void RegisterFactory(const char* name, impl*, bool isAI, T*) \
+	{ \
+		struct Factory \
+		{ \
+			static impl* Create() \
+			{ \
+				void* mem = CryMalloc(sizeof(T)); \
+				return new (mem) T; \
+			} \
+		}; \
+		RegisterFactory(name, Factory::Create, isAI); \
+	}
+
 // Summary:
 //   Vehicle System interface
 // Description:
 //   Interface used to implement the vehicle system. 
 struct IVehicleSystem
 {
-	DECLARE_GAMEOBJECT_FACTORY(IVehicleMovement);
-	DECLARE_GAMEOBJECT_FACTORY(IVehicleView);
-	DECLARE_GAMEOBJECT_FACTORY(IVehiclePart);
-	DECLARE_GAMEOBJECT_FACTORY(IVehicleDamageBehavior);
-	DECLARE_GAMEOBJECT_FACTORY(IVehicleSeatAction);
-	DECLARE_GAMEOBJECT_FACTORY(IVehicleAction);
+	DECLARE_GAMEOBJECT_FACTORY_VEHICLE_SYSTEM(IVehicleMovement);
+	DECLARE_GAMEOBJECT_FACTORY_VEHICLE_SYSTEM(IVehicleView);
+	DECLARE_GAMEOBJECT_FACTORY_VEHICLE_SYSTEM(IVehiclePart);
+	DECLARE_GAMEOBJECT_FACTORY_VEHICLE_SYSTEM(IVehicleDamageBehavior);
+	DECLARE_GAMEOBJECT_FACTORY_VEHICLE_SYSTEM(IVehicleSeatAction);
+	DECLARE_GAMEOBJECT_FACTORY_VEHICLE_SYSTEM(IVehicleAction);
 
 	virtual bool Init() = 0;
 	virtual void Release() = 0;

@@ -903,13 +903,13 @@ void CHUD::GameRulesSet()
 
 	if (gEnv->bMultiplayer)
 	{
-		if (!stricmp(name.c_str(), "InstantAction"))
+		if (!_stricmp(name.c_str(), "InstantAction"))
 			gameRules = EHUD_INSTANTACTION;
-		else if (!stricmp(name.c_str(), "PowerStruggle"))
+		else if (!_stricmp(name.c_str(), "PowerStruggle"))
 			gameRules = EHUD_POWERSTRUGGLE;
-		else if (!stricmp(name.c_str(), "TeamAction"))
+		else if (!_stricmp(name.c_str(), "TeamAction"))
 			gameRules = EHUD_TEAMACTION;
-		else if (!stricmp(name.c_str(), "TeamInstantAction"))
+		else if (!_stricmp(name.c_str(), "TeamInstantAction"))
 			gameRules = EHUD_TEAMINSTANTACTION;
 	}
 
