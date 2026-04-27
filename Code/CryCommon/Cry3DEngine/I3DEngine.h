@@ -1009,6 +1009,15 @@ struct ITimeOfDay
 	static const int NETSER_COMPENSATELAG = BIT(1);
 	static const int NETSER_STATICPROPS = BIT(2);
 	virtual void NetSerialize( TSerialize ser, float lag, uint32 flags ) = 0;
+
+	//CryMP:
+	virtual bool IsPaused() const = 0;
+	virtual void DebugDraw() = 0;
+	virtual void LoadCustomSettings(string xmlPath, float blendDuration = 0.0f) = 0;
+	virtual float GetTransitionTime() const = 0;
+	virtual float GetTransitionDuration() const = 0;
+	virtual bool IsTransitioning() const = 0;
+	virtual const string& GetActiveCustomTodFile() const = 0;
 };
 
 

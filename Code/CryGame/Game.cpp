@@ -517,6 +517,17 @@ const char* CGame::GetName()
 
 void CGame::OnPostUpdate(float fDeltaTime)
 {
+	if (gEnv->bClient)
+	{
+		if (GetMenu() && GetMenu()->IsActive() == false)
+		{
+			if (ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay())
+			{
+				pTOD->DebugDraw();
+				m_pWeatherSystem->PostUpdate();
+			}
+		}
+	}
 }
 
 void CGame::OnSaveGame(ISaveGame* pSaveGame)
