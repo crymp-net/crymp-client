@@ -666,7 +666,22 @@ void CPlayer::UpdateFirstPersonEffects(float frameTime)
 
 				// deselect it
 				if (currentItem)
-					currentItem->PlayAction(g_pItemStrings->deselect, CItem::eIPAF_FirstPerson, false, CItem::eIPAF_Default | CItem::eIPAF_RepeatLastFrame);
+				{
+					// CryMP: Parachute forcibly switches to fists immediately.
+					// Do not leave the previous weapon blending/frozen in its FP deselect pose,
+					// because animation state is preserved across FP/TP switches.
+					currentItem->PlayAction(
+						g_pItemStrings->deselect,
+						CItem::eIPAF_FirstPerson,
+						false,
+						CItem::eIPAF_Default
+					);
+
+					if (ICharacterInstance* pChar = currentItem->GetEntity()->GetCharacter(CItem::eIGS_FirstPerson))
+					{
+						pChar->GetISkeletonAnim()->StopAnimationsAllLayers();
+					}
+				}
 				// schedule to start swimming after deselection is finished
 				pFists->EnableAnimations(false);
 				SelectItem(pFists->GetEntityId(), true);
