@@ -122,32 +122,6 @@ static bool		m_merciTimeStarted = false;
 static bool		m_merciHealthUpdated = false;	//client only mercy time
 static float	m_merciTimeLastHit = 0.0f;
 
-//--------------------
-//this function will be called from the engine at the right time, since bones editing must be placed at the right time.
-int PlayerProcessBones(ICharacterInstance* pCharacter, void* player)
-{
-	//	return 1; //freezing and bone processing is not working very well.
-	CPlayer* pPlayer = static_cast<CPlayer*>(player);
-	const uint8 profile = pPlayer->GetPhysicsProfile();
-	if (pPlayer->GetEntity()->IsHidden() || profile == eAP_Ragdoll) //CryMP: IK not working with ragdolls, can be skipped
-	{
-		return 1;
-	}
-
-	const float timeFrame = gEnv->pTimer->GetFrameTime();
-
-	ISkeletonAnim* pISkeletonAnim = pCharacter->GetISkeletonAnim();
-	const uint32 numAnim = pISkeletonAnim->GetNumAnimsInFIFO(0);
-	if (numAnim)
-	{
-		//process bones specific stuff (IK, torso rotation, etc)
-		pPlayer->ProcessBonesRotation(pCharacter, timeFrame);
-	}
-
-	return 1;
-}
-//--------------------
-
 CPlayer::TAlienInterferenceParams CPlayer::m_interferenceParams;
 unsigned int CPlayer::s_ladderMaterial = 0;
 
@@ -243,7 +217,7 @@ CPlayer::~CPlayer()
 
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(0);
 	if (pCharacter)
-		pCharacter->GetISkeletonPose()->SetPostProcessCallback0(0, 0);
+		pCharacter->GetISkeletonPose()->SetPostProcessCallback0(nullptr, nullptr);
 
 	if (m_pNanoSuit)
 		delete m_pNanoSuit;
@@ -4300,7 +4274,35 @@ void CPlayer::PostPhysicalize()
 	if (!pCharacter)
 		return;
 
-	pCharacter->GetISkeletonPose()->SetPostProcessCallback0(PlayerProcessBones, this);
+	//--------------------
+	//this function will be called from the engine at the right time, since bones editing must be placed at the right time.
+	pCharacter->GetISkeletonPose()->SetPostProcessCallback0(
+		[](ICharacterInstance* pCharacter, void* player) -> int
+		{
+			CPlayer* pPlayer = static_cast<CPlayer*>(player);
+			const uint8 profile = pPlayer->GetPhysicsProfile();
+
+			//CryMP: IK not working with ragdolls / frozen, can be skipped
+			if (pPlayer->GetEntity()->IsHidden() || profile == eAP_Ragdoll || profile == eAP_Frozen) 
+			{
+				return 1;
+			}
+
+			const float timeFrame = gEnv->pTimer->GetFrameTime();
+
+			ISkeletonAnim* pISkeletonAnim = pCharacter->GetISkeletonAnim();
+			const uint32 numAnim = pISkeletonAnim->GetNumAnimsInFIFO(0);
+			if (numAnim)
+			{
+				//process bones specific stuff (IK, torso rotation, etc)
+				pPlayer->ProcessBonesRotation(pCharacter, timeFrame);
+			}
+
+			return 1;
+		},
+		this
+	);
+
 	pe_simulation_params sim;
 	sim.maxLoggedCollisions = 5;
 	pe_params_flags flags;
@@ -8302,55 +8304,67 @@ void CPlayer::SetDofFxAmount(float amount, float speed)
 		m_dof_amount_speed = 0.0f;
 		m_current_dof_amount = amount;
 		m_target_dof_amount = amount;
-	}
 
+		ApplyDofFxAmount(amount);
+	}
+}
+
+void CPlayer::ApplyDofFxAmount(float amount)
+{
 	gEnv->p3DEngine->SetPostEffectParam("Dof_BlurAmount", amount);
 
 	if (amount <= 0.075f)
-	{
 		gEnv->p3DEngine->SetPostEffectParam("Dof_Active", 0);
-	}
 	else
-	{
 		gEnv->p3DEngine->SetPostEffectParam("Dof_Active", 1);
-	}
+}
+
+void CPlayer::ApplyDofFxLimits(float focusmin, float focusmax, float focuslim)
+{
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusRange", -1);
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMin", focusmin);
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMax", focusmax);
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusLimit", focuslim);
 }
 
 void CPlayer::ResetDofFx(float speed)
 {
-	if (speed)
+	if (speed > 0.0f)
 	{
 		m_dof_amount_speed = speed;
 		m_dof_distance_speed = speed;
+
 		m_target_dof_min = 0.0f;
-		m_target_dof_max = 2000.f;
-		m_target_dof_lim = 2500.f;
+		m_target_dof_max = 2000.0f;
+		m_target_dof_lim = 2500.0f;
 		m_target_dof_amount = 0.0f;
 	}
 	else
 	{
 		m_dof_amount_speed = 0.0f;
 		m_dof_distance_speed = 0.0f;
+
 		m_target_dof_min = 0.0f;
-		m_target_dof_max = 2000.f;
-		m_target_dof_lim = 2500.f;
+		m_target_dof_max = 2000.0f;
+		m_target_dof_lim = 2500.0f;
 		m_target_dof_amount = 0.0f;
+
 		m_current_dof_min = 0.0f;
-		m_current_dof_max = 2000.f;
-		m_current_dof_lim = 2500.f;
+		m_current_dof_max = 2000.0f;
+		m_current_dof_lim = 2500.0f;
 		m_current_dof_amount = 0.0f;
 
-		SetDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
-		SetDofFxAmount(0.0f);
+		ApplyDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
+		ApplyDofFxAmount(0.0f);
 	}
 }
 
 void CPlayer::UpdateDofFx(float frameTime)
 {
-	if (m_dof_amount_speed <= 0.0f)
-	{
-		ResetDofFx();
-	}
+	//if (m_dof_amount_speed <= 0.0f)
+	//{
+	//	ResetDofFx();
+	//}
 
 	// Update dof amount
 	float curr_dof_amt = m_current_dof_amount;
@@ -8359,7 +8373,7 @@ void CPlayer::UpdateDofFx(float frameTime)
 	if (curr_dof_amt != target_dof_amt)
 	{
 		m_current_dof_amount = DofInterpolate(curr_dof_amt, target_dof_amt, m_dof_amount_speed, frameTime);
-		SetDofFxAmount(m_current_dof_amount);
+		ApplyDofFxAmount(m_current_dof_amount);
 	}
 
 	// Update dof distances
@@ -8394,7 +8408,7 @@ void CPlayer::UpdateDofFx(float frameTime)
 
 	if (changelimits)
 	{
-		SetDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
+		ApplyDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
 	}
 }
 

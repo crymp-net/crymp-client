@@ -654,10 +654,6 @@ protected:
 
 	int										m_forcedHitMaterial;
 
-	float	m_dofValue;
-	float	m_dofSpeed;
-	float m_focusValue;
-
 	unsigned int m_timerLayerEnterId = 0;
 
 	Vec3 m_destination;

@@ -933,10 +933,6 @@ private:
 	void UpdateCharacter(ICharacterInstance* pCharacter, bool characterLoad = false);
 	void UpdateScreenFrost();
 	void UpdateScreenEffects(float frameTime);
-	void SetDofFxLimits(float focusmin, float focusmax, float focuslim, float speed = 0);
-	void SetDofFxMask(const char* texName);
-	void SetDofFxAmount(float amount, float speed = 0);
-	void ResetDofFx(float speed = 0);
 	void UpdateDofFx(float frameTime);
 	void SetMotionFxAmount(float amount, float speed = 0);
 	void SetMotionFxMask(const char* texName);
@@ -975,6 +971,14 @@ private:
 	Vec3 m_lefthandGrip = Vec3(ZERO);
 	Vec3 m_righthandGrip = Vec3(ZERO);
 	bool m_handGripsValid = false;
+
+public:
+	void SetDofFxLimits(float focusmin, float focusmax, float focuslim, float speed = 0);
+	void SetDofFxMask(const char* texName);
+	void SetDofFxAmount(float amount, float speed = 0);
+	void ApplyDofFxAmount(float amount);
+	void ApplyDofFxLimits(float focusmin, float focusmax, float focuslim);
+	void ResetDofFx(float speed = 0);
 
 private:
 

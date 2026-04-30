@@ -319,45 +319,6 @@ bool CWeapon::OnActionSpecial(EntityId actorId, const ActionId& actionId, int ac
 	return true;
 }
 
-//------------------------------------------------------------------------
-class CWeapon::ScheduleLayer_Leave
-{
-public:
-	ScheduleLayer_Leave(CWeapon *wep)
-	{
-		_pWeapon = wep;
-	}
-	void execute(CItem *item) {
-		_pWeapon->m_transitioning = false;
-		gEnv->p3DEngine->SetPostEffectParam("Dof_Active", 0.0f);
-		_pWeapon->m_dofSpeed=0.0f;
-	}
-private:
-	CWeapon *_pWeapon;
-};
-
-class CWeapon::ScheduleLayer_Enter
-{
-public:
-	ScheduleLayer_Enter(CWeapon *wep)
-	{
-		_pWeapon = wep;
-	}
-	void execute(CItem *item) {
-		SAFE_HUD_FUNC(WeaponAccessoriesInterface(true));
-		//CryMP: Commented to fix weapon customization stuck when closing at certain point with right click
-		//_pWeapon->PlayLayer(g_pItemStrings->modify_layer, eIPAF_Default|eIPAF_NoBlend, false); 
-		_pWeapon->m_transitioning = false;
-
-		_pWeapon->m_timerLayerEnterId = 0;
-
-		gEnv->p3DEngine->SetPostEffectParam("Dof_BlurAmount", 1.0f);
-		_pWeapon->m_dofSpeed=0.0f;
-	}
-private:
-	CWeapon *_pWeapon;
-};
-
 //-------------------------------------------------------------------------
 bool CWeapon::OnActionModify(EntityId actorId, const ActionId& actionId, int activationMode, float value)
 {
@@ -383,10 +344,6 @@ bool CWeapon::OnActionModify(EntityId actorId, const ActionId& actionId, int act
 			StopLayer(g_pItemStrings->modify_layer, eIPAF_Default, false);
 			StopLayer(g_pItemStrings->enter_modify, eIPAF_Default, false); //CryMP
 
-			m_dofSpeed = -1.0f/((float)GetCurrentAnimationTime(eIGS_FirstPerson)/1000.0f);
-			m_dofValue = 1.0f;
-			m_focusValue = -1.0f;
-
 			const bool overrideBlend = m_timerLayerEnterId > 0;
 			if (m_timerLayerEnterId)
 			{
@@ -396,7 +353,32 @@ bool CWeapon::OnActionModify(EntityId actorId, const ActionId& actionId, int act
 
 			PlayAction(g_pItemStrings->leave_modify, 0, false, eIPAF_Default, -1.0f, overrideBlend ? 0.3f : -1.0f);
 
-			GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson), CSchedulerAction<ScheduleLayer_Leave>::Create(this), false);
+			GetScheduler()->TimerAction(
+				GetCurrentAnimationTime(eIGS_FirstPerson),
+				MakeAction([this](CItem*)
+					{
+						this->m_transitioning = false;
+
+						CPlayer* pPlayer = this->GetOwnerPlayer();
+						if (pPlayer && pPlayer->IsClient())
+						{
+							pPlayer->ResetDofFx(0.0f);
+						}
+					}),
+				false
+			);
+
+			CPlayer* pPlayer = GetOwnerPlayer();
+			if (pPlayer && pPlayer->IsClient())
+			{
+				const float animTime = max(0.001f, (float)GetCurrentAnimationTime(eIGS_FirstPerson) / 1000.0f);
+				const float dofSpeed = 1.0f / animTime;
+
+				// Keep modify focus while fading blur out
+				pPlayer->SetDofFxLimits(0.0f, 5.0f, 20.0f, 0.0f);
+				pPlayer->SetDofFxAmount(0.0f, dofSpeed);
+			}
+
 			m_transitioning = true;
 
 			SAFE_HUD_FUNC(WeaponAccessoriesInterface(false));
@@ -407,20 +389,30 @@ bool CWeapon::OnActionModify(EntityId actorId, const ActionId& actionId, int act
 		else 
 		{
 			//open interface
-
-			gEnv->p3DEngine->SetPostEffectParam("Dof_Active", 1.0f);
-			gEnv->p3DEngine->SetPostEffectParam("Dof_FocusRange", -1.0f);
-			gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMin", 0.0f);
-			gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMax", 5.0f);
-			gEnv->p3DEngine->SetPostEffectParam("Dof_FocusLimit", 20.0f);
-			gEnv->p3DEngine->SetPostEffectParam("Dof_UseMask", 0.0f);
-
 			PlayAction(g_pItemStrings->enter_modify, 0, false, eIPAF_Default | eIPAF_RepeatLastFrame);
-			m_dofSpeed = 1.0f/((float)GetCurrentAnimationTime(eIGS_FirstPerson)/1000.0f);
-			m_dofValue = 0.0f;
+
+			CPlayer* pPlayer = GetOwnerPlayer();
+			if (pPlayer && pPlayer->IsClient())
+			{
+				pPlayer->SetDofFxMask(nullptr);
+				pPlayer->SetDofFxLimits(0.0f, 5.0f, 20.0f, 0.0f);
+				pPlayer->SetDofFxAmount(1.0f, 1.0f / ((float)GetCurrentAnimationTime(eIGS_FirstPerson) / 1000.0f));
+			}
+
 			m_transitioning = true;
 
-			m_timerLayerEnterId = GetScheduler()->TimerAction(GetCurrentAnimationTime(eIGS_FirstPerson), CSchedulerAction<ScheduleLayer_Enter>::Create(this), false);
+			m_timerLayerEnterId = GetScheduler()->TimerAction(
+				GetCurrentAnimationTime(eIGS_FirstPerson),
+				MakeAction([this](CItem*)
+					{
+						SAFE_HUD_FUNC(WeaponAccessoriesInterface(true));
+
+						this->m_transitioning = false;
+						this->m_timerLayerEnterId = 0;
+					}),
+				false
+			);
+
 			m_modifying = true;
 
 			GetGameObject()->InvokeRMI(CItem::SvRequestEnterModify(), CItem::EmptyParams(), eRMI_ToServer);
