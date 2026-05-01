@@ -57,9 +57,6 @@ CWeapon::CWeapon()
 	m_fire_alternation(false),
 	m_destination(0, 0, 0),
 	m_forcedHitMaterial(-1),
-	m_dofSpeed(0.0f),
-	m_dofValue(0.0f),
-	m_focusValue(0.0f),
 	m_currentViewMode(0),
 	m_useViewMode(false),
 	m_restartZoom(false),
@@ -850,24 +847,6 @@ void CWeapon::Update(SEntityUpdateContext& ctx, int update)
 	}
 
 	CItem::Update(ctx, update);
-
-
-	if (update == eIUS_General)
-	{
-		if (fabsf(m_dofSpeed) > 0.001f)
-		{
-			m_dofValue += m_dofSpeed * ctx.fFrameTime;
-			m_dofValue = CLAMP(m_dofValue, 0, 1);
-
-			//CryLogWarning("Actual DOF value = %f",m_dofValue);
-			if (m_dofSpeed < 0.0f)
-			{
-				m_focusValue -= m_dofSpeed * ctx.fFrameTime * 150.0f;
-				gEnv->p3DEngine->SetPostEffectParam("Dof_FocusLimit", 20.0f + m_focusValue);
-			}
-			gEnv->p3DEngine->SetPostEffectParam("Dof_BlurAmount", m_dofValue);
-		}
-	}
 }
 
 void CWeapon::PostUpdate(float frameTime)
