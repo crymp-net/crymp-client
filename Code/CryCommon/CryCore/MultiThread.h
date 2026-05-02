@@ -20,6 +20,8 @@
 
 #define WRITE_LOCK_VAL (1<<16)
 
+#define CryGetTicks __rdtsc
+
 inline long CryInterlockedIncrement(int volatile *lpAddend)
 {
 	return _InterlockedIncrement((volatile long*)lpAddend);
@@ -48,19 +50,6 @@ inline void* CryInterlockedCompareExchangePointer(void* volatile* dst, void* exc
 ILINE void CrySpinLock(volatile int *pLock,int checkVal,int setVal)
 {
 #if !defined(_WIN64)
-# ifdef __GNUC__
-	register int val;
-	__asm__(
-		"0:  mov %[checkVal], %%eax\n"
-		"    lock cmpxchg %[setVal], (%[pLock])\n"
-		"    jnz 0b"
-		: "=m" (*pLock)
-		: [pLock] "r" (pLock), "m" (*pLock),
-		  [checkVal] "m" (checkVal),
-		  [setVal] "r" (setVal)
-		: "eax"
-		);
-# else
 	__asm
 	{
 		mov edx, setVal
@@ -73,7 +62,6 @@ Spin:
 		lock cmpxchg [ecx], edx
 		jnz Spin
 	}
-# endif
 #else
 	// NOTE: The code below will fail on 64bit architectures!
 	while(_InterlockedCompareExchange((volatile long*)pLock,setVal,checkVal)!=checkVal);
@@ -103,6 +91,51 @@ ILINE void CryInterlockedAdd(volatile int *pVal, int iAdd)
 	_InterlockedExchangeAdd((volatile long*)pVal,iAdd);
 #endif
 }
+
+//////////////////////////////////////////////////////////////////////////
+struct ReadLock
+{
+	ILINE ReadLock(volatile int &rw)
+	{
+		CryInterlockedAdd(prw=&rw,1);
+		volatile char *pw=(volatile char*)&rw+2; for(;*pw;);
+	}
+	~ReadLock()
+	{
+		CryInterlockedAdd(prw,-1);
+	}
+private:
+	volatile int *prw;
+};
+
+//////////////////////////////////////////////////////////////////////////
+struct ReadLockCond
+{
+	ILINE ReadLockCond(volatile int &rw,int bActive)
+	{
+		if (bActive)
+		{
+			CryInterlockedAdd(&rw,1);
+			bActivated = 1;
+			volatile char *pw=(volatile char*)&rw+2; for(;*pw;);
+		}
+		else
+		{
+			bActivated = 0;
+		}
+		prw = &rw;
+	}
+	void SetActive(int bActive=1) { bActivated = bActive; }
+	void Release() { CryInterlockedAdd(prw,-bActivated); }
+	~ReadLockCond()
+	{
+		CryInterlockedAdd(prw,-bActivated);
+	}
+
+private:
+	volatile int *prw;
+	int bActivated;
+};
 
 //////////////////////////////////////////////////////////////////////////
 struct WriteLock

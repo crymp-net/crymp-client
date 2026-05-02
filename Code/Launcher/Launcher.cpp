@@ -14,6 +14,7 @@
 #include "CryCommon/CrySystem/ICryPak.h"
 #include "CryMP/Client/Client.h"
 #include "CryMP/Server/Server.h"
+#include "CryPhysics/CryPhysics.h"
 #include "CryScriptSystem/ScriptSystem.h"
 #include "CrySystem/CPUInfo.h"
 #include "CrySystem/CrashTest.h"
@@ -323,6 +324,48 @@ static void ReplaceStreamEngine(void* pCrySystem)
 	WinAPI::FillNOP(WinAPI::RVA(pCrySystem, 0x4EDB0), 0x19);
 	WinAPI::FillNOP(WinAPI::RVA(pCrySystem, 0x62478), 0x2E);
 #endif
+}
+
+static IPhysicalWorld* CreateNewPhysics(ISystem* pSystem)
+{
+	CryLogAlways("$3[CryMP] Initializing Physics");
+
+	return CreatePhysicalWorld(pSystem);
+}
+
+static void ReplacePhysics(void* pCrySystem)
+{
+	void* pFactory = CreateNewPhysics;
+
+#ifdef BUILD_64BIT
+	const std::size_t codeOffset = 0x43392;
+	const std::size_t codeMaxSize = 0x53;
+
+	unsigned char code[] = {
+		0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, 0x0
+		0x48, 0x8B, 0xCE,                                            // mov rcx, rsi
+		0xFF, 0xD0,                                                  // call rax
+	};
+
+	std::memcpy(&code[2], &pFactory, 8);
+#else
+	const std::size_t codeOffset = 0x556CF;
+	const std::size_t codeMaxSize = 0x49;
+
+	unsigned char code[] = {
+		0xB8, 0x00, 0x00, 0x00, 0x00,  // mov eax, 0x0
+		0x55,                          // push ebp
+		0xFF, 0xD0,                    // call eax
+		0x83, 0xC4, 0x04,              // add esp, 0x4
+	};
+
+	std::memcpy(&code[1], &pFactory, 4);
+#endif
+
+	static_assert(sizeof(code) <= codeMaxSize);
+
+	WinAPI::FillMem(WinAPI::RVA(pCrySystem, codeOffset), code, sizeof(code));
+	WinAPI::FillNOP(WinAPI::RVA(pCrySystem, codeOffset + sizeof(code)), codeMaxSize - sizeof(code));
 }
 
 static IScriptSystem* CreateNewScriptSystem(ISystem* pSystem, bool)
@@ -1141,6 +1184,11 @@ void Launcher::PatchEngine()
 		ReplaceScriptSystem(m_dlls.pCrySystem);
 		ReplaceHardwareMouse(m_dlls.pCrySystem);
 		ReplaceLocalizationManager(m_dlls.pCrySystem);
+
+		if (!WinAPI::CmdLine::HasArg("-oldphysics"))
+		{
+			ReplacePhysics(m_dlls.pCrySystem);
+		}
 	}
 
 	if (m_dlls.pCry3DEngine)

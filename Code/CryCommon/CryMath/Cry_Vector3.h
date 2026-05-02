@@ -425,20 +425,13 @@ template <typename F> struct Vec3_tpl
 		return( Vec3_tpl( x * rhs.x, y * rhs.y, z * rhs.z ) ); 
 	}
 
-	//DEPRICATED ILINE friend F GetDistance(const Vec3_tpl<F> &vec1, const Vec3_tpl<F> &vec2) { 
-		//return  sqrt_tpl((vec2.x-vec1.x)*(vec2.x-vec1.x)+(vec2.y-vec1.y)*(vec2.y-vec1.y)+(vec2.z-vec1.z)*(vec2.z-vec1.z)); 
-	//}	
-	//DEPRICATED ILINE friend F	GetSquaredDistance(const Vec3_tpl<F> &vec1, const Vec3_tpl<F> &vec2)	{		
-		//return (vec2.x-vec1.x)*(vec2.x-vec1.x)+(vec2.y-vec1.y)*(vec2.y-vec1.y)+(vec2.z-vec1.z)*(vec2.z-vec1.z);
-	//}
 	//three methods for a "dot-product" operation
 	ILINE F Dot (const Vec3_tpl<F> &vec2)	const	{ return x*vec2.x + y*vec2.y + z*vec2.z; }
 	//two methods for a "cross-product" operation
 	ILINE Vec3_tpl<F> Cross (const Vec3_tpl<F> &vec2) const	{	return Vec3_tpl<F>( y*vec2.z  -  z*vec2.y,     z*vec2.x -    x*vec2.z,   x*vec2.y  -  y*vec2.x); 	}	
 
-	//f32* fptr=vec;
-	DEPRICATED operator F* ()					{ return (F*)this; }
-	template <class T>	explicit DEPRICATED Vec3_tpl(const T *src) { x=src[0]; y=src[1]; z=src[2]; }
+	explicit operator F*() { return reinterpret_cast<F*>(this); }
+	static Vec3_tpl FromPtr(F* p) { return Vec3_tpl(p[0], p[1], p[2]); }
 
 	ILINE Vec3_tpl& zero() { x=y=z=0; return *this; }
 	ILINE F len() const { return sqrt_tpl(x*x+y*y+z*z); }

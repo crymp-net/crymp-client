@@ -108,26 +108,6 @@ ILINE f64 clamp( f64 X, f64 Min, f64 Max )
 	return X;
 }
 
-
-#ifdef __GNUC__
-// GCC generates very bad (slow) code for the template versions of min() and
-// max() below, so we'll provided overloads for all primitive types.
-#define _MINMAXFUNC(TYPE) \
-	ILINE TYPE min(TYPE a, TYPE b) { return a < b ? a : b; } \
-	ILINE TYPE max(TYPE a, TYPE b) { return b < a ? a : b; }
-
-_MINMAXFUNC(int) _MINMAXFUNC(unsigned)
-_MINMAXFUNC(float)
-_MINMAXFUNC(double)
-
-ILINE int min(int a, unsigned b) { return min(a, static_cast<int>(b)); }
-ILINE int min(unsigned a, int b) { return min(static_cast<int>(a), b); }
-ILINE unsigned max(int a, unsigned b) { return max(static_cast<unsigned>(a), b); }
-ILINE unsigned max(unsigned a, int b) { return max(a, static_cast<unsigned>(b)); }
-
-#undef _MINMAXFUNC
-#endif//__GNUC__
-
 // Bring min and max from std namespace to global scope.
 template <class T>
 inline const T& min( const T& a, const T& b )
