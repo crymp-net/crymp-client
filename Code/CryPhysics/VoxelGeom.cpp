@@ -123,7 +123,7 @@ int CVoxelGeom::Intersect(IGeometry* pCollider, geom_world_data* pdata1, geom_wo
 		}
 		((CGeometry*)pCollider)->PrepareForIntersectionTest(&GRay, this, 0, bKeepPrevContacts);
 		primitives::ray *pray = (primitives::ray*)GRay.primbuf, rayloc;
-		int i, j, idxcell, itri, bHasInters = 0;
+		int i, j, idxcell, itri = 0, bHasInters = 0;
 		float rscale, len;
 		Vec3 dirn = ((CRayGeom*)pCollider)->m_dirn, origin, pthit;
 		quotientf t[3];
@@ -147,14 +147,14 @@ int CVoxelGeom::Intersect(IGeometry* pCollider, geom_world_data* pdata1, geom_wo
 		{
 			icell[i] = physics_float2int((origin[i] * m_grid.stepr[i]) - 0.5f);
 			j &= inrange(icell[i], -1, m_grid.size[i]);
-			itest[i] = (istep[i] = sgnnz(rayloc.dir[i])) + 1 >> 1;
+			itest[i] = ((istep[i] = sgnnz(rayloc.dir[i])) + 1) >> 1;
 			t[i].y = fabs_tpl(rayloc.dir[i]);
 		}
 		if (!j)
 		{
 			for (i = 0; i < 3; i++)
 			{
-				icell[i] = (1 - istep[i] >> 1) * m_grid.size[i];
+				icell[i] = ((1 - istep[i]) >> 1) * m_grid.size[i];
 				t[i].x = (icell[i] * m_grid.step[i] - origin[i]) * istep[i];
 			}
 			i = idxmax3(t);
@@ -215,7 +215,8 @@ int CVoxelGeom::Intersect(IGeometry* pCollider, geom_world_data* pdata1, geom_wo
 		}
 		else
 		{
-			if (unproj.imode = pparams->iUnprojectionMode)
+			unproj.imode = pparams->iUnprojectionMode;
+			if (unproj.imode)
 			{
 				if ((unproj.dir = pparams->axisOfRotation).len2() == 0)
 				{

@@ -101,7 +101,7 @@ void qsort(int* v, index_t* idx, int left, int right)
 		return;
 	}
 	int i, last;
-	swap(v, left, left + right >> 1);
+	swap(v, left, (left + right) >> 1);
 	for (last = left, i = left + 1; i <= right; i++)
 	{
 		if (idx[v[i] * 3] < idx[v[left] * 3])
@@ -123,7 +123,7 @@ void qsort(int* v, strided_pointer<ftype> pkey, int left, int right)
 		return;
 	}
 	int i, last;
-	swap(v, left, left + right >> 1);
+	swap(v, left, (left + right) >> 1);
 	for (last = left, i = left + 1; i <= right; i++)
 	{
 		if (pkey[v[i]] < pkey[v[left]])
@@ -144,7 +144,7 @@ void qsort(int* v, int left, int right)
 		return;
 	}
 	int i, last;
-	swap(v, left, left + right >> 1);
+	swap(v, left, (left + right) >> 1);
 	for (last = left, i = left + 1; i <= right; i++)
 	{
 		if (v[i] < v[left])
@@ -1017,7 +1017,8 @@ void CTriMesh::RebuildBVTree(CBVTree* pRefTree)
 	}
 	m_pTree->Build(this);
 
-	if (m_bIsConvex = IsConvex(0.02f))
+	m_bIsConvex = IsConvex(0.02f);
+	if (m_bIsConvex)
 	{
 		m_pTree->SetGeomConvex();
 	}
@@ -1541,7 +1542,7 @@ int CTriMesh::FilterMesh(float minlen, float minangle)
 			     m_pVertices[idxmax = m_pIndices[(i * 3) + inc_mod3[j]]])
 			        .len2() < minlen2)
 			{
-				imask = idxmax - idxmin >> 31;
+				imask = (idxmax - idxmin) >> 31;
 				idxmin ^= idxmax & imask;
 				idxmax ^= idxmin & imask;
 				idxmin ^= idxmax & imask;
@@ -1801,8 +1802,6 @@ float CTriMesh::ComputeExtent(GeomQuery& geo, EGeomForm eForm)
 
 	switch (eForm)
 	{
-		default:
-			assert(0);
 		case GeomForm_Vertices:
 			return (float)m_nVertices;
 		case GeomForm_Edges:
@@ -1855,6 +1854,8 @@ float CTriMesh::ComputeExtent(GeomQuery& geo, EGeomForm eForm)
 			}
 			return m_V;
 	}
+
+	return {};
 }
 
 void CTriMesh::GetRandomPos(RandomPos& ran, GeomQuery& geo, EGeomForm eForm)
@@ -2128,9 +2129,11 @@ int CTriMesh::GetFeature(int iPrim, int iFeature, Vec3* pt)
 		case 0x40:
 			pt[2] = m_pVertices[m_pIndices[(iPrim * 3) + dec_mod3[(iFeature & 0x1F)]]];
 			npt++;
+			[[fallthrough]];
 		case 0x20:
 			pt[1] = m_pVertices[m_pIndices[(iPrim * 3) + inc_mod3[(iFeature & 0x1F)]]];
 			npt++;
+			[[fallthrough]];
 		case 0:
 			pt[0] = m_pVertices[m_pIndices[(iPrim * 3) + (iFeature & 0x1F)]];
 			npt++;
@@ -2460,12 +2463,12 @@ int CTriMesh::RegisterIntersection(primitives::primitive* pprim1, primitives::pr
 	primitives::primitive *pprims[2] = {&tri, pprim2}, *ptr[2];
 	int iFeature_dummy = -1, *piFeature[2] = {&iFeature_dummy, &iFeature_dummy};
 	int idx_prim[2] = {((primitives::indexed_triangle*)pprim1)->idx, -1};
-	int bNoUnprojection = 0, bSurfaceSurfaceContact, bSurfaceEdgeContact, bUseLSNormal = 0;
-	int i, j, res = 0, ipt, ibest, jbest, iop, nprims1, nprims2, nSmallSteps;
+	int bNoUnprojection = 0, bSurfaceSurfaceContact = 0, bSurfaceEdgeContact = 0, bUseLSNormal = 0;
+	int i = 0, j = 0, res = 0, ipt, ibest, jbest, iop, nprims1, nprims2, nSmallSteps;
 	int primitives::indexed_triangle::* pidxoffs = 0;
 	const int iCaller = pGTest1->iCaller;
 	float len, maxlen;
-	real t, tmax;
+	real t{}, tmax{};
 	border_trace border;
 	geom_contact* pres = pGTest[0]->contacts + *pGTest[0]->pnContacts;
 	Vec3r n_avg;
@@ -3081,7 +3084,8 @@ int CTriMesh::RegisterIntersection(primitives::primitive* pprim1, primitives::pr
 				{
 					pres->parea->pt[i] = surface.origin + surface.axes[0] * ptbuf[i].x +
 					                     surface.axes[1] * ptbuf[i].y;
-					bEdgeEdge = -((idbuf[i] >> 16) - 1 >> 31 | (idbuf[i] & 0xFFFF) - 1 >> 31) ^ 1;
+					bEdgeEdge =
+					    -(((idbuf[i] >> 16) - 1) >> 31 | ((idbuf[i] & 0xFFFF) - 1) >> 31) ^ 1;
 					id = (idbuf[i] & 0xFFFF) - 1;
 					idmask = id >> 31;
 					id -= idmask;
@@ -3167,10 +3171,10 @@ int CTriMesh::GetEdgeByBuddy(int itri, int itri_buddy)
 {
 	int iedge = 0, imask;
 	imask = m_pTopology[itri].ibuddy[1] - itri_buddy;
-	imask = imask - 1 >> 31 ^ imask >> 31;
+	imask = (imask - 1) >> 31 ^ imask >> 31;
 	iedge = 1 & imask;
 	imask = m_pTopology[itri].ibuddy[2] - itri_buddy;
-	imask = imask - 1 >> 31 ^ imask >> 31;
+	imask = (imask - 1) >> 31 ^ imask >> 31;
 	iedge = (iedge & ~imask) | (2 & imask);
 	return iedge;
 }
@@ -3206,8 +3210,8 @@ int CTriMesh::PreparePolygon(primitives::coord_plane* psurface, int iPrim, int i
                              vector2df*& ptbuf, int*& pVtxIdBuf, int*& pEdgeIdBuf)
 {
 	int *pUsedVtxMap, UsedVtxIdx[16], nUsedVtx, *pUsedTriMap, UsedTriIdx[16], nUsedTri;
-	int i, ihead, itail, ntri, nvtx, itri, itri_parent, ivtx0, ivtx, itri_new, iedge, iedge_open, ivtx0_new,
-	    ivtx_start, ivtx_end, ivtx_end1, ivtx_head, iorder, nSides;
+	int i, ihead, itail, ntri, nvtx, itri, itri_parent, ivtx0, ivtx, itri_new, iedge, iedge_open{}, ivtx0_new,
+	    ivtx_start, ivtx_end{}, ivtx_end1, ivtx_head, iorder, nSides;
 	Vec3 n0, n, edge, pt0;
 
 	if (psurface->n.len2() == 0)
@@ -3219,23 +3223,23 @@ int CTriMesh::PreparePolygon(primitives::coord_plane* psurface, int iPrim, int i
 		psurface->axes[1] = psurface->n ^ psurface->axes[0];
 		psurface->origin = pGTest->R * m_pVertices[m_pIndices[iPrim * 3]] * pGTest->scale + pGTest->offset;
 	}
-	if ((m_nVertices - 1 >> 5) + 1 <
+	if (((m_nVertices - 1) >> 5) + 1 <
 	    sizeof(g_idata[pGTest->iCaller].UsedVtxMap) / sizeof(g_idata[pGTest->iCaller].UsedVtxMap[0]))
 	{
 		pUsedVtxMap = g_idata[pGTest->iCaller].UsedVtxMap;
 	}
 	else
 	{
-		memset(pUsedVtxMap = new int[(m_nVertices - 1 >> 5) + 1], 0, (m_nVertices - 1 >> 5) + 1 << 2);
+		memset(pUsedVtxMap = new int[((m_nVertices - 1) >> 5) + 1], 0, (((m_nVertices - 1) >> 5) + 1) << 2);
 	}
-	if ((m_nTris - 1 >> 5) + 1 <
+	if (((m_nTris - 1) >> 5) + 1 <
 	    sizeof(g_idata[pGTest->iCaller].UsedTriMap) / sizeof(g_idata[pGTest->iCaller].UsedTriMap[0]))
 	{
 		pUsedTriMap = g_idata[pGTest->iCaller].UsedTriMap;
 	}
 	else
 	{
-		memset(pUsedTriMap = new int[(m_nTris - 1 >> 5) + 1], 0, (m_nTris - 1 >> 5) + 1 << 2);
+		memset(pUsedTriMap = new int[((m_nTris - 1) >> 5) + 1], 0, (((m_nTris - 1) >> 5) + 1) << 2);
 	}
 	nUsedVtx = nUsedTri = 0;
 
@@ -3384,7 +3388,7 @@ int CTriMesh::PreparePolygon(primitives::coord_plane* psurface, int iPrim, int i
 	}
 	else if (nUsedVtx >= 15)
 	{
-		memset(g_idata[pGTest->iCaller].UsedVtxMap, 0, (m_nVertices - 1 >> 5) + 1 << 2);
+		memset(g_idata[pGTest->iCaller].UsedVtxMap, 0, (((m_nVertices - 1) >> 5) + 1) << 2);
 	}
 	else
 	{
@@ -3399,7 +3403,7 @@ int CTriMesh::PreparePolygon(primitives::coord_plane* psurface, int iPrim, int i
 	}
 	else if (nUsedTri >= 15)
 	{
-		memset(g_idata[pGTest->iCaller].UsedTriMap, 0, (m_nTris - 1 >> 5) + 1 << 2);
+		memset(g_idata[pGTest->iCaller].UsedTriMap, 0, (((m_nTris - 1) >> 5) + 1) << 2);
 	}
 	else
 	{
@@ -3447,14 +3451,14 @@ int CTriMesh::PreparePolyline(primitives::coord_plane* psurface, int iPrim, int 
 	int nvtx, iedge, itri, itri_prev, ivtx, itri0, iorder, i, iprev, iter = 0;
 	Vec3 n0, edge, pt;
 
-	if ((m_nVertices - 1 >> 5) + 1 <
+	if (((m_nVertices - 1) >> 5) + 1 <
 	    sizeof(g_idata[pGTest->iCaller].UsedVtxMap) / sizeof(g_idata[pGTest->iCaller].UsedVtxMap[0]))
 	{
 		pUsedVtxMap = g_idata[pGTest->iCaller].UsedVtxMap;
 	}
 	else
 	{
-		memset(pUsedVtxMap = new int[(m_nVertices - 1 >> 5) + 1], 0, (m_nVertices - 1 >> 5) + 1 << 2);
+		memset(pUsedVtxMap = new int[((m_nVertices - 1) >> 5) + 1], 0, (((m_nVertices - 1) >> 5) + 1) << 2);
 	}
 
 	iedge = iFeature & 0x1F;
@@ -3530,7 +3534,7 @@ int CTriMesh::PreparePolyline(primitives::coord_plane* psurface, int iPrim, int 
 	}
 	else if (nUsedVtx >= 15)
 	{
-		memset(g_idata[pGTest->iCaller].UsedVtxMap, 0, (m_nVertices - 1 >> 5) + 1 << 2);
+		memset(g_idata[pGTest->iCaller].UsedVtxMap, 0, (((m_nVertices - 1) >> 5) + 1) << 2);
 	}
 	else
 	{
@@ -4059,14 +4063,14 @@ int CTriMesh::Intersect(IGeometry* pCollider, geom_world_data* pdata1, geom_worl
 	{
 		primitives::ray aray;
 		int trilist[3][1024], nTris[3];
-		int iPlane, iListPlane, iListRes, iListTmp, ix, iy, iCell;
+		int iPlane, iListPlane, iListRes{}, iListTmp, ix, iy, iCell;
 		vector2df pt[2];
 		vector2di ipt[2], irect[2];
 		float rscale = pdata1->scale == 1.0f ? 1.0f : 1.0f / pdata1->scale;
 		primitives::indexed_triangle atri;
 		prim_inters inters;
 		unprojection_mode unproj;
-		int i, j, i1, jmax, nSmallSteps, iEdge, bActive, bThreadSafe, bThreadSafeMesh, nContacts = 0;
+		int i{}, j, i1, jmax, nSmallSteps, iEdge, bActive, bThreadSafe, bThreadSafeMesh, nContacts = 0;
 		int iCaller = GetCaller();
 		intptr_t idmask = ~iszero_mask(m_pIds);
 		char idnull = (char)-1, *pidnull = &idnull,
@@ -4169,8 +4173,8 @@ int CTriMesh::Intersect(IGeometry* pCollider, geom_world_data* pdata1, geom_worl
 			irect[0].set(max(0, min(ipt[0].x, ipt[1].x)), max(0, min(ipt[0].y, ipt[1].y)));
 			irect[1].set(min(m_hashgrid[iPlane].size.x - 1, max(ipt[0].x, ipt[1].x)),
 			             min(m_hashgrid[iPlane].size.y - 1, max(ipt[0].y, ipt[1].y)));
-			if (irect[0].x + 1 - irect[1].x >> 31 |
-			    irect[0].x + 1 - irect[1].x >> 31) // can be ineffective for long rays
+			if ((irect[0].x + 1 - irect[1].x) >> 31 |
+			    (irect[0].x + 1 - irect[1].x) >> 31) // can be ineffective for long rays
 			{
 				goto skiphashes;
 			}
@@ -4403,17 +4407,17 @@ int CTriMesh::Subtract(IGeometry* pGeom, geom_world_data* pdata1, geom_world_dat
 	int i, j, iop, icont, ncont, ipt, idx, ivtx, ivtx0, ivtx1, itri, itri1, imask, ipoly, flags, ivtxStart, ivtxEnd;
 	int nVtx, nPolies, nTriSlots, nTriSlotsAlloc, nVtxSlots, nVtxSlotsAlloc, nBTris, nBTrisAlloc, nTris, nTrisAlloc,
 	    nTris0 = m_nTris, nVtx0 = m_nVertices, nErrors0 = m_nErrors, nMaxPolyVtx, nNewVtx, nNewTris, bVtxMap,
-	    nVtxAlloc = m_nVertices, nTriAlloc = m_nTris, nNewVtxAlloc, nNewTrisAlloc, nIsles, nTries = 1,
+	    nVtxAlloc = m_nVertices, nTriAlloc = m_nTris, nNewVtxAlloc = 0, nNewTrisAlloc = 0, nIsles, nTries = 1,
 	    bCheckVolumes = 0;
 	int iCurTri[2], iCurVtx[2], iCurVtx0[2], iCurPoly[2], iVtxCntStart[2], iCurTwin[2], iTwin0[2], bIsolatedCnt[2],
 	    idmask[2], matmask[2];
 	int *pTriSlots, *pVtxSlots, *pTris, *pBTris, *pBVtxMap, *pBVtxMapNew, *pVtxMap;
 	int iCaller = GetCaller();
 	unsigned int *pTriMask[2], *pVtxMask[2];
-	Vec3 n, edge, edge1, *pdata0 = m_pVertices.data, *pBackupVertices, *pBackupNormals;
-	int *pIds[2], dummyId, *pIds0 = m_pForeignIdx, *pBackupIds, *pBackupVtxMap;
-	char *pMats[2], dummyMat, *pMats0 = m_pIds, *pBackupMats;
-	index_t *pIndices0 = m_pIndices, *pBackupIndices;
+	Vec3 n, edge, edge1, *pdata0 = m_pVertices.data, *pBackupVertices{}, *pBackupNormals{};
+	int *pIds[2], dummyId, *pIds0 = m_pForeignIdx, *pBackupIds{}, *pBackupVtxMap{};
+	char *pMats[2], dummyMat, *pMats0 = m_pIds, *pBackupMats{};
+	index_t *pIndices0 = m_pIndices, *pBackupIndices{};
 	trinfo* pTopology0 = m_pTopology;
 	CRayGeom rayGeom;
 	primitives::box bbox;
@@ -4550,7 +4554,7 @@ int CTriMesh::Subtract(IGeometry* pGeom, geom_world_data* pdata1, geom_world_dat
 		nVtx = 0;
 		for (iop = 0; iop < 2; iop++)
 		{
-			i = (pMesh[iop]->m_nVertices - 1 >> 5) + 1;
+			i = ((pMesh[iop]->m_nVertices - 1) >> 5) + 1;
 			memset(pVtxMask[iop] = new unsigned int[i], 0, i * 4);
 			i = (pMesh[iop]->m_nTris >> 5) + 1;
 			memset(pTriMask[iop] = new unsigned int[i], 0, i * 4);
@@ -4659,8 +4663,8 @@ int CTriMesh::Subtract(IGeometry* pGeom, geom_world_data* pdata1, geom_world_dat
 						pVtx[nVtx].icont = icont;
 						pVtx[nVtx].ivtx = ipt - 1;
 						pVtx[nVtx].itwin = iCurTwin[iop];
-						iTwin0[iop] = (iTwin0[iop] & ~(ipt - 2 >> 31)) |
-						              (nVtx & (ipt - 2 >> 31)); // set iTwin0 for ipt==1
+						iTwin0[iop] = (iTwin0[iop] & ~((ipt - 2) >> 31)) |
+						              (nVtx & ((ipt - 2) >> 31)); // set iTwin0 for ipt==1
 						pVtx[nVtx].ipoly = ipoly;
 						pVtx[nVtx].pt = pcont[icont].ptborder[ipt - 1];
 						pVtx[nVtx].flags = 0;
@@ -6147,11 +6151,11 @@ float CTriMesh::GetIslandDisk(int matid, const Vec3& ptref, Vec3& center, Vec3& 
 				{
 					if (ihead != ((itail - 1) & (szq - 1)))
 					{
-						m_pIds[queue[ihead] = itri1] = (char)255;
+						m_pIds[queue[ihead] = itri1] = static_cast<char>(255);
 						++ihead &= szq - 1;
 					}
 				}
-				else if (m_pIds[itri1] != (char)255)
+				else if (m_pIds[itri1] != static_cast<char>(255))
 				{
 					C += dotproduct_matrix(m_pNormals[itri1], m_pNormals[itri1], Ctmp);
 				}
@@ -6195,12 +6199,12 @@ float CTriMesh::GetIslandDisk(int matid, const Vec3& ptref, Vec3& center, Vec3& 
 	peakDist = 0;
 	for (itri = 0; itri < m_nTris; itri++)
 	{
-		if (m_pIds[itri] == (char)255)
+		if (m_pIds[itri] == static_cast<char>(255))
 		{
 			for (i = 0; i < 3; i++)
 			{
 				if ((itri1 = m_pTopology[itri].ibuddy[i]) < 0 ||
-				    m_pIds[itri1] != (char)255 && m_pIds[itri1] != matid)
+				    m_pIds[itri1] != static_cast<char>(255) && m_pIds[itri1] != matid)
 				{
 					r = min(r, (cnt - m_pVertices[m_pIndices[(itri * 3) + i]]).len2());
 					r = min(r, (cnt - m_pVertices[m_pIndices[(itri * 3) + inc_mod3[i]]]).len2());

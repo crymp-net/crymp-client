@@ -106,7 +106,8 @@ int CCapsuleGeom::FindClosestPoint(geom_world_data* pgwd, int& iPrim, int& iFeat
 	pt = ptdst0 - center;
 	ptres[1] = ptdst0;
 
-	if (bLine = isneg((r2 * 1E-6f) - (l = ptdst1 - ptdst0).len2()))
+	bLine = isneg((r2 * 1E-6f) - (l = ptdst1 - ptdst0).len2());
+	if (bLine)
 	{
 		n = l ^ axis;
 		n2 = n.len2();

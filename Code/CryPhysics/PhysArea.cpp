@@ -248,8 +248,8 @@ int CPhysArea::ApplyParams(const Vec3& pt, Vec3& gravity, const Vec3& vel, pe_pa
 									    ((org.y + sz.y) * phf->stepr.y) + 0.5f)));
 								org.zero();
 								C.SetZero();
-								istep = (ibbox[1].x - ibbox[0].x >> 2) + 1;
-								jstep = (ibbox[1].y - ibbox[0].y >> 2) + 1;
+								istep = ((ibbox[1].x - ibbox[0].x) >> 2) + 1;
+								jstep = ((ibbox[1].y - ibbox[0].y) >> 2) + 1;
 								for (i = ibbox[0].x, npt = 0; i <= ibbox[1].x;
 								     i += istep)
 								{
@@ -415,15 +415,15 @@ int CPhysArea::CheckPoint(const Vec3& pttest)
 			ilim[1] = m_npt;
 			do
 			{
-				i = ilim[0] + ilim[1] >> 1;
+				i = (ilim[0] + ilim[1]) >> 1;
 				i1 = m_idxSort[iend][i] + 1;
-				i1 &= i1 - m_npt >> 31;
+				i1 &= (i1 - m_npt) >> 31;
 				ilim[isneg(ptloc.x - minmax(m_pt[m_idxSort[iend][i]].x, m_pt[i1].x, iend))] = i;
 			}
 			while (ilim[1] > ilim[0] + 1);
 			istart[iend] = ilim[1];
 		}
-		if (istart[0] - 1 >> 31 | m_npt - 1 - istart[1] >> 31)
+		if ((istart[0] - 1) >> 31 | (m_npt - 1 - istart[1]) >> 31)
 		{
 			return 0;
 		}
@@ -436,7 +436,7 @@ int CPhysArea::CheckPoint(const Vec3& pttest)
 		{
 			if (m_pMask[m_idxSort[1][i] >> 5] & 1u << (m_idxSort[1][i] & 31))
 			{
-				dp = m_pt[(m_idxSort[1][i] + 1) & m_idxSort[1][i] - m_npt + 1 >> 31] -
+				dp = m_pt[(m_idxSort[1][i] + 1) & (m_idxSort[1][i] - m_npt + 1) >> 31] -
 				     m_pt[m_idxSort[1][i]];
 				y.set(((ptloc.x - m_pt[m_idxSort[1][i]].x) * dp.y + m_pt[m_idxSort[1][i]].y * dp.x) *
 				          dp.x,
@@ -705,7 +705,8 @@ int CPhysArea::RayTrace(const Vec3& org, const Vec3& dir, ray_hit* pHit, pe_para
 						    aray.m_dirn * ((phf->step.x + phf->step.y) * m_scale * 3);
 						aray.m_ray.origin = pHit->pt - aray.m_ray.dir * 0.5f;
 					}
-					if (ncont = m_pGeom->Intersect(&aray, &gwd, 0, &ip, pcontacts))
+					ncont = m_pGeom->Intersect(&aray, &gwd, 0, &ip, pcontacts);
+					if (ncont)
 					{
 						WriteLockCond lockColl(*ip.plock, 0);
 						lockColl.SetActive();
@@ -1300,7 +1301,7 @@ void CPhysArea::DrawHelperInformation(IPhysRenderer* pRenderer, int flags)
 			{
 				for (i0 = 0; i0 < m_npt; i0++)
 				{
-					i1 = (i0 + 1) & i0 - m_npt + 1 >> 31;
+					i1 = (i0 + 1) & (i0 - m_npt + 1) >> 31;
 					pRenderer->DrawLine(
 					    m_R * Vec3(m_pt[i0].x, m_pt[i0].y, m_zlim[j]) * m_scale + m_offset,
 					    m_R * Vec3(m_pt[i1].x, m_pt[i1].y, m_zlim[j]) * m_scale + m_offset,

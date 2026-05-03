@@ -37,8 +37,6 @@ float CSphereGeom::ComputeExtent(GeomQuery& geo, EGeomForm eForm)
 {
 	switch (eForm)
 	{
-		default:
-			assert(0);
 		case GeomForm_Vertices:
 		case GeomForm_Edges:
 			return 0.f;
@@ -47,19 +45,18 @@ float CSphereGeom::ComputeExtent(GeomQuery& geo, EGeomForm eForm)
 		case GeomForm_Volume:
 			return gf_PI * 4.f / 3.f * cube(m_sphere.r);
 	}
+	return {};
 }
 
 void CSphereGeom::GetRandomPos(RandomPos& ran, GeomQuery& geo, EGeomForm eForm)
 {
 	switch (eForm)
 	{
-		default:
-			assert(0);
 		case GeomForm_Vertices:
 		case GeomForm_Edges:
 			ran.vPos = m_sphere.center;
 			ran.vNorm.zero();
-			return;
+			break;
 		case GeomForm_Surface:
 		case GeomForm_Volume:
 		{
@@ -79,10 +76,10 @@ void CSphereGeom::GetRandomPos(RandomPos& ran, GeomQuery& geo, EGeomForm eForm)
 			{
 				ran.vPos *= m_sphere.r;
 			}
+			ran.vPos += m_sphere.center;
 			break;
 		}
 	}
-	ran.vPos += m_sphere.center;
 }
 
 int CSphereGeom::PrepareForIntersectionTest(geometry_under_test* pGTest, CGeometry* pCollider,

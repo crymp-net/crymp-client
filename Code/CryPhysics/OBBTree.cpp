@@ -14,6 +14,24 @@ struct OBBnode
 	int ntris;
 };
 
+COBBTree::COBBTree()
+{
+	m_nMinTrisPerNode = 2;
+	m_nMaxTrisPerNode = 4;
+	m_maxSkipDim = 0;
+	m_pNodes = 0;
+	m_pTri2Node = 0;
+}
+
+COBBTree::~COBBTree()
+{
+	delete[] m_pNodes;
+	m_pNodes = nullptr;
+
+	delete[] m_pTri2Node;
+	m_pTri2Node = nullptr;
+}
+
 void COBBTree::SetParams(int nMinTrisPerNode, int nMaxTrisPerNode, float skipdim)
 {
 	m_nMinTrisPerNode = nMinTrisPerNode;
@@ -25,7 +43,8 @@ float COBBTree::Build(CGeometry* pMesh)
 {
 	m_pMesh = (CTriMesh*)pMesh;
 	m_pNodes = new OBBnode[m_nNodesAlloc = 256];
-	memset(m_pMapVtxUsed = new int[(m_pMesh->m_nVertices - 1 >> 5) + 1], 0, (m_pMesh->m_nVertices - 1 >> 3) + 1);
+	memset(m_pMapVtxUsed = new int[((m_pMesh->m_nVertices - 1) >> 5) + 1], 0,
+	       ((m_pMesh->m_nVertices - 1) >> 3) + 1);
 	m_pVtxUsed = new Vec3[m_pMesh->m_nVertices];
 	m_pNodes[0].iparent = -1;
 	m_pTri2Node = new index_t[m_pMesh->m_nTris];
@@ -144,7 +163,7 @@ float COBBTree::BuildNode(int iNode, int iTriStart, int nTris, int nDepth)
 	}
 
 	volatile int iAxis;
-	int numtris[3], nTrisAx[3], iPart, iMode[3], idx;
+	int numtris[3], nTrisAx[3], iPart{}, iMode[3], idx;
 	float x0, x1, x2, cx, sz, xlim[2], bounds[3][2], diff[3], axdiff[3];
 	Vec3 axis, center;
 
@@ -336,7 +355,7 @@ void COBBTree::GetNodeBV(const Matrix33& Rw, const Vec3& offsw, float scalew, BV
 float COBBTree::SplitPriority(const BV* pBV)
 {
 	BBox* pbox = (BBox*)pBV;
-	return pbox->abox.size.GetVolume() * (m_pNodes[pbox->iNode].ntris - 1 >> 31 & 1);
+	return pbox->abox.size.GetVolume() * ((m_pNodes[pbox->iNode].ntris - 1) >> 31 & 1);
 }
 
 void COBBTree::GetNodeChildrenBVs(const Matrix33& Rw, const Vec3& offsw, float scalew, const BV* pBV_parent,
@@ -471,7 +490,7 @@ int COBBTree::PrepareForIntersectionTest(geometry_under_test* pGTest, CGeometry*
 	}
 	else
 	{
-		int mapsz = (m_nNodes - 1 >> 5) + 1;
+		int mapsz = ((m_nNodes - 1) >> 5) + 1;
 		if (mapsz <= (int)(sizeof(g_idata[pGTest->iCaller].UsedNodesMap) /
 		                   sizeof(g_idata[pGTest->iCaller].UsedNodesMap[0])) -
 		                 g_idata[pGTest->iCaller].UsedNodesMapPos)
@@ -517,7 +536,7 @@ void COBBTree::CleanupAfterIntersectionTest(geometry_under_test* pGTest)
 	}
 	else
 	{
-		memset(pGTest->pUsedNodesMap, 0, ((m_nNodes - 1 >> 5) + 1) * 4);
+		memset(pGTest->pUsedNodesMap, 0, (((m_nNodes - 1) >> 5) + 1) * 4);
 	}
 }
 

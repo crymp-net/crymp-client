@@ -191,7 +191,7 @@ real ComputeMassProperties(strided_pointer<const Vec3> points, const index_t* fa
 {
 	real M = 0, fi[12], nmax, diag[3] = {0, 0, 0};
 	Vec3r n, p[4];
-	int i, g;
+	int i = 0, g = 0;
 	center.zero();
 	I.SetZero();
 
@@ -422,7 +422,7 @@ int boolean2d(booltype type, vector2df* ptbuf1, int npt1, vector2df* ptbuf2, int
 	sz.y += fabs_tpl(sz.x) * 1E-5f;
 
 	i = (int)((sizeof(g_BoolGrid) / sizeof(g_BoolGrid[0])) - 1);
-	npttmp = min(npt[0] + npt[1] << 1, i);
+	npttmp = min((npt[0] + npt[1]) << 1, i);
 	ratioyx = max(min(sz.y / sz.x, (float)npttmp), 1.0f);
 	ratioxy = max(min(sz.x / sz.y, (float)npttmp), 1.0f);
 	isz.y = max(1, physics_float2int((cry_sqrtf((npttmp * 4 * ratioyx) + 1) * 0.5f) - 1.0f));
@@ -597,7 +597,7 @@ int boolean2d(booltype type, vector2df* ptbuf1, int npt1, vector2df* ptbuf2, int
 		ptres = ptsrc[iobj];
 		for (nptres = 0; nptres < npt[iobj]; nptres++)
 		{
-			g_BoolIdBuf[nptres] = nptres + 1 << iobj * 16;
+			g_BoolIdBuf[nptres] = (nptres + 1) << iobj * 16;
 		}
 		return nptres & -(bClosed | bInside);
 	}
@@ -611,14 +611,14 @@ int boolean2d(booltype type, vector2df* ptbuf1, int npt1, vector2df* ptbuf2, int
 		idx_prev = idx - 1;
 		idx_prev = (idx_prev & ~(idx_prev >> 31)) | ((ninters - 1) & idx_prev >> 31);
 		i = g_BoolInters[idx].iedge[iobj];
-		inext = (i + 1) & i + 1 - npt[iobj] >> 31;
+		inext = (i + 1) & (i + 1 - npt[iobj]) >> 31;
 		dp = ptsrc[iobj][inext] - ptsrc[iobj][i];
-		inext1 = min(inext + 1, npt[iobj] - 1) & (i + 1 - npt[iobj] >> 31 | ~-bClosed);
+		inext1 = min(inext + 1, npt[iobj] - 1) & ((i + 1 - npt[iobj]) >> 31 | ~-bClosed);
 
 		j = g_BoolInters[idx].iedge[iobj ^ 1];
 		if (j >= 0)
 		{
-			dp1 = ptsrc[iobj ^ 1][(j + 1) & j + 1 - npt[iobj ^ 1] >> 31] - ptsrc[iobj ^ 1][j];
+			dp1 = ptsrc[iobj ^ 1][(j + 1) & (j + 1 - npt[iobj ^ 1]) >> 31] - ptsrc[iobj ^ 1][j];
 			bInside = isneg(dp ^ dp1);
 		}
 		else
@@ -632,7 +632,8 @@ int boolean2d(booltype type, vector2df* ptbuf1, int npt1, vector2df* ptbuf2, int
 		if (bInside | bPrevInside | bClosed)
 		{
 			g_BoolPtBuf[nptres] = g_BoolInters[idx].pt;
-			g_BoolIdBuf[nptres++] = g_BoolInters[idx].iedge[1] + 1 << 16 | (g_BoolInters[idx].iedge[0] + 1);
+			g_BoolIdBuf[nptres++] =
+			    (g_BoolInters[idx].iedge[1] + 1) << 16 | (g_BoolInters[idx].iedge[0] + 1);
 			if (nptres >= (int)(sizeof(g_BoolPtBuf) / sizeof(g_BoolPtBuf[0])))
 			{
 				return nptres;
@@ -641,17 +642,17 @@ int boolean2d(booltype type, vector2df* ptbuf1, int npt1, vector2df* ptbuf2, int
 		if (bInside | bClosed)
 		{
 			i = g_BoolInters[idx].iedge[iobj1];
-			inext = (i + 1) & ~(npt[iobj1] - 2 - i >> 31);
+			inext = (i + 1) & ~((npt[iobj1] - 2 - i) >> 31);
 			dp = ptsrc[iobj1][inext] - ptsrc[iobj1][i];
 			bool bForceFirstStep = i == g_BoolInters[idx_next].iedge[iobj1] &&
 			                       (g_BoolInters[idx].pt - ptsrc[iobj1][i]) * dp >
 			                           (g_BoolInters[idx_next].pt - ptsrc[iobj1][i]) * dp;
 			for (; bForceFirstStep || i != g_BoolInters[idx_next].iedge[iobj1] &&
 			                              (iobj1 == iobj || i != g_BoolInters[idx_prev].iedge[iobj1]);
-			     i = (i + 1) & ~(npt[iobj1] - 2 - i >> 31))
+			     i = (i + 1) & ~((npt[iobj1] - 2 - i) >> 31))
 			{
 				g_BoolPtBuf[nptres] = ptsrc[iobj1][i + 1];
-				g_BoolIdBuf[nptres++] = i + 2 << iobj1 * 16;
+				g_BoolIdBuf[nptres++] = (i + 2) << iobj1 * 16;
 				if (nptres >= (int)(sizeof(g_BoolPtBuf) / sizeof(g_BoolPtBuf[0])))
 				{
 					return nptres;
@@ -747,7 +748,7 @@ void RasterizePolygonIntoCubemap(const Vec3* pt, int npt, int iPass, int* pGrid[
 
 	for (ipt = 0; ipt < npt; ipt++)
 	{
-		ipt1 = (ipt + 1) & ipt - npt + 1 >> 31;
+		ipt1 = (ipt + 1) & (ipt - npt + 1) >> 31;
 		iPlane = GetProjCubePlane(pt[ipt]);
 		iPlaneEnd = GetProjCubePlane(pt[ipt1]);
 		n = pt[ipt] ^ pt[ipt1];
@@ -782,7 +783,7 @@ void RasterizePolygonIntoCubemap(const Vec3* pt, int npt, int iPass, int* pGrid[
 			{
 				rn[ic[idx ^ 1]] = 1.0f / (n[ic[idx ^ 1]] + isneg(fabsf(n[ic[idx ^ 1]]) - 1E-5f) * 1E4f);
 			}
-			j = ic[idx] << 1 | ibound[idx] + 1 >> 1;
+			j = ic[idx] << 1 | (ibound[idx] + 1) >> 1;
 			if (j != iPlaneEnd && maskUsed & 1 << j && ++loopIter < 8)
 			{
 				idx ^= 1;
@@ -800,8 +801,8 @@ void RasterizePolygonIntoCubemap(const Vec3* pt, int npt, int iPass, int* pGrid[
 				j = iOrder >> 31;
 				for (i = planes[iPlane].iExit; i != iEnter; i = (i + iOrder) & 3)
 				{
-					planes[iPlane].pt[planes[iPlane].npt++ & 31].set(1 - ((i + j ^ i + j << 1) & 2),
-					                                                 1 - (i + j & 2));
+					planes[iPlane].pt[planes[iPlane].npt++ & 31].set(
+					    1 - ((i + j ^ (i + j) << 1) & 2), 1 - (i + j & 2));
 				}
 				planes[iPlane].iExit = -1;
 			}
@@ -839,7 +840,7 @@ void RasterizePolygonIntoCubemap(const Vec3* pt, int npt, int iPass, int* pGrid[
 		j = iOrder >> 31;
 		for (i = 0; planes[iPlane].npt < 4; i = (i + iOrder) & 3)
 		{
-			planes[iPlane].pt[planes[iPlane].npt++ & 31].set(1 - ((i + j ^ i + j << 1) & 2),
+			planes[iPlane].pt[planes[iPlane].npt++ & 31].set(1 - ((i + j ^ (i + j) << 1) & 2),
 			                                                 1 - (i + j & 2));
 		}
 	}
@@ -853,7 +854,7 @@ void RasterizePolygonIntoCubemap(const Vec3* pt, int npt, int iPass, int* pGrid[
 		{
 			for (i = planes[iPlane].iExit; i != planes[iPlane].iEnter; i = (i + iOrder) & 3)
 			{
-				planes[iPlane].pt[planes[iPlane].npt++ & 31].set(1 - ((i + j ^ i + j << 1) & 2),
+				planes[iPlane].pt[planes[iPlane].npt++ & 31].set(1 - ((i + j ^ (i + j) << 1) & 2),
 				                                                 1 - (i + j & 2));
 			}
 		}
@@ -885,10 +886,10 @@ void RasterizePolygonIntoCubemap(const Vec3* pt, int npt, int iPass, int* pGrid[
 			{
 				iBrdNext[0] = iBrd[0] + iOrder;
 				iBrdNext[0] += planes[iPlane].npt & iBrdNext[0] >> 31; // wrap -1 to npt-1 and npt to 0
-				iBrdNext[0] &= iBrdNext[0] - planes[iPlane].npt >> 31;
+				iBrdNext[0] &= (iBrdNext[0] - planes[iPlane].npt) >> 31;
 				iBrdNext[1] = iBrd[1] - iOrder;
 				iBrdNext[1] += planes[iPlane].npt & iBrdNext[1] >> 31; // wrap -1 to npt-1 and npt to 0
-				iBrdNext[1] &= iBrdNext[1] - planes[iPlane].npt >> 31;
+				iBrdNext[1] &= (iBrdNext[1] - planes[iPlane].npt) >> 31;
 				idx = isneg(planes[iPlane].pt[iBrdNext[0]].y - planes[iPlane].pt[iBrdNext[1]].y);
 				dp[0] = planes[iPlane].pt[iBrdNext[0]] - planes[iPlane].pt[iBrd[0]];
 				dp0[0] = (dp[0] ^ planes[iPlane].pt[iBrd[0]] + vector2df(koffs, koffs)) * kres;
@@ -916,7 +917,7 @@ void RasterizePolygonIntoCubemap(const Vec3* pt, int npt, int iPass, int* pGrid[
 					// increment x after loop; right: while point is outside and x!=xmax
 					for (icell.x = ixleft;
 					     isneg(((dp[0] ^ icell) * lxdir) - (dp0[0] * lxdir)) &
-					     (iszero(ixlim[lxdir + 1 >> 1] + (lxdir >> 31) - icell.x) ^ 1);
+					     (iszero(ixlim[(lxdir + 1) >> 1] + (lxdir >> 31) - icell.x) ^ 1);
 					     icell.x += lxdir)
 						;
 					icell.x -= lxdir >> 31;
@@ -943,7 +944,7 @@ void RasterizePolygonIntoCubemap(const Vec3* pt, int npt, int iPass, int* pGrid[
 							    max(planes[iPlane].minz, min(fabsf(z.val()), rmax)) *
 							    zscale);
 							nCells++;
-							imask = iz - irmin >> 31;
+							imask = (iz - irmin) >> 31;
 							iz = (iz | imask) & ((1u << 31) - 1);
 							pGrid[iPlane][idcell] =
 							    min(pGrid[iPlane][idcell] & ((1u << 31) - 1), iz) |
@@ -960,7 +961,7 @@ void RasterizePolygonIntoCubemap(const Vec3* pt, int npt, int iPass, int* pGrid[
 							    zscale);
 							nCells++;
 							// pGrid[iPlane][idcell] &= irmin-iz>>31 | (1u<<31)-1;
-							imask = iz - irmin >> 31;
+							imask = (iz - irmin) >> 31;
 							iz = (iz | imask) & ((1u << 31) - 1);
 							pGrid[iPlane][idcell] =
 							    min(pGrid[iPlane][idcell] & ((1u << 31) - 1), iz) |
@@ -990,14 +991,14 @@ void RasterizePolygonIntoCubemap(const Vec3* pt, int npt, int iPass, int* pGrid[
 		iz = physics_float2int(min(fabsf(pt[0][ic.z]), rmax) * zscale);
 		if (iPass == 0)
 		{
-			imask = iz - irmin >> 31;
+			imask = (iz - irmin) >> 31;
 			iz = (iz | imask) & ((1u << 31) - 1);
 			pGrid[iPlane][idcell] = min(pGrid[iPlane][idcell] & ((1u << 31) - 1), iz) |
 			                        ((pGrid[iPlane][idcell] | imask) & (1 << 31));
 		}
 		else
 		{
-			pGrid[iPlane][idcell] &= irmin - iz >> 31 | ((1u << 31) - 1);
+			pGrid[iPlane][idcell] &= (irmin - iz) >> 31 | ((1u << 31) - 1);
 		}
 	}
 }
@@ -1018,9 +1019,9 @@ int get_cubemap_cell_buddy(int idCell, int iBuddy, int nRes)
 	iaxis.y = dec_mod3[iaxis.z];
 
 	idBuddy = icell.x | icell.y << 8 | (idCell & 0x70000);
-	idWrappedBuddy = icell[idx ^ 1] << 8 * idx | icell.z << 8 * (idx ^ 1) | iaxis[idx] << 17 | istep + 1 << 15;
+	idWrappedBuddy = icell[idx ^ 1] << 8 * idx | icell.z << 8 * (idx ^ 1) | iaxis[idx] << 17 | (istep + 1) << 15;
 
-	bWrap = icell[idx] >> 31 | nRes - 1 - icell[idx] >> 31;
+	bWrap = icell[idx] >> 31 | (nRes - 1 - icell[idx]) >> 31;
 	return (idWrappedBuddy & bWrap) | (idBuddy & ~bWrap);
 }
 
@@ -1110,7 +1111,7 @@ int crop_polygon_with_plane(const Vec3* ptsrc, int nsrc, Vec3* ptdst, const Vec3
 	}
 	for (iCount = ndst = 0; iCount < nsrc; iCount++, i0 = i1)
 	{
-		i1 = (i0 + 1) & i0 - nsrc + 1 >> 31;
+		i1 = (i0 + 1) & (i0 - nsrc + 1) >> 31;
 		ptdst[ndst] = ptsrc[i0];
 		ndst += isneg(ptsrc[i0] * n - d);
 		if ((ptsrc[i0] * n - d) * (ptsrc[i1] * n - d) < 0)
@@ -1199,8 +1200,8 @@ int CoverPolygonWithCircles(strided_pointer<vector2df> pt, int npt, bool bConsec
 	for (i = 0, r = 0; i < npt; i++)
 	{
 		pdata[i].pt = pt[i] - center;
-		pdata[i].next = pdata + (i + 1 & i + 1 - npt >> 31);
-		pdata[i].prev = pdata + i - 1 + (npt & i - 1 >> 31);
+		pdata[i].next = pdata + (i + 1 & (i + 1 - npt) >> 31);
+		pdata[i].prev = pdata + i - 1 + (npt & (i - 1) >> 31);
 		r = max(r, len2(pdata[i].pt));
 	}
 	if (r < sqr(minCircleRadius))
@@ -1775,7 +1776,7 @@ int TriangulatePoly(vector2df* pVtx, int nVtx, int* pTris, int szTriBuf)
 	{
 		return 0;
 	}
-	vtxthunk *pThunks, *pPrevThunk, *pContStart, **pSags, **pBottoms, *pPinnacle, *pBounds[2], *pPrevBounds[2],
+	vtxthunk *pThunks, *pPrevThunk, *pContStart, **pSags, **pBottoms, *pPinnacle{}, *pBounds[2], *pPrevBounds[2],
 	    *ptr, *ptr_next;
 	vtxthunk bufThunks[32], *bufSags[16], *bufBottoms[16];
 	int i, nThunks, nBottoms = 0, nSags = 0, iBottom = 0, nConts = 0, j, isag, nThunks0, nTris = 0, nPrevSags,
@@ -2178,7 +2179,7 @@ void jgrid_checker::MarkCellInteriorQueue(int icell)
 	for (nQueuedCells = 1; nQueuedCells > 0;)
 	{
 		icell = pqueue[itail];
-		itail = (itail + 1) & itail + 1 - szQueue >> 31;
+		itail = (itail + 1) & (itail + 1 - szQueue) >> 31;
 		nQueuedCells--;
 		for (j = 0; j < 4; j++)
 		{
@@ -2199,7 +2200,7 @@ void jgrid_checker::MarkCellInteriorQueue(int icell)
 					}
 					szQueue += 64;
 				}
-				ihead = (ihead + 1) & ihead + 1 - szQueue >> 31;
+				ihead = (ihead + 1) & (ihead + 1 - szQueue) >> 31;
 				nQueuedCells++;
 				pqueue[ihead] = icellNext;
 			}

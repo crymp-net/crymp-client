@@ -263,11 +263,11 @@ int CRopeEntity::SetParams(pe_params* _params, int bThreadSafe)
 		return 1;
 	}
 
-	int res;
 	unsigned int flags0 = m_flags;
 	Vec3 prevpos = m_pos;
 	quaternionf prevq = m_qrot;
-	if (res = CPhysicalEntity::SetParams(_params, 1))
+	int res = CPhysicalEntity::SetParams(_params, 1);
+	if (res)
 	{
 		if (_params->type == pe_params_pos::type_id)
 		{
@@ -643,8 +643,8 @@ int CRopeEntity::SetParams(pe_params* _params, int bThreadSafe)
 
 int CRopeEntity::GetParams(pe_params* _params)
 {
-	int res;
-	if (res = CPhysicalEntity::GetParams(_params))
+	int res = CPhysicalEntity::GetParams(_params);
+	if (res)
 	{
 		return res;
 	}
@@ -690,7 +690,8 @@ int CRopeEntity::GetParams(pe_params* _params)
 		params->pPoints.iStride = params->pVelocities.iStride = sizeof(rope_segment);
 		for (int i = 0; i < 2; i++)
 		{
-			if (params->pEntTiedTo[i] = m_pTiedTo[i])
+			params->pEntTiedTo[i] = m_pTiedTo[i];
+			if (params->pEntTiedTo[i])
 			{
 				if (m_pTiedTo[i] == &g_StaticPhysicalEntity)
 				{
@@ -721,8 +722,8 @@ int CRopeEntity::GetParams(pe_params* _params)
 
 int CRopeEntity::GetStatus(pe_status* _status)
 {
-	int res;
-	if (res = CPhysicalEntity::GetStatus(_status))
+	int res = CPhysicalEntity::GetStatus(_status);
+	if (res)
 	{
 		if (_status->type == pe_status_caps::type_id)
 		{
@@ -770,7 +771,8 @@ int CRopeEntity::GetStatus(pe_status* _status)
 		volatile CPhysicalEntity* pContactEnt;
 		for (i = 0; i < m_nSegs; i++)
 		{
-			if (pContactEnt = *(volatile CPhysicalEntity**)&m_segs[i].pContactEnt)
+			pContactEnt = *(volatile CPhysicalEntity**)&m_segs[i].pContactEnt;
+			if (pContactEnt)
 			{
 				(*nCollCount[-pContactEnt->m_iSimClass >> 31 & 1])++;
 			}
@@ -819,8 +821,8 @@ void CRopeEntity::EnforceConstraints(float seglen, const quaternionf& qtv, const
 		{
 			if (m_segs[i].pContactEnt)
 			{
-				bHasContacts |=
-				    m_segs[i].pContactEnt->m_id - iDir >> 31 | iDir - m_segs[i].pContactEnt->m_id >> 31;
+				bHasContacts |= (m_segs[i].pContactEnt->m_id - iDir) >> 31 |
+				                (iDir - m_segs[i].pContactEnt->m_id) >> 31;
 			}
 		}
 		if (bHasContacts)
@@ -1319,15 +1321,15 @@ int CRopeEntity::Step(float time_interval)
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PHYSICS);
 
 	float seglen = m_length / m_nSegs, seglen2 = sqr(seglen), rseglen = m_nSegs / m_length, rseglen2 = sqr(rseglen),
-	      Ebefore, scale;
-	int iDir, iStart, iEnd, iter, bStretched, bTargetPoseActive = m_bTargetPoseActive, bGridLocked = 0,
-						  bHasContacts = 0;
+	      Ebefore, scale{};
+	int iDir, iStart, iEnd, iter, bStretched = 0, bTargetPoseActive = m_bTargetPoseActive, bGridLocked = 0,
+				      bHasContacts = 0;
 	int flags = m_flags;
 	Vec3 pos, gravity, dir, ptend[2], sz, BBox[2], ptnew, dv, dw, vrel, dir0src, dir1src, dir0dst, dir1dst,
 	    axis0src, axis1src, axis0dst, axis1dst, offstv(ZERO);
-	float len2, diff, a, b, r2, r2new, pAp, vmax, k, E, damping = max(0.0f, 1.0f - (m_damping * time_interval)),
-							    rnSegs = 1.0f / m_nSegs, rcollDist = 0, angleSrc, angleDst,
-							    scaletv = 1.0f;
+	float len2, diff, a{}, b, r2, r2new, pAp, vmax, k, E, damping = max(0.0f, 1.0f - (m_damping * time_interval)),
+							      rnSegs = 1.0f / m_nSegs, rcollDist = 0, angleSrc,
+							      angleDst, scaletv = 1.0f;
 	quaternionf dq, qtv(1, 0, 0, 0), q;
 	RigidBody* pbody;
 	pe_params_buoyancy pb[4];
@@ -1358,8 +1360,8 @@ int CRopeEntity::Step(float time_interval)
 		{
 			if (m_segs[i].pContactEnt)
 			{
-				bHasContacts |=
-				    m_segs[i].pContactEnt->m_id - iter >> 31 | iter - m_segs[i].pContactEnt->m_id >> 31;
+				bHasContacts |= (m_segs[i].pContactEnt->m_id - iter) >> 31 |
+				                (iter - m_segs[i].pContactEnt->m_id) >> 31;
 			}
 		}
 		if (bHasContacts)
@@ -1403,7 +1405,7 @@ int CRopeEntity::Step(float time_interval)
 		for (iter = 0; iter < iEnd; iter++)
 		{
 			if ((diff = ((m_segs[i].pt - pb[iter].waterPlane.origin) * pb[iter].waterPlane.n) *
-			            (pb[iter].iMedium - 1 >> 31)) > 0)
+			            ((pb[iter].iMedium - 1) >> 31)) > 0)
 			{
 				if (rcollDist == 0)
 				{
@@ -1653,7 +1655,8 @@ int CRopeEntity::Step(float time_interval)
 				dir = m_segs[i + iDir].pt - m_segs[i].pt;
 				len2 = dir.len2();
 				diff = fabs_tpl(len2 - seglen2);
-				if (bStretched = (diff > seglen2 * 0.01f))
+				bStretched = (diff > seglen2 * 0.01f);
+				if (bStretched)
 				{
 					if (diff < seglen2 * 0.2f)
 					{ // use 3 terms of 1/sqrt(x) Taylor series expansion
@@ -1683,7 +1686,7 @@ int CRopeEntity::Step(float time_interval)
 				m_segs[m_nSegs].pt = ptend[1];
 			}
 		}
-		while (m_pTiedTo[iDir + 1 >> 1] && bStretched && iter > 0);
+		while (m_pTiedTo[(iDir + 1) >> 1] && bStretched && iter > 0);
 	}
 
 	BBox[0] = BBox[1] = m_segs[0].pt;
@@ -1879,7 +1882,8 @@ int CRopeEntity::Step(float time_interval)
 			for (i = iStart; i != iEnd; i += iDir)
 			{
 				iseg = i + (iDir >> 31);
-				if (pent = m_segs[iseg].pContactEnt)
+				pent = m_segs[iseg].pContactEnt;
+				if (pent)
 				{
 					gwd.R = Matrix33(pent->m_qrot * pent->m_parts[m_segs[iseg].iContactPart].q);
 					gwd.offset =
@@ -2172,8 +2176,9 @@ int CRopeEntity::Step(float time_interval)
 							gwd.offset.zero();
 							gwd.R.SetIdentity();
 							gwd.scale = checkParts[j].scale;
-							if (ncont = checkParts[j].pGeom->Intersect(&aray, &gwd, 0, &ip,
-							                                           pcontact))
+							ncont = checkParts[j].pGeom->Intersect(&aray, &gwd, 0, &ip,
+							                                       pcontact);
+							if (ncont)
 							{
 								WriteLockCond lockColl(*ip.plock, 0);
 								lockColl.SetActive();
@@ -2293,8 +2298,9 @@ int CRopeEntity::Step(float time_interval)
 							gwd.offset = checkParts[j].offset;
 							gwd.R = checkParts[j].R;
 							gwd.scale = checkParts[j].scale;
-							if (ncont = checkParts[j].pGeom->Intersect(&aray, &gwd, &gwd1,
-							                                           &ip, pcontact))
+							ncont = checkParts[j].pGeom->Intersect(&aray, &gwd, &gwd1, &ip,
+							                                       pcontact);
+							if (ncont)
 							{
 								WriteLockCond lockColl(*ip.plock, 0);
 								lockColl.SetActive();
@@ -2770,7 +2776,7 @@ int CRopeEntity::Step(float time_interval)
 							        isneg(i - m_nVtx + 1) >
 							    e)
 							{
-								j = i - 1 >> 31 | max(0, i - m_nVtx + 3);
+								j = (i - 1) >> 31 | max(0, i - m_nVtx + 3);
 								m_vtx[i].vel += m_vtx[i].dir * (vrel * kdPs[j + 1]);
 								m_vtx[i + 1].vel -=
 								    m_vtx[i].dir * (vrel * (1.0f - kdPs[j + 1]));

@@ -228,7 +228,7 @@ CTetrLattice* CTetrLattice::CreateLattice(const Vec3* pt, int npt, const int* pT
 			                            pTet0[m_pTetr[i].ivtx[(j + 3) & 3]],
 			                        pEdgeTets, nTets, pFaceTets);
 			// if (nTets>2) - error in topology
-			m_pTetr[i].ibuddy[j] = pFaceTets[iszero(i - pFaceTets[0])] | nTets - 2 >> 31;
+			m_pTetr[i].ibuddy[j] = pFaceTets[iszero(i - pFaceTets[0])] | (nTets - 2) >> 31;
 		}
 	}
 
@@ -844,7 +844,8 @@ int CTetrLattice::CheckStructure(float time_interval, const Vec3& gravity, const
 		{
 			vtx[j] = m_pVtx[m_pTetr[itet0].ivtx[(iface0 + 1 + j) & 3]];
 		}
-		if (pCrack = m_pWorld->GetGeomManager()->GetCrackGeom(vtx, m_idmat, gwd + 1))
+		pCrack = m_pWorld->GetGeomManager()->GetCrackGeom(vtx, m_idmat, gwd + 1);
+		if (pCrack)
 		{
 			if (m_pMesh->Subtract(pCrack, gwd, gwd + 1))
 			{

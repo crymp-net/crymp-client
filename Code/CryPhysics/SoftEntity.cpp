@@ -586,8 +586,8 @@ int CSoftEntity::GetParams(pe_params* _params)
 
 int CSoftEntity::GetStatus(pe_status* _status)
 {
-	int res;
-	if (res = CPhysicalEntity::GetStatus(_status))
+	int res = CPhysicalEntity::GetStatus(_status);
+	if (res)
 	{
 		if (_status->type == pe_status_caps::type_id)
 		{
@@ -785,7 +785,7 @@ int CSoftEntity::Action(pe_action* _action, int bThreadSafe)
 		{
 			(m_collTypes &= ent_living) |= ent_independent;
 		}
-		RigidBody* pbody;
+		RigidBody* pbody = nullptr;
 		if (bAttached)
 		{
 			pbody = pent->GetRigidBody(ipart);
@@ -797,13 +797,15 @@ int CSoftEntity::Action(pe_action* _action, int bThreadSafe)
 			{
 				m_vtx[action->piVtx[i]].pContactEnt->Release();
 			}
-			if (m_vtx[action->piVtx[i]].pContactEnt = pent)
+			m_vtx[action->piVtx[i]].pContactEnt = pent;
+			if (pent)
 			{
 				pent->AddRef();
 			}
 			m_vtx[action->piVtx[i]].massinv = rvtxmass;
 			m_vtx[action->piVtx[i]].iContactPart = ipart;
-			if (m_vtx[action->piVtx[i]].bAttached = bAttached)
+			m_vtx[action->piVtx[i]].bAttached = bAttached;
+			if (bAttached)
 			{
 				if (!is_unused(action->points))
 				{
@@ -853,7 +855,7 @@ int CSoftEntity::Action(pe_action* _action, int bThreadSafe)
 			for (i = 0; i < m_nVtx; i++)
 			{
 				m_vtx[i].massinv =
-				    rvtxmass * -(m_vtx[i].bAttached - 1 >> 31) * (1.0f + m_vtx[i].iSorted * kmass);
+				    rvtxmass * -((m_vtx[i].bAttached - 1) >> 31) * (1.0f + m_vtx[i].iSorted * kmass);
 			}
 		}
 
@@ -1064,7 +1066,7 @@ enoughgeoms:
 		// calculate normal
 		for (j = m_vtx[i].iStartEdge, m_vtx[i].n.zero(); j < m_vtx[i].iEndEdge + m_vtx[i].bFullFan; j++)
 		{
-			imask = j - m_vtx[i].iEndEdge >> 31;
+			imask = (j - m_vtx[i].iEndEdge) >> 31;
 			j1 = ((j + 1) & imask) | (m_vtx[i].iStartEdge & ~imask);
 			m_vtx[i].n +=
 			    (m_vtx[m_edges[m_pVtxEdges[j]].ivtx[1]].pos - m_vtx[m_edges[m_pVtxEdges[j]].ivtx[0]].pos) *
@@ -1083,9 +1085,11 @@ enoughgeoms:
 		m_vtx[i].pos += m_vtx[i].vel * time_interval;
 
 		if (!m_vtx[i].bAttached)
-		{ // detect collisions for free vertices
+		{
+			// detect collisions for free vertices
 			rsep = m_thickness;
-			if (pent = m_vtx[i].pContactEnt)
+			pent = m_vtx[i].pContactEnt;
+			if (pent)
 			{
 				pbody = m_vtx[i].pContactEnt->GetRigidBody(m_vtx[i].iContactPart);
 				m_vtx[i].vcontact = pbody->v + (pbody->w ^ m_vtx[i].pos + m_pos + m_offs0 - pbody->pos);

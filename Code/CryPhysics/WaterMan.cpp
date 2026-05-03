@@ -304,7 +304,8 @@ void CWaterMan::OnWaterInteraction(CPhysicalEntity* pent)
 		j = pent->m_parts[ipart].pPhysGeomProxy->pGeom->GetType();
 		if (j == GEOM_TRIMESH || j == GEOM_VOXELGRID || j == GEOM_HEIGHTFIELD)
 		{
-			if (ncont = mesh.Intersect(pent->m_parts[ipart].pPhysGeomProxy->pGeom, 0, &gwd, &ip, pcontacts))
+			ncont = mesh.Intersect(pent->m_parts[ipart].pPhysGeomProxy->pGeom, 0, &gwd, &ip, pcontacts);
+			if (ncont)
 			{
 				WriteLockCond lockColl(*ip.plock, 0);
 				lockColl.SetActive();
@@ -645,8 +646,8 @@ void CWaterMan::TimeStep(float time_interval)
 					{
 						ix = ibrd >> 1;
 						(itile1[ibrd] = itile)[ix ^ 1] += (ibrd << 1 & 2) - 1;
-						ilim = itile1[ibrd].x >> 31 | (m_nTiles * 2) - itile1[ibrd].x >> 31 |
-						       itile1[ibrd].y >> 31 | (m_nTiles * 2) - itile1[ibrd].y >> 31;
+						ilim = itile1[ibrd].x >> 31 | ((m_nTiles * 2) - itile1[ibrd].x) >> 31 |
+						       itile1[ibrd].y >> 31 | ((m_nTiles * 2) - itile1[ibrd].y) >> 31;
 						itile1[ibrd].x += ((m_nTiles * 2) + 1 - itile1[ibrd].x) & ilim;
 						itile1[ibrd].y += ((m_nTiles * 2) - itile1[ibrd].y) & ilim;
 						i = itile1[ibrd] * strideTile;
@@ -667,8 +668,8 @@ void CWaterMan::TimeStep(float time_interval)
 							for (j = 0, havg = 0; j < 4; j++)
 							{
 								ilim = (m_nCells - 1) & -(j & 1);
-								havg += ph[j | ic[j >> 1 ^ 1] - ilim >> 31 |
-								           ilim - ic[j >> 1 ^ 1] >> 31][i + ioffs[j]];
+								havg += ph[j | (ic[j >> 1 ^ 1] - ilim) >> 31 |
+								           (ilim - ic[j >> 1 ^ 1]) >> 31][i + ioffs[j]];
 							}
 							ptile->pvel[i] =
 							    (ptile->pvel[i] * damping) +

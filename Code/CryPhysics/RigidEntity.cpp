@@ -47,7 +47,7 @@ void qsort(edgeitem* plist, int left, int right)
 		return;
 	}
 	int i, last;
-	swap(plist, left, left + right >> 1);
+	swap(plist, left, (left + right) >> 1);
 	for (last = left, i = left + 1; i <= right; i++)
 	{
 		if (plist[plist[i].idx].area < plist[plist[left].idx].area)
@@ -473,7 +473,8 @@ int CRigidEntity::SetParams(pe_params* _params, int bThreadSafe)
 	int res, i, flags0 = m_flags;
 	Vec3 BBox0[2] = {m_BBox[0], m_BBox[1]};
 
-	if (res = CPhysicalEntity::SetParams(_params, 1))
+	res = CPhysicalEntity::SetParams(_params, 1);
+	if (res)
 	{
 		if (_params->type == pe_params_pos::type_id)
 		{
@@ -698,7 +699,8 @@ int CRigidEntity::SetParams(pe_params* _params, int bThreadSafe)
 			{
 				delete[] m_pEventsColl;
 			}
-			if (m_nMaxEvents = params->maxLoggedCollisions)
+			m_nMaxEvents = params->maxLoggedCollisions;
+			if (m_nMaxEvents)
 			{
 				m_pEventsColl = new EventPhysCollision*[m_nMaxEvents];
 			}
@@ -796,8 +798,8 @@ int CRigidEntity::GetStatus(pe_status* _status)
 		                   : m_bAwake;
 	}
 
-	int res;
-	if (res = CPhysicalEntity::GetStatus(_status))
+	int res = CPhysicalEntity::GetStatus(_status);
+	if (res)
 	{
 		if (_status->type == pe_status_pos::type_id)
 		{
@@ -1966,7 +1968,7 @@ int CRigidEntity::CheckForNewContacts(geom_world_data* pgwd0, intersection_param
 								     pentlist[ient]->m_parts[j].flags) &
 								        (geom_manually_breakable |
 								         geom_no_coll_response) &&
-								    m_flags & pef_log_collisions & icont - 1 >> 31)
+								    m_flags & pef_log_collisions & (icont - 1) >> 31)
 								{
 									epc.pEntity[0] = this;
 									epc.pForeignData[0] = m_pForeignData;
@@ -2647,7 +2649,8 @@ void CRigidEntity::VerifyExistingContacts(float maxdist)
 
 	for (i = 0; i < m_nColliders; i++)
 	{
-		if (pContact = m_pColliderContacts[i])
+		pContact = m_pColliderContacts[i];
+		if (pContact)
 		{
 			for (;; pContact = pContact->next)
 			{
@@ -2706,15 +2709,13 @@ void CRigidEntity::OnContactResolved(entity_contact* pContact, int iop, int iGro
 					epjb.idJoint = m_pConstraintInfos[i].id;
 					epjb.bJoint = 0;
 					epjb.pNewEntity[0] = epjb.pNewEntity[1] = 0;
-					for (int iop = 0; iop < 2; iop++)
+					for (int j = 0; j < 2; j++)
 					{
-						epjb.pEntity[iop] = m_pConstraints[i].pent[iop];
-						epjb.pForeignData[iop] = m_pConstraints[i].pent[iop]->m_pForeignData;
-						epjb.iForeignData[iop] = m_pConstraints[i].pent[iop]->m_iForeignData;
-						epjb.partid[iop] = m_pConstraints[i]
-						                       .pent[iop]
-						                       ->m_parts[m_pConstraints[i].ipart[iop]]
-						                       .id;
+						epjb.pEntity[j] = m_pConstraints[i].pent[j];
+						epjb.pForeignData[j] = m_pConstraints[i].pent[j]->m_pForeignData;
+						epjb.iForeignData[j] = m_pConstraints[i].pent[j]->m_iForeignData;
+						epjb.partid[j] =
+						    m_pConstraints[i].pent[j]->m_parts[m_pConstraints[i].ipart[j]].id;
 					}
 					epjb.pt = m_pConstraints[i].pt[0];
 					epjb.n = m_pConstraints[i].n;
@@ -3034,7 +3035,7 @@ void CRigidEntity::ComputeBBoxRE(coord_block_BBox* partCoord)
 		partCoord[i].scale = m_parts[i].pNewCoords->scale;
 		m_parts[i].pNewCoords = &partCoord[i];
 	}
-	ComputeBBox(m_BBoxNew, update_part_bboxes & min(m_nParts, m_iVarPart0) - 3 >> 31);
+	ComputeBBox(m_BBoxNew, update_part_bboxes & (min(m_nParts, m_iVarPart0) - 3) >> 31);
 }
 
 void CRigidEntity::UpdatePosition(int bGridLocked)
@@ -3521,7 +3522,7 @@ int CRigidEntity::Step(float time_interval)
 						r = 0;
 						if (pcontacts[i].parea && pcontacts[i].parea->npt > 2)
 						{
-							for (j = 0; j < pcontacts[i].parea->npt & -bUseSimpleSolver;
+							for (j = 0; (j < pcontacts[i].parea->npt) & -bUseSimpleSolver;
 							     j++)
 							{
 								RegisterContactPoint(
@@ -3563,26 +3564,27 @@ int CRigidEntity::Step(float time_interval)
 						}
 						if (!bUseSimpleSolver)
 						{
-							if (pContact = RegisterContactPoint(
-								i, pcontacts[i].center, pcontacts,
-								pcontacts[i].iPrim[0], pcontacts[i].iFeature[0],
-								pcontacts[i].iPrim[1], pcontacts[i].iFeature[1],
-								contact_new | contact_last,
-								max(0.001f, (float)pcontacts[i].t +
-							                        axis * pcontacts[i].center - r)))
+							pContact = RegisterContactPoint(
+							    i, pcontacts[i].center, pcontacts, pcontacts[i].iPrim[0],
+							    pcontacts[i].iFeature[0], pcontacts[i].iPrim[1],
+							    pcontacts[i].iFeature[1], contact_new | contact_last,
+							    max(0.001f, (float)pcontacts[i].t +
+							                    axis * pcontacts[i].center - r));
+							if (pContact)
 							{
 								pContact->nloc = ntilt;
 							}
 							for (j = 0; j < pcontacts[i].nborderpt; j++)
 							{
-								if (pContact = RegisterContactPoint(
-									i, pcontacts[i].ptborder[j], pcontacts,
-									pcontacts[i].iPrim[0], pcontacts[i].iFeature[0],
-									pcontacts[i].iPrim[1], pcontacts[i].iFeature[1],
-									contact_new,
-									max(0.001f,
-								            (float)pcontacts[i].t +
-								                axis * pcontacts[i].ptborder[j] - r)))
+								pContact = RegisterContactPoint(
+								    i, pcontacts[i].ptborder[j], pcontacts,
+								    pcontacts[i].iPrim[0], pcontacts[i].iFeature[0],
+								    pcontacts[i].iPrim[1], pcontacts[i].iFeature[1],
+								    contact_new,
+								    max(0.001f, (float)pcontacts[i].t +
+								                    axis * pcontacts[i].ptborder[j] -
+								                    r));
+								if (pContact)
 								{
 									pContact->nloc = ntilt;
 								}
@@ -3619,11 +3621,12 @@ int CRigidEntity::Step(float time_interval)
 							for (j = 0; j < pcontacts[i].nborderpt; j++)
 							{
 								pcontacts[i].n = -pcontacts[i].dir;
-								if (pContact = RegisterContactPoint(
-									i, pcontacts[i].ptborder[j], pcontacts,
-									pcontacts[i].iPrim[0], pcontacts[i].iFeature[0],
-									pcontacts[i].iPrim[1], pcontacts[i].iFeature[1],
-									contact_new, 0.001f))
+								pContact = RegisterContactPoint(
+								    i, pcontacts[i].ptborder[j], pcontacts,
+								    pcontacts[i].iPrim[0], pcontacts[i].iFeature[0],
+								    pcontacts[i].iPrim[1], pcontacts[i].iFeature[1],
+								    contact_new, 0.001f);
+								if (pContact)
 								{
 									pContact->nloc.zero();
 								}
@@ -3753,8 +3756,8 @@ int CRigidEntity::Step(float time_interval)
 int CRigidEntity::PostStepNotify(float time_interval, pe_params_buoyancy* pb, int nMaxBuoys)
 {
 	Vec3 gravity;
-	int nBuoys;
-	if (nBuoys = m_pWorld->CheckAreas(this, gravity, pb, nMaxBuoys, m_body.v))
+	int nBuoys = m_pWorld->CheckAreas(this, gravity, pb, nMaxBuoys, m_body.v);
+	if (nBuoys)
 	{
 		if (!is_unused(gravity))
 		{
@@ -3943,7 +3946,7 @@ float CRigidEntity::GetMaxTimeStep(float time_interval)
 		time_interval = max(0.001f, size[i] * 0.7f / fabsf(vloc[i]));
 	}
 
-	int bDegradeQuality = -m_pWorld->m_bCurGroupInvisible & ~(1 - m_nColliders >> 31);
+	int bDegradeQuality = -m_pWorld->m_bCurGroupInvisible & ~((1 - m_nColliders) >> 31);
 	return min(min(m_timeStepFull - m_timeStepPerformed, m_maxAllowedStep * (1 - bDegradeQuality * 0.5f)),
 	           time_interval);
 }
@@ -4048,7 +4051,8 @@ int CRigidEntity::GetContactCount(int nMaxPlaneContacts)
 
 	for (i = nTotContacts = nContacts = 0; i < m_nColliders; i++, nTotContacts += min(nContacts, nMaxPlaneContacts))
 	{
-		if (pContact = m_pColliderContacts[i])
+		pContact = m_pColliderContacts[i];
+		if (pContact)
 		{
 			for (nContacts = 0;; pContact = pContact->next)
 			{
@@ -4070,7 +4074,7 @@ int CRigidEntity::RegisterContacts(float time_interval, int nMaxPlaneContacts)
 	int i, j, bComplexCollider, bStable, nContacts, bUseAreaContact;
 	Vec3 sz = m_BBox[1] - m_BBox[0], n;
 	float mindim = min(sz.x, min(sz.y, sz.z)), mindim1, dist, friction, penetration;
-	entity_contact *pContact, *pContact0, *pContactLin = 0, *pContactAng = 0;
+	entity_contact *pContact = nullptr, *pContact0 = nullptr, *pContactLin = nullptr, *pContactAng = nullptr;
 	RigidBody* pbody;
 	m_body.Fcollision.zero();
 	m_body.Tcollision.zero();
@@ -4700,7 +4704,8 @@ int CRigidEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 					bool bVal;
 					pe_action_add_constraint aac;
 					ser.Value("id", aac.id);
-					if (aac.pBuddy = m_pWorld->LoadPhysicalEntityPtr(ser))
+					aac.pBuddy = m_pWorld->LoadPhysicalEntityPtr(ser);
+					if (aac.pBuddy)
 					{
 						ser.Value("pt0", aac.pt[0]);
 						ser.Value("pt1", aac.pt[1]);
@@ -4848,7 +4853,7 @@ void CRigidEntity::ApplyBuoyancy(float time_interval, const Vec3& gravity, pe_pa
 		m_submergedFraction = 0;
 		return;
 	}
-	int i, ibuoy, ibuoySplash = -1;
+	int i = 0, ibuoy, ibuoySplash = -1;
 	Vec3 sz, center, dP, totResistance = Vec3(ZERO), vel0 = m_body.v;
 	float r, dist, V, Vsubmerged, Vfull, submergedFraction, waterFraction = 0;
 	geom_world_data gwd;
@@ -4899,8 +4904,8 @@ void CRigidEntity::ApplyBuoyancy(float time_interval, const Vec3& gravity, pe_pa
 						m_parts[i].pPhysGeomProxy->pGeom->CalculateMediumResistance(
 						    &pb[ibuoy].waterPlane, &gwd, ai.impulse, ai.angImpulse);
 						ai.impulse *= pb[ibuoy].waterResistance * m_kwaterResistance;
-						totResistance += ai.impulse * -(pb[ibuoy].iMedium - 1 >> 31);
-						ibuoySplash += (ibuoy - ibuoySplash) & pb[ibuoy].iMedium - 1 >> 31;
+						totResistance += ai.impulse * -((pb[ibuoy].iMedium - 1) >> 31);
+						ibuoySplash += (ibuoy - ibuoySplash) & (pb[ibuoy].iMedium - 1) >> 31;
 						ai.impulse *= time_interval;
 						ai.angImpulse *=
 						    pb[ibuoy].waterResistance * m_kwaterResistance * time_interval;
@@ -5012,8 +5017,8 @@ void CRigidEntity::ApplyBuoyancy(float time_interval, const Vec3& gravity, pe_pa
 		epc.penetration = m_submergedFraction;
 		epc.normImpulse = totResistance * epc.n;
 		epc.mass[0] = m_body.M;
-
-		if ((epc.radius = max(max(abox.size.x, abox.size.y), abox.size.z)) < 0.5f)
+		epc.radius = max(max(abox.size.x, abox.size.y), abox.size.z);
+		if (epc.radius < 0.5f)
 		{
 			epc.pt = abox.center;
 			epc.vloc[0] = m_body.v;
@@ -5030,8 +5035,8 @@ void CRigidEntity::ApplyBuoyancy(float time_interval, const Vec3& gravity, pe_pa
 					gwd.R = Matrix33(m_qNew * m_parts[i].pNewCoords->q);
 					gwd.offset = m_posNew + m_qNew * m_parts[i].pNewCoords->pos;
 					gwd.scale = m_parts[i].pNewCoords->scale;
-					if (icont =
-					        m_parts[i].pPhysGeomProxy->pGeom->Intersect(&gbox, &gwd, 0, &ip, pcont))
+					icont = m_parts[i].pPhysGeomProxy->pGeom->Intersect(&gbox, &gwd, 0, &ip, pcont);
+					if (icont)
 					{
 						WriteLockCond lock(*ip.plock, 0);
 						lock.SetActive(1);

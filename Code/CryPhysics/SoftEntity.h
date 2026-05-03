@@ -22,7 +22,8 @@ public:
 
 	int Awake(int bAwake = 1, int iSource = 0)
 	{
-		if (m_bAwake = bAwake)
+		m_bAwake = bAwake;
+		if (bAwake)
 		{
 			m_nSlowFrames = 0;
 		}

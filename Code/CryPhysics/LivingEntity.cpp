@@ -410,7 +410,8 @@ int CLivingEntity::SetParams(pe_params* _params, int bThreadSafe)
 	Vec3 prevpos = m_pos;
 	quaternionf prevq = m_qrot;
 
-	if (res = CPhysicalEntity::SetParams(_params, 1))
+	res = CPhysicalEntity::SetParams(_params, 1);
+	if (res)
 	{
 		if (_params->type == pe_params_pos::type_id && !(((pe_params_pos*)_params)->bRecalcBounds & 32))
 		{
@@ -480,7 +481,7 @@ int CLivingEntity::SetParams(pe_params* _params, int bThreadSafe)
 		res = 0;
 		if ((params->heightCollider != m_hCyl || params->heightPivot != m_hPivot ||
 		     params->sizeCollider.x != m_size.x || params->sizeCollider.z != m_size.z ||
-		     params->bUseCapsule != m_bUseCapsule) &&
+		     params->bUseCapsule != static_cast<int>(m_bUseCapsule)) &&
 		    m_pWorld && m_bActive)
 		{
 			do
@@ -504,7 +505,7 @@ int CLivingEntity::SetParams(pe_params* _params, int bThreadSafe)
 
 			if (params->heightCollider != m_hCyl || params->heightPivot != m_hPivot ||
 			    params->sizeCollider.x != m_size.x || params->sizeCollider.z != m_size.z ||
-			    params->bUseCapsule != m_bUseCapsule)
+			    params->bUseCapsule != static_cast<int>(m_bUseCapsule))
 			{
 				m_hPivot = params->heightPivot;
 				primitives::cylinder newdim;
@@ -512,7 +513,7 @@ int CLivingEntity::SetParams(pe_params* _params, int bThreadSafe)
 				newdim.hh = params->sizeCollider.z;
 				newdim.center.zero();
 				newdim.axis.Set(0, 0, 1);
-				if (m_bUseCapsule != params->bUseCapsule)
+				if (static_cast<int>(m_bUseCapsule) != params->bUseCapsule)
 				{
 					if (m_pCylinderGeom)
 					{
@@ -521,7 +522,8 @@ int CLivingEntity::SetParams(pe_params* _params, int bThreadSafe)
 					m_CylinderGeomPhys.pGeom = m_pCylinderGeom =
 					    params->bUseCapsule ? (new CCapsuleGeom) : (new CCylinderGeom);
 				}
-				if (m_bUseCapsule = params->bUseCapsule)
+				m_bUseCapsule = params->bUseCapsule;
+				if (m_bUseCapsule)
 				{
 					((CCapsuleGeom*)m_pCylinderGeom)->CreateCapsule((primitives::capsule*)&newdim);
 				}
@@ -699,8 +701,8 @@ int CLivingEntity::SetParams(pe_params* _params, int bThreadSafe)
 
 int CLivingEntity::GetParams(pe_params* _params)
 {
-	int res;
-	if (res = CPhysicalEntity::GetParams(_params))
+	int res = CPhysicalEntity::GetParams(_params);
+	if (res)
 	{
 		return res;
 	}
@@ -1223,7 +1225,7 @@ float CLivingEntity::ShootRayDown(CPhysicalEntity** pentlist, int nents, const V
                                   float time_interval, bool bUseRotation, bool bUpdateGroundCollider,
                                   bool bIgnoreSmallObjects)
 {
-	int i, j, ibest = -1, jbest, ncont, idbest, idbestAux = -1;
+	int i, j, ibest = -1, jbest = 0, ncont = 0, idbest = 0, idbestAux = -1;
 	Matrix33 R;
 	Vec3 pt, axis = m_qrot * Vec3(0, 0, 1);
 	float h = -1E10f, maxdim, maxarea, haux = -1E10f;
@@ -1290,8 +1292,9 @@ float CLivingEntity::ShootRayDown(CPhysicalEntity** pentlist, int nents, const V
 					gwd.offset =
 					    pentlist[i]->m_pos + pentlist[i]->m_qrot * pentlist[i]->m_parts[j].pos;
 					gwd.scale = pentlist[i]->m_parts[j].scale;
-					if (ncont = pentlist[i]->m_parts[j].pPhysGeom->pGeom->Intersect(&aray, &gwd, 0,
-					                                                                &ip, pcontacts))
+					ncont = pentlist[i]->m_parts[j].pPhysGeom->pGeom->Intersect(&aray, &gwd, 0, &ip,
+					                                                            pcontacts);
+					if (ncont)
 					{
 						WriteLockCond lockColl(*ip.plock, 0);
 						lockColl.SetActive();
@@ -1556,7 +1559,7 @@ void CLivingEntity::ComputeBBoxLE(const Vec3& pos, Vec3* BBox, coord_block_BBox*
 	partCoord->q = m_parts[0].q;
 	partCoord->scale = m_parts[0].scale;
 	m_parts[0].pNewCoords = partCoord;
-	ComputeBBox(BBox, update_part_bboxes & m_nParts - 2 >> 31);
+	ComputeBBox(BBox, update_part_bboxes & (m_nParts - 2) >> 31);
 	m_pNewCoords = (coord_block*)&m_pos;
 }
 
@@ -1601,8 +1604,9 @@ int CLivingEntity::Step(float time_interval)
 	{
 		time_interval = 0.001f;
 	}
-	int i, j, imin, jmin, iter, nents, ncont, bFlying, bWasFlying, bPushOther, bUnprojected, idmat, bFastPhys,
-	    bPush, bHasFastPhys, iCyl, icnt, nUnproj, bStaticUnproj, bDynUnproj, bMoving = 0, bCheckBBox;
+	int i, j, imin, jmin = 0, iter, nents, ncont, bFlying, bWasFlying, bPushOther, bUnprojected, idmat = 0,
+			bFastPhys = 0, bPush, bHasFastPhys, iCyl, icnt, nUnproj, bStaticUnproj, bDynUnproj, bMoving = 0,
+			bCheckBBox;
 	Vec3 pos, vel, pos0, vel0, newpos, move(ZERO), nslope, ncontact, ptcontact, ncontactHist[4], ncontactSum,
 	    BBoxInner[2], BBoxOuter[2], velGround, axis;
 	float movelen, tmin, h, hcur, dh = 0, tfirst, vrel, move0, movesum, kInertia, imp;
@@ -1943,11 +1947,12 @@ int CLivingEntity::Step(float time_interval)
 									                    pentlist[i]->m_parts[j].pos;
 									gwd[1].scale = pentlist[i]->m_parts[j].scale;
 
-									if (icnt = pCyl[iCyl]->Intersect(
-										pentlist[i]
-										    ->m_parts[j]
-										    .pPhysGeomProxy->pGeom,
-										gwd, gwd + 1, &ip, pcontacts))
+									icnt = pCyl[iCyl]->Intersect(
+									    pentlist[i]
+										->m_parts[j]
+										.pPhysGeomProxy->pGeom,
+									    gwd, gwd + 1, &ip, pcontacts);
+									if (icnt)
 									{
 										WriteLockCond lockColl(*ip.plock, 0);
 										lockColl.SetActive();
@@ -1976,13 +1981,14 @@ int CLivingEntity::Step(float time_interval)
 										{
 											if (m_pWorld->m_bWorldStep == 2)
 											{
-												if (bPushOther =
-												        pentlist[i]
-												                ->m_iSimClass >
-												            0 &&
-												        pentlist[i]
-												                ->GetMassInv() >
-												            0)
+												bPushOther =
+												    pentlist[i]
+													    ->m_iSimClass >
+													0 &&
+												    pentlist[i]
+													    ->GetMassInv() >
+													0;
+												if (bPushOther)
 												{
 													nUnproj = min(
 													    nUnproj + 1,

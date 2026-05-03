@@ -99,8 +99,8 @@ int CWheeledVehicleEntity::SetParams(pe_params* _params, int bThreadSafe)
 		return 1;
 	}
 
-	int res;
-	if (res = CRigidEntity::SetParams(_params, 1))
+	int res = CRigidEntity::SetParams(_params, 1);
+	if (res)
 	{
 		if (_params->type == pe_simulation_params::type_id)
 		{
@@ -422,8 +422,8 @@ int CWheeledVehicleEntity::Action(pe_action* _action, int bThreadSafe)
 		return 1;
 	}
 
-	int res;
-	if (res = CRigidEntity::Action(_action, 1))
+	int res = CRigidEntity::Action(_action, 1);
+	if (res)
 	{
 		if (_action->type == pe_action_reset::type_id)
 		{
@@ -611,7 +611,8 @@ int CWheeledVehicleEntity::GetStatus(pe_status* _status)
 		return res;
 	}
 
-	if (res = CRigidEntity::GetStatus(_status))
+	res = CRigidEntity::GetStatus(_status);
+	if (res)
 	{
 		return res;
 	}
@@ -664,7 +665,8 @@ int CWheeledVehicleEntity::GetStatus(pe_status* _status)
 			return 0;
 		}
 		status->w = m_susp[status->iWheel].w;
-		if (status->bContact = m_susp[status->iWheel].bContact)
+		status->bContact = m_susp[status->iWheel].bContact;
+		if (status->bContact)
 		{
 			status->ptContact = m_susp[status->iWheel].ptcontact;
 			status->bSlip = m_susp[status->iWheel].bSlip;
@@ -1194,7 +1196,8 @@ void CWheeledVehicleEntity::CheckAdditionalGeometry(float time_interval)
 
 		gwd[0].offset = geompos;
 		bRayCast = 0;
-		if (ip.bSweepTest = m_susp[iwheel].fullen > 0)
+		ip.bSweepTest = m_susp[iwheel].fullen > 0;
+		if (ip.bSweepTest)
 		{
 			if (!m_susp[iwheel].bRayCast)
 			{
@@ -1580,8 +1583,8 @@ float CWheeledVehicleEntity::ComputeDrivingTorque(float time_interval)
 void CWheeledVehicleEntity::AddAdditionalImpulses(float time_interval)
 {
 	int i, j, idx[NMAXWHEELS], nContacts, bAllSlip = 1, iDriver[2], bContact[2], iside;
-	float fN, friction, frictionLat, Npull, N, fpull, driving_torque = 0, minfric, maxfric, wengine, wground,
-							  wground_avg[2], Npull_tot[2];
+	float fN, friction{}, frictionLat, Npull, N{}, fpull, driving_torque = 0, minfric, maxfric, wengine, wground,
+							      wground_avg[2], Npull_tot[2];
 	Vec3 dP, Pexp, Lexp, ncontact, vdir, pulldir, ptc, axis, axisz, axisx, r, vel_slip;
 	Matrix33 R = Matrix33(m_qNew), Ctmp;
 	pe_action_impulse ai;
@@ -1732,7 +1735,8 @@ void CWheeledVehicleEntity::AddAdditionalImpulses(float time_interval)
 				pulldir = (m_susp[i].ncontact ^ axis).normalize();
 				wground = (m_susp[i].vrel * pulldir) * m_susp[i].rinv;
 				vel_slip = m_susp[i].vrel - pulldir * (m_susp[i].w * m_susp[i].r);
-				if (m_susp[i].bSlip = vel_slip.len2() > sqr(m_slipThreshold))
+				m_susp[i].bSlip = vel_slip.len2() > sqr(m_slipThreshold);
+				if (m_susp[i].bSlip)
 				{
 					friction *= m_kDynFriction;
 				}

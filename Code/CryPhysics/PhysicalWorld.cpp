@@ -969,7 +969,7 @@ IPhysicalEntity* CPhysicalWorld::CreatePhysicalPlaceholder(pe_type type, pe_para
 		m_nPlaceholderChunks++;
 		ReallocateList(m_pPlaceholders, m_nPlaceholderChunks - 1, m_nPlaceholderChunks, true);
 		ReallocateList(m_pPlaceholderMap, (m_iLastPlaceholder >> 5) + 1,
-		               m_nPlaceholderChunks << PLACEHOLDER_CHUNK_SZLG2 - 5, true);
+		               m_nPlaceholderChunks << (PLACEHOLDER_CHUNK_SZLG2 - 5), true);
 	}
 	if (!m_pPlaceholders[iChunk])
 	{
@@ -1095,7 +1095,7 @@ int CPhysicalWorld::DestroyPhysicalEntity(IPhysicalEntity* _pent, int mode, int 
 		// if entire iChunk is empty, deallocate it
 		for (i = j = 0; i < PLACEHOLDER_CHUNK_SZ >> 5; i++)
 		{
-			j |= m_pPlaceholderMap[(iChunk << PLACEHOLDER_CHUNK_SZLG2 - 5) + i];
+			j |= m_pPlaceholderMap[(iChunk << (PLACEHOLDER_CHUNK_SZLG2 - 5)) + i];
 		}
 		if (!j)
 		{
@@ -1108,7 +1108,7 @@ int CPhysicalWorld::DestroyPhysicalEntity(IPhysicalEntity* _pent, int mode, int 
 		       !(m_pPlaceholderMap[m_iLastPlaceholder >> 5] & 1 << (m_iLastPlaceholder & 31));
 		     m_iLastPlaceholder--)
 		{
-			if ((m_iLastPlaceholder ^ m_iLastPlaceholder - 1) + 1 >> 1 == PLACEHOLDER_CHUNK_SZ)
+			if (((m_iLastPlaceholder ^ m_iLastPlaceholder - 1) + 1) >> 1 == PLACEHOLDER_CHUNK_SZ)
 			{
 				// if m_iLastPlaceholder points to the 1st chunk element, entire chunk is free and can
 				// be deallocated
@@ -1123,8 +1123,8 @@ int CPhysicalWorld::DestroyPhysicalEntity(IPhysicalEntity* _pent, int mode, int 
 		}
 		if (m_nPlaceholderChunks < j)
 		{
-			ReallocateList(m_pPlaceholderMap, j << PLACEHOLDER_CHUNK_SZLG2 - 5,
-			               m_nPlaceholderChunks << PLACEHOLDER_CHUNK_SZLG2 - 5, true);
+			ReallocateList(m_pPlaceholderMap, j << (PLACEHOLDER_CHUNK_SZLG2 - 5),
+			               m_nPlaceholderChunks << (PLACEHOLDER_CHUNK_SZLG2 - 5), true);
 		}
 
 		return 1;
@@ -1199,7 +1199,8 @@ int CPhysicalWorld::DestroyPhysicalEntity(IPhysicalEntity* _pent, int mode, int 
 		pent->m_iSimClass = 7;
 		pent->m_pForeignData = 0;
 		pent->m_iForeignData = -1;
-		if (pent->m_next = m_pTypedEnts[7])
+		pent->m_next = m_pTypedEnts[7];
+		if (pent->m_next)
 		{
 			pent->m_next->m_prev = pent;
 		}
@@ -1323,12 +1324,12 @@ int CPhysicalWorld::SetPhysicalEntityId(IPhysicalEntity* _pent, int id, int bRep
 	if (previd < (unsigned int)m_nIdsAlloc)
 	{
 		m_pEntsById[previd] = 0;
-		if (previd == m_iNextId - 1)
+		if (previd == static_cast<unsigned int>(m_iNextId - 1))
 		{
 			for (; m_iNextId > 0 && m_pEntsById[m_iNextId - 1] == 0; m_iNextId--)
 				;
 		}
-		if (previd == m_lastExtId)
+		if (previd == static_cast<unsigned int>(m_lastExtId))
 		{
 			for (--m_lastExtId; m_lastExtId > 0 && m_pEntsById[m_lastExtId]; m_lastExtId--)
 				;
@@ -1441,7 +1442,7 @@ void qsort(CPhysicalEntity** pentlist, float* pmass, int* pids, int ileft, int i
 	}
 	int i, ilast;
 	float diff = 0.0f;
-	swap(pentlist, pmass, pids, ileft, ileft + iright >> 1);
+	swap(pentlist, pmass, pids, ileft, (ileft + iright) >> 1);
 	for (ilast = ileft, i = ileft + 1; i <= iright; i++)
 	{
 		diff += fabs_tpl(pmass[i] - pmass[ileft]);
@@ -1476,7 +1477,7 @@ void qsort(float* pval, int* pidx, int ileft, int iright)
 		return;
 	}
 	int i, ilast;
-	swap(pval, pidx, ileft, ileft + iright >> 1);
+	swap(pval, pidx, ileft, (ileft + iright) >> 1);
 	for (ilast = ileft, i = ileft + 1; i <= iright; i++)
 	{
 		if (pval[i] < pval[ileft])
@@ -1503,7 +1504,7 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3& ptmin, const Vec3& ptmax, CPhy
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PHYSICS);
 	INT_PTR mask = (INT_PTR)pPetitioner;
-	mask = mask >> (sizeof(mask) * 8) - 1 ^ (mask - 1) >> (sizeof(mask) * 8) - 1;
+	mask = mask >> ((sizeof(mask) * 8) - 1) ^ (mask - 1) >> ((sizeof(mask) * 8) - 1);
 
 	if (!m_pEntGrid || !m_pTmpEntList)
 	{
@@ -1965,8 +1966,8 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PHYSICS);
 
-	float m, m_groupTimeStep, time_interval_org = time_interval, Ebefore, Eafter, damping, fixedDamping,
-				  minGroupTimeStep;
+	float m, m_groupTimeStep{}, time_interval_org = time_interval, Ebefore, Eafter, damping, fixedDamping,
+				    minGroupTimeStep;
 	CPhysicalEntity *pent, *phead, *ptail, **pentlist, *pent_next, *pent1, *pentmax;
 	int i, i1, j, n, iter, ipass, nGroups, bHeadAdded, bGroupFinished, bAllGroupsFinished, bStepValid,
 	    nAnimatedObjects, nEnts, bSkipFlagged, nParts0, nBrokenParts;
@@ -2888,7 +2889,7 @@ void CPhysicalWorld::DetachEntityGridThunks(CPhysicalPlaceholder* pobj)
 {
 	if (pobj->m_iGThunk0)
 	{
-		int ithunk, ithunk_next, ithunk_last, icell;
+		int ithunk, ithunk_next, ithunk_last = 0, icell;
 		for (ithunk = pobj->m_iGThunk0; ithunk; ithunk = ithunk_next)
 		{
 			ithunk_next = m_gthunks[ithunk].inextOwned;
@@ -2950,7 +2951,8 @@ void CPhysicalWorld::ChangeEntitySimClass(CPhysicalEntity* pent)
 		pent->m_next = m_pTypedEntsPerm[pent->m_iSimClass];
 		if (m_pTypedEntsPerm[pent->m_iSimClass])
 		{
-			if (pent->m_prev = m_pTypedEntsPerm[pent->m_iSimClass]->m_prev)
+			pent->m_prev = m_pTypedEntsPerm[pent->m_iSimClass]->m_prev;
+			if (pent->m_prev)
 			{
 				pent->m_prev->m_next = pent;
 			}
@@ -3089,12 +3091,12 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder* pobj, int flags, Vec3
 						}
 
 						m_gthunks[ithunk].iSimClass = pcurobj->m_iSimClass;
-						m_gthunks[ithunk].BBox[0] = igxInner[0] & ~(igx[0] - ix >> 31);
-						m_gthunks[ithunk].BBox[1] = igyInner[0] & ~(igy[0] - iy >> 31);
+						m_gthunks[ithunk].BBox[0] = igxInner[0] & ~((igx[0] - ix) >> 31);
+						m_gthunks[ithunk].BBox[1] = igyInner[0] & ~((igy[0] - iy) >> 31);
 						m_gthunks[ithunk].BBox[2] =
-						    igxInner[1] + (255 - igxInner[1] & ix - igx[1] >> 31);
+						    igxInner[1] + ((255 - igxInner[1]) & (ix - igx[1]) >> 31);
 						m_gthunks[ithunk].BBox[3] =
-						    igyInner[1] + (255 - igyInner[1] & iy - igy[1] >> 31);
+						    igyInner[1] + ((255 - igyInner[1]) & (iy - igy[1]) >> 31);
 						m_gthunks[ithunk].pent = pcurobj;
 					}
 				}
@@ -3118,12 +3120,12 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder* pobj, int flags, Vec3
 				{
 					for (iy = igy[1]; iy >= igy[0]; iy--, ithunk = m_gthunks[ithunk].inextOwned)
 					{
-						m_gthunks[ithunk].BBox[0] = igxInner[0] & ~(igx[0] - ix >> 31);
-						m_gthunks[ithunk].BBox[1] = igyInner[0] & ~(igy[0] - iy >> 31);
+						m_gthunks[ithunk].BBox[0] = igxInner[0] & ~((igx[0] - ix) >> 31);
+						m_gthunks[ithunk].BBox[1] = igyInner[0] & ~((igy[0] - iy) >> 31);
 						m_gthunks[ithunk].BBox[2] =
-						    igxInner[1] + (255 - igxInner[1] & ix - igx[1] >> 31);
+						    igxInner[1] + ((255 - igxInner[1]) & (ix - igx[1]) >> 31);
 						m_gthunks[ithunk].BBox[3] =
-						    igyInner[1] + (255 - igyInner[1] & iy - igy[1] >> 31);
+						    igyInner[1] + ((255 - igyInner[1]) & (iy - igy[1]) >> 31);
 					}
 				}
 			}
@@ -3275,7 +3277,7 @@ struct entity_grid_checker
 					continue; // skip objects that lie to far from the ray
 				}
 				if ((box_ray_overlap_check(&bbox, &aray.m_ray, nullptr) &
-				     nEnts - pWorld->m_nEnts >> 31) == 0)
+				     (nEnts - pWorld->m_nEnts) >> 31) == 0)
 				{
 					continue;
 				}
@@ -3529,7 +3531,7 @@ struct entity_grid_checker
 
 				pTmpEntList[nEnts] = pent;
 				nEnts += 1 + bRecheckOtherParts;
-				AtomicAdd(&pGridEnt->m_bProcessed, 1 + bRecheckOtherParts << iCaller);
+				AtomicAdd(&pGridEnt->m_bProcessed, (1 + bRecheckOtherParts) << iCaller);
 			}
 		}
 		return (sgn((icell.y << 16 | icell.x) - ilastcell) & 1) ^ 1;
@@ -3572,7 +3574,7 @@ int CPhysicalWorld::RayWorldIntersection(Vec3 org, Vec3 dir, int objtypes, unsig
 				delete[] pqueue;
 			}
 		}
-		m_rwiQueueHead = m_rwiQueueHead + 1 - (m_rwiQueueAlloc & m_rwiQueueAlloc - 2 - m_rwiQueueHead >> 31);
+		m_rwiQueueHead = m_rwiQueueHead + 1 - (m_rwiQueueAlloc & (m_rwiQueueAlloc - 2 - m_rwiQueueHead) >> 31);
 		m_rwiQueue[m_rwiQueueHead].pForeignData = pForeignData;
 		m_rwiQueue[m_rwiQueueHead].iForeignData = iForeignData;
 		m_rwiQueue[m_rwiQueueHead].org = org;
@@ -3684,9 +3686,8 @@ int CPhysicalWorld::RayWorldIntersection(Vec3 org, Vec3 dir, int objtypes, unsig
 	if (objtypes & m_bCheckWaterHits & ent_water)
 	{
 		ReadLock lockAr(m_lockAreas);
-		quotientf t(1, 0); //(m_pGlobalArea->m_pb.waterPlane.origin-org)*m_pGlobalArea->m_pb.waterPlane.n,
-		                   // dir*m_pGlobalArea->m_pb.waterPlane.n);
-		CPhysArea *pArea, *pHitArea;
+		quotientf t(1, 0);
+		CPhysArea *pArea, *pHitArea{};
 		ray_hit whit;
 		Vec3 n = m_pGlobalArea->m_pb.waterPlane.n;
 		primitives::box bbox;
@@ -3801,7 +3802,7 @@ int CPhysicalWorld::RayWorldIntersection(Vec3 org, Vec3 dir, int objtypes, unsig
 		CPhysicalEntity** pTmpEntLists[2] = {m_pTmpEntList, m_pTmpEntList2};
 		egc.pTmpEntList = pTmpEntLists[iCaller];
 		egc.iCaller = iCaller;
-		m_prevGEAobjtypes |= iCaller - 1 >> 31;
+		m_prevGEAobjtypes |= (iCaller - 1) >> 31;
 
 		Vec3 origin_grid = (org - m_entgrid.origin).GetPermutated(m_iEntAxisz),
 		     dir_grid = dir.GetPermutated(m_iEntAxisz);
@@ -3883,8 +3884,7 @@ int CPhysicalWorld::RayWorldIntersection(Vec3 org, Vec3 dir, int objtypes, unsig
 				j = isneg(hits[idx[1]].dist -
 				          hits[idx[0]].dist);          // j = hits[1].dist<hits[0].dist ? 1:0;
 				j |= isneg(egc.nThroughHits - idx[0]); // if (idx[0]>nThroughHits) j = 1;
-				j &= nMaxHits - egc.nThroughHitsAux - 1 - idx[1] >>
-				     31; // if (idx[1]<=nMaxHits-nThroughHits1-1) j=0;
+				j &= (nMaxHits - egc.nThroughHitsAux - 1 - idx[1]) >> 31;
 				hits[idx[j]].bTerrain = i;
 				idx[j] += 1 - (j * 2);
 			}
@@ -3995,8 +3995,8 @@ int CPhysicalWorld::TracePendingRays(int bDoTracing)
 					break;
 				}
 				curreq = m_rwiQueue[m_rwiQueueTail];
-				m_rwiQueueTail =
-				    m_rwiQueueTail + 1 - (m_rwiQueueAlloc & m_rwiQueueAlloc - 2 - m_rwiQueueTail >> 31);
+				m_rwiQueueTail = m_rwiQueueTail + 1 -
+				                 (m_rwiQueueAlloc & (m_rwiQueueAlloc - 2 - m_rwiQueueTail) >> 31);
 				m_rwiQueueSz--;
 				nChex++;
 			}
@@ -4034,8 +4034,8 @@ int CPhysicalWorld::TracePendingRays(int bDoTracing)
 					break;
 				}
 				curreq = m_pwiQueue[m_pwiQueueTail];
-				m_pwiQueueTail =
-				    m_pwiQueueTail + 1 - (m_pwiQueueAlloc & m_pwiQueueAlloc - 2 - m_pwiQueueTail >> 31);
+				m_pwiQueueTail = m_pwiQueueTail + 1 -
+				                 (m_pwiQueueAlloc & (m_pwiQueueAlloc - 2 - m_pwiQueueTail) >> 31);
 				m_pwiQueueSz--;
 				nChex++;
 			}
@@ -4239,7 +4239,8 @@ int CPhysicalWorld::DeformEntityPart(CPhysicalEntity* pent, int i, pe_explosion*
 		}
 	}
 
-	if (pHole = GetExplosionShape(pexpl->holeSize, pent->m_parts[i].idmatBreakable, gwd1->scale, bCreateConstraint))
+	pHole = GetExplosionShape(pexpl->holeSize, pent->m_parts[i].idmatBreakable, gwd1->scale, bCreateConstraint);
+	if (pHole)
 	{
 		pGeom = pent->m_parts[i].pPhysGeomProxy->pGeom;
 		if (!(pent->m_parts[i].flags & geom_can_modify))
@@ -4642,10 +4643,10 @@ void CPhysicalWorld::SimulateExplosion(pe_explosion* pexpl, IPhysicalEntity** pS
 							bbox.size[dec_mod3[j]] *= 1.01f;
 							bbox.size[j] *= 0.002f;
 							boxGeom.CreateBox(&bbox);
-							if (ncont = pents[nents]
-							                ->m_parts[i]
-							                .pPhysGeomProxy->pGeom->Intersect(
-									    &boxGeom, 0, 0, &ip, pcontacts))
+							ncont =
+							    pents[nents]->m_parts[i].pPhysGeomProxy->pGeom->Intersect(
+								&boxGeom, 0, 0, &ip, pcontacts);
+							if (ncont)
 							{
 								WriteLockCond lockColl(*ip.plock, 0);
 								lockColl.SetActive();
@@ -4824,7 +4825,8 @@ void CPhysicalWorld::DestroyDynamicEntities()
 				SetPhysicalEntityId(pent, -1);
 			}
 			DetachEntityGridThunks(pent);
-			if (pent->m_next = m_pTypedEnts[7])
+			pent->m_next = m_pTypedEnts[7];
+			if (pent->m_next)
 			{
 				pent->m_next->m_prev = pent;
 			}
@@ -4937,7 +4939,8 @@ void CPhysicalWorld::DrawPhysicsHelperInformation(IPhysRenderer* pRenderer, int 
 						     nGEA == m_nGEA[iCaller];
 						     pent = pent->m_next)
 						{
-							pEntList[n++] = (CPhysicalEntity*)pent->m_id;
+							pEntList[n++] = reinterpret_cast<CPhysicalEntity*>(
+							    static_cast<size_t>(pent->m_id));
 						}
 					}
 				}
@@ -4955,7 +4958,7 @@ void CPhysicalWorld::DrawPhysicsHelperInformation(IPhysRenderer* pRenderer, int 
 				break;
 			}
 			if ((pent = (CPhysicalEntity*)GetPhysicalEntityById(id | 1 << 30)) &&
-			    m_vars.iDrawHelpers & 0x80 << pent->m_iSimClass + 1)
+			    m_vars.iDrawHelpers & 0x80 << (pent->m_iSimClass + 1))
 			{
 				pent->DrawHelperInformation(pRenderer, m_vars.iDrawHelpers);
 			}
@@ -5238,7 +5241,7 @@ float CPhysicalWorld::PrimitiveWorldIntersection(int itype, primitives::primitiv
 				delete[] pqueue;
 			}
 		}
-		m_pwiQueueHead = m_pwiQueueHead + 1 - (m_pwiQueueAlloc & m_pwiQueueAlloc - 2 - m_pwiQueueHead >> 31);
+		m_pwiQueueHead = m_pwiQueueHead + 1 - (m_pwiQueueAlloc & (m_pwiQueueAlloc - 2 - m_pwiQueueHead) >> 31);
 		switch (m_pwiQueue[m_pwiQueueHead].itype = itype)
 		{
 			case primitives::box::type:
@@ -5370,7 +5373,7 @@ float CPhysicalWorld::PrimitiveWorldIntersection(int itype, primitives::primitiv
 		ReadLock lockEnt(pents[i]->m_lockUpdate);
 		for (j = 0; j < pents[i]->m_nParts; j++)
 		{
-			if ((pents[i]->m_parts[j].flags & geomFlagsAll) == geomFlagsAll &&
+			if ((pents[i]->m_parts[j].flags & geomFlagsAll) == static_cast<unsigned int>(geomFlagsAll) &&
 			    (pents[i]->m_parts[j].flags & geomFlagsAny) &&
 			    ((pents[i]->m_parts[j].BBox[1] - pents[i]->m_parts[j].BBox[0]).len2() == 0 ||
 			     AABB_overlap(pents[i]->m_parts[j].BBox, BBox)))
@@ -5378,8 +5381,9 @@ float CPhysicalWorld::PrimitiveWorldIntersection(int itype, primitives::primitiv
 				gwd[1].offset = pents[i]->m_pos + pents[i]->m_qrot * pents[i]->m_parts[j].pos;
 				gwd[1].R = Matrix33(pents[i]->m_qrot * pents[i]->m_parts[j].q);
 				gwd[1].scale = pents[i]->m_parts[j].scale;
-				if (ncont = pgeom->Intersect(pents[i]->m_parts[j].pPhysGeom->pGeom, gwd, gwd + 1, &ip,
-				                             pcontacts))
+				ncont = pgeom->Intersect(pents[i]->m_parts[j].pPhysGeom->pGeom, gwd, gwd + 1, &ip,
+				                         pcontacts);
+				if (ncont)
 				{
 					WriteLockCond lockColl(*ip.plock, 0);
 					lockColl.SetActive(ip.bThreadSafe ^ 1);
@@ -5615,7 +5619,7 @@ void CPhysicalWorld::AddEntityProfileInfo(CPhysicalEntity* pent, int nTicks)
 	int iBound[2] = {-1, m_nProfiledEnts};
 	do
 	{
-		i = iBound[0] + iBound[1] >> 1;
+		i = (iBound[0] + iBound[1]) >> 1;
 		iBound[isneg(m_pEntProfileData[i].nTicksStep - nTicks)] = i;
 	}
 	while (iBound[1] > iBound[0] + 1);
@@ -5636,7 +5640,7 @@ void CPhysicalWorld::AddFuncProfileInfo(const char* name, int nTicks)
 	{
 		do
 		{
-			i = iBound[0] + iBound[1] >> 1;
+			i = (iBound[0] + iBound[1]) >> 1;
 			iBound[isneg((int)(name - m_pFuncProfileData[i].pName))] = i;
 		}
 		while (iBound[1] > iBound[0] + 1);
@@ -5737,8 +5741,8 @@ void CPhysicalWorld::PumpLoggedEvents()
 	FUNCTION_PROFILER(GetISystem(), PROFILE_PHYSICS);
 
 	EventPhys *pEventFirst, *pEvent, *pEventLast, *pEvent_next;
-	ray_hit* pLastPoolHit = 0;
-	int lastPoolHitBlockSize;
+	ray_hit* pLastPoolHit = nullptr;
+	int lastPoolHitBlockSize = 0;
 	{
 		WriteLock lock(m_lockEventsQueue);
 		pEventFirst = m_pEventFirst;
@@ -5798,7 +5802,7 @@ void CPhysicalWorld::PumpLoggedEvents()
 		}
 		if (pEventLast)
 		{
-			CPhysicalEntity* pent;
+			CPhysicalEntity* pent = nullptr;
 			for (pEvent = pEventLast; pEvent; pEvent = pEvent->next)
 			{
 				if (pEvent->idval > EventPhysCollision::id)
@@ -6015,7 +6019,7 @@ IGeometry* CPhysicalWorld::GetExplosionShape(float size, int idmat, float& scale
 	idmat &= 127;
 	do
 	{
-		i = ibound[0] + ibound[1] >> 1;
+		i = (ibound[0] + ibound[1]) >> 1;
 		ibound[isneg(idmat - m_pExpl[i].idmat)] = i;
 	}
 	while (ibound[1] > ibound[0] + 1);
@@ -6136,7 +6140,8 @@ CPhysicalEntity* CPhysicalWorld::LoadPhysicalEntityPtr(TSerialize ser)
 	ser.EndGroup();
 	iSimClass1 = (unsigned int)(iSimClass - 1) < 2u ? (iSimClass ^ 3) : iSimClass;
 
-	if (pent = (CPhysicalEntity*)GetPhysicalEntityById(i))
+	pent = (CPhysicalEntity*)GetPhysicalEntityById(i);
+	if (pent)
 	{
 		getEntityMassAndCom(pent, mass1, com1);
 		if ((pent->m_iSimClass == iSimClass || pent->m_iSimClass == iSimClass1) &&
@@ -6302,7 +6307,7 @@ IPhysicalEntity* CPhysicalWorld::AddArea(Vec3* pt, int npt, float zmin, float zm
 		for (i = 0; i < npt; i++)
 		{
 			pArea->m_idxSort[iend][i] = i;
-			j = (i + 1) & i - npt + 1 >> 31;
+			j = (i + 1) & (i - npt + 1) >> 31;
 			k = isneg(pArea->m_pt[i].x - pArea->m_pt[j].x) ^ iend;
 			xstart[i] = pArea->m_pt[(i & -k) | (j & ~-k)].x;
 		}
@@ -6311,7 +6316,7 @@ IPhysicalEntity* CPhysicalWorld::AddArea(Vec3* pt, int npt, float zmin, float zm
 	delete[] xstart;
 	pArea->m_offset = pArea->m_offset0 + pos;
 	pArea->m_R = Matrix33(q) * pArea->m_R0;
-	memset(pArea->m_pMask = new unsigned int[(npt - 1 >> 5) + 1], 0, ((npt - 1 >> 5) + 1) * sizeof(int));
+	memset(pArea->m_pMask = new unsigned int[((npt - 1) >> 5) + 1], 0, (((npt - 1) >> 5) + 1) * sizeof(int));
 
 	sz = Matrix33(pArea->m_R).Fabs() * pArea->m_size0 * scale;
 	center = pArea->m_offset + pArea->m_R * (BBox[0] + BBox[1]) * (pArea->m_scale * 0.5f);
@@ -6343,9 +6348,9 @@ IPhysicalEntity* CPhysicalWorld::AddArea(Vec3* pt, int npt, float zmin, float zm
 				pArea->m_pFlows[i] = pFlows[i] * pArea->m_R0;
 			}
 		}
-		if (pArea->m_pGeom =
-		        CreateMesh(pvtx, strided_pointer<unsigned short>((unsigned short*)pidx, sizeof(int)), 0, 0,
-		                   nTris, mesh_SingleBB | mesh_shared_vtx | mesh_shared_idx))
+		pArea->m_pGeom = CreateMesh(pvtx, strided_pointer<unsigned short>((unsigned short*)pidx, sizeof(int)),
+		                            0, 0, nTris, mesh_SingleBB | mesh_shared_vtx | mesh_shared_idx);
+		if (pArea->m_pGeom)
 		{
 			((CTriMesh*)pArea->m_pGeom)->m_flags &= ~(mesh_shared_vtx | mesh_shared_idx);
 		}
@@ -6526,8 +6531,9 @@ int CPhysicalWorld::CheckAreas(const Vec3& ptc, Vec3& gravity, pe_params_buoyanc
 	CPhysicalEntity** pEnts;
 	Vec3 gravityGlobal;
 	MARK_UNUSED gravity, gravityGlobal;
-	int nBuoys, iMedium0 = -1;
-	if (nBuoys = m_pGlobalArea->ApplyParams(ptc, gravityGlobal, vel, pb, 0, nMaxBuoys, iMedium0, pent))
+	int iMedium0 = -1;
+	int nBuoys = m_pGlobalArea->ApplyParams(ptc, gravityGlobal, vel, pb, 0, nMaxBuoys, iMedium0, pent);
+	if (nBuoys)
 	{
 		iMedium0 = pb->iMedium;
 	}
@@ -6557,7 +6563,7 @@ int CPhysicalWorld::CheckAreas(const Vec3& ptc, Vec3& gravity, pe_params_buoyanc
 		gravity = gravityGlobal;
 	}
 
-	return nBuoys | nBuoys - 1 >> 31;
+	return nBuoys | (nBuoys - 1) >> 31;
 }
 
 int CPhysicalWorld::CheckAreas(CPhysicalEntity* pent, Vec3& gravity, pe_params_buoyancy* pb, int nMaxBuoys,

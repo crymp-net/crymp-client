@@ -164,9 +164,9 @@ inline int unite_lists(F* pSrc0, int nSrc0, F* pSrc1, int nSrc1, F* pDst, int sz
 	INT_PTR pDummy((INT_PTR)&dummy);
 	pSrc0 = (F*)(((INT_PTR)pSrc0 & inrange0) | (pDummy & ~inrange0));
 	pSrc1 = (F*)(((INT_PTR)pSrc1 & inrange1) | (pDummy & ~inrange1));
-	for (n = i0 = i1 = 0; (inrange0 | inrange1) & n - szdst >> 31;
-	     inrange0 = (i0 += isneg(a0 - ares - 1)) - nSrc0 >> 31,
-	    inrange1 = (i1 += isneg(a1 - ares - 1)) - nSrc1 >> 31)
+	for (n = i0 = i1 = 0; (inrange0 | inrange1) & (n - szdst) >> 31;
+	     inrange0 = ((i0 += isneg(a0 - ares - 1)) - nSrc0) >> 31,
+	    inrange1 = ((i1 += isneg(a1 - ares - 1)) - nSrc1) >> 31)
 	{
 		a0 = pSrc0[i0 & inrange0] + condmax(pSrc0[0], inrange0);
 		a1 = pSrc1[i1 & inrange1] + condmax(pSrc1[0], inrange1);
@@ -495,11 +495,11 @@ inline int DrawRayOnGrid(primitives::grid* pgrid, Vec3& origin, Vec3& dir, CellC
 	// crop ray with grid bounds
 	idirsgn.set(sgnnz(dir.x), sgnnz(dir.y));
 	i = idirsgn.x;
-	tx[1 - i >> 1].set(-origin.x * i, dir.x * i);
-	tx[1 + i >> 1].set((pgrid->size.x * pgrid->step.x - origin.x) * i, dir.x * i);
+	tx[(1 - i) >> 1].set(-origin.x * i, dir.x * i);
+	tx[(1 + i) >> 1].set((pgrid->size.x * pgrid->step.x - origin.x) * i, dir.x * i);
 	i = idirsgn.y;
-	ty[1 - i >> 1].set(-origin.y * i, dir.y * i);
-	ty[1 + i >> 1].set((pgrid->size.y * pgrid->step.y - origin.y) * i, dir.y * i);
+	ty[(1 - i) >> 1].set(-origin.y * i, dir.y * i);
+	ty[(1 + i) >> 1].set((pgrid->size.y * pgrid->step.y - origin.y) * i, dir.y * i);
 	t[0] = max(t[0].set(0, 1), max(tx[0], ty[0]));
 	t[1] = min(t[1].set(1, 1), min(tx[1], ty[1]));
 	if (t[0] >= t[1])
@@ -538,9 +538,9 @@ inline int DrawRayOnGrid(primitives::grid* pgrid, Vec3& origin, Vec3& dir, CellC
 		return 0;
 	}
 
-	t[0].set(((icell[ilong] + (istep[ilong] + 1 >> 1)) * pgrid->step[ilong]) - origin[ilong], dir[ilong]);
+	t[0].set(((icell[ilong] + ((istep[ilong] + 1) >> 1)) * pgrid->step[ilong]) - origin[ilong], dir[ilong]);
 	frac = ((origin[ishort] + dir[ishort] * t[0].val()) * pgrid->stepr[ishort]) - icell[ishort];
-	frac = (1 - idirsgn[ishort] >> 1) + (frac * idirsgn[ishort]);
+	frac = ((1 - idirsgn[ishort]) >> 1) + (frac * idirsgn[ishort]);
 	if (frac > 1.0f)
 	{
 		icell[ishort] += istep[ishort];

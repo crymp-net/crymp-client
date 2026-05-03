@@ -175,8 +175,6 @@ float CCylinderGeom::ComputeExtent(GeomQuery& geo, EGeomForm eForm)
 {
 	switch (eForm)
 	{
-		default:
-			assert(0);
 		case GeomForm_Vertices:
 			return 0.f;
 		case GeomForm_Edges:
@@ -186,14 +184,13 @@ float CCylinderGeom::ComputeExtent(GeomQuery& geo, EGeomForm eForm)
 		case GeomForm_Volume:
 			return m_cyl.r * m_cyl.r * gf_PI * m_cyl.hh * 2.f;
 	}
+	return {};
 }
 
 void CCylinderGeom::GetRandomPos(RandomPos& ran, GeomQuery& geo, EGeomForm eForm)
 {
 	switch (eForm)
 	{
-		default:
-			assert(0);
 		case GeomForm_Vertices:
 		case GeomForm_Edges:
 			(Vec2&)ran.vPos = CircleRandomPoint(GeomForm_Edges, m_cyl.r);
@@ -293,7 +290,7 @@ int CCylinderGeom::PreparePolygon(primitives::coord_plane* psurface, int iPrim, 
 	// axes[0] = axes[2].orthogonal().normalized();
 	axes[0] = axes[2].GetOrthogonal().normalized();
 	axes[1] = axes[2] ^ axes[0];
-	icap = (((iFeature & 3) - (iFeature >> 6) << 1) - 1);
+	icap = ((((iFeature & 3) - (iFeature >> 6)) << 1) - 1);
 	center =
 	    pGTest->R * m_cyl.center * pGTest->scale + axes[2] * (m_cyl.hh * pGTest->scale * icap) + pGTest->offset;
 
@@ -313,7 +310,7 @@ int CCylinderGeom::PreparePolygon(primitives::coord_plane* psurface, int iPrim, 
 	{
 		pt = center + axes[0] * cos_tpl(ang) + axes[1] * sin_tpl(ang);
 		g_idata[pGTest->iCaller].CylCont[i].set(pt * psurface->axes[0], pt * psurface->axes[1]);
-		g_idata[pGTest->iCaller].CylContId[i] = 0x20 | icap + 1 >> 1;
+		g_idata[pGTest->iCaller].CylContId[i] = 0x20 | (icap + 1) >> 1;
 	}
 	g_idata[pGTest->iCaller].CylCont[i] = g_idata[pGTest->iCaller].CylCont[0];
 	g_idata[pGTest->iCaller].CylContId[2] = g_idata[pGTest->iCaller].CylContId[0];
@@ -358,7 +355,8 @@ int CCylinderGeom::FindClosestPoint(geom_world_data* pgwd, int& iPrim, int& iFea
 	pt = ptdst0 - center;
 	ptres[1] = ptdst0;
 
-	if (bLine = isneg((r2 * 1E-6f) - (l = ptdst1 - ptdst0).len2()))
+	bLine = isneg((r2 * 1E-6f) - (l = ptdst1 - ptdst0).len2());
+	if (bLine)
 	{
 		Vec3r n, la, pa;
 		real n2, l2, t0, t1, kt, pl, pal, roots[4];

@@ -183,7 +183,7 @@ int CBoxGeom::GetUnprojectionCandidates(int iop, const contact* pcontact, primit
 		iy = dec_mod3[iz];
 		if (fabsf(ptloc[ix] - pbox->size[ix]) < pbox->size[ix] * 0.001f)
 		{
-			iFeature = 0x20 | ix << 2 | (iFeature & 1 << 1) | sgnnz(ptloc[iy]) + 1 >> 1;
+			iFeature = 0x20 | ix << 2 | (iFeature & 1 << 1) | (sgnnz(ptloc[iy]) + 1) >> 1;
 		}
 		else if (fabsf(ptloc[iy] - pbox->size[iy]) < pbox->size[iy] * 0.001f)
 		{
@@ -197,7 +197,8 @@ int CBoxGeom::GetUnprojectionCandidates(int iop, const contact* pcontact, primit
 		iy = dec_mod3[iz];
 		if (fabsf(ptloc[iz] - pbox->size[iz]) < pbox->size[iz] * 0.001f)
 		{
-			iFeature = (iFeature & 1) << ix | (iFeature >> 1 & 1) << iy | (sgnnz(ptloc[iz]) + 1 >> 1) << iz;
+			iFeature =
+			    (iFeature & 1) << ix | (iFeature >> 1 & 1) << iy | ((sgnnz(ptloc[iz]) + 1) >> 1) << iz;
 		}
 	}
 
@@ -359,9 +360,10 @@ int CBoxGeom::FindClosestPoint(geom_world_data* pgwd, int& iPrim, int& iFeature,
 	size = m_box.size * pgwd->scale;
 	iPrim = 0;
 
-	if (bLine = isneg((size.x * 1E-5f) - (ptdst0 - ptdst1).len2()))
+	bLine = isneg((size.x * 1E-5f) - (ptdst0 - ptdst1).len2());
+	if (bLine)
 	{
-		int ix, iy, iedge, ivtx, isg, iedgeBest;
+		int ix, iy, iedge, ivtx, isg, iedgeBest{};
 		Vec3 ptbox, n;
 		float n2, dir2, t0, t1, rn2, dist, mindistPt;
 		quotientf mindist(1, 0);
@@ -475,16 +477,16 @@ int CBoxGeom::FindClosestPoint(geom_world_data* pgwd, int& iPrim, int& iFeature,
 
 	if (nFaces[i] == 1)
 	{
-		iFeature = 0x40 | idir[i][0] << 1 | sg[i][0] + 1 >> 1;
+		iFeature = 0x40 | idir[i][0] << 1 | (sg[i][0] + 1) >> 1;
 	}
 	else if (nFaces[i] == 2)
 	{
 		iz = 3 - idir[i][0] - idir[i][1];
-		iFeature = 0x20 | iz << 2 | (sg[i][0] + 1 >> 1) << (iz & 1) | sg[i][1] + 1 >> (iz & 1);
+		iFeature = 0x20 | iz << 2 | ((sg[i][0] + 1) >> 1) << (iz & 1) | (sg[i][1] + 1) >> (iz & 1);
 	}
 	else
 	{
-		iFeature = sg[i][2] + 1 << 1 | (sg[i][1] + 1) | sg[i][0] + 1 >> 1;
+		iFeature = (sg[i][2] + 1) << 1 | (sg[i][1] + 1) | (sg[i][0] + 1) >> 1;
 	}
 	ptloc[i] += dir[i];
 	if (m_box.bOriented)

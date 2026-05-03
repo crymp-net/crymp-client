@@ -56,7 +56,7 @@ int box_sphere_lin_unprojection(unprojection_mode* pmode, const primitives::box*
 				isg.z = sgnnz(center[iz]);
 				dir.zero()[iz] = -isg.z;
 				pcontact->t = r + size[iz] - (isg.z * center[iz]);
-				pcontact->iFeature[0] = 0x40 | iz << 1 | isg.z + 1 >> 1;
+				pcontact->iFeature[0] = 0x40 | iz << 1 | (isg.z + 1) >> 1;
 				break;
 			case 2:
 				iz = 3 - isum;
@@ -70,7 +70,7 @@ int box_sphere_lin_unprojection(unprojection_mode* pmode, const primitives::box*
 				dlen = (dir = pt - center).len();
 				pcontact->t = r - dlen;
 				dir /= dlen;
-				pcontact->iFeature[0] = 0x20 | iz << 2 | (isg.y + 1) | isg.x + 1 >> 1;
+				pcontact->iFeature[0] = 0x20 | iz << 2 | (isg.y + 1) | (isg.x + 1) >> 1;
 				break;
 			case 3:
 				isg.x = sgnnz(center.x);
@@ -82,7 +82,7 @@ int box_sphere_lin_unprojection(unprojection_mode* pmode, const primitives::box*
 				dlen = (dir = pt - center).len();
 				pcontact->t = r - dlen;
 				dir /= dlen;
-				pcontact->iFeature[0] = isg.z + 1 << 1 | (isg.y + 1) | isg.z + 1 >> 1;
+				pcontact->iFeature[0] = (isg.z + 1) << 1 | (isg.y + 1) | (isg.z + 1) >> 1;
 		}
 		pmode->dir = dir * pbox->Basis;
 		pcontact->n = -pmode->dir;
@@ -100,7 +100,7 @@ int box_sphere_lin_unprojection(unprojection_mode* pmode, const primitives::box*
 		bContact = isneg(fabs_tpl((center[ix] * t.y) - (dir[ix] * t.x)) - (size[ix] * t.y)) &
 		           isneg(fabs_tpl((center[iy] * t.y) - (dir[iy] * t.x)) - (size[iy] * t.y));
 		bBest = isneg(tmax - t) & bContact;
-		update_idbest(t, tmax, iz << 1 | isg.z + 1 >> 1, bBest, idbest);
+		update_idbest(t, tmax, iz << 1 | (isg.z + 1) >> 1, bBest, idbest);
 	}
 
 	// box edge - sphere
@@ -126,7 +126,7 @@ int box_sphere_lin_unprojection(unprojection_mode* pmode, const primitives::box*
 				t.set(-kb + sqrt_tpl(kd), ka);
 				bContact = isneg(fabs_tpl((center[iz] * t.y) - (dir[iz] * t.x)) - (size[iz] * t.y));
 				bBest = isneg(tmax - t) & bContact;
-				update_idbest(t, tmax, 0x10 | iz << 2 | (isg.y + 1) | isg.x + 1 >> 1, bBest, idbest);
+				update_idbest(t, tmax, 0x10 | iz << 2 | (isg.y + 1) | (isg.x + 1) >> 1, bBest, idbest);
 			}
 		}
 	}
@@ -148,7 +148,7 @@ int box_sphere_lin_unprojection(unprojection_mode* pmode, const primitives::box*
 		{
 			t.set(-kb + sqrt_tpl(kd), ka);
 			bBest = isneg(tmax - t);
-			update_idbest(t, tmax, 0x20 | isg.z + 1 << 1 | (isg.y + 1) | isg.x + 1 >> 1, bBest, idbest);
+			update_idbest(t, tmax, 0x20 | (isg.z + 1) << 1 | (isg.y + 1) | (isg.x + 1) >> 1, bBest, idbest);
 		}
 	}
 
@@ -164,7 +164,7 @@ int box_sphere_lin_unprojection(unprojection_mode* pmode, const primitives::box*
 			iz = idbest >> 1;
 			isg.z = (idbest << 1 & 2) - 1;
 			pcontact->n = pbox->Basis.GetRow(iz) * isg.z;
-			pcontact->iFeature[0] = 0x40 | iz << 1 | isg.z + 1 >> 1;
+			pcontact->iFeature[0] = 0x40 | iz << 1 | (isg.z + 1) >> 1;
 			break;
 		case 0x10: // box edge - sphere
 			iz = idbest >> 2 & 3;
@@ -226,7 +226,7 @@ int cylinder_sphere_lin_unprojection(unprojection_mode* pmode, const primitives:
 				icap = sgnnz(h);
 				pmode->dir = axis * -icap;
 				pcontact->t = rs + dist[0];
-				pcontact->iFeature[0] = 0x41 + (icap + 1 >> 1);
+				pcontact->iFeature[0] = 0x41 + ((icap + 1) >> 1);
 				break;
 			case 2: // unproject to side
 				pmode->dir = (-center + axis * h) / r2d;
@@ -239,7 +239,7 @@ int cylinder_sphere_lin_unprojection(unprojection_mode* pmode, const primitives:
 				pcontact->t = pmode->dir.len();
 				pmode->dir /= pcontact->t;
 				pcontact->t = rs - pcontact->t;
-				pcontact->iFeature[0] = 0x20 | icap + 1 >> 1;
+				pcontact->iFeature[0] = 0x20 | (icap + 1) >> 1;
 		}
 		pcontact->n = -pmode->dir;
 		pcontact->pt = psph->center - pcontact->n * psph->r;
@@ -269,7 +269,7 @@ int cylinder_sphere_lin_unprojection(unprojection_mode* pmode, const primitives:
 		bContact =
 		    isneg((center * t.y - dir * t.x ^ axis).len2() - sqr(rc * t.y)) & isneg(t.x - (pmode->tmax * t.y));
 		bBest = isneg(tmax - t) & bContact;
-		update_idbest(t, tmax, icap + 1 >> 1, bBest, idbest);
+		update_idbest(t, tmax, (icap + 1) >> 1, bBest, idbest);
 
 		// sphere - cyl.cap edge
 		for (icap = -1; icap <= 1; icap += 2)
@@ -301,7 +301,7 @@ int cylinder_sphere_lin_unprojection(unprojection_mode* pmode, const primitives:
 	{
 		case 0x00: // sphere - cyl.cap face
 			pcontact->n = pcyl->axis * icap;
-			pcontact->iFeature[0] = 0x40 | ((icap + 1 >> 1) + 1);
+			pcontact->iFeature[0] = 0x40 | (((icap + 1) >> 1) + 1);
 			break;
 		case 0x10: // sphere - cyl.side
 			pcontact->n = center - dir * pcontact->t;
@@ -312,7 +312,7 @@ int cylinder_sphere_lin_unprojection(unprojection_mode* pmode, const primitives:
 			c = center - axis * (hh * icap) - dir * pcontact->t;
 			pt2d = (c - axis * (c * axis)).normalized() * rc;
 			pcontact->n = (c - pt2d).normalized();
-			pcontact->iFeature[0] = 0x20 | icap + 1 >> 1;
+			pcontact->iFeature[0] = 0x20 | (icap + 1) >> 1;
 	}
 	pcontact->pt = psph->center - pcontact->n * psph->r;
 	return 1;
@@ -521,7 +521,7 @@ int tri_box_lin_unprojection(unprojection_mode* pmode, const primitives::triangl
 			bContact =
 			    t0.isin01() & isneg(fabs_tpl(t1.x - (t1.y * pbox->size[idir])) - (t1.y * pbox->size[idir]));
 			bBest = bContact & isneg(tmax - t);
-			update_idbest(t, tmax, 0x80 | (i << 4 | idir << 2 | isgy + 1 | isgx + 1 >> 1), bBest, idbest);
+			update_idbest(t, tmax, 0x80 | (i << 4 | idir << 2 | isgy + 1 | (isgx + 1) >> 1), bBest, idbest);
 		}
 	}
 
@@ -538,7 +538,7 @@ int tri_box_lin_unprojection(unprojection_mode* pmode, const primitives::triangl
 			pcontact->pt = pbox->center + ptbox * pbox->Basis;
 			pcontact->n = ptri->n;
 			pcontact->iFeature[0] = 0x40;
-			pcontact->iFeature[1] = 1 - sgnorm.z << 1 | (1 - sgnorm.y) | 1 - sgnorm.x >> 1;
+			pcontact->iFeature[1] = (1 - sgnorm.z) << 1 | (1 - sgnorm.y) | (1 - sgnorm.x) >> 1;
 			break;
 
 		case 0x40: // triangle vertex - box face
@@ -548,7 +548,7 @@ int tri_box_lin_unprojection(unprojection_mode* pmode, const primitives::triangl
 			pcontact->pt = ptri->pt[i] + pmode->dir * pcontact->t;
 			pcontact->n = pbox->Basis.GetRow(j) * -sgdir[j];
 			pcontact->iFeature[0] = 0x80 | i;
-			pcontact->iFeature[1] = 0x40 | j << 1 | sgdir[j] + 1 >> 1;
+			pcontact->iFeature[1] = 0x40 | j << 1 | (sgdir[j] + 1) >> 1;
 			break;
 
 		default: // triangle edge - box edge
@@ -609,7 +609,7 @@ int tri_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::tr
 {
 	Vec3r n, center, dp, edge, vec0, vec1, ptcyl;
 	quotient t, t0, t1, tmax(0, 1);
-	real nlen, nlen2, a, b, c, d, r2 = sqr(pcyl->r), dist, mindist;
+	real nlen{}, nlen2, a, b, c, d, r2 = sqr(pcyl->r), dist, mindist;
 	int i, j, idbest = -1, bContact, bBest, bCapped = iszero(iFeature2 - 0x43) ^ 1;
 
 	// triangle vertices - cylinder side
@@ -691,7 +691,7 @@ int tri_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::tr
 		t.set((center - ptri->pt[i]) * pcyl->axis, pmode->dir * pcyl->axis).fixsign();
 		bContact = isneg((ptri->pt[i] * t.y + pmode->dir * t.x - center * t.y).len2() - (r2 * t.y * t.y));
 		bBest = bContact & isneg(tmax - t) & isneg(t.x - (pmode->tmax * t.y));
-		update_idbest(t, tmax, 0x20 | (i << 1 | j + 1 >> 1), bBest, idbest);
+		update_idbest(t, tmax, 0x20 | (i << 1 | (j + 1) >> 1), bBest, idbest);
 
 		// triangle edges - cylinder cap edges
 		for (i = 0; i < 3; i++)
@@ -715,7 +715,7 @@ int tri_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::tr
 					       (edge * pcyl->axis) * t.y);
 					bContact = isneg(fabs_tpl((t0.x * 2) - t0.y) - fabs_tpl(t0.y));
 					bBest = bContact & isneg(tmax - t) & isneg(t.x - (pmode->tmax * t.y));
-					update_idbest(t, tmax, 0x80 | i << 1 | j + 1 >> 1, bBest, idbest);
+					update_idbest(t, tmax, 0x80 | i << 1 | (j + 1) >> 1, bBest, idbest);
 				}
 			}
 		}
@@ -731,7 +731,7 @@ int tri_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::tr
 			if (t > tmax && t < pmode->tmax)
 			{
 				pcontact->n = pcyl->axis * -j;
-				pcontact->iFeature[1] = 0x40 | ((j + 1 >> 1) + 1);
+				pcontact->iFeature[1] = 0x40 | (((j + 1) >> 1) + 1);
 
 				if (((ptri->pt[0] - center) * t.y + pmode->dir * t.x).len2() < r2 * t.y * t.y)
 				{ // triangle's 1st vertex is inside cylinder cap
@@ -818,7 +818,7 @@ int tri_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::tr
 						}
 						pcontact->n = pcyl->axis * -j;
 						pcontact->iFeature[0] = 0xA0 | i;
-						pcontact->iFeature[1] = 0x40 | ((j + 1 >> 1) + 1);
+						pcontact->iFeature[1] = 0x40 | (((j + 1) >> 1) + 1);
 						return 1;
 					}
 				}
@@ -1246,8 +1246,9 @@ int crop_polygon_with_bound(const vector2df* ptsrc, const int* idedgesrc, int ns
 		ptdst[ndst] = ptsrc[i];
 		idedgedst[ndst] = idedgesrc[i];
 		ndst += bInside;
-		inext = (i + 1) & i + 1 - nsrc >> 31;
-		if (bSwitch = isneg((ptsrc[i][ic] - bound) * (ptsrc[inext][ic] - bound)))
+		inext = (i + 1) & (i + 1 - nsrc) >> 31;
+		bSwitch = isneg((ptsrc[i][ic] - bound) * (ptsrc[inext][ic] - bound));
+		if (bSwitch)
 		{
 			vector2df d = ptsrc[inext] - ptsrc[i];
 			bInside ^= 1;
@@ -1274,7 +1275,7 @@ void crop_segment_with_bound(vector2df* ptseg, float bound, int ic, int* piFeatu
 	else
 	{
 		vector2df d = ptseg[imax] - ptseg[imin];
-		float denom;
+		float denom{};
 		if (ptseg[imin][ic] < -bound || ptseg[imax][ic] > bound)
 		{
 			denom = 1.0f / d[ic];
@@ -1354,8 +1355,9 @@ int box_box_lin_unprojection(unprojection_mode* pmode, const primitives::box* pb
 			         isg0.z;
 			t.set(pt[iz] - origin[iz], dir[ibox][iz]).fixsign();
 			bBest = isneg(-t.x) & isneg(t - tmin);
-			update_idbest(t, tmin, ibox << 5 | iz << 3 | isg1.z + 1 << 1 | (isg1.y + 1) | isg1.x + 1 >> 1,
-			              bBest, idbest);
+			update_idbest(t, tmin,
+			              ibox << 5 | iz << 3 | (isg1.z + 1) << 1 | (isg1.y + 1) | (isg1.x + 1) >> 1, bBest,
+			              idbest);
 		}
 		TransposeBasis(axes);
 	}
@@ -1400,8 +1402,8 @@ int box_box_lin_unprojection(unprojection_mode* pmode, const primitives::box* pb
 			t.x = (dp * n) * sg;
 			bBest = isneg(-t.x) & isneg(t - tmin);
 			update_idbest(t, tmin,
-			              0x100 | (idir1 << 2 | isg1.y + 1 | isg1.x + 1 >> 1) << 4 |
-			                  (idir0 << 2 | isg0.y + 1 | isg0.x + 1 >> 1),
+			              0x100 | (idir1 << 2 | isg1.y + 1 | (isg1.x + 1) >> 1) << 4 |
+			                  (idir0 << 2 | isg0.y + 1 | (isg0.x + 1) >> 1),
 			              bBest, idbest);
 		}
 	}
@@ -1447,8 +1449,8 @@ int box_box_lin_unprojection(unprojection_mode* pmode, const primitives::box* pb
 		pt0[idir0] += t0.x * t0.y;
 		pcontact->pt = pbox1->center + pt0 * pbox1->Basis + pmode->dir * pcontact->t;
 		pcontact->n = (n * pbox1->Basis) * sgnnz(n * center[0]);
-		pcontact->iFeature[0] = 0x20 | idir0 << 2 | (isg0.y + 1) | isg0.x + 1 >> 1;
-		pcontact->iFeature[1] = 0x20 | idir1 << 2 | (isg1.y + 1) | isg1.x + 1 >> 1;
+		pcontact->iFeature[0] = 0x20 | idir0 << 2 | (isg0.y + 1) | (isg0.x + 1) >> 1;
+		pcontact->iFeature[1] = 0x20 | idir1 << 2 | (isg1.y + 1) | (isg1.x + 1) >> 1;
 	}
 	else
 	{ // face-vertex
@@ -1471,7 +1473,7 @@ int box_box_lin_unprojection(unprojection_mode* pmode, const primitives::box* pb
 		                isg0.z) *
 		                   pbox[ibox ^ 1]->Basis;
 		pcontact->n = pbox[ibox]->Basis.GetRow(iz) * (isg0.z * (1 - (ibox << 1)));
-		pcontact->iFeature[ibox] = 0x40 | iz | isg0.z + 1 >> 1;
+		pcontact->iFeature[ibox] = 0x40 | iz | (isg0.z + 1) >> 1;
 		pcontact->iFeature[ibox ^ 1] = ((idbest ^ isg0.z >> 31) ^ 7) & 7;
 	}
 
@@ -1560,7 +1562,7 @@ int box_box_lin_unprojection(unprojection_mode* pmode, const primitives::box* pb
 					                                     idedge[0]);
 					for (i = 0; i < parea->npt; i++)
 					{
-						iprev = ((i - 1) & -i >> 31) | ((parea->npt - 1) & i - 1 >> 31);
+						iprev = ((i - 1) & -i >> 31) | ((parea->npt - 1) & (i - 1) >> 31);
 						pt3d[ix0] = pt2d[0][i].x;
 						pt3d[iy0] = pt2d[0][i].y;
 						parea->pt[i] =
@@ -1628,17 +1630,17 @@ int box_box_lin_unprojection(unprojection_mode* pmode, const primitives::box* pb
 						pt2d[1] = pt2d[0] + sz2d;
 						pt2d[0] -= sz2d;
 						parea->piFeature[ibox][0] = parea->piFeature[ibox][1] =
-						    0x40 | iz << 1 | 1 + isg0.z >> 1;
+						    0x40 | iz << 1 | (1 + isg0.z) >> 1;
 						parea->piFeature[ibox ^ 1][0] =
-						    (isg1.x + 1 >> 1) << ix1 | (isg1.y + 1 >> 1) << iy1;
+						    ((isg1.x + 1) >> 1) << ix1 | ((isg1.y + 1) >> 1) << iy1;
 						parea->piFeature[ibox ^ 1][1] =
 						    parea->piFeature[ibox ^ 1][0] | 1 << idir1;
 
-						int iedge1 = 0x20 | idir1 << 2 | 1 + isg1.x >> 1 | (1 + isg1.y);
+						int iedge1 = 0x20 | idir1 << 2 | (1 + isg1.x) >> 1 | (1 + isg1.y);
 						crop_segment_with_bound(pt2d, pbox[ibox]->size[ix0], 0,
 						                        parea->piFeature[ibox],
 						                        parea->piFeature[ibox ^ 1],
-						                        0x20 | iy0 << 2 | 1 + isg0.z >> 1, iedge1);
+						                        0x20 | iy0 << 2 | (1 + isg0.z) >> 1, iedge1);
 						crop_segment_with_bound(
 						    pt2d, pbox[ibox]->size[iy0], 1, parea->piFeature[ibox],
 						    parea->piFeature[ibox ^ 1], 0x20 | ix0 << 2 | (1 + isg0.z), iedge1);
@@ -1691,7 +1693,7 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 	real nlen, dlen, r = pcyl->r, hh = pcyl->hh, ka, kb, kc, kd, e = pmode->minPtDist;
 	vector2d pt2d;
 	quotient tmin(pmode->tmax, 1), t, t0, tmax;
-	int i, j, idbest = -1, bFindMinUnproj, bBest, bSeparated, icap, bContact,
+	int i, j, idbest = -1, bFindMinUnproj, bBest, bSeparated, icap, bContact = 0,
 		  bCapped = iszero(iFeature2 - 0x43) ^ 1;
 	Vec3i isg, ic;
 	center = pbox->Basis * (pcyl->center - pbox->center);
@@ -1716,7 +1718,7 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 			nlen = max((real)0.001, n.len());
 			t.set(((c.z - size[ic.z] * isg.z) * nlen + n[ic.z] * r) * -isg.z, fabs_tpl(dir[ic.z]) * nlen);
 			bBest = isneg(-t.x) & isneg(t - tmin);
-			update_idbest(t, tmin, ic.z << 2 | (isg.z + 1) | icap + 1 >> 1, bBest, idbest);
+			update_idbest(t, tmin, ic.z << 2 | (isg.z + 1) | (icap + 1) >> 1, bBest, idbest);
 			dir_best = dir_best * (bBest ^ 1) + dir * bBest;
 		}
 
@@ -1728,7 +1730,7 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 		icap = sgnnz(dir * axis);
 		t.set(((center * axis) * icap) + hh + axis.abs() * size, fabs_tpl(dir * axis));
 		bBest = isneg(-t.x) & isneg(t - tmin);
-		update_idbest(t, tmin, 0x20 | icap + 1 >> 1, bBest, idbest);
+		update_idbest(t, tmin, 0x20 | (icap + 1) >> 1, bBest, idbest);
 		dir_best = dir_best * (bBest ^ 1) + dir * bBest;
 	}
 
@@ -1787,7 +1789,8 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 		pt[ic.y] = size[ic.y] * isg.y;
 		t.set((r * nlen + ((center - pt) * n) * isg.z) * dlen, fabs_tpl(dir * n));
 		bBest = isneg(-t.x) & isneg(t - tmin);
-		update_idbest(t, tmin, 0x60 | ic.z << 3 | isg.z + 1 << 1 | (isg.y + 1) | isg.x + 1 >> 1, bBest, idbest);
+		update_idbest(t, tmin, 0x60 | ic.z << 3 | (isg.z + 1) << 1 | (isg.y + 1) | (isg.x + 1) >> 1, bBest,
+		              idbest);
 		dir_best = dir_best * (bBest ^ 1) + dir * bBest;
 	}
 
@@ -1837,8 +1840,8 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 						bSeparated &= isneg(pt[ic.x] * isg.x) ^ isneg(pt[ic.y] * isg.y);
 						bBest = isneg(tmax - t) & bContact & bSeparated;
 						update_idbest(t, tmax,
-						              0x80 | ic.z << 3 | icap + 1 << 1 | (isg.y + 1) |
-						                  isg.x + 1 >> 1,
+						              0x80 | ic.z << 3 | (icap + 1) << 1 | (isg.y + 1) |
+						                  (isg.x + 1) >> 1,
 						              bBest, idbest);
 					}
 				}
@@ -1882,8 +1885,8 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 			           isneg(fabs_tpl(pt[ic.y] - (dir[ic.y] * pcontact->t)) - size[ic.y] - e);
 			pcontact->pt = pt * pbox->Basis + pbox->center;
 			pcontact->n = pbox->Basis.GetRow(ic.z) * isg.z;
-			pcontact->iFeature[0] = 0x40 | ic.z << 1 | isg.z + 1 >> 1;
-			pcontact->iFeature[1] = 0x20 | icap + 1 >> 1;
+			pcontact->iFeature[0] = 0x40 | ic.z << 1 | (isg.z + 1) >> 1;
+			pcontact->iFeature[1] = 0x20 | (icap + 1) >> 1;
 			break;
 		case 0x20: // box.vertex - cyl.cap
 			icap = (idbest << 1 & 2) - 1;
@@ -1893,8 +1896,8 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 			bContact = isneg((pt - center - axis * (hh * icap)).len2() - sqr(r + e));
 			pcontact->pt = pt * pbox->Basis + pbox->center;
 			pcontact->n = pcyl->axis * (hh * -icap);
-			pcontact->iFeature[0] = isg.z + 1 << 1 | (isg.y + 1) | isg.x + 1 >> 1;
-			pcontact->iFeature[1] = 0x41 + (icap + 1 >> 1);
+			pcontact->iFeature[0] = (isg.z + 1) << 1 | (isg.y + 1) | (isg.x + 1) >> 1;
+			pcontact->iFeature[1] = 0x41 + ((icap + 1) >> 1);
 			break;
 		case 0x40: // box.vertex - cyl.side
 			isg.Set((idbest >> 1 & 2) - 1, (idbest & 2) - 1, (idbest << 1 & 2) - 1);
@@ -1905,7 +1908,7 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 			pcontact->pt = pt * pbox->Basis + pbox->center;
 			pcontact->n = pcyl->center - pcontact->pt;
 			pcontact->n -= pcyl->axis * (pcontact->n * pcyl->axis);
-			pcontact->iFeature[0] = isg.z + 1 << 1 | (isg.y + 1) | isg.x + 1 >> 1;
+			pcontact->iFeature[0] = (isg.z + 1) << 1 | (isg.y + 1) | (isg.x + 1) >> 1;
 			pcontact->iFeature[1] = 0x40;
 			break;
 		case 0x60: // box.edge - cyl.side
@@ -1932,7 +1935,7 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 				pt[ic.z] = 0;
 				pcontact->pt = pt * pbox->Basis + pbox->center;
 			}
-			pcontact->iFeature[0] = 0x20 | ic.z << 2 | (isg.y + 1) | isg.x + 1 >> 1;
+			pcontact->iFeature[0] = 0x20 | ic.z << 2 | (isg.y + 1) | (isg.x + 1) >> 1;
 			pcontact->iFeature[1] = 0x40;
 			break;
 		case 0x80: // box.edge - cyl.capedge
@@ -1956,8 +1959,8 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 			pcontact->pt = pt * pbox->Basis + pbox->center;
 			n = cross_with_ort(pt - c ^ axis, ic.z);
 			pcontact->n = (n * sgnnz(n * vec0)) * pbox->Basis;
-			pcontact->iFeature[0] = 0x20 | ic.z << 2 | (isg.y + 1) | isg.x + 1 >> 1;
-			pcontact->iFeature[1] = 0x20 | icap + 1 >> 1;
+			pcontact->iFeature[0] = 0x20 | ic.z << 2 | (isg.y + 1) | (isg.x + 1) >> 1;
+			pcontact->iFeature[1] = 0x20 | (icap + 1) >> 1;
 	}
 
 	if (!parea && pmode->bCheckContact)
@@ -2010,8 +2013,8 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 							    pt * pbox->Basis + pbox->center + pmode->dir * pcontact->t;
 							parea->piPrim[0][parea->npt] = parea->piPrim[1][parea->npt] = 0;
 							parea->piFeature[0][parea->npt] =
-							    0x40 | ic.z << 1 | isg.z + 1 >> 1;
-							parea->piFeature[1][parea->npt] = 0x20 | icap + 1 >> 1;
+							    0x40 | ic.z << 1 | (isg.z + 1) >> 1;
+							parea->piFeature[1][parea->npt] = 0x20 | (icap + 1) >> 1;
 							parea->npt += isneg(fabs_tpl(pt[ic.x]) - size[ic.x]) &
 							              isneg(fabs_tpl(pt[ic.y]) - size[ic.y]);
 							nlen = pt2d.x;
@@ -2039,10 +2042,10 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 										    parea->piPrim[1][parea->npt] = 0;
 										parea->piFeature[0][parea->npt] =
 										    0x20 | ic[(i & 1) ^ 1] << 2 |
-										    isg.z + 1 >> (i & 1 ^ 1) |
+										    (isg.z + 1) >> (i & 1 ^ 1) |
 										    (i & 2) >> (i & 1);
 										parea->piFeature[1][parea->npt++] =
-										    0x20 | icap + 1 >> 1;
+										    0x20 | (icap + 1) >> 1;
 									}
 								}
 							}
@@ -2075,13 +2078,13 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 					pts2d[1].set(c[ic.x] + (axis[ic.x] * hh), c[ic.y] + (axis[ic.y] * hh));
 					parea->piFeature[1][0] = parea->piFeature[1][1] = 0x40;
 					parea->piFeature[0][0] = parea->piFeature[0][1] =
-					    0x40 | ic.z << 1 | isg.z + 1 >> 1;
+					    0x40 | ic.z << 1 | (isg.z + 1) >> 1;
 					parea->piPrim[0][0] = parea->piPrim[0][1] = parea->piPrim[1][0] =
 					    parea->piPrim[1][1] = 0;
 					pt[ic.z] = size[ic.z] * isg.z;
 					crop_segment_with_bound(pts2d, size[ic.x], 0, parea->piFeature[0],
-					                        parea->piFeature[1], 0x20 | ic.y << 2 | 1 + isg.z >> 1,
-					                        0x40);
+					                        parea->piFeature[1],
+					                        0x20 | ic.y << 2 | (1 + isg.z) >> 1, 0x40);
 					crop_segment_with_bound(pts2d, size[ic.y], 1, parea->piFeature[0],
 					                        parea->piFeature[1], 0x20 | ic.x << 2 | (1 + isg.z),
 					                        0x40);
@@ -2138,9 +2141,9 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 							parea->piPrim[0][0] = parea->piPrim[0][1] =
 							    parea->piPrim[1][0] = parea->piPrim[1][1] = 0;
 							parea->piFeature[0][0] = parea->piFeature[0][1] =
-							    0x20 | ic.z << 2 | (isg.y + 1) | isg.x + 1 >> 1;
+							    0x20 | ic.z << 2 | (isg.y + 1) | (isg.x + 1) >> 1;
 							parea->piFeature[1][0] = parea->piFeature[1][1] =
-							    0x40 | ((icap + 1 >> 1) + 1);
+							    0x40 | (((icap + 1) >> 1) + 1);
 							parea->npt = 2;
 							goto gotarea;
 						}
@@ -2171,7 +2174,7 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
 				pt[ic.z] = min(c[ic.z] + (fabs_tpl(axis[ic.z]) * hh * 2), size[ic.z]);
 				parea->pt[1] = pt * pbox->Basis + pbox->center + pmode->dir * pcontact->t;
 				parea->piFeature[0][0] = parea->piFeature[0][1] =
-				    0x20 | ic.z << 2 | (isg.y + 1) | isg.x + 1 >> 1;
+				    0x20 | ic.z << 2 | (isg.y + 1) | (isg.x + 1) >> 1;
 				parea->piFeature[1][0] = parea->piFeature[1][1] = 0x40;
 				parea->piPrim[0][0] = parea->piPrim[0][1] = parea->piPrim[1][0] = parea->piPrim[1][1] =
 				    0;
@@ -2252,7 +2255,8 @@ int box_capsule_lin_unprojection(unprojection_mode* pmode, const primitives::box
 	{
 		Vec3 dir_best(ZERO);
 		contact capcont;
-		if (bContact0 = box_cylinder_lin_unprojection(pmode, pbox, iFeature1, pcaps, 0x43, pcontact, parea))
+		bContact0 = box_cylinder_lin_unprojection(pmode, pbox, iFeature1, pcaps, 0x43, pcontact, parea);
+		if (bContact0)
 		{
 			dir_best = pmode->dir;
 		}
@@ -2391,15 +2395,15 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 	Vec3r axis[2], center[2], dir, ptc, dp, dc, n, axisx, axisy, u, l, a1, dir_best(ZERO);
 	vector2d c2d, dir2d, pt2d[4], ptbest2d;
 	quotient tmax(0, 1), t, t0, t1;
-	real cosa, sina, rsina, a, b, c, d, roots[4], nlen, denom, r0, r1, dist, tbound[2];
-	int i, j, j1, bContact, bBest, icyl, nroots, idbest = -1, iter, bSeparated, bFindMinUnproj, bNoContact = 0,
-						     bCapped[2];
+	real cosa, sina, rsina{}, a, b, c, d, roots[4], nlen, denom, r0{}, r1, dist, tbound[2];
+	int i, j, j1, bContact, bBest, icyl, nroots, idbest = -1, iter, bSeparated = 0, bNoContact = 0, bCapped[2];
 	Vec3 ncap[2];
 	float ncaplen[2];
 	bCapped[0] = iszero(iFeature1 - 0x43) ^ 1;
 	bCapped[1] = iszero(iFeature2 - 0x43) ^ 1;
 
-	if (bFindMinUnproj = (pmode->dir.len2() < 0.5f))
+	int bFindMinUnproj = (pmode->dir.len2() < 0.5f);
+	if (bFindMinUnproj)
 	{
 		tmax.x = pmode->tmax;
 	}
@@ -2503,11 +2507,11 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 					vector2di sg(sgnnz(c2d.x), sgnnz(c2d.y));
 					pt2d[2].set(r0 * sg.x, r0 * sg.y * fabs_tpl(cosa));
 					pt2d[3].set(sg.x * fabs_tpl(cosa), sg.y);
-					j1 = 1 - (sg.x * sg.y) >> 1;
+					j1 = (1 - (sg.x * sg.y)) >> 1;
 					int idx[2] = {0, SINCOSTABSZ};
 					do
 					{
-						iter = idx[0] + idx[1] >> 1;
+						iter = (idx[0] + idx[1]) >> 1;
 						pt2d[0].set(g_costab[iter] * pt2d[2].x,
 						            g_sintab[iter] * pt2d[2].y); // point on ellipse
 						pt2d[1].set(g_costab[iter] * pt2d[3].x,
@@ -2528,7 +2532,7 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 						tmax = r1 - dist;
 						dp -= pcyl[icyl ^ 1]->axis * (dp * pcyl[icyl ^ 1]->axis);
 						dir_best = dp.normalized() * ((icyl * 2) - 1);
-						idbest = 0x40 | (icyl * 2) | i + 1 >> 1;
+						idbest = 0x40 | (icyl * 2) | (i + 1) >> 1;
 					}
 				}
 				else
@@ -2683,11 +2687,11 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 					vector2di sg(sgnnz(c2d.x), sgnnz(c2d.y));
 					pt2d[2].set(r0 * sg.x, r0 * sg.y * fabs_tpl(cosa));
 					pt2d[3].set(sg.x * sqr(cosa), sg.y);
-					j1 = 1 - (sg.x * sg.y) >> 1;
+					j1 = (1 - (sg.x * sg.y)) >> 1;
 					int idx[2] = {0, SINCOSTABSZ};
 					do
 					{
-						iter = idx[0] + idx[1] >> 1;
+						iter = (idx[0] + idx[1]) >> 1;
 						pt2d[0].set(g_costab[iter] * pt2d[2].x,
 						            g_sintab[iter] * pt2d[2].y); // point on ellipse
 						pt2d[1].set(g_costab[iter] * pt2d[3].x,
@@ -2701,7 +2705,7 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 					     (pcyl[icyl]->axis ^ axisx) * (pt2d[0].y * sgnnz(cosa));
 					bContact = isneg(fabs_tpl(dp * pcyl[icyl ^ 1]->axis) - pcyl[icyl ^ 1]->hh);
 					bBest = bContact & isneg(tmax - t);
-					update_idbest(t, tmax, 0x40 | (icyl * 2) | i + 1 >> 1, bBest, idbest);
+					update_idbest(t, tmax, 0x40 | (icyl * 2) | (i + 1) >> 1, bBest, idbest);
 					ptbest2d = ptbest2d * (bBest ^ 1) + pt2d[0] * bBest;
 				}
 			}
@@ -2786,13 +2790,13 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 						bBest = (bNoContact | isneg(t - tmax)) & bSeparated;
 						dir_best = dir_best * (bBest ^ 1) + dir * bBest;
 						bNoContact &= bBest ^ 1;
-						update_idbest(t, tmax, 0x80 | (i + 1) | j + 1 >> 1, bBest, idbest);
+						update_idbest(t, tmax, 0x80 | (i + 1) | (j + 1) >> 1, bBest, idbest);
 					}
 					else if (nroots)
 					{
 						t = roots[nroots - 1];
 						bBest = isneg(tmax - t);
-						update_idbest(t, tmax, 0x80 | (i + 1) | j + 1 >> 1, bBest, idbest);
+						update_idbest(t, tmax, 0x80 | (i + 1) | (j + 1) >> 1, bBest, idbest);
 					}
 				}
 			}
@@ -2837,7 +2841,7 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 			pcontact->n = ((pcyl[icyl ^ 1]->center + pmode->dir * (pcontact->t * icyl)) - pcontact->pt) *
 			              (1 - (icyl * 2));
 			pcontact->n -= pcyl[icyl ^ 1]->axis * (pcontact->n * pcyl[icyl ^ 1]->axis);
-			pcontact->iFeature[icyl] = 0x20 | i + 1 >> 1;
+			pcontact->iFeature[icyl] = 0x20 | (i + 1) >> 1;
 			pcontact->iFeature[icyl ^ 1] = 0x40;
 			break;
 
@@ -2855,8 +2859,8 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 			    (pcyl[0]->axis ^ pcontact->pt - center[0]) ^ (pcyl[1]->axis ^ pcontact->pt - center[1]);
 			pcontact->n *=
 			    sgnnz(pcontact->n * (pcyl[1]->center - pcyl[0]->center - pmode->dir * pcontact->t));
-			pcontact->iFeature[0] = 0x20 | i + 1 >> 1;
-			pcontact->iFeature[1] = 0x20 | j + 1 >> 1;
+			pcontact->iFeature[0] = 0x20 | (i + 1) >> 1;
+			pcontact->iFeature[1] = 0x20 | (j + 1) >> 1;
 			break;
 
 		case 0xC0: // side - side
@@ -2894,9 +2898,9 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 						parea->pt[parea->npt] =
 						    center[icyl] + axisx * pt2d[0].x + axisy * pt2d[0].y;
 						parea->piFeature[icyl ^ 1][parea->npt] =
-						    0x40 | (((i & -icyl | j & ~-icyl) + 1 >> 1) + 1);
+						    0x40 | ((((i & -icyl | j & ~-icyl) + 1) >> 1) + 1);
 						parea->piFeature[icyl][parea->npt] =
-						    0x20 | (i & ~-icyl | j & -icyl) + 1 >> 1;
+						    0x20 | ((i & ~-icyl | j & -icyl) + 1) >> 1;
 						parea->npt += isneg((parea->pt[parea->npt] - center[icyl ^ 1]).len2() -
 						                    sqr(pcyl[icyl ^ 1]->r * 1.01f));
 						a = pt2d[0].x;
@@ -2917,8 +2921,8 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 					for (j1 = -1; j1 <= 1; j1 += 2)
 					{
 						parea->pt[parea->npt] = center[0] + u * a + l * (c * j1);
-						parea->piFeature[0][parea->npt] = 0x20 | i + 1 >> 1;
-						parea->piFeature[1][parea->npt] = 0x20 | j + 1 >> 1;
+						parea->piFeature[0][parea->npt] = 0x20 | (i + 1) >> 1;
+						parea->piFeature[1][parea->npt] = 0x20 | (j + 1) >> 1;
 						parea->npt++;
 					}
 				}
@@ -2943,7 +2947,7 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 							    pcyl[icyl]->axis * (pcyl[icyl]->hh * i) +
 							    dp * (pcyl[icyl]->r * (1 - icyl * 2));
 							parea->piFeature[icyl ^ 1][parea->npt] = 0x40;
-							parea->piFeature[icyl][parea->npt] = 0x20 | i + 1 >> 1;
+							parea->piFeature[icyl][parea->npt] = 0x20 | (i + 1) >> 1;
 							parea->npt++;
 						}
 					}
@@ -2981,7 +2985,7 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 									parea->piFeature[icyl ^ 1][parea->npt] =
 									    0x20 | i;
 									parea->piFeature[icyl][parea->npt++] =
-									    0x40 | ((j + 1 >> 1) + 1);
+									    0x40 | (((j + 1) >> 1) + 1);
 								}
 							}
 						}
@@ -2995,7 +2999,7 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
 								    pcyl[icyl ^ 1]->axis * (pcyl[icyl ^ 1]->hh * j);
 								parea->piFeature[icyl ^ 1][parea->npt] = 0x40;
 								parea->piFeature[icyl][parea->npt++] =
-								    0x20 | j + 1 >> 1;
+								    0x20 | (j + 1) >> 1;
 							}
 						}
 						for (j = 0; j < parea->npt; j++)
@@ -3034,7 +3038,8 @@ int cylinder_capsule_lin_unprojection(unprojection_mode* pmode, const primitives
 	{
 		Vec3 dir_best(ZERO);
 		contact capcont;
-		if (bContact0 = cyl_cyl_lin_unprojection(pmode, pcyl, iFeature1, pcaps, 0x43, pcontact, parea))
+		bContact0 = cyl_cyl_lin_unprojection(pmode, pcyl, iFeature1, pcaps, 0x43, pcontact, parea);
+		if (bContact0)
 		{
 			dir_best = pmode->dir;
 		}
@@ -3121,7 +3126,8 @@ int capsule_capsule_lin_unprojection(unprojection_mode* pmode, const primitives:
 	{
 		Vec3 dir_best(ZERO);
 		contact capcont;
-		if (bContact = cyl_cyl_lin_unprojection(pmode, pcaps1, 0x43, pcaps2, 0x43, pcontact, parea))
+		bContact = cyl_cyl_lin_unprojection(pmode, pcaps1, 0x43, pcaps2, 0x43, pcontact, parea);
+		if (bContact)
 		{
 			dir_best = pmode->dir;
 		}
@@ -3220,7 +3226,8 @@ int sphere_capsule_lin_unprojection(unprojection_mode* pmode, const primitives::
 	{
 		Vec3 dir_best(ZERO);
 		contact capcont;
-		if (bContact0 = sphere_cylinder_lin_unprojection(pmode, psph, iFeature1, pcaps, 0x43, pcontact, parea))
+		bContact0 = sphere_cylinder_lin_unprojection(pmode, psph, iFeature1, pcaps, 0x43, pcontact, parea);
+		if (bContact0)
 		{
 			dir_best = pmode->dir;
 		}
@@ -3359,7 +3366,7 @@ int ray_box_lin_unprojection(unprojection_mode* pmode, const primitives::ray* pr
 			bContact =
 			    t0.isin01() & isneg(fabs_tpl(t1.x - (t1.y * pbox->size[idir])) - (t1.y * pbox->size[idir]));
 			bBest = bContact & isneg(tmax - t);
-			update_idbest(t, tmax, 0x80 | (idir << 2 | isgy + 1 | isgx + 1 >> 1), bBest, idbest);
+			update_idbest(t, tmax, 0x80 | (idir << 2 | isgy + 1 | (isgx + 1) >> 1), bBest, idbest);
 		}
 	}
 
@@ -3377,7 +3384,7 @@ int ray_box_lin_unprojection(unprojection_mode* pmode, const primitives::ray* pr
 			pcontact->pt = pray->origin + pray->dir * i + pmode->dir * pcontact->t;
 			pcontact->n = pbox->Basis.GetRow(j) * -sgdir[j];
 			pcontact->iFeature[0] = 0x80 | i;
-			pcontact->iFeature[1] = 0x40 | j << 1 | sgdir[j] + 1 >> 1;
+			pcontact->iFeature[1] = 0x40 | j << 1 | (sgdir[j] + 1) >> 1;
 			break;
 
 		default: // ray - box edge
@@ -3498,7 +3505,7 @@ int ray_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::ra
 		bContact = isneg(((pray->origin + pray->dir * i) * t.y + pmode->dir * t.x - center * t.y).len2() -
 		                 (r2 * t.y * t.y));
 		bBest = bContact & isneg(tmax - t) & isneg(t.x - (pmode->tmax * t.y));
-		update_idbest(t, tmax, 0x20 | (i << 1 | j + 1 >> 1), bBest, idbest);
+		update_idbest(t, tmax, 0x20 | (i << 1 | (j + 1) >> 1), bBest, idbest);
 
 		// ray - cylinder cap edges
 		for (j = -1; j <= 1; j += 2)
@@ -3518,7 +3525,7 @@ int ray_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::ra
 				t0.set(-((dp * t.y + pmode->dir * t.x) * pcyl->axis), (edge * pcyl->axis) * t.y);
 				bContact = isneg(fabs_tpl((t0.x * 2) - t0.y) - fabs_tpl(t0.y));
 				bBest = bContact & isneg(tmax - t) & isneg(t.x - (pmode->tmax * t.y));
-				update_idbest(t, tmax, 0x80 | j + 1 >> 1, bBest, idbest);
+				update_idbest(t, tmax, 0x80 | (j + 1) >> 1, bBest, idbest);
 			}
 		}
 
@@ -3552,7 +3559,7 @@ int ray_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::ra
 				{
 					pcontact->n = pcyl->axis * -j;
 					pcontact->iFeature[0] = 0xA0;
-					pcontact->iFeature[1] = 0x40 | ((j + 1 >> 1) + 1);
+					pcontact->iFeature[1] = 0x40 | (((j + 1) >> 1) + 1);
 					return 1;
 				}
 			}
@@ -4305,7 +4312,7 @@ int ray_cyl_rot_unprojection(unprojection_mode* pmode, const primitives::ray* pr
 				                   r2 * sqr(t.y * (real)1.04)); // remove phantom roots
 				bContact &= inrange(t.x, (real)0, t.y);
 				bBest = isneg(tmax - tsin) & bContact;
-				update_idbest(tsin, tmax, 0x40 | icap + 1 >> 1, bBest, idbest);
+				update_idbest(tsin, tmax, 0x40 | (icap + 1) >> 1, bBest, idbest);
 			}
 		}
 	}
@@ -4325,7 +4332,7 @@ int ray_cyl_rot_unprojection(unprojection_mode* pmode, const primitives::ray* pr
 			pcontact->pt = ptz[i] + ptx[i] * pcontact->taux + pty[i] * pcontact->t + pmode->center;
 			pcontact->n = axis * -icap;
 			pcontact->iFeature[0] = 0x80 | i;
-			pcontact->iFeature[1] = 0x41 + (icap + 1 >> 1);
+			pcontact->iFeature[1] = 0x41 + ((icap + 1) >> 1);
 			break;
 		case 0x10: // ray end - cyl side
 			i = idbest & 1;
@@ -4363,7 +4370,7 @@ int ray_cyl_rot_unprojection(unprojection_mode* pmode, const primitives::ray* pr
 			pcontact->n = ((axis ^ pcontact->n) ^ l).normalized();
 			pcontact->n *= sgnnz(pcontact->n * (pcyl->center - pcontact->pt));
 			pcontact->iFeature[0] = 0x20;
-			pcontact->iFeature[1] = 0x20 | icap + 1 >> 1;
+			pcontact->iFeature[1] = 0x20 | (icap + 1) >> 1;
 	}
 	return 1;
 }
@@ -4702,7 +4709,7 @@ int ray_capsule_rot_unprojection(unprojection_mode* pmode, const primitives::ray
 				                   r2 * sqr(t.y * (real)1.01)); // remove phantom roots
 				bContact &= inrange(t.x, (real)0, t.y);
 				bBest = isneg(tmax - tsin) & bContact;
-				update_idbest(tsin, tmax, 0x40 | icap + 1 >> 1, bBest, idbest);
+				update_idbest(tsin, tmax, 0x40 | (icap + 1) >> 1, bBest, idbest);
 			}
 		}
 	}
@@ -4722,7 +4729,7 @@ int ray_capsule_rot_unprojection(unprojection_mode* pmode, const primitives::ray
 			pcontact->pt = ptz[i] + ptx[i] * pcontact->taux + pty[i] * pcontact->t + pmode->center;
 			pcontact->n = (pcaps->center + pcaps->axis * (pcaps->hh * icap) - pcontact->pt).normalized();
 			pcontact->iFeature[0] = 0x80 | i;
-			pcontact->iFeature[1] = 0x41 + (icap + 1 >> 1);
+			pcontact->iFeature[1] = 0x41 + ((icap + 1) >> 1);
 			break;
 		case 0x10: // ray end - capsule side
 			i = idbest & 1;
@@ -4758,7 +4765,7 @@ int ray_capsule_rot_unprojection(unprojection_mode* pmode, const primitives::ray
 			pcontact->n = (ccap - pcontact->pt).normalized();
 			pcontact->pt += pmode->center;
 			pcontact->iFeature[0] = 0x20;
-			pcontact->iFeature[1] = 0x20 | icap + 1 >> 1;
+			pcontact->iFeature[1] = 0x20 | (icap + 1) >> 1;
 	}
 	return 1;
 }

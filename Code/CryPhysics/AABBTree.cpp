@@ -80,11 +80,12 @@ float CAABBTree::Build(CGeometry* pMesh)
 		delete[] pNodes;
 	}
 	m_nBitsLog = m_nNodes <= 256 ? 3 : 4;
-	int* pNewTri2Node = new int[(m_pMesh->m_nTris - 1 >> 5 - m_nBitsLog) + 1];
-	memset(pNewTri2Node, 0, sizeof(int) * ((m_pMesh->m_nTris - 1 >> 5 - m_nBitsLog) + 1));
+	int* pNewTri2Node = new int[((m_pMesh->m_nTris - 1) >> (5 - m_nBitsLog)) + 1];
+	memset(pNewTri2Node, 0, sizeof(int) * (((m_pMesh->m_nTris - 1) >> (5 - m_nBitsLog)) + 1));
 	for (i = 0; i < m_pMesh->m_nTris; i++)
 	{
-		pNewTri2Node[i >> 5 - m_nBitsLog] |= m_pTri2Node[i] << ((i & (1 << 5 - m_nBitsLog) - 1) << m_nBitsLog);
+		pNewTri2Node[i >> (5 - m_nBitsLog)] |= m_pTri2Node[i]
+		                                       << ((i & (1 << (5 - m_nBitsLog)) - 1) << m_nBitsLog);
 	}
 	delete[] m_pTri2Node;
 	m_pTri2Node = pNewTri2Node;
@@ -177,7 +178,7 @@ float CAABBTree::BuildNode(int iNode, int iTriStart, int nTris, Vec3 center, Vec
 	}
 
 	volatile int iAxis;
-	int numtris[3], nTrisAx[3], iPart, iMode[3], idx;
+	int numtris[3], nTrisAx[3], iPart{}, iMode[3], idx;
 	float x0, x1, x2, cx, xlim[2], bounds[3][2], diff[3], axdiff[3];
 	Vec3 axis, c;
 
@@ -373,7 +374,7 @@ void CAABBTree::GetNodeBV(const Matrix33& Rw, const Vec3& offsw, float scalew, B
 float CAABBTree::SplitPriority(const BV* pBV)
 {
 	BBox* pbox = (BBox*)pBV;
-	return pbox->abox.size.GetVolume() * (m_pNodes[pbox->iNode].ntris - 1 >> 31 & 1);
+	return pbox->abox.size.GetVolume() * ((m_pNodes[pbox->iNode].ntris - 1) >> 31 & 1);
 }
 
 void CAABBTree::GetNodeChildrenBVs(const Matrix33& Rw, const Vec3& offsw, float scalew, const BV* pBV_parent,
@@ -545,7 +546,7 @@ void CAABBTree::MarkUsedTriangle(int itri, geometry_under_test* pGTest)
 	{
 		return;
 	}
-	int iNode = m_pTri2Node[itri >> 5 - m_nBitsLog] >> ((itri & (1 << 5 - m_nBitsLog) - 1) << m_nBitsLog) &
+	int iNode = m_pTri2Node[itri >> (5 - m_nBitsLog)] >> ((itri & (1 << (5 - m_nBitsLog)) - 1) << m_nBitsLog) &
 	            ((1 << (1 << m_nBitsLog)) - 1);
 	if (m_pNodes[iNode].bSingleColl)
 	{
@@ -585,7 +586,7 @@ int CAABBTree::PrepareForIntersectionTest(geometry_under_test* pGTest, CGeometry
 	}
 	else
 	{
-		int mapsz = (m_nNodes - 1 >> 5) + 1;
+		int mapsz = ((m_nNodes - 1) >> 5) + 1;
 		if (mapsz <= (int)(sizeof(g_idata[pGTest->iCaller].UsedNodesMap) /
 		                   sizeof(g_idata[pGTest->iCaller].UsedNodesMap[0])) -
 		                 g_idata[pGTest->iCaller].UsedNodesMapPos)
@@ -632,7 +633,7 @@ void CAABBTree::CleanupAfterIntersectionTest(geometry_under_test* pGTest)
 	}
 	else
 	{
-		memset(pGTest->pUsedNodesMap, 0, ((m_nNodes - 1 >> 5) + 1) * 4);
+		memset(pGTest->pUsedNodesMap, 0, (((m_nNodes - 1) >> 5) + 1) * 4);
 	}
 }
 
@@ -700,14 +701,14 @@ void CAABBTree::Load(CMemStream& stm, CGeometry* pGeom)
 		}
 		delete[] pNodes;
 	}
-	m_pTri2Node = new int[(m_pMesh->m_nTris - 1 >> 5 - m_nBitsLog) + 1];
-	memset(m_pTri2Node, 0, sizeof(int) * ((m_pMesh->m_nTris - 1 >> 5 - m_nBitsLog) + 1));
+	m_pTri2Node = new int[((m_pMesh->m_nTris - 1) >> (5 - m_nBitsLog)) + 1];
+	memset(m_pTri2Node, 0, sizeof(int) * (((m_pMesh->m_nTris - 1) >> (5 - m_nBitsLog)) + 1));
 	for (i = 0; i < m_nNodes; i++)
 	{
 		for (int j = 0; j < (int)m_pNodes[i].ntris; j++)
 		{
-			m_pTri2Node[m_pNodes[i].ichild + j >> 5 - m_nBitsLog] |=
-			    i << ((m_pNodes[i].ichild + j & (1 << 5 - m_nBitsLog) - 1) << m_nBitsLog);
+			m_pTri2Node[(m_pNodes[i].ichild + j) >> (5 - m_nBitsLog)] |=
+			    i << ((m_pNodes[i].ichild + j & (1 << (5 - m_nBitsLog)) - 1) << m_nBitsLog);
 		}
 	}
 

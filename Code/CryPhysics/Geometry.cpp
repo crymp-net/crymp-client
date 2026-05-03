@@ -70,7 +70,7 @@ int IntersectBVs(geometry_under_test* pGTest, BV* pBV1, BV* pBV2)
 		prim_inters inters;
 		static Vec3 ptborder[16];
 		inters.minPtDist2 = sqr(min(pGTest[0].pGeometry->m_minVtxDist, pGTest[1].pGeometry->m_minVtxDist));
-		iClient = -(pGTest[1].pGeometry->m_iCollPriority - pGTest[0].pGeometry->m_iCollPriority >> 31);
+		iClient = -((pGTest[1].pGeometry->m_iCollPriority - pGTest[0].pGeometry->m_iCollPriority) >> 31);
 		inters.pt[1].zero();
 		inters.n.zero();
 		inters.ptborder = ptborder;
@@ -367,7 +367,7 @@ int CGeometry::Intersect(IGeometry* pCollider, geom_world_data* pdata1, geom_wor
 			IntersectBVs(gtest, pBV1, pBV2);
 		}
 
-		int iClient = -(gtest[1].pGeometry->m_iCollPriority - gtest[0].pGeometry->m_iCollPriority >> 31);
+		int iClient = -((gtest[1].pGeometry->m_iCollPriority - gtest[0].pGeometry->m_iCollPriority) >> 31);
 		if (iClient)
 		{
 			for (i = 0; i < nContacts; i++)

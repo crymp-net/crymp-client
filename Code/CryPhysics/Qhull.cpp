@@ -138,7 +138,7 @@ void qsort(int* v, void** p, int left, int right)
 		return;
 	}
 	int i, last;
-	swap(v, p, left, left + right >> 1);
+	swap(v, p, left, (left + right) >> 1);
 	for (last = left, i = left + 1; i <= right; i++)
 	{
 		if (v[i] < v[left])
@@ -157,7 +157,7 @@ int bin_search(int* v, int n, int idx)
 	int left = 0, right = n, m;
 	do
 	{
-		m = left + right >> 1;
+		m = (left + right) >> 1;
 		if (v[m] == idx)
 		{
 			return m;
@@ -212,8 +212,8 @@ int qhull(strided_pointer<Vec3> pts, int npts, index_t*& pTris)
 	static volatile int g_lockQhull;
 	int iter = 0, maxiter = 0;
 
-	ptitem *pt, *ptmax, *ptdeleted, *ptlist = npts > sizeof(ptbuf) / sizeof(ptbuf[0]) ? new ptitem[npts] : ptbuf;
-	qhtritem *tr, *trnext, *trend, *trnew, *trdata = trbuf, *trstart = 0, *trlast, *trbest;
+	ptitem *pt, *ptmax{}, *ptdeleted, *ptlist = npts > sizeof(ptbuf) / sizeof(ptbuf[0]) ? new ptitem[npts] : ptbuf;
+	qhtritem *tr, *trnext, *trend, *trnew, *trdata = trbuf, *trstart = 0, *trlast, *trbest{};
 	int i, j, k, ti, trdatasz = sizeof(trbuf) / sizeof(trbuf[0]), bidx[6], n, next_iter, delbuds;
 	qhtritem** tmparr_ptr = tmparr_ptr_buf;
 	int *tmparr_idx = tmparr_idx_buf, tmparr_sz = 512;

@@ -174,6 +174,7 @@ inline float BoxExtent(EGeomForm eForm, Vec3 const& vSize)
 		case GeomForm_Volume:
 			return vSize.x*vSize.y*vSize.z;
 	}
+	return {};
 }
 
 // Utility functions.

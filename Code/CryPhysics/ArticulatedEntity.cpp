@@ -2053,15 +2053,15 @@ int CArticulatedEntity::StepJoint(int idx, float time_interval, int& bBounced, i
 				if (m_joints[idx].limits[0][i] > m_joints[idx].limits[1][i])
 				{
 					sgq = sgn(m_joints[idx].q[i] + m_joints[idx].qext[i]);
-					qlim[sgq + 1 >> 1] += (sgq << 1) * g_PI;
+					qlim[(sgq + 1) >> 1] += (sgq << 1) * g_PI;
 				}
 				m_joints[idx].flags &= ~joint_dashpot_reached;
 				dq = m_joints[idx].dq[i] * time_interval;
 				sgq = sgn(dq);
 				curq = m_joints[idx].q[i] + m_joints[idx].qext[i];
-				if ((curq + dq - qlim[sgq + 1 >> 1]) * sgq > 0)
+				if ((curq + dq - qlim[(sgq + 1) >> 1]) * sgq > 0)
 				{ // we'll breach the limit that lies ahead along movement (ignore the other one)
-					dq = qlim[sgq + 1 >> 1] - curq + (sgq * 0.01f);
+					dq = qlim[(sgq + 1) >> 1] - curq + (sgq * 0.01f);
 					dq = sgnnz(dq) *
 					     min(fabsf(dq), 0.1f + (m_bCollisionResp ^
 					                            1)); // limit angle snapping in full simulation mode
@@ -2086,7 +2086,7 @@ int CArticulatedEntity::StepJoint(int idx, float time_interval, int& bBounced, i
 					}
 					m_joints[idx].flags |=
 					    joint_dashpot_reached &
-					    -isneg(fabs_tpl(curq - qlim[sgq + 1 >> 1]) - m_joints[idx].qdashpot[i]);
+					    -isneg(fabs_tpl(curq - qlim[(sgq + 1) >> 1]) - m_joints[idx].qdashpot[i]);
 				}
 				m_joints[idx].q[i] += min(fabsf(dq), 1.2f) * sgn(dq);
 				// while(m_joints[idx].q[i]>g_PI) m_joints[idx].q[i]-=2*g_PI;
@@ -2405,7 +2405,8 @@ int CArticulatedEntity::Step(float time_interval)
 			{
 				dv.x += m_joints[i].body.v.len2() + m_joints[i].body.w.len2();
 			}
-			if (m_bAwake = dv.x > 0)
+			m_bAwake = dv.x > 0;
+			if (m_bAwake)
 			{
 				for (i = 0; i < m_nJoints; i++)
 				{
@@ -3107,7 +3108,8 @@ int CArticulatedEntity::CalcBodyIa(int idx, matrixf& Ia_change)
 	m_joints[idx].nActiveAngles = j;
 	for (i = 0; i < 3; i++)
 	{
-		if ((m_joints[idx].flags & (angle0_locked | angle0_limit_reached) << i) == angle0_limit_reached << i)
+		if ((m_joints[idx].flags & (angle0_locked | angle0_limit_reached) << i) ==
+		    static_cast<unsigned int>(angle0_limit_reached << i))
 		{
 			m_joints[idx].fs->qidx2axidx[i] = j;
 			m_joints[idx].fs->axidx2qidx[j++] = i;

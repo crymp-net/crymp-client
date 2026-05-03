@@ -7,10 +7,10 @@
 
 CPhysicalEntity* CPhysicalPlaceholder::GetEntity()
 {
-	CPhysicalEntity* pEntBuddy;
+	CPhysicalEntity* pEntBuddy = nullptr;
 	if (!m_pEntBuddy)
 	{
-		CPhysicalWorld* pWorld;
+		CPhysicalWorld* pWorld = nullptr;
 		if (g_nPhysWorlds == 1)
 		{
 			pWorld = g_pPhysWorlds[0];
@@ -253,7 +253,7 @@ void CPhysicalPlaceholder::StepBack(float time_interval)
 
 IPhysicalWorld* CPhysicalPlaceholder::GetWorld()
 {
-	CPhysicalWorld* pWorld;
+	CPhysicalWorld* pWorld = nullptr;
 	if (g_nPhysWorlds == 1)
 	{
 		pWorld = g_pPhysWorlds[0];

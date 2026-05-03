@@ -112,13 +112,13 @@ int tri_tri_intersection(const primitives::triangle* ptri1, const primitives::tr
 
 	for (i = 0; i < 2; i++)
 	{
-		bCross = (sgnx[i][0] * sgnx[i][1]) - 1 >> 1;
+		bCross = ((sgnx[i][0] * sgnx[i][1]) - 1) >> 1;
 		nCross = -bCross;
 		iNotCross = 0;
-		bCross = (sgnx[i][1] * sgnx[i][2]) - 1 >> 1;
+		bCross = ((sgnx[i][1] * sgnx[i][2]) - 1) >> 1;
 		nCross -= bCross;
 		iNotCross |= 1 & ~bCross;
-		bCross = (sgnx[i][2] * sgnx[i][0]) - 1 >> 1;
+		bCross = ((sgnx[i][2] * sgnx[i][0]) - 1) >> 1;
 		nCross -= bCross;
 		(iNotCross &= bCross) |= 2 & ~bCross;
 		if (nCross != 2)
@@ -401,8 +401,8 @@ int tri_cylinder_intersection(const primitives::triangle* ptri, const primitives
 		t[i][0].x = t[i][1].x = -pc * pcyl->axis;
 		t[i][0].y = t[i][1].y = dp * pcyl->axis;
 		sg = sgnnz(t[i][0].y);
-		t[i][sg + 1 >> 1].x += pcyl->hh;
-		t[i][sg + 1 >> 1 ^ 1].x -= pcyl->hh;
+		t[i][(sg + 1) >> 1].x += pcyl->hh;
+		t[i][(sg + 1) >> 1 ^ 1].x -= pcyl->hh;
 		t[i][0].x *= sg;
 		t[i][0].y *= sg;
 		t[i][1].x *= sg;
@@ -664,8 +664,8 @@ int tri_capsule_intersection(const primitives::triangle* ptri, const primitives:
 		t[i][0].x = t[i][1].x = -pc * pcaps->axis;
 		t[i][0].y = t[i][1].y = dp * pcaps->axis;
 		sg = sgnnz(t[i][0].y);
-		t[i][sg + 1 >> 1].x += pcaps->hh;
-		t[i][sg + 1 >> 1 ^ 1].x -= pcaps->hh;
+		t[i][(sg + 1) >> 1].x += pcaps->hh;
+		t[i][(sg + 1) >> 1 ^ 1].x -= pcaps->hh;
 		t[i][0].x *= sg;
 		t[i][0].y *= sg;
 		t[i][1].x *= sg;
@@ -1040,13 +1040,13 @@ int tri_plane_intersection(const primitives::triangle* ptri, const primitives::p
 	pt2d[2].set(axes[1] * ptloc, axes[2] * ptloc);
 	sgnx[2] = sgnnz(pt2d[2].x);
 
-	bCross = (sgnx[0] * sgnx[1]) - 1 >> 1;
+	bCross = ((sgnx[0] * sgnx[1]) - 1) >> 1;
 	nCross = -bCross;
 	iNotCross = 0;
-	bCross = (sgnx[1] * sgnx[2]) - 1 >> 1;
+	bCross = ((sgnx[1] * sgnx[2]) - 1) >> 1;
 	nCross -= bCross;
 	iNotCross |= 1 & ~bCross;
-	bCross = (sgnx[2] * sgnx[0]) - 1 >> 1;
+	bCross = ((sgnx[2] * sgnx[0]) - 1) >> 1;
 	nCross -= bCross;
 	(iNotCross &= bCross) |= 2 & ~bCross;
 	if (nCross != 2)
@@ -1587,7 +1587,7 @@ int cylinder_cylinder_intersection(const primitives::cylinder* pcyl1, const prim
 	const primitives::cylinder* pcyl[2] = {pcyl1, pcyl2};
 	Vec3 center[2], dc, pt, axisx, axisy, u, l, a1;
 	vector2df c2d;
-	float a, b, c, d, k, r0, r1, h, span2, p, q, cosa, sina, rsina;
+	float a, b, c, d, k, r0, r1, h, span2, p, q, cosa, sina, rsina{};
 	quotient t;
 	int icyl, i, j, sg, bHasInters = 0;
 	pinters->nborderpt = 0;
@@ -1682,11 +1682,11 @@ int cylinder_cylinder_intersection(const primitives::cylinder* pcyl1, const prim
 					vector2df pt2d, kpt2d, n2d, kn2d;
 					kpt2d.set(r0 * sg2d.x, r0 * sg2d.y * fabs_tpl(cosa));
 					kn2d.set(sg2d.x * fabs_tpl(cosa), sg2d.y);
-					j = 1 - (sg2d.x * sg2d.y) >> 1;
+					j = (1 - (sg2d.x * sg2d.y)) >> 1;
 					int iangle, idx[2] = {0, SINCOSTABSZ};
 					do
 					{
-						iangle = idx[0] + idx[1] >> 1;
+						iangle = (idx[0] + idx[1]) >> 1;
 						pt2d.set(g_costab[iangle] * kpt2d.x, g_sintab[iangle] * kpt2d.y);
 						n2d.set(g_costab[iangle] * kn2d.x, g_sintab[iangle] * kn2d.y);
 						idx[isneg(n2d ^ c2d - pt2d) ^ j] = iangle;
@@ -1708,7 +1708,7 @@ int cylinder_cylinder_intersection(const primitives::cylinder* pcyl1, const prim
 							idx1 = idx[1] = idx[0] + (ipass * SINCOSTABSZ);
 							do
 							{
-								imiddle = idx[0] + idx[1] >> 1;
+								imiddle = (idx[0] + idx[1]) >> 1;
 								iquad = imiddle >> SINCOSTABSZ_LOG2 & 3;
 								iangle = (SINCOSTABSZ - 1 & -(iquad & 1)) +
 								         ((imiddle & SINCOSTABSZ - 1) *
@@ -1921,11 +1921,11 @@ int cylinder_capsule_intersection(const primitives::cylinder* pcyl, const primit
 				vector2df pt2d, kpt2d, n2d, kn2d;
 				kpt2d.set(r0 * sg2d.x, r0 * sg2d.y * fabs_tpl(cosa));
 				kn2d.set(sg2d.x * fabs_tpl(cosa), sg2d.y);
-				j = 1 - (sg2d.x * sg2d.y) >> 1;
+				j = (1 - (sg2d.x * sg2d.y)) >> 1;
 				int iangle, idx[2] = {0, SINCOSTABSZ};
 				do
 				{
-					iangle = idx[0] + idx[1] >> 1;
+					iangle = (idx[0] + idx[1]) >> 1;
 					pt2d.set(g_costab[iangle] * kpt2d.x, g_sintab[iangle] * kpt2d.y);
 					n2d.set(g_costab[iangle] * kn2d.x, g_sintab[iangle] * kn2d.y);
 					idx[isneg(n2d ^ c2d - pt2d) ^ j] = iangle;
@@ -1946,7 +1946,7 @@ int cylinder_capsule_intersection(const primitives::cylinder* pcyl, const primit
 						idx1 = idx[1] = idx[0] + (ipass * SINCOSTABSZ);
 						do
 						{
-							imiddle = idx[0] + idx[1] >> 1;
+							imiddle = (idx[0] + idx[1]) >> 1;
 							iquad = imiddle >> SINCOSTABSZ_LOG2 & 3;
 							iangle = (SINCOSTABSZ - 1 & -(iquad & 1)) +
 							         ((imiddle & SINCOSTABSZ - 1) * (1 - (iquad & 1) * 2));
@@ -2056,7 +2056,7 @@ int cylinder_ray_intersection(const primitives::cylinder* pcyl, const primitives
 	{
 		sg = sgnnz((pinters->pt[0] - pcyl->center) * pcyl->axis);
 		pinters->n = pcyl->axis * sg;
-		pinters->iFeature[0][0] = pinters->iFeature[1][0] = 0x41 + (sg + 1 >> 1);
+		pinters->iFeature[0][0] = pinters->iFeature[1][0] = 0x41 + ((sg + 1) >> 1);
 	}
 	pinters->iFeature[0][1] = pinters->iFeature[1][1] = 0x20;
 	return 1;

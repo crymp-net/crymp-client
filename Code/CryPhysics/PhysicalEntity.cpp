@@ -667,7 +667,7 @@ int CPhysicalEntity::SetParams(pe_params* _params, int bThreadSafe)
 		}
 		if (!(m_flags & pef_traceable) && m_ig[0].x != -3)
 		{
-			WriteLock(m_pWorld->m_lockGrid);
+			WriteLock lock(m_pWorld->m_lockGrid);
 			m_pWorld->DetachEntityGridThunks(this);
 			m_ig[0].x = m_ig[1].x = m_ig[0].y = m_ig[1].y = -3;
 		}
@@ -1981,7 +1981,7 @@ void CPhysicalEntity::DrawHelperInformation(IPhysRenderer* pRenderer, int flags)
 		}
 		for (i = 0; i < m_nParts; i++)
 		{
-			if ((m_parts[i].flags & mask) == mask &&
+			if ((m_parts[i].flags & mask) == static_cast<unsigned int>(mask) &&
 			    (m_parts[i].flags || m_parts[i].flagsCollider || m_parts[i].mass > 0))
 			{
 				gwd.R = Matrix33(m_qrot * m_parts[i].q);
@@ -2088,7 +2088,7 @@ void CPhysicalEntity::DrawHelperInformation(IPhysRenderer* pRenderer, int flags)
 			}
 			if (m_pStructure->nPrevJoints)
 			{
-				float rdt = 1.0f / m_pStructure->prevdt, tens, maxtens;
+				float rdt = 1.0f / m_pStructure->prevdt, tens, maxtens{};
 				for (i = 0; i < m_pStructure->nPrevJoints; i++)
 				{
 					if (m_pStructure->pJoints[i].tension > 0)
@@ -2655,7 +2655,7 @@ int CPhysicalEntity::UpdateStructure(float time_interval, pe_explosion* pexpl, i
 						}
 						else
 						{
-							bBroken -= nIsles - 1 >> 31;
+							bBroken -= (nIsles - 1) >> 31;
 						}
 					}
 				}
@@ -3095,9 +3095,10 @@ int CPhysicalEntity::UpdateStructure(float time_interval, pe_explosion* pexpl, i
 					}
 					else
 					{
-						if (pMeshNew =
-						        ((CTriMesh*)m_parts[i].pPhysGeomProxy->pGeom)
-						            ->SplitIntoIslands(ground, nPlanes, GetType() == PE_RIGID))
+						pMeshNew =
+						    ((CTriMesh*)m_parts[i].pPhysGeomProxy->pGeom)
+							->SplitIntoIslands(ground, nPlanes, GetType() == PE_RIGID);
+						if (pMeshNew)
 						{
 							nMeshSplits++;
 							if (m_parts[i].pLattice)
@@ -3446,10 +3447,11 @@ int CPhysicalEntity::UpdateStructure(float time_interval, pe_explosion* pexpl, i
 																	    -2);
 															}
 														}
-														if (pmu =
-														        (bop_meshupdate*)pMeshNew
-														            ->GetForeignData(
-																DATA_MESHUPDATE))
+														pmu =
+														    (bop_meshupdate*)pMeshNew
+															->GetForeignData(
+															    DATA_MESHUPDATE);
+														if (pmu)
 														{
 															ReallocateList(
 															    pmu->pMovedBoxes,
@@ -3674,16 +3676,16 @@ int CPhysicalEntity::UpdateStructure(float time_interval, pe_explosion* pexpl, i
 										                        nJoints]
 										              .q *
 										          (n = pcaps->axis));
-										if (t = ((CTriMesh*)m_parts[i]
-										             .pPhysGeom->pGeom)
-										            ->GetIslandDisk(
-												100,
-												((epcep.cutPtLoc[0] -
-										                  m_parts[i].pos) *
-										                 m_parts[i].q) /
-												    m_parts[i].scale,
-												epcep.cutPtLoc[0], n,
-												vmax))
+										t = ((CTriMesh*)m_parts[i]
+										         .pPhysGeom->pGeom)
+										        ->GetIslandDisk(
+											    100,
+											    ((epcep.cutPtLoc[0] -
+										              m_parts[i].pos) *
+										             m_parts[i].q) /
+												m_parts[i].scale,
+											    epcep.cutPtLoc[0], n, vmax);
+										if (t)
 										{
 											epcep.cutRadius =
 											    t * m_parts[i].scale;
@@ -3700,13 +3702,14 @@ int CPhysicalEntity::UpdateStructure(float time_interval, pe_explosion* pexpl, i
 												(vmax *
 											         m_parts[i].scale);
 										}
-										if (t = pMeshNew->GetIslandDisk(
-											100,
-											((epcep.cutPtLoc[1] -
-										          m_parts[i].pos) *
-										         m_parts[i].q) /
-											    m_parts[i].scale,
-											epcep.cutPtLoc[1], n, vmax))
+										t = pMeshNew->GetIslandDisk(
+										    100,
+										    ((epcep.cutPtLoc[1] -
+										      m_parts[i].pos) *
+										     m_parts[i].q) /
+											m_parts[i].scale,
+										    epcep.cutPtLoc[1], n, vmax);
+										if (t)
 										{
 											epcep.cutRadius =
 											    min(epcep.cutRadius,
@@ -4432,7 +4435,7 @@ int CPhysicalEntity::GetMatId(int id, int ipart)
 		    *pMatMapping = (int*)(((intptr_t)m_parts[ipart].pMatMapping & ~mask) | ((intptr_t)&idummy & mask)),
 		    nMats;
 		nMats = m_parts[ipart].nMats + (65536 & (int)mask);
-		return (id & (int)mask) | pMatMapping[id & ~(int)mask & (id & ~(int)mask) - nMats >> 31];
+		return (id & (int)mask) | pMatMapping[id & ~(int)mask & ((id & ~(int)mask) - nMats) >> 31];
 	}
 	else
 	{

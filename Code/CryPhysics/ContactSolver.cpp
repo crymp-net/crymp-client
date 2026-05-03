@@ -62,7 +62,7 @@ void qsort(dtype* pArray, int left, int right)
 		return;
 	}
 	int i, last, diff = 0;
-	swap(pArray, left, left + right >> 1);
+	swap(pArray, left, (left + right) >> 1);
 	for (last = left, i = left + 1; i <= right; i++)
 	{
 		if (should_swap(pArray, i, left, diff))
@@ -784,7 +784,7 @@ void InvokeContactSolver(float time_interval, SolverSettings* pss, float Ebefore
 			{
 				Eafter += (g_Bodies[i].v.len2() * g_Bodies[i].M) + g_Bodies[i].L * g_Bodies[i].w;
 			}
-			nBounces += g_nContacts - bBounced >> 4;
+			nBounces += (g_nContacts - bBounced) >> 4;
 		}
 		while (bBounced && nBounces < nMaxIters && Eafter < Ebefore * 3.0f);
 
@@ -804,8 +804,8 @@ void InvokeContactSolver(float time_interval, SolverSettings* pss, float Ebefore
 	{
 		// use several iterations of CG solver, solving only for non-separating contacts
 		unsigned int iClass;
-		int cgiter, bStateChanged, n1dofContacts, n2dofContacts, nAngContacts, nFric0Contacts, nFricInfContacts,
-		    nContacts, nRopes, iSortedContacts[7], flags, bNoImprovement;
+		int cgiter, bStateChanged, n1dofContacts, n2dofContacts, nAngContacts{}, nFric0Contacts,
+		    nFricInfContacts, nContacts{}, nRopes{}, iSortedContacts[7], flags, bNoImprovement;
 		entity_contact* pContacts[sizeof(g_pContacts) / sizeof(g_pContacts[0])];
 		real a, b, r2, r2new, pAp;
 		float vmax = 0;
@@ -880,7 +880,7 @@ void InvokeContactSolver(float time_interval, SolverSettings* pss, float Ebefore
 				// remove constraint flags from contacts with counters, since constraints cannot to
 				// removed from solving process
 				g_pContacts[i]->flags &=
-				    contact_count_mask | (g_pContacts[i]->flags & contact_count_mask) - 1 >> 31;
+				    contact_count_mask | ((g_pContacts[i]->flags & contact_count_mask) - 1) >> 31;
 				if (g_pContacts[i]->flags & contact_constraint_1dof)
 				{
 					g_pContacts[i]->r0 =
@@ -1201,7 +1201,7 @@ void InvokeContactSolver(float time_interval, SolverSettings* pss, float Ebefore
 							a = min((real)50.0,
 							        r2 / max((real)1E-10, max((real)1E-10, pAp)));
 							r2new = 0;
-							i = nFric0Contacts & nFric0Contacts - nContacts >> 31;
+							i = nFric0Contacts & (nFric0Contacts - nContacts) >> 31;
 							if (nFric0Contacts - n1dofContacts < nContacts)
 							{
 								do
@@ -1216,7 +1216,7 @@ void InvokeContactSolver(float time_interval, SolverSettings* pss, float Ebefore
 									}
 									r2new += pContacts[i]->vrel * pContacts[i]->r;
 									pContacts[i]->P += pContacts[i]->dP * a;
-									i = (i + 1) & i + 1 - nContacts >> 31;
+									i = (i + 1) & (i + 1 - nContacts) >> 31;
 								}
 								while (i != n1dofContacts);
 							}
@@ -1235,14 +1235,14 @@ void InvokeContactSolver(float time_interval, SolverSettings* pss, float Ebefore
 							b = r2new / r2;
 							r2 = r2new;
 							vmax = 0;
-							i = nFric0Contacts & nFric0Contacts - nContacts >> 31;
+							i = nFric0Contacts & (nFric0Contacts - nContacts) >> 31;
 							if (nFric0Contacts - n1dofContacts < nContacts)
 							{
 								do
 								{ // contacts with 3(and 2)-components vel
 									(pContacts[i]->dP *= b) += pContacts[i]->vrel;
 									vmax = max(vmax, pContacts[i]->r.len2());
-									i = (i + 1) & i + 1 - nContacts >> 31;
+									i = (i + 1) & (i + 1 - nContacts) >> 31;
 								}
 								while (i != n1dofContacts);
 							}
@@ -1663,7 +1663,7 @@ void InvokeContactSolver(float time_interval, SolverSettings* pss, float Ebefore
 								            0xFFFF,
 								        g_infos[g_sandwichbuf[i].iBread[1]].iLevel &
 								            0xFFFF));
-								iop = iLevel - iMinLevel >> 31;
+								iop = (iLevel - iMinLevel) >> 31;
 								j = (i & iop) | (j & ~iop);
 								iMinLevel = min(iMinLevel, iLevel);
 							}
@@ -1904,7 +1904,7 @@ void InvokeContactSolver(float time_interval, SolverSettings* pss, float Ebefore
 
 					// use MINRES to enforce vreq
 					iter = nContacts;
-					if (iter = nContacts)
+					if (iter)
 					{
 						do
 						{

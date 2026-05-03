@@ -88,7 +88,7 @@ void CBreakableGrid2d::Generate(vector2df* ptsrc, int npt, const vector2di& nCel
 	for (i = 0; i < npt; i++)
 	{
 		jgc.org = ptsrc[i] - ptmin;
-		jgc.dirn = norm(jgc.dir = ptsrc[(i + 1) & i + 1 - npt >> 31] - ptsrc[i]);
+		jgc.dirn = norm(jgc.dir = ptsrc[(i + 1) & (i + 1 - npt) >> 31] - ptsrc[i]);
 		Vec3 origin(jgc.org.x, jgc.org.y, 0);
 		Vec3 direction(jgc.dir.x, jgc.dir.y, 0);
 		DrawRayOnGrid(&m_coord, origin, direction, jgc);
@@ -444,7 +444,7 @@ int* CBreakableGrid2d::BreakIntoChunks(const vector2df& pt, float r, vector2df*&
 				}
 				else
 				{
-					iEdge |= iszero(m_pTris[j] - TRI_EMPTY) << i + 3;
+					iEdge |= iszero(m_pTris[j] - TRI_EMPTY) << (i + 3);
 				}
 			}
 			if (iEdge == 0)

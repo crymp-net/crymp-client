@@ -8,28 +8,8 @@ struct OBBnode;
 class COBBTree final : public CBVTree
 {
 public:
-	COBBTree()
-	{
-		m_nMinTrisPerNode = 2;
-		m_nMaxTrisPerNode = 4;
-		m_maxSkipDim = 0;
-		m_pNodes = 0;
-		m_pTri2Node = 0;
-	}
-
-	~COBBTree()
-	{
-		if (m_pNodes)
-		{
-			delete[] m_pNodes;
-		}
-		m_pNodes = 0;
-		if (m_pTri2Node)
-		{
-			delete[] m_pTri2Node;
-		}
-		m_pTri2Node = 0;
-	}
+	COBBTree();
+	~COBBTree();
 
 	int GetType() override { return BVT_OBB; }
 

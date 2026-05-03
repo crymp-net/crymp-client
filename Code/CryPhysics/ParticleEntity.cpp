@@ -78,8 +78,8 @@ int CParticleEntity::SetParams(pe_params* _params, int bThreadSafe)
 		return 1;
 	}
 
-	int res;
-	if (res = CPhysicalEntity::SetParams(_params, 1))
+	int res = CPhysicalEntity::SetParams(_params, 1);
+	if (res)
 	{
 		if (_params->type == pe_params_flags::type_id)
 		{
@@ -197,7 +197,8 @@ int CParticleEntity::SetParams(pe_params* _params, int bThreadSafe)
 			{
 				m_pColliderToIgnore->Release();
 			}
-			if (m_pColliderToIgnore = (CPhysicalEntity*)params->pColliderToIgnore)
+			m_pColliderToIgnore = (CPhysicalEntity*)params->pColliderToIgnore;
+			if (m_pColliderToIgnore)
 			{
 				m_pColliderToIgnore->AddRef();
 			}
@@ -654,12 +655,13 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 			{
 				pentlist[i]->GetStatus(&sp);
 				posFixed = (pentlist[i]->m_qrot * !sp.q) * (pos0 - sp.pos) + pentlist[i]->m_pos;
-				if (bHit = (m_pWorld->RayTraceEntity(
-						pentlist[i], posFixed,
-						pos0 - posFixed + (pos0 - posFixed).normalized() * (m_dim * 0.97f),
-						hits + 1) &&
-				            pentlist[i]->m_parts[hits[1].ipart].flags & geom_colltype_ray &&
-				            hits[1].dist < hits[0].dist))
+				bHit = (m_pWorld->RayTraceEntity(pentlist[i], posFixed,
+				                                 pos0 - posFixed +
+				                                     (pos0 - posFixed).normalized() * (m_dim * 0.97f),
+				                                 hits + 1) &&
+				        pentlist[i]->m_parts[hits[1].ipart].flags & geom_colltype_ray &&
+				        hits[1].dist < hits[0].dist);
+				if (bHit)
 				{
 					hits[0] = hits[1];
 				}
@@ -673,7 +675,8 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 				    hits + 2, 1, pIgnoredColliders + 1 - bHasIgnore, 1 + bHasIgnore, 0, 0,
 				    "RayWorldIntersection(PhysParticles)");
 			}
-			if (nhits = bHit)
+			nhits = bHit;
+			if (nhits)
 			{
 				pos0 = posFixed;
 			}
@@ -698,7 +701,7 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 		{
 			for (i = 0; i < nhits; i++)
 			{
-				j = (i + 1) & i - (nhits - bHit) >> 31;
+				j = (i + 1) & (i - (nhits - bHit)) >> 31;
 				event.pt = hits[j].pt;
 				event.n = hits[j].n;
 				event.normImpulse = 0;
@@ -908,7 +911,8 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 			Vec3 vmedium[2] = {Vec3(ZERO), Vec3(ZERO)};
 			float depth;
 
-			if (nhits = m_pWorld->CheckAreas(this, gravity, pb, 4, Vec3(ZERO), iCaller))
+			nhits = m_pWorld->CheckAreas(this, gravity, pb, 4, Vec3(ZERO), iCaller);
+			if (nhits)
 			{
 				if (!is_unused(gravity))
 				{

@@ -171,7 +171,7 @@ int CVoxelBV::GetNodeContents(int iNode, BV* pBVCollider, int bColliderUsed, int
 int CVoxelBV::PrepareForIntersectionTest(geometry_under_test* pGTest, CGeometry* pCollider,
                                          geometry_under_test* pGTestColl)
 {
-	int mapsz = (m_pMesh->m_nTris - 1 >> 5) + 1;
+	int mapsz = ((m_pMesh->m_nTris - 1) >> 5) + 1;
 	if (mapsz <=
 	    (int)(sizeof(g_idata[pGTest->iCaller].UsedNodesMap) / sizeof(g_idata[pGTest->iCaller].UsedNodesMap[0])) -
 	        g_idata[pGTest->iCaller].UsedNodesMapPos)
@@ -243,6 +243,6 @@ void CVoxelBV::CleanupAfterIntersectionTest(geometry_under_test* pGTest)
 	}
 	else
 	{
-		memset(pGTest->pUsedNodesMap, 0, ((m_nTris - 1 >> 5) + 1) * 4);
+		memset(pGTest->pUsedNodesMap, 0, (((m_nTris - 1) >> 5) + 1) * 4);
 	}
 }

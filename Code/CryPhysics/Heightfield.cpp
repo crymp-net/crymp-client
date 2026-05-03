@@ -94,7 +94,7 @@ CHeightfield* CHeightfield::CreateHeightfield(primitives::heightfield* phf)
 	m_hf.origin.zero();
 	m_hf.stepr.x = 1.0f / phf->step.x;
 	m_hf.stepr.y = 1.0f / phf->step.y;
-	int i = (phf->typemask ^ phf->typemask - 1) + 1 >> 1;
+	int i = ((phf->typemask ^ phf->typemask - 1) + 1) >> 1;
 	for (m_hf.typepower = 0; !(i & 1); i >>= 1, m_hf.typepower++)
 		;
 
@@ -109,7 +109,7 @@ CHeightfield* CHeightfield::CreateHeightfield(primitives::heightfield* phf)
 	m_pIndices = new index_t[m_nTrisAlloc * 3];
 	m_pIds = new char[m_nTrisAlloc];
 	m_pTopology = new trinfo[m_nTrisAlloc];
-	m_Tree.m_pUsedTriMap = new unsigned int[(m_nTrisAlloc - 1 >> 5) + 1];
+	m_Tree.m_pUsedTriMap = new unsigned int[((m_nTrisAlloc - 1) >> 5) + 1];
 	m_minVtxDist = (m_hf.step.x + m_hf.step.y) * 1E-3f;
 	m_nVertices = m_nTris = 0;
 	m_flags = 3;
@@ -196,7 +196,8 @@ int CHeightfield::Intersect(IGeometry* pCollider, geom_world_data* pdata1, geom_
 			}
 			else
 			{
-				if (unproj.imode = pparams->iUnprojectionMode)
+				unproj.imode = pparams->iUnprojectionMode;
+				if (unproj.imode)
 				{
 					if ((unproj.dir = pparams->axisOfRotation).len2() == 0)
 					{
@@ -336,7 +337,7 @@ int CHeightfield::PrepareForIntersectionTest(geometry_under_test* pGTest, CGeome
 		m_pIndices = new index_t[m_nTrisAlloc * 3];
 		m_pIds = new char[m_nTrisAlloc];
 		m_pTopology = new trinfo[m_nTrisAlloc];
-		m_Tree.m_pUsedTriMap = new unsigned int[(m_nTrisAlloc - 1 >> 5) + 1];
+		m_Tree.m_pUsedTriMap = new unsigned int[((m_nTrisAlloc - 1) >> 5) + 1];
 	}
 
 	m_Tree.m_minHeight = m_Tree.m_maxHeight = m_hf.getheight(ix, iy);
@@ -368,16 +369,16 @@ int CHeightfield::PrepareForIntersectionTest(geometry_under_test* pGTest, CGeome
 			m_pNormals[itri + 1] = (m_pVertices[pIdx[1 - 3]] - m_pVertices[pIdx[0 - 3]] ^
 			                        m_pVertices[pIdx[2 - 3]] - m_pVertices[pIdx[0 - 3]])
 			                           .normalized();
-			pTop->ibuddy[0] = (itri - (sx * 2) + 1) | irow - 1 >> 31;
+			pTop->ibuddy[0] = (itri - (sx * 2) + 1) | (irow - 1) >> 31;
 			pTop->ibuddy[1] = itri + 1;
-			pTop++->ibuddy[2] = (itri - 1) | icol - 1 >> 31;
+			pTop++->ibuddy[2] = (itri - 1) | (icol - 1) >> 31;
 			pTop->ibuddy[0] = itri;
-			pTop->ibuddy[1] = (itri + 2) | sx - 2 - icol >> 31;
-			pTop++->ibuddy[2] = (itri + (sx * 2)) | sy - 2 - irow >> 31;
+			pTop->ibuddy[1] = (itri + 2) | (sx - 2 - icol) >> 31;
+			pTop++->ibuddy[2] = (itri + (sx * 2)) | (sy - 2 - irow) >> 31;
 			m_pIds[itri] = m_pIds[itri + 1] = m_hf.gettype(ix + icol, iy + irow);
 		}
 	}
-	for (i = m_nTris - 1 >> 5; i >= 0; i--)
+	for (i = (m_nTris - 1) >> 5; i >= 0; i--)
 	{
 		m_Tree.m_pUsedTriMap[i] = 0;
 	}
