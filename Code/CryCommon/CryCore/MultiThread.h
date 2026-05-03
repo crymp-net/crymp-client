@@ -49,7 +49,7 @@ inline void* CryInterlockedCompareExchangePointer(void* volatile* dst, void* exc
 
 ILINE void CrySpinLock(volatile int *pLock,int checkVal,int setVal)
 {
-#if !defined(_WIN64)
+#if defined(_MSC_VER) && !defined(_WIN64)
 	__asm
 	{
 		mov edx, setVal
@@ -71,21 +71,13 @@ Spin:
 //////////////////////////////////////////////////////////////////////////
 ILINE void CryInterlockedAdd(volatile int *pVal, int iAdd)
 {
-#if !defined(_WIN64)
-# ifdef __GNUC__
-	__asm__(
-		"lock add %[iAdd], (%[pVal])\n"
-		: "=m" (*pVal)
-		: [pVal] "r" (pVal), "m" (*pVal), [iAdd] "r" (iAdd)
-		);
-# else
+#if defined(_MSC_VER) && !defined(_WIN64)
 	__asm
 	{
 		mov edx, pVal
 		mov eax, iAdd
 		lock add [edx], eax
 	}
-# endif
 #else
 	// NOTE: The code below will fail on 64bit architectures!
 	_InterlockedExchangeAdd((volatile long*)pVal,iAdd);
