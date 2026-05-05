@@ -50,7 +50,8 @@ CHUDPowerStruggle::CHUDPowerStruggle(CHUD* pHUD, CGameRules* pGameRules, CGameFl
 	g_pHUD(pHUD), m_pGameRules(pGameRules), g_pBuyMenu(pBuyMenu), g_pHexIcon(pHexIcon)
 {
 	Reset();
-	m_animSwingOMeter.Load("Libs/UI/HUD_Swing-O-Meter.gfx", eFD_Center, eFAF_ManualRender | eFAF_Visible);
+	m_animSwingOMeter.Load("Libs/UI/HUD_Swing-O-Meter.gfx", eFD_Center | eFD_Top | eFD_Scaling, eFAF_ManualRender | eFAF_Visible);
+
 	m_animSwingOMeter.GetFlashPlayer()->SetVisible(true);
 }
 

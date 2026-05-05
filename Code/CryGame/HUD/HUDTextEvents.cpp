@@ -294,23 +294,23 @@ void CHUD::DisplayFlashMessage(const char* label, int pos /* = 1 */, const Color
 	}
 }
 
-void CHUD::DisplayOverlayFlashMessage(const char* label, const ColorF &col /* = Col_White */, bool formatWStringWithParams /* = false */, const char* paramLabel1 /* = 0 */, const char* paramLabel2 /* = 0 */, const char* paramLabel3 /* = 0 */, const char* paramLabel4 /* = 0 */)
+void CHUD::DisplayOverlayFlashMessage(const char* label, const ColorF& col /* = Col_White */, bool formatWStringWithParams /* = false */, const char* paramLabel1 /* = 0 */, const char* paramLabel2 /* = 0 */, const char* paramLabel3 /* = 0 */, const char* paramLabel4 /* = 0 */)
 {
-	if(!label)
+	if (!label)
 		return;
 
 	unsigned int packedColor = col.pack_rgb888();
 
-	if(m_fOverlayTextLineTimeout <= 0.0f)
+	if (m_fOverlayTextLineTimeout <= 0.0f)
 		m_fOverlayTextLineTimeout = gEnv->pTimer->GetFrameStartTime().GetSeconds() + 3.0f;
 
 	std::wstring localizedText;
-	if(formatWStringWithParams)
+	if (formatWStringWithParams)
 		localizedText = LocalizeWithParams(label, true, paramLabel1, paramLabel2, paramLabel3, paramLabel4);
 	else
 		localizedText = LocalizeWithParams(label, true);
 
-	SFlashVarValue args[3] = {localizedText.c_str(), 2, packedColor}; // hard-coded pos 2 = middle
+	SFlashVarValue args[3] = { localizedText.c_str(), 2, packedColor }; // hard-coded pos 2 = middle
 	m_animOverlayMessages.Invoke("setMessageText", args, 3);
 
 	if (localizedText.empty())
@@ -331,13 +331,13 @@ void CHUD::FadeOutBigOverlayFlashMessage()
 
 void CHUD::DisplayBigOverlayFlashMessage(const char* label, float duration, int posX, int posY, ColorF col)
 {
-	if(!label)
+	if (!label)
 		return;
 
 	unsigned int packedColor = col.pack_rgb888();
 
 	const float now = gEnv->pTimer->GetFrameStartTime().GetSeconds();
-	if(duration <= 0.0f)
+	if (duration <= 0.0f)
 		m_fBigOverlayTextLineTimeout = 0.0f;
 	else
 		m_fBigOverlayTextLineTimeout = now + duration;
@@ -351,11 +351,11 @@ void CHUD::DisplayBigOverlayFlashMessage(const char* label, float duration, int 
 		if (bLookForController && label[0] == '@')
 		{
 			// look for a xi_label key
-			CryFixedStringT<128> gamePadLabel ("@GamePad_");
-			gamePadLabel += (label+1); // skip @
+			CryFixedStringT<128> gamePadLabel("@GamePad_");
+			gamePadLabel += (label + 1); // skip @
 			ILocalizationManager::SLocalizedInfo tempInfo;
 			// looking up the key (without @ sign)
-			bFound = gEnv->pSystem->GetLocalizationManager()->GetLocalizedInfo(gamePadLabel.c_str()+1, tempInfo);
+			bFound = gEnv->pSystem->GetLocalizationManager()->GetLocalizedInfo(gamePadLabel.c_str() + 1, tempInfo);
 			if (bFound)
 			{
 				// this one needs the @ sign in front
@@ -367,8 +367,13 @@ void CHUD::DisplayBigOverlayFlashMessage(const char* label, float duration, int 
 			localizedText = LocalizeWithParams(label, true);
 	}
 
-	SFlashVarValue pos[2] = {posX*1024/800, posY*768/512};
-	m_animBigOverlayMessages.Invoke("setPosition", pos, 2);
+	SFlashVarValue positionArgs[2] =
+	{
+		posX * 1024.0f / 800.0f,
+		posY * 768.0f / 512.0f
+	};
+
+	m_animBigOverlayMessages.Invoke("setPosition", positionArgs, 2);
 
 	// Ok this is a big workaround, so here is an explanation.
 	// A flow graph node using that function has been created to take coordinates relative to (800,600)
@@ -378,8 +383,8 @@ void CHUD::DisplayBigOverlayFlashMessage(const char* label, float duration, int 
 	// Solution:
 	// When the animation is used for a tutorial text (posX==400), we do nothing, it should work in all resolutions.
 	// When the animation is used for a chapter title (posX<100, at least we hope!), we just move the animation in the bottom left corner.
-	const char *szTextAlignment = NULL;
-	if(posX<100)
+	const char* szTextAlignment = NULL;
+	if (posX < 100)
 	{
 		m_animBigOverlayMessages.SetDock(eFD_Left);
 		szTextAlignment = "left";
@@ -389,10 +394,11 @@ void CHUD::DisplayBigOverlayFlashMessage(const char* label, float duration, int 
 		m_animBigOverlayMessages.SetDock(eFD_Center);
 		szTextAlignment = "center";
 	}
-	m_animBigOverlayMessages.RepositionFlashAnimation();
+
+	CHUDCommon::RepositionFlashAnimation(&m_animBigOverlayMessages);
 	// End of the big workaround
 
-	SFlashVarValue args[4] = {localizedText.c_str(), 2, packedColor, szTextAlignment}; // hard-coded pos 2 = middle
+	SFlashVarValue args[4] = { localizedText.c_str(), 2, packedColor, szTextAlignment }; // hard-coded pos 2 = middle
 	m_animBigOverlayMessages.Invoke("setMessageText", args, 4);
 
 	if (localizedText.empty())

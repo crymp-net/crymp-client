@@ -939,6 +939,7 @@ protected:
 	float m_hitIndicatorPlayerTimer = 0.0f;
 	float m_hitIndicatorVehicleTimer = 0.0f;
 	std::list<string> m_listBoughtItems;
+	float m_lastHudScale = -1.0f;
 
 public:
 
@@ -948,6 +949,8 @@ public:
 	}
 
 	bool m_bWeaponModifyOpen = false;
+
+	void UpdateTextScale();
 };
 
 //-----------------------------------------------------------------------------------------------------

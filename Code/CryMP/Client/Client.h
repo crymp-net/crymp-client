@@ -222,6 +222,10 @@ private:
 
 	void SynchWithPhysicsPosition(IEntity* pEntity);
 	void FixCVars();
+	void UpdateHudScale(float deltaTime);
+
+	bool m_hudScaleModifierDown = false;
+	int m_hudScaleDirection = 0;
 };
 
 ///////////////////////

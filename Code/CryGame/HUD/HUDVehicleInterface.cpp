@@ -35,8 +35,8 @@ CHUDVehicleInterface::CHUDVehicleInterface(CHUD* pHUD, CGameFlashAnimation* pAmm
 	m_iSecondaryAmmoCount = m_iPrimaryAmmoCount = m_iSecondaryClipSize = m_iPrimaryClipSize = 0;// m_iHeat = 0;
 	m_iLastReloadBarValue = -1;
 
-	m_animMainWindow.Init("Libs/UI/HUD_VehicleHUD.gfx", eFD_Center, eFAF_ManualRender | eFAF_Visible | eFAF_ThisHandler);
-	m_animStats.Init("Libs/UI/HUD_VehicleStats.gfx", eFD_Center, eFAF_ManualRender | eFAF_Visible);
+	m_animMainWindow.Init("Libs/UI/HUD_VehicleHUD.gfx", eFD_Center | eFD_Scaling, eFAF_ManualRender | eFAF_Visible | eFAF_ThisHandler);
+	m_animStats.Init("Libs/UI/HUD_VehicleStats.gfx", eFD_Bottom | eFD_Center, eFAF_ManualRender | eFAF_Visible);
 
 	memset(m_hasMainHUD, 0, (int)EHUD_LAST);
 

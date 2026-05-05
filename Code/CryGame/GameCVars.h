@@ -492,6 +492,8 @@ struct SCVars
 
 	int			ads;
 
+	float       hud_scale;
+
 	SCVars();
 	~SCVars();
 

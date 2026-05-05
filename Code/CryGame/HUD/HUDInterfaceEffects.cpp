@@ -337,6 +337,8 @@ void CHUD::UpdateMissionObjectiveIcon(EntityId objective, int friendly, FlashOnS
 		fSize = ((fA / fB) * fC) + fMaxSize;
 	}
 
+	fSize *= g_pGameCVars->hud_scale;
+
 	float centerX = 50.0;
 	float centerY = 50.0;
 
@@ -1834,9 +1836,14 @@ void CHUD::ShowProgress(int progress, bool init /* = false */, int posX /* = 0 *
 		if (!pAnim->IsLoaded())
 		{
 			if(lockingBar)
-				m_animProgressLocking.Load("Libs/UI/HUD_TAC_Locking.gfx", eFD_Center, eFAF_Visible);
+			{
+				m_animProgressLocking.Load("Libs/UI/HUD_TAC_Locking.gfx", eFD_Center | eFD_Scaling, eFAF_Visible);
+			}
 			else
-				m_animProgress.Load("Libs/UI/HUD_ProgressBar.gfx", eFD_Center, eFAF_Default);
+			{
+				m_animProgress.Load("Libs/UI/HUD_ProgressBar.gfx", eFD_Center | eFD_Scaling, eFAF_Default);
+				CHUDCommon::RepositionFlashAnimation(&m_animProgress);
+			}
 			
 			m_iProgressBar = 0;
 			m_progressBarSmoothed = -1.0f;

@@ -23,7 +23,7 @@ History:
 CHUDTeamInstantAction::CHUDTeamInstantAction(CHUD *pHUD) : 
 g_pHUD(pHUD)
 {
-	m_animTIAScore.Load("Libs/UI/HUD_TIAScore.gfx", eFD_Center, eFAF_ManualRender|eFAF_Visible);
+	m_animTIAScore.Load("Libs/UI/HUD_TIAScore.gfx", eFD_Center | eFD_Top | eFD_Scaling, eFAF_ManualRender|eFAF_Visible);
 	m_animTIAScore.SetVisible(true);
 }
 
