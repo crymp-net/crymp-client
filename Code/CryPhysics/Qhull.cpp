@@ -28,7 +28,7 @@ void relocate_ptritem(qhtritem*& ptr, intptr_t diff)
 	ptr = (qhtritem*)(((intptr_t)ptr + diff) & ~-iszero((intptr_t)ptr)); // offset the pointer, but leave out 0s
 }
 
-void relocate_tritem(qhtritem* ptr, int diff)
+void relocate_tritem(qhtritem* ptr, intptr_t diff)
 {
 	relocate_ptritem(ptr->next, diff);
 	relocate_ptritem(ptr->prev, diff);
