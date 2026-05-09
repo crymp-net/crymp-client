@@ -100,16 +100,16 @@ CHeightfield* CHeightfield::CreateHeightfield(primitives::heightfield* phf)
 
 	m_minHeight = -1000;
 	m_maxHeight = 1000;
-	m_Tree.m_phf = &m_hf;
-	m_Tree.Build(this);
-	m_pTree = &m_Tree;
+	m_pTree = std::make_unique<CHeightfieldBV>();
+	GetHeightfieldTree()->m_phf = &m_hf;
+	GetHeightfieldTree()->Build(this);
 
 	m_pVertices = new Vec3[m_nVerticesAlloc = 32];
 	m_pNormals = new Vec3[m_nTrisAlloc = 64];
 	m_pIndices = new index_t[m_nTrisAlloc * 3];
 	m_pIds = new char[m_nTrisAlloc];
 	m_pTopology = new trinfo[m_nTrisAlloc];
-	m_Tree.m_pUsedTriMap = new unsigned int[((m_nTrisAlloc - 1) >> 5) + 1];
+	GetHeightfieldTree()->m_pUsedTriMap = std::make_unique<unsigned int[]>(((m_nTrisAlloc - 1) >> 5) + 1);
 	m_minVtxDist = (m_hf.step.x + m_hf.step.y) * 1E-3f;
 	m_nVertices = m_nTris = 0;
 	m_flags = 3;
@@ -314,8 +314,8 @@ int CHeightfield::PrepareForIntersectionTest(geometry_under_test* pGTest, CGeome
 	{
 		return 0;
 	}
-	m_Tree.m_PatchStart.set(ix, iy);
-	m_Tree.m_PatchSize.set(sx, sy);
+	GetHeightfieldTree()->m_PatchStart.set(ix, iy);
+	GetHeightfieldTree()->m_PatchSize.set(sx, sy);
 
 	m_nVertices = (sx + 1) * (sy + 1);
 	m_nTris = sx * sy * 2;
@@ -332,15 +332,16 @@ int CHeightfield::PrepareForIntersectionTest(geometry_under_test* pGTest, CGeome
 		delete[] m_pNormals;
 		delete[] m_pIds;
 		delete[] m_pTopology;
-		delete[] m_Tree.m_pUsedTriMap;
 		m_pNormals = new Vec3[m_nTrisAlloc = (m_nTris - 1 & ~15) + 16];
 		m_pIndices = new index_t[m_nTrisAlloc * 3];
 		m_pIds = new char[m_nTrisAlloc];
 		m_pTopology = new trinfo[m_nTrisAlloc];
-		m_Tree.m_pUsedTriMap = new unsigned int[((m_nTrisAlloc - 1) >> 5) + 1];
+		GetHeightfieldTree()->m_pUsedTriMap = std::make_unique<unsigned int[]>(((m_nTrisAlloc - 1) >> 5) + 1);
 	}
 
-	m_Tree.m_minHeight = m_Tree.m_maxHeight = m_hf.getheight(ix, iy);
+	const float treeHeight = m_hf.getheight(ix, iy);
+	GetHeightfieldTree()->m_minHeight = treeHeight;
+	GetHeightfieldTree()->m_maxHeight = treeHeight;
 	for (j = 0, pVtx = m_pVertices.data; j <= sy; j++)
 	{
 		curx = m_hf.step.x * ix;
@@ -348,8 +349,8 @@ int CHeightfield::PrepareForIntersectionTest(geometry_under_test* pGTest, CGeome
 		for (i = 0; i <= sx; i++, pVtx++, curx += m_hf.step.x)
 		{
 			pVtx->Set(curx, cury, m_hf.getheight(ix + i, iy + j));
-			m_Tree.m_minHeight = min(m_Tree.m_minHeight, pVtx->z);
-			m_Tree.m_maxHeight = max(m_Tree.m_maxHeight, pVtx->z);
+			GetHeightfieldTree()->m_minHeight = min(GetHeightfieldTree()->m_minHeight, pVtx->z);
+			GetHeightfieldTree()->m_maxHeight = max(GetHeightfieldTree()->m_maxHeight, pVtx->z);
 		}
 	}
 
@@ -378,9 +379,10 @@ int CHeightfield::PrepareForIntersectionTest(geometry_under_test* pGTest, CGeome
 			m_pIds[itri] = m_pIds[itri + 1] = m_hf.gettype(ix + icol, iy + irow);
 		}
 	}
+	unsigned int* pUsedTriMap = GetHeightfieldTree()->m_pUsedTriMap.get();
 	for (i = (m_nTris - 1) >> 5; i >= 0; i--)
 	{
-		m_Tree.m_pUsedTriMap[i] = 0;
+		pUsedTriMap[i] = 0;
 	}
 
 	for (itri = 0; itri < m_nTris; itri++)

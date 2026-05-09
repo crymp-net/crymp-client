@@ -1146,7 +1146,7 @@ void CRopeEntity::GetLocTransform(int ipart, Vec3& offs, quaternionf& q, float& 
 void CRopeEntity::MeshVtxUpdated()
 {
 	int i;
-	primitives::box* pbox = &((CSingleBoxTree*)m_pMesh->m_pTree)->m_Box;
+	primitives::box* pbox = &((CSingleBoxTree*)m_pMesh->m_pTree.get())->m_Box;
 	Vec3 axisx, axisy, BBox[2];
 
 	for (i = 0; i < 2; i++)

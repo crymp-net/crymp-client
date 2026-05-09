@@ -221,7 +221,6 @@ CTriMesh::CTriMesh()
 {
 	m_nVertices = m_nTris = 0;
 	m_iCollPriority = 1;
-	m_pTree = 0;
 	m_pTopology = 0;
 	m_pIndices = 0;
 	m_pIds = 0;
@@ -250,10 +249,7 @@ CTriMesh::CTriMesh()
 
 CTriMesh::~CTriMesh()
 {
-	if (m_pTree)
-	{
-		delete m_pTree;
-	}
+	m_pTree = nullptr;
 	if (m_pTopology && !(m_flags & mesh_shared_topology))
 	{
 		delete[] m_pTopology;
@@ -552,7 +548,7 @@ CTriMesh* CTriMesh::CreateTriMesh(strided_pointer<const Vec3> pVertices, strided
 
 	if (flags & mesh_SingleBB)
 	{
-		CSingleBoxTree* pTree = new CSingleBoxTree;
+		auto pTree = std::make_unique<CSingleBoxTree>();
 		bbox.Basis = GetMtxFromBasis(axes);
 		Vec3 pt, ptmin(VMAX), ptmax(VMIN);
 		for (i = 0; i < m_nTris; i++)
@@ -578,11 +574,11 @@ CTriMesh* CTriMesh::CreateTriMesh(strided_pointer<const Vec3> pVertices, strided
 		pTree->SetBox(&bbox);
 		pTree->Build(this);
 		pTree->m_nPrims = m_nTris;
-		m_pTree = pTree;
+		m_pTree = std::move(pTree);
 	}
 	else if (flags & (mesh_AABB | mesh_AABB_rotated | mesh_OBB))
 	{
-		CBVTree* pTrees[3];
+		std::unique_ptr<CBVTree> pTrees[3];
 		index_t* pTreeIndices[3];
 		char* pTreeIds[3];
 		int* pTreeFIdx[3];
@@ -594,9 +590,10 @@ CTriMesh* CTriMesh::CreateTriMesh(strided_pointer<const Vec3> pVertices, strided
 		{
 			Matrix33 Basis;
 			Basis.SetIdentity();
-			CAABBTree* pTree = new CAABBTree;
+			auto pTree = std::make_unique<CAABBTree>();
 			pTree->SetParams(nMinTrisPerNode, nMaxTrisPerNode, skipdim, Basis);
-			volumes[nTrees] = (pTrees[nTrees] = pTree)->Build(this);
+			volumes[nTrees] = pTree->Build(this);
+			pTrees[nTrees] = std::move(pTree);
 			++nTrees;
 		}
 		if (flags & mesh_AABB_rotated)
@@ -616,11 +613,11 @@ CTriMesh* CTriMesh::CreateTriMesh(strided_pointer<const Vec3> pVertices, strided
 					       sizeof(m_pForeignIdx[0]) * m_nTris);
 				}
 			}
-			CAABBTree* pTree = new CAABBTree;
+			auto pTree = std::make_unique<CAABBTree>();
 			Matrix33 Basis = GetMtxFromBasis(axes);
 			pTree->SetParams(nMinTrisPerNode, nMaxTrisPerNode, skipdim, Basis);
-			volumes[nTrees] =
-			    (pTrees[nTrees] = pTree)->Build(this) * 1.01f; // favor non-oriented AABBs slightly
+			volumes[nTrees] = pTree->Build(this) * 1.01f; // favor non-oriented AABBs slightly
+			pTrees[nTrees] = std::move(pTree);
 			++nTrees;
 		}
 		if (flags & mesh_OBB)
@@ -640,9 +637,10 @@ CTriMesh* CTriMesh::CreateTriMesh(strided_pointer<const Vec3> pVertices, strided
 					       sizeof(m_pForeignIdx[0]) * m_nTris);
 				}
 			}
-			COBBTree* pTree = new COBBTree;
+			auto pTree = std::make_unique<COBBTree>();
 			pTree->SetParams(nMinTrisPerNode, nMaxTrisPerNode, skipdim);
-			volumes[nTrees] = (pTrees[nTrees] = pTree)->Build(this) * favorAABB;
+			volumes[nTrees] = pTree->Build(this) * favorAABB;
+			pTrees[nTrees] = std::move(pTree);
 			++nTrees;
 		}
 		for (iTreeBest = 0, i = 1; i < nTrees; i++)
@@ -652,7 +650,7 @@ CTriMesh* CTriMesh::CreateTriMesh(strided_pointer<const Vec3> pVertices, strided
 				iTreeBest = i;
 			}
 		}
-		m_pTree = pTrees[iTreeBest];
+		m_pTree = std::move(pTrees[iTreeBest]);
 		if (iTreeBest != nTrees - 1)
 		{
 			memcpy(m_pIndices, pTreeIndices[iTreeBest], sizeof(m_pIndices[0]) * m_nTris * 3);
@@ -663,13 +661,6 @@ CTriMesh* CTriMesh::CreateTriMesh(strided_pointer<const Vec3> pVertices, strided
 			if (m_pForeignIdx)
 			{
 				memcpy(m_pForeignIdx, pTreeFIdx[iTreeBest], sizeof(m_pForeignIdx[0]) * m_nTris);
-			}
-		}
-		for (i = 0; i < nTrees; i++)
-		{
-			if (i != iTreeBest)
-			{
-				delete pTrees[i];
 			}
 		}
 		for (i = 0; i < nTrees - 1; i++)
@@ -814,13 +805,13 @@ CTriMesh* CTriMesh::Clone(CTriMesh* src, int flags)
 	switch (src->m_pTree->GetType())
 	{
 		case BVT_OBB:
-			m_pTree = new COBBTree;
+			m_pTree = std::make_unique<COBBTree>();
 			break;
 		case BVT_AABB:
-			m_pTree = new CAABBTree;
+			m_pTree = std::make_unique<CAABBTree>();
 			break;
 		case BVT_SINGLEBOX:
-			m_pTree = new CSingleBoxTree;
+			m_pTree = std::make_unique<CSingleBoxTree>();
 			break;
 	}
 	stm.m_iPos = 0;
@@ -938,7 +929,7 @@ void CTriMesh::RebuildBVTree(CBVTree* pRefTree)
 	trinfo t, tnext;
 	Matrix33 Basis;
 	primitives::box bbox;
-	CBVTree* pTree = pRefTree ? pRefTree : m_pTree;
+	CBVTree* pTree = pRefTree ? pRefTree : m_pTree.get();
 	pIdxOld2New = new int[m_nTris * 2];
 	m_pIdxNew2Old = pIdxOld2New + m_nTris;
 	for (i = 0; i < m_nTris; i++)
@@ -998,22 +989,21 @@ void CTriMesh::RebuildBVTree(CBVTree* pRefTree)
 		bbox.center.zero();
 		bbox.size.Set(1E-10f, 1E-10f, 1E-10f);
 	}
-	if (pTree == m_pTree)
-	{
-		delete m_pTree;
-	}
 	if (m_flags & mesh_OBB)
 	{
-		((COBBTree*)(m_pTree = new COBBTree))->SetParams(nMinTrisPerNode, nMaxTrisPerNode, 0.01f);
+		m_pTree = std::make_unique<COBBTree>();
+		static_cast<COBBTree*>(m_pTree.get())->SetParams(nMinTrisPerNode, nMaxTrisPerNode, 0.01f);
 	}
 	else if (m_flags & mesh_AABB)
 	{
-		((CAABBTree*)(m_pTree = new CAABBTree))->SetParams(nMinTrisPerNode, nMaxTrisPerNode, 0.01f, Basis);
+		m_pTree = std::make_unique<CAABBTree>();
+		static_cast<CAABBTree*>(m_pTree.get())->SetParams(nMinTrisPerNode, nMaxTrisPerNode, 0.01f, Basis);
 	}
 	else
 	{
-		((CSingleBoxTree*)(m_pTree = new CSingleBoxTree))->SetBox(&bbox);
-		((CSingleBoxTree*)m_pTree)->m_nPrims = m_nTris;
+		m_pTree = std::make_unique<CSingleBoxTree>();
+		static_cast<CSingleBoxTree*>(m_pTree.get())->SetBox(&bbox);
+		static_cast<CSingleBoxTree*>(m_pTree.get())->m_nPrims = m_nTris;
 	}
 	m_pTree->Build(this);
 
@@ -1361,7 +1351,7 @@ CTriMesh* CTriMesh::SplitIntoIslands(primitives::plane* pGround, int nPlanes, in
 			}
 			while ((isle = max(m_pIslands[isle].iChild, m_pIslands[isle].iNext)) >= 0);
 
-			pMesh->RebuildBVTree(m_pTree);
+			pMesh->RebuildBVTree(m_pTree.get());
 		}
 	}
 
@@ -1985,7 +1975,7 @@ int CTriMesh::PrepareForIntersectionTest(geometry_under_test* pGTest, CGeometry*
 {
 	const int iCaller = pGTest->iCaller;
 	pGTest->pGeometry = this;
-	pGTest->pBVtree = m_pTree;
+	pGTest->pBVtree = m_pTree.get();
 	m_pTree->PrepareForIntersectionTest(pGTest, pCollider, pGTestColl);
 
 	pGTest->typeprim = primitives::indexed_triangle::type;
@@ -6236,7 +6226,7 @@ void CTriMesh::DrawWireframe(IPhysRenderer* pRenderer, geom_world_data* gwd, int
 		m_pTree->GetNodeBV(gwd->R, gwd->offset, gwd->scale, pbbox, 0, iCaller);
 		if (pbbox->type == primitives::box::type)
 		{
-			DrawBBox(pRenderer, idxColor, gwd, m_pTree, (BBox*)pbbox, iLevel - 1, 0, iCaller);
+			DrawBBox(pRenderer, idxColor, gwd, m_pTree.get(), (BBox*)pbbox, iLevel - 1, 0, iCaller);
 		}
 		else if (pbbox->type == primitives::voxelgrid::type)
 		{
@@ -6455,14 +6445,14 @@ void CTriMesh::Load(CMemStream& stm, strided_pointer<const Vec3> pVertices, stri
 	if (i)
 	{
 		m_nTris = 0;
-		CSingleBoxTree* pTree = new CSingleBoxTree;
+		auto pTree = std::make_unique<CSingleBoxTree>();
 		bbox.Basis.SetIdentity();
 		bbox.center.zero();
 		bbox.size.zero();
 		pTree->SetBox(&bbox);
 		pTree->Build(this);
 		pTree->m_nPrims = m_nTris;
-		m_pTree = pTree;
+		m_pTree = std::move(pTree);
 		return;
 	}
 
@@ -6479,13 +6469,13 @@ void CTriMesh::Load(CMemStream& stm, strided_pointer<const Vec3> pVertices, stri
 	switch (i)
 	{
 		case BVT_OBB:
-			m_pTree = new COBBTree;
+			m_pTree = std::make_unique<COBBTree>();
 			break;
 		case BVT_AABB:
-			m_pTree = new CAABBTree;
+			m_pTree = std::make_unique<CAABBTree>();
 			break;
 		case BVT_SINGLEBOX:
-			m_pTree = new CSingleBoxTree;
+			m_pTree = std::make_unique<CSingleBoxTree>();
 			break;
 			// default: m_nTris=0; return;
 	}

@@ -2750,8 +2750,7 @@ int CPhysicalEntity::UpdateStructure(float time_interval, pe_explosion* pexpl, i
 							{
 								(pMeshNew = new CTriMesh())
 								    ->Clone((CTriMesh*)m_parts[j].pPhysGeom->pGeom, 0);
-								delete pMeshNew->m_pTree;
-								pMeshNew->m_pTree = 0;
+								pMeshNew->m_pTree = nullptr;
 								pMeshNew->m_flags |= mesh_AABB;
 								pMeshNew->RebuildBVTree();
 								m_parts[j].pPhysGeom->pGeom->Release();

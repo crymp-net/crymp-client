@@ -221,7 +221,6 @@ void CWaterMan::OnWaterInteraction(CPhysicalEntity* pent)
 	float w, h;
 	char* pcell;
 	CTriMesh mesh;
-	CSingleBoxTree sbtree;
 	geom_world_data gwd;
 	intersection_params ip;
 	geom_contact* pcontacts;
@@ -277,13 +276,14 @@ void CWaterMan::OnWaterInteraction(CPhysicalEntity* pent)
 		    (vtx[idx[(i * 3) + 1]] - vtx[idx[i * 3]] ^ vtx[idx[(i * 3) + 2]] - vtx[idx[i * 3]]).normalized();
 	}
 	mesh.m_pTopology = top;
-	sbtree.m_Box.Basis.SetIdentity();
-	sbtree.m_Box.bOriented = 0;
-	sbtree.m_Box.center.Set(0, h * 0.5f, vtx[3].z * 0.5f);
-	sbtree.m_Box.size.Set(w * 1.01f, h * 1.01f, vtx[3].z * -0.5f);
-	sbtree.m_pGeom = &mesh;
-	sbtree.m_nPrims = mesh.m_nTris;
-	mesh.m_pTree = &sbtree;
+	auto sbtree = std::make_unique<CSingleBoxTree>();
+	sbtree->m_Box.Basis.SetIdentity();
+	sbtree->m_Box.bOriented = 0;
+	sbtree->m_Box.center.Set(0, h * 0.5f, vtx[3].z * 0.5f);
+	sbtree->m_Box.size.Set(w * 1.01f, h * 1.01f, vtx[3].z * -0.5f);
+	sbtree->m_pGeom = &mesh;
+	sbtree->m_nPrims = mesh.m_nTris;
+	mesh.m_pTree = std::move(sbtree);
 	memset(m_pCellMask + wgrid.size.x + 1, 28, (wgrid.size.x + 1) * wgrid.size.y * sizeof(m_pCellMask[0]));
 	for (i = 0; i < wgrid.size.x + 2; i++)
 	{
@@ -493,7 +493,6 @@ void CWaterMan::OnWaterInteraction(CPhysicalEntity* pent)
 			}
 		}
 	}
-	mesh.m_pTree = 0;
 }
 
 void CWaterMan::OnWaterHit(const Vec3& pthit, const Vec3& vel)
@@ -716,9 +715,10 @@ void CWaterMan::DrawHelpers(IPhysRenderer* pRenderer)
 		hf.m_hf.stepr.x = hf.m_hf.stepr.y = 1.0f / m_cellSz;
 		hf.m_hf.heightscale = 1.0f;
 		hf.m_hf.heightmask = 0;
-		hf.m_Tree.m_phf = &hf.m_hf;
-		hf.m_Tree.m_pMesh = &hf;
-		hf.m_pTree = &hf.m_Tree;
+		auto pTree = std::make_unique<CHeightfieldBV>();
+		pTree->m_phf = &hf.m_hf;
+		pTree->m_pMesh = &hf;
+		hf.m_pTree = std::move(pTree);
 		hf.m_hf.fpGetHeightCallback = 0;
 		gwd.R = m_R;
 		gwd.offset = m_origin - m_R * (Vec3(m_nTiles + 0.5f, m_nTiles + 0.5f, 0) * m_tileSz -

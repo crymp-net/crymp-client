@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "BVTree.h"
 
 class CTriMesh;
@@ -7,20 +9,7 @@ class CTriMesh;
 class CHeightfieldBV final : public CBVTree
 {
 public:
-	CHeightfieldBV()
-	{
-		m_pUsedTriMap = 0;
-		m_minHeight = 0.f;
-		m_maxHeight = 0.f;
-	}
-
-	~CHeightfieldBV()
-	{
-		if (m_pUsedTriMap)
-		{
-			delete[] m_pUsedTriMap;
-		}
-	}
+	CHeightfieldBV() = default;
 
 	int GetType() override { return BVT_HEIGHTFIELD; }
 
@@ -41,12 +30,13 @@ public:
 	                    geometry_under_test* pGTest, geometry_under_test* pGTestOp) override;
 	void MarkUsedTriangle(int itri, geometry_under_test* pGTest) override;
 
-	CTriMesh* m_pMesh;
-	primitives::heightfield* m_phf;
+	CTriMesh* m_pMesh = nullptr;
+	primitives::heightfield* m_phf = nullptr;
 	vector2di m_PatchStart;
 	vector2di m_PatchSize;
-	float m_minHeight, m_maxHeight;
-	unsigned int* m_pUsedTriMap;
+	float m_minHeight = 0;
+	float m_maxHeight = 0;
+	std::unique_ptr<unsigned int[]> m_pUsedTriMap;
 };
 
 extern void project_box_on_grid(primitives::box* pbox, primitives::grid* pgrid, geometry_under_test* pGTest, int& ix,

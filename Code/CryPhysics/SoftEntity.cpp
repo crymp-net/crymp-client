@@ -303,15 +303,12 @@ int CSoftEntity::AddGeometry(phys_geometry* pgeom, pe_geomparams* params, int id
 	bbox.bOriented = 0;
 	bbox.center = (m_BBox[0] + m_BBox[1]) * 0.5f - m_pos - m_parts[0].pos;
 	bbox.size = (m_BBox[1] - m_BBox[0]) * (0.5f / params->scale);
-	if (pMesh->m_pTree)
-	{
-		delete pMesh->m_pTree;
-	}
-	CSingleBoxTree* pTree = new CSingleBoxTree;
+	pMesh->m_pTree = nullptr;
+	auto pTree = std::make_unique<CSingleBoxTree>();
 	pTree->SetBox(&bbox);
 	pTree->Build(pMesh);
 	pTree->m_nPrims = pMesh->m_nTris;
-	pMesh->m_pTree = pTree;
+	pMesh->m_pTree = std::move(pTree);
 	m_flags |= pef_use_geom_callbacks;
 	m_bMeshUpdated = 0;
 
@@ -1428,7 +1425,7 @@ enoughgeoms:
 		bbox.center = (m_BBox[0] + m_BBox[1]) * 0.5f - m_pos - m_parts[0].pos;
 		bbox.size = (m_BBox[1] - m_BBox[0]) * (0.5f * rscale);
 		CTriMesh* pMesh = (CTriMesh*)m_parts[0].pPhysGeomProxy->pGeom;
-		((CSingleBoxTree*)pMesh->m_pTree)->SetBox(&bbox);
+		((CSingleBoxTree*)pMesh->m_pTree.get())->SetBox(&bbox);
 		d = m_offs0 - m_parts[0].pos;
 		if (m_parts[0].scale == 1.0f && m_parts[0].q.w == 1.0f)
 		{

@@ -4250,7 +4250,7 @@ int CPhysicalWorld::DeformEntityPart(CPhysicalEntity* pent, int i, pe_explosion*
 				return 0;
 			}
 			(pNewGeom = new CTriMesh())->Clone((CTriMesh*)pGeom, 0);
-			// pNewGeom->RebuildBVTree(((CTriMesh*)pGeom)->m_pTree);
+			// pNewGeom->RebuildBVTree(((CTriMesh*)pGeom)->m_pTree.get());
 			pGeom = pNewGeom;
 		}
 		else

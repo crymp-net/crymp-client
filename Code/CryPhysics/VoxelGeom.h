@@ -22,7 +22,6 @@ public:
 		{
 			delete[] m_grid.pTriBuf;
 		}
-		m_pTree = nullptr;
 	}
 
 	CVoxelGeom* CreateVoxelGrid(primitives::grid3d* pgrid);
@@ -38,9 +37,7 @@ public:
 	int DrawToOcclusionCubemap(const geom_world_data* pgwd, int iStartPrim, int nPrims, int iPass, int* pGrid[6],
 	                           int nRes, float rmin, float rmax, float zscale) override;
 	void PrepareForRayTest(float raylen) override {}
-	CBVTree* GetBVTree() override { return &m_Tree; }
 	void GetMemoryStatistics(ICrySizer*) override {}
 
 	primitives::voxelgrid m_grid;
-	CVoxelBV m_Tree;
 };

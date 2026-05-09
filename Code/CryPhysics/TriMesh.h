@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "Geometry.h"
 
 class CBVTree;
@@ -75,7 +77,7 @@ public:
 	void PrepareForRayTest(float raylen) override;
 	virtual int DrawToOcclusionCubemap(const geom_world_data* pgwd, int iStartPrim, int nPrims, int iPass,
 	                                   int* pGrid[6], int nRes, float rmin, float rmax, float zscale);
-	virtual CBVTree* GetBVTree() { return m_pTree; }
+	virtual CBVTree* GetBVTree() { return m_pTree.get(); }
 	int GetPrimitiveCount() override { return m_nTris; }
 	int GetPrimitive(int iPrim, primitives::primitive* pprim) override;
 	int GetFeature(int iPrim, int iFeature, Vec3* pt) override;
@@ -138,7 +140,7 @@ public:
 	void AppendVertices(Vec3* pVtx, int* pVtxMap, int nVtx) override;
 	void DestroyAuxilaryMeshData(int idata) override;
 
-	CBVTree* m_pTree;
+	std::unique_ptr<CBVTree> m_pTree;
 	index_t* m_pIndices;
 	char* m_pIds;
 	int* m_pForeignIdx;

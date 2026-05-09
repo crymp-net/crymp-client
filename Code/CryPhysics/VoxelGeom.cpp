@@ -78,9 +78,10 @@ CVoxelGeom* CVoxelGeom::CreateVoxelGrid(primitives::grid3d* pgrid)
 		}
 	}
 
-	m_Tree.m_pgrid = &m_grid;
-	m_Tree.Build(this);
-	m_pTree = &m_Tree;
+	auto pTree = std::make_unique<CVoxelBV>();
+	pTree->m_pgrid = &m_grid;
+	pTree->Build(this);
+	m_pTree = std::move(pTree);
 	m_minVtxDist = m_grid.step.x * 0.0001f;
 
 	return this;

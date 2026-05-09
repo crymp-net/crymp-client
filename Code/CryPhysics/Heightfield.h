@@ -23,7 +23,6 @@ public:
 	int DrawToOcclusionCubemap(const geom_world_data* pgwd, int iStartPrim, int nPrims, int iPass, int* pGrid[6],
 	                           int nRes, float rmin, float rmax, float zscale) override;
 	void PrepareForRayTest(float raylen) override {}
-	CBVTree* GetBVTree() override { return &m_Tree; }
 
 	const primitives::primitive* GetData() override { return &m_hf; }
 	Vec3 GetCenter() override { return m_hf.origin + (Vec3(m_hf.size.x, m_hf.size.y, 0) * 0.5f) * m_hf.Basis; }
@@ -35,8 +34,9 @@ public:
 	}
 	void GetMemoryStatistics(ICrySizer*) override {}
 
+	CHeightfieldBV* GetHeightfieldTree() { return static_cast<CHeightfieldBV*>(m_pTree.get()); }
+
 	primitives::heightfield m_hf;
-	CHeightfieldBV m_Tree;
 	float m_minHeight, m_maxHeight;
 	int m_nVerticesAlloc, m_nTrisAlloc;
 };

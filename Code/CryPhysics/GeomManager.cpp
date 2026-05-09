@@ -503,7 +503,7 @@ IGeometry* CGeomManager::GetCrackGeom(const Vec3* pt, int idmat, geom_world_data
 	{
 		pMesh->RecalcTriNormal(i);
 	}
-	pMesh->RebuildBVTree(m_pCracks[i0].pGeom->m_pTree);
+	pMesh->RebuildBVTree(m_pCracks[i0].pGeom->m_pTree.get());
 
 	pgwd->R = Rc.T() * m_pCracks[i0].Rc;
 	pgwd->offset = pt0 - pgwd->R * m_pCracks[i0].pt0 * scale;
