@@ -144,7 +144,7 @@ bool CDetonate::Detonate(bool net)
 	}
 
 	if (!net)
-		m_pWeapon->RequestShoot(0, ZERO, ZERO, ZERO, ZERO, 1.0f, 0, 0, 0, false);
+		m_pWeapon->RequestShoot(0, Vec3(), Vec3(), Vec3(), Vec3(), 1.0f, 0, 0, 0, false);
 
 	return true;
 }

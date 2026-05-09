@@ -103,7 +103,7 @@ void CWeapon::NetMeleeAttack(bool weaponMelee, const Vec3 &pos, const Vec3 &dir)
 {
 	if (weaponMelee && m_melee)
 	{
-		m_melee->NetShootEx(pos, dir, ZERO, ZERO, 1.0f, 0);
+		m_melee->NetShootEx(pos, dir, Vec3(), Vec3(), 1.0f, 0);
 		if (IsServer())
 		{
 			void* extra = reinterpret_cast<void*>(static_cast<uintptr_t>(GetEntityId()));
@@ -112,7 +112,7 @@ void CWeapon::NetMeleeAttack(bool weaponMelee, const Vec3 &pos, const Vec3 &dir)
 	}
 	else if (m_fm)
 	{
-		m_fm->NetShootEx(pos, dir, ZERO, ZERO, 1.0f, 0);
+		m_fm->NetShootEx(pos, dir, Vec3(), Vec3(), 1.0f, 0);
 		if (IsServer())
 		{
 			void* extra = reinterpret_cast<void*>(static_cast<uintptr_t>(GetEntityId()));

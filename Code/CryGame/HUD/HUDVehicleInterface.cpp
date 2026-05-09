@@ -595,7 +595,7 @@ void CHUDVehicleInterface::OnVehicleEvent(EVehicleEvent event, const SVehicleEve
 			{
 				IEntitySoundProxy* pSoundProxy = (IEntitySoundProxy*)pEntity->GetProxy(ENTITY_PROXY_SOUND);
 				if (pSoundProxy)
-					pSoundProxy->PlaySound("sounds/physics:player_foley:switch_seat", Vec3Constants<float>::fVec3_Zero, Vec3Constants<float>::fVec3_OneY, 0, eSoundSemantic_Player_Foley);
+					pSoundProxy->PlaySound("sounds/physics:player_foley:switch_seat", Vec3(), Vec3(0, 1, 0), 0, eSoundSemantic_Player_Foley);
 				if (pPlayerActor->GetEntity() == pEntity)
 					g_pHUD->SetFireMode(NULL, NULL, true);
 			}

@@ -265,7 +265,7 @@ void CVehicleMovementStdWheeled::PostInit()
       m_wheelStats[m_wheelParts.size()-1].friction = pPart->GetIWheel()->GetCarGeomParams()->kLatFriction;
     }
   }
-  assert(m_wheelParts.size() == numWheels);
+  assert(static_cast<int>(m_wheelParts.size()) == numWheels);
 }
 
 //------------------------------------------------------------------------
@@ -350,7 +350,7 @@ void CVehicleMovementStdWheeled::InitSurfaceEffects()
       else
       {
         // else use wheels' center
-        Vec3 pos(ZERO);
+        Vec3 pos;
 
         for (int w=0; w<layer.GetWheelCount(i); ++w)
         {
@@ -1060,7 +1060,7 @@ void CVehicleMovementStdWheeled::UpdateSuspension(const float deltaTime)
   Matrix34 worldTM( m_PhysPos.q );
   worldTM.AddTranslation( m_PhysPos.pos );
 
-  assert(m_wheelParts.size() == m_pVehicle->GetWheelCount());
+  assert(static_cast<int>(m_wheelParts.size()) == m_pVehicle->GetWheelCount());
 
   float diffSusp = m_suspDampingMax - m_suspDampingMin;
   float diffStabi = m_stabiMax - m_stabiMin;
@@ -1319,7 +1319,7 @@ void CVehicleMovementStdWheeled::UpdateBrakes(const float deltaTime)
           char name[256];
           _snprintf(name, sizeof(name), "sounds/vehicles:%s:airbrake", m_pVehicle->GetEntity()->GetClass()->GetName());
           name[sizeof(name)-1] = '\0';
-          m_pEntitySoundsProxy->PlaySound(name, Vec3(0), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, eSoundSemantic_Vehicle);
+          m_pEntitySoundsProxy->PlaySound(name, Vec3(), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, eSoundSemantic_Vehicle);
         }
       }
     }
@@ -1435,7 +1435,7 @@ void CVehicleMovementStdWheeled::ProcessAI(const float deltaTime)
 		Limit(inputSpeed, -m_maxSpeed, m_maxSpeed);
 	}
 
-	Vec3 vMove(ZERO);
+	Vec3 vMove;
 	{
 		if (m_aiRequest.HasMoveTarget())
 			vMove = ( m_aiRequest.GetMoveTarget() - m_PhysPos.pos ).GetNormalizedSafe();
@@ -1872,7 +1872,7 @@ void CVehicleMovementStdWheeled::UpdateSurfaceEffects(const float deltaTime)
 		float fWaterLevel = -FLT_MAX;
     int wheelCount = layer.GetWheelCount(emitterIt->group);
 		{
-			Vec3 averageWheelPosition(ZERO);
+			Vec3 averageWheelPosition;
 			int foundWheels = 0;
 			for (int w=0; w<wheelCount; ++w)
 			{

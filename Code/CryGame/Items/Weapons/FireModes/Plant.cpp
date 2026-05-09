@@ -106,7 +106,7 @@ bool CPlant::OutOfAmmo() const
 //------------------------------------------------------------------------
 void CPlant::NetShoot(const Vec3 &hit, int ph)
 {
-	NetShootEx(ZERO, ZERO, ZERO, hit, 1.0f, ph);
+	NetShootEx(Vec3(), Vec3(), Vec3(), hit, 1.0f, ph);
 }
 
 //------------------------------------------------------------------------
@@ -432,7 +432,7 @@ void CPlant::Plant(const Vec3 &pos, const Vec3 &dir, const Vec3 &vel, bool net, 
 	}
 
 	if (!net)
-		m_pWeapon->RequestShoot(ammo, pos, dir, vel, ZERO, 1.0f, pAmmo? pAmmo->GetGameObject()->GetPredictionHandle() : 0, m_pWeapon->GetShootSeqN(), 0, true);
+		m_pWeapon->RequestShoot(ammo, pos, dir, vel, Vec3(), 1.0f, pAmmo? pAmmo->GetGameObject()->GetPredictionHandle() : 0, m_pWeapon->GetShootSeqN(), 0, true);
 
 	m_pWeapon->HideItem(true);
 }

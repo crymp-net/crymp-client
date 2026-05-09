@@ -399,9 +399,9 @@ void CHUD::TrackProjectiles(CPlayer* pPlayerActor)
 	if(m_trackedProjectiles.empty())
 	{
 		if (m_friendlyTrackerStatus)
-			UpdateProjectileTracker(m_animFriendlyProjectileTracker, 0, m_friendlyTrackerStatus, ZERO);
+			UpdateProjectileTracker(m_animFriendlyProjectileTracker, 0, m_friendlyTrackerStatus, Vec3());
 		if (m_hostileTrackerStatus)
-			UpdateProjectileTracker(m_animHostileProjectileTracker, 0, m_hostileTrackerStatus, ZERO);
+			UpdateProjectileTracker(m_animHostileProjectileTracker, 0, m_hostileTrackerStatus, Vec3());
 
 		return;
 	}
@@ -575,7 +575,7 @@ void CHUD::TrackRadioMessages(CPlayer* pPlayerActor)
 
 	if (m_trackedRadioMessages.empty())
 	{
-		UpdateRadioMessageTracker(m_animTrackedRadioMessage, {}, m_radioTrackerStatus, ZERO);
+		UpdateRadioMessageTracker(m_animTrackedRadioMessage, {}, m_radioTrackerStatus, Vec3());
 		return;
 	}
 

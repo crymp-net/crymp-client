@@ -26,7 +26,7 @@
 struct SActorTargetParams
 {
 	SActorTargetParams() : 
-		location(ZERO), 
+		location(),
 		direction(FORWARD_DIRECTION), 
 		vehicleSeat(0), 
 		speed(-1.0f), 
@@ -66,13 +66,13 @@ class CMovementRequest
 public:
 	CMovementRequest()
 		: m_flags(0),
-			m_lookTarget(0), m_aimTarget(0), m_fireTarget(0), m_moveTarget(0),
+			m_lookTarget(), m_aimTarget(), m_fireTarget(), m_moveTarget(),
 			m_desiredSpeed(0), m_lookImportance(0),
-			m_deltaMovement(0),m_deltaRotation(ZERO),
+			m_deltaMovement(),m_deltaRotation(),
 			m_desiredLean(0),
 			m_pseudoSpeed(0),
-			m_forcedNavigation(0),
-			m_desiredBodyDirectionAtTarget(0), m_distanceToPathEnd(-1.0f), 
+			m_forcedNavigation(),
+			m_desiredBodyDirectionAtTarget(), m_distanceToPathEnd(-1.0f),
 			m_alertness(0), m_alertnessLast(0),
 			m_stance(STANCE_NULL)
 	{
@@ -330,7 +330,7 @@ public:
 
 	void ClearForcedNavigation()
 	{
-		m_forcedNavigation = ZERO;
+		m_forcedNavigation = {};
 		ClearFlag(eMRF_ForcedNavigation);
 		SetFlag(eMRF_RemoveForcedNavigation);
 	}
@@ -651,10 +651,10 @@ struct SStanceState
 		eyeDirection(FORWARD_DIRECTION),
 		lean(0.0f)
 	{
-		m_StanceSize.min=Vec3(ZERO);		// Game logic bounds of the character related to the 'pos'.
-		m_StanceSize.max=Vec3(ZERO);		// Game logic bounds of the character related to the 'pos'.
-		m_ColliderSize.min=Vec3(ZERO);			// The size of only the collider in this stance.
-		m_ColliderSize.max=Vec3(ZERO);			// The size of only the collider in this stance.
+		m_StanceSize.min = {};		// Game logic bounds of the character related to the 'pos'.
+		m_StanceSize.max = {};		// Game logic bounds of the character related to the 'pos'.
+		m_ColliderSize.min = {};			// The size of only the collider in this stance.
+		m_ColliderSize.max = {};			// The size of only the collider in this stance.
 	}
 
 	// Note: All positions a directions are in worldspace.

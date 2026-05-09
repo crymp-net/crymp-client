@@ -1152,7 +1152,7 @@ template <typename F> struct Matrix34_tpl
 		m20=v20; m21=v21; m22=v22; m23=v23; 
 	}
 
-	Matrix34_tpl( const Vec3_tpl<F>& s, const Quat_tpl<F>& q, const Vec3_tpl<F>& t=Vec3(ZERO) ) {	Set(s, q, t); }
+	Matrix34_tpl( const Vec3_tpl<F>& s, const Quat_tpl<F>& q, const Vec3_tpl<F>& t={} ) {	Set(s, q, t); }
 
 	//apply scaling to the columns of the matrix.
 	ILINE void ScaleColumn( const Vec3_tpl<F>& s)	{
@@ -1198,17 +1198,17 @@ template <typename F> struct Matrix34_tpl
 	*		Vec3 axis=GetNormalized( Vec3(-1.0f,-0.3f,0.0f) );
 	*		m34.SetRotationAA( 3.14314f, axis, Vec3(5,5,5) );
 	*/
-	ILINE void SetRotationAA(const F rad, const Vec3_tpl<F>& axis, const Vec3_tpl<F>& t=Vec3(ZERO) )	{
+	ILINE void SetRotationAA(const F rad, const Vec3_tpl<F>& axis, const Vec3_tpl<F>& t={} )	{
 		*this=Matrix33_tpl<F>::CreateRotationAA(rad,axis); this->SetTranslation(t);
 	}
-	ILINE static Matrix34_tpl<F> CreateRotationAA( const F rad, const Vec3_tpl<F>& axis, const Vec3_tpl<F>& t=Vec3(ZERO) )	{	
+	ILINE static Matrix34_tpl<F> CreateRotationAA( const F rad, const Vec3_tpl<F>& axis, const Vec3_tpl<F>& t={} )	{
 		Matrix34_tpl<F> m34;  m34.SetRotationAA(rad,axis,t);	return m34;	
 	}
 
-	ILINE void SetRotationAA(const Vec3_tpl<F>& rot, const Vec3_tpl<F>& t=Vec3(ZERO) ) {
+	ILINE void SetRotationAA(const Vec3_tpl<F>& rot, const Vec3_tpl<F>& t={} ) {
 		*this=Matrix33_tpl<F>::CreateRotationAA(rot); this->SetTranslation(t);
 	}
-	ILINE static Matrix34_tpl<F> CreateRotationAA( const Vec3_tpl<F>& rot, const Vec3_tpl<F>& t=Vec3(ZERO) )	{	
+	ILINE static Matrix34_tpl<F> CreateRotationAA( const Vec3_tpl<F>& rot, const Vec3_tpl<F>& t={} )	{
 		Matrix34_tpl<F> m34;  m34.SetRotationAA(rot,t);	return m34;	
 	}
 
@@ -1222,10 +1222,10 @@ template <typename F> struct Matrix34_tpl
 	*		Matrix34 m34;
 	*		m34.SetRotationX(0.5f);
 	*/
-	ILINE void SetRotationX(const f32 rad, const Vec3_tpl<F>& t=Vec3(ZERO) )	{
+	ILINE void SetRotationX(const f32 rad, const Vec3_tpl<F>& t={} )	{
 		*this=Matrix33_tpl<F>::CreateRotationX(rad); this->SetTranslation(t);
 	}
-	ILINE static Matrix34_tpl<F> CreateRotationX( const f32 rad, const Vec3_tpl<F>& t=Vec3(ZERO) ) {
+	ILINE static Matrix34_tpl<F> CreateRotationX( const f32 rad, const Vec3_tpl<F>& t={} ) {
 		Matrix34_tpl<F> m34;  m34.SetRotationX(rad,t);	return m34;	
 	}
 
@@ -1238,10 +1238,10 @@ template <typename F> struct Matrix34_tpl
 	*		Matrix34 m34;
 	*		m34.SetRotationY(0.5f);
 	*/
-	ILINE void SetRotationY(const f32 rad, const Vec3_tpl<F>& t=Vec3(ZERO) )	{
+	ILINE void SetRotationY(const f32 rad, const Vec3_tpl<F>& t={} )	{
 		*this=Matrix33_tpl<F>::CreateRotationY(rad);	this->SetTranslation(t);
 	}
-	ILINE static Matrix34_tpl<F> CreateRotationY( const f32 rad, const Vec3_tpl<F>& t=Vec3(ZERO) )	{	
+	ILINE static Matrix34_tpl<F> CreateRotationY( const f32 rad, const Vec3_tpl<F>& t={} )	{
 		Matrix34_tpl<F> m34;  m34.SetRotationY(rad,t);	return m34;	
 	}
 
@@ -1254,10 +1254,10 @@ template <typename F> struct Matrix34_tpl
 	*		Matrix34 m34;
 	*		m34.SetRotationZ(0.5f);
 	*/
-	ILINE void SetRotationZ(const f32 rad, const Vec3_tpl<F>& t=Vec3(ZERO) )	{
+	ILINE void SetRotationZ(const f32 rad, const Vec3_tpl<F>& t={} )	{
 		*this=Matrix33_tpl<F>::CreateRotationZ(rad);  this->SetTranslation(t);
 	}
-	ILINE static Matrix34_tpl<F> CreateRotationZ( const f32 rad, const Vec3_tpl<F>& t=Vec3(ZERO) )	{	
+	ILINE static Matrix34_tpl<F> CreateRotationZ( const f32 rad, const Vec3_tpl<F>& t={} )	{
 		Matrix34_tpl<F> m34;  m34.SetRotationZ(rad,t);	return m34;	
 	}
 
@@ -1275,34 +1275,34 @@ template <typename F> struct Matrix34_tpl
 	*  Example 2:
 	*		Matrix34 m34=Matrix34::CreateRotationXYZ( Ang3(0.5f,0.2f,0.9f), translation );
 	*/
-	ILINE void SetRotationXYZ( const Ang3_tpl<F>& rad, const Vec3_tpl<F>& t=Vec3(ZERO) ) 
+	ILINE void SetRotationXYZ( const Ang3_tpl<F>& rad, const Vec3_tpl<F>& t={} )
 	{
 		assert(rad.IsValid());
 		assert(t.IsValid());
 		*this=Matrix33_tpl<F>::CreateRotationXYZ(rad); this->SetTranslation(t);
 	}
-	ILINE static Matrix34_tpl<F> CreateRotationXYZ( const Ang3_tpl<F>& rad, const Vec3_tpl<F>& t=Vec3(ZERO) ) {	
+	ILINE static Matrix34_tpl<F> CreateRotationXYZ( const Ang3_tpl<F>& rad, const Vec3_tpl<F>& t={} ) {
 		assert(rad.IsValid());
 		assert(t.IsValid());
 		Matrix34_tpl<F> m34;  m34.SetRotationXYZ(rad,t);	return m34;	
 	}
 
 
-	ILINE void SetRotationAA(F c, F s, Vec3_tpl<F> axis, const Vec3_tpl<F>& t=Vec3(ZERO) ) { 
+	ILINE void SetRotationAA(F c, F s, Vec3_tpl<F> axis, const Vec3_tpl<F>& t={} ) {
 		assert(axis.IsValid());
 		assert(t.IsValid());
 		*this=Matrix33_tpl<F>::CreateRotationAA(c, s, axis);
 		m03=t.x; m13=t.y; m23=t.z;
 	}
-	ILINE static Matrix34_tpl<F> CreateRotationAA(F c, F s, Vec3_tpl<F> axis, const Vec3_tpl<F>& t=Vec3(ZERO) ) {	
+	ILINE static Matrix34_tpl<F> CreateRotationAA(F c, F s, Vec3_tpl<F> axis, const Vec3_tpl<F>& t={} ) {
 		Matrix34_tpl<F> m34;	m34.SetRotationAA(c,s,axis,t); return m34;	
 	}
 
-	void Set( const Vec3_tpl<F>& s, const Quat_tpl<F>& q, const Vec3_tpl<F>& t=Vec3(ZERO)  );
-	static Matrix34_tpl<F> Create(  const Vec3_tpl<F>& s, const Quat_tpl<F>& q, const Vec3_tpl<F>& t=Vec3(ZERO) );
+	void Set( const Vec3_tpl<F>& s, const Quat_tpl<F>& q, const Vec3_tpl<F>& t={}  );
+	static Matrix34_tpl<F> Create(  const Vec3_tpl<F>& s, const Quat_tpl<F>& q, const Vec3_tpl<F>& t={} );
 
-	void SetScale( const Vec3_tpl<F> &s, const Vec3_tpl<F>& t=Vec3(ZERO) );
-	static Matrix34_tpl<F> CreateScale(  const Vec3_tpl<F> &s, const Vec3_tpl<F>& t=Vec3(ZERO)  );
+	void SetScale( const Vec3_tpl<F> &s, const Vec3_tpl<F>& t={} );
+	static Matrix34_tpl<F> CreateScale(  const Vec3_tpl<F> &s, const Vec3_tpl<F>& t={}  );
 
 	ILINE void SetTranslationMat(  const Vec3_tpl<F>& v  ) {
 		m00=1.0f;	m01=0.0f;	m02=0.0f;	m03=v.x;

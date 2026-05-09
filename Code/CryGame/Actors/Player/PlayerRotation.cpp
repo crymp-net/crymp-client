@@ -464,7 +464,7 @@ void CPlayerRotation::ProcessAngularImpulses()
 	}
 	else if (m_stats.angularImpulseDeceleration > 0.001f)
 	{
-		Interpolate(m_angularImpulse, ZERO, m_stats.angularImpulseDeceleration, m_frameTime);
+		Interpolate(m_angularImpulse, Ang3(), m_stats.angularImpulseDeceleration, m_frameTime);
 	}
 	m_angularImpulseDelta -= m_angularImpulse;
 }

@@ -317,7 +317,7 @@ void CHUD::UpdateWeaponModify()
 		if (helper.slot != CItem::eIGS_FirstPerson)
 			continue;
 
-		Vec3 worldPos = Vec3(ZERO);
+		Vec3 worldPos;
 
 		if (thirdPerson)
 		{
@@ -340,7 +340,7 @@ void CHUD::UpdateWeaponModify()
 			worldPos = pCurrentWeapon->GetSlotHelperPos(CItem::eIGS_FirstPerson, helper.bone.c_str(), true);
 		}
 
-		Vec3 screenSpace = Vec3(ZERO);
+		Vec3 screenSpace;
 		m_pRenderer->ProjectToScreen(worldPos.x, worldPos.y, worldPos.z, &screenSpace.x, &screenSpace.y, &screenSpace.z);
 
 		screenSpace.x = screenSpace.x * scaleX + halfUselessSize;

@@ -23,7 +23,7 @@ struct SSerializedPlayerInput
 
 	SSerializedPlayerInput() :
 		stance(STANCE_NULL),
-		deltaMovement(ZERO),
+		deltaMovement(),
 		lookDirection(FORWARD_DIRECTION),
 		bodyDirection(FORWARD_DIRECTION),
 		sprint(false),
