@@ -649,12 +649,6 @@ struct STextureTiling
 	}
 };
 
-struct Vec3_Zero: Vec3
-{
-	Vec3_Zero() : Vec3(ZERO) {}
-	Vec3_Zero(const Vec3& v) : Vec3(v) {}
-};
-
 //! Particle system parameters
 struct ParticleParams
 {
@@ -710,15 +704,15 @@ struct ParticleParams
 	float fInheritVelocity;						// $<SoftMin=0> $<SoftMax=1> Fraction of emitter's velocity to inherit.
 	EGeomType eAttachType;						// Where to emit from attached geometry.
 	EGeomForm eAttachForm;						// How to emit from attached geometry.
-	Vec3_Zero vPositionOffset;				// Spawn Position offset from the effect spawn position
-	Vec3_Zero vRandomOffset;					// Random offset of the particle relative position to the spawn position
+	Vec3 vPositionOffset;				// Spawn Position offset from the effect spawn position
+	Vec3 vRandomOffset;					// Random offset of the particle relative position to the spawn position
 	float fPosRandomOffset;						// Radial random offset.
 
 	// Movement
 	TVarEParam<float> fSpeed;					// $<Group="Movement"> Initial speed of a particle.
 	TVarEPParam<float> fAirResistance;// $<Min=0> $<SoftMax=10> Air drag value, in inverse seconds.
 	TVarEPParam<float> fGravityScale;	// $<SoftMin=0> $<SoftMax=1> Multiplier for world gravity.
-	Vec3_Zero vAcceleration;					// Specific world-space acceleration vector.
+	Vec3 vAcceleration;					// Specific world-space acceleration vector.
 	TVarEPParam<float> fTurbulence3DSpeed;	// $<Min=0> $<SoftMax=10> 3D random turbulence force
 	TVarEPParam<float> fTurbulenceSize;			// $<Min=0> $<SoftMax=10> Radius of turbulence
 	TVarEPParam<float> fTurbulenceSpeed;		// $<SoftMin=-360> $<SoftMax=360> Speed of rotation
@@ -728,10 +722,10 @@ struct ParticleParams
 	TVarEParam<float>	fFocusAzimuth;	// $<SoftMax=360> Angle to rotate focus about default, for variation. 0 = Z axis.
 	bool bFocusGravityDir;						// Uses negative gravity dir, rather than emitter Y, as focus dir.
 	TVarEParam<float> fEmitAngle;			// $<Min=0> $<Max=180> Angle from focus dir (emitter Y), in degrees. RandomVar determines min angle.
-	Vec3_Zero vInitAngles;						// $<SoftMin=-180> $<SoftMax=180> Initial rotation in symmetric angles (degrees).
-	Vec3_Zero vRandomAngles;					// $<Min=0> $<Max=180> Bidirectional random angle variation.
-	Vec3_Zero vRotationRate;					// $<SoftMin=-360> $<SoftMax=360> Rotation speed (degree/sec).
-	Vec3_Zero vRandomRotationRate;		// $<Min=0> $<SoftMax=360> Random variation.
+	Vec3 vInitAngles;						// $<SoftMin=-180> $<SoftMax=180> Initial rotation in symmetric angles (degrees).
+	Vec3 vRandomAngles;					// $<Min=0> $<Max=180> Bidirectional random angle variation.
+	Vec3 vRotationRate;					// $<SoftMin=-360> $<SoftMax=360> Rotation speed (degree/sec).
+	Vec3 vRandomRotationRate;		// $<Min=0> $<SoftMax=360> Random variation.
 
 	// Physics
 	EParticlePhysicsType ePhysicsType;// $<Group="Physics"> 

@@ -481,7 +481,7 @@ void CRapid::UpdateRotation(CItem::eGeometrySlot slot, float frameTime)
 		}
 
 		Matrix33 spin = Matrix33::CreateRotationY(m_rotation_angle);
-		Matrix34 spinTM(spin, Vec3(ZERO));
+		Matrix34 spinTM(spin, Vec3());
 
 		Matrix34 finalTM = m_barrelBaseTM * spinTM;
 		m_pWeapon->GetEntity()->SetSlotLocalTM(barrelSlot, finalTM);

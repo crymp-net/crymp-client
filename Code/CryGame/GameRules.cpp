@@ -1056,7 +1056,7 @@ void CGameRules::RevivePlayerInVehicle(CActor* pActor, EntityId vehicleId, int s
 	if (seatId < 0)
 	{
 		IVehicle* pSpawnVehicle = m_pGameFramework->GetIVehicleSystem()->GetVehicle(vehicleId);
-		Vec3 pos = ZERO;
+		Vec3 pos = {};
 		if (pSpawnVehicle && pSpawnVehicle->GetExitPositionForActor(pActor, pos, true))
 		{
 			Ang3 angles = pSpawnVehicle->GetEntity()->GetWorldAngles();	// face same direction as vehicle.
@@ -2544,7 +2544,7 @@ float CGameRules::GetMinEnemyDist() const
 EntityId CGameRules::GetSpawnLocationTeamFirst() const
 {
 	// find average pos
-	Vec3 avrgPos(ZERO);
+	Vec3 avrgPos;
 	for (const EntityId locId : m_spawnLocations)
 	{
 		const IEntity* pSpawn = m_pEntitySystem->GetEntity(locId);

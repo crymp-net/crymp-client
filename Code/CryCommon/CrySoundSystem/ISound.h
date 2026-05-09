@@ -411,8 +411,8 @@ struct SObstruction
 			for (int i=0; i< SOUND_MAX_OBSTRUCTION_TESTS; ++i)
 			{
 				ObstructionTests[i].SoundID = INVALID_SOUNDID;
-				ObstructionTests[i].vOrigin = Vec3(0);
-				ObstructionTests[i].vDirection = Vec3(0);
+				ObstructionTests[i].vOrigin = {};
+				ObstructionTests[i].vDirection = {};
 				ObstructionTests[i].nHits = 0;
 				ObstructionTests[i].nPierceability = 0;
 				ObstructionTests[i].nTestForTest = 0;

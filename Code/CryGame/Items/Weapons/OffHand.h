@@ -340,8 +340,8 @@ private:
 	struct SGripHitLocal
 	{
 		bool ok = false;
-		Vec3 leftLocal = ZERO;  
-		Vec3 rightLocal = ZERO; 
+		Vec3 leftLocal = {};
+		Vec3 rightLocal = {};
 		float widthWS = 0.0f;
 	};
 

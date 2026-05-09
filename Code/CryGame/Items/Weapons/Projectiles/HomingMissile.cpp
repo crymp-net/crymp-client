@@ -167,8 +167,8 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 			{
 				if (IMovementController* pMC = pClientActor->GetMovementController())
 				{
-					Vec3 eyePos(ZERO);
-					Vec3 eyeDir(ZERO);
+					Vec3 eyePos;
+					Vec3 eyeDir;
 
 					IVehicle* pVehicle = pClientActor->GetLinkedVehicle();
 					if (!pVehicle)
@@ -274,7 +274,7 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 		{
 			Vec3 currentVel = status.v;
 			Vec3 currentPos = pos.pos;
-			Vec3 goalDir(ZERO);
+			Vec3 goalDir;
 
 			assert(!_isnan(currentSpeed));
 			assert(!_isnan(currentVel.x) && !_isnan(currentVel.y) && !_isnan(currentVel.z));
@@ -376,7 +376,7 @@ void CHomingMissile::UpdateCruiseMissile(float frameTime)
 
 	float currentSpeed = status.v.len();
 	Vec3 currentPos = GetEntity()->GetWorldPos();
-	Vec3 goalDir(ZERO);
+	Vec3 goalDir;
 
 	if (!m_destination.IsZero())
 	{

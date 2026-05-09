@@ -52,7 +52,7 @@ struct IPhysicsStreamer {
 /////////////////////////////////////////////////////////////////////////////////////
 
 struct IPhysRenderer {
-	virtual void DrawGeometry(IGeometry *pGeom, struct geom_world_data *pgwd, int idxColor=0, int bSlowFadein=0, const Vec3 &sweepDir=Vec3(0)) = 0;
+	virtual void DrawGeometry(IGeometry *pGeom, struct geom_world_data *pgwd, int idxColor=0, int bSlowFadein=0, const Vec3 &sweepDir={}) = 0;
 	virtual void DrawLine(const Vec3& pt0, const Vec3& pt1, int idxColor=0, int bSlowFadein=0) = 0;
 	virtual const char *GetForeignName(void *pForeignData,int iForeignData,int iForeignFlags) = 0;
 	virtual void DrawText(const Vec3 &pt, const char *txt, int idxColor, float saturation=0) = 0;
@@ -970,7 +970,7 @@ struct pe_status_sensors : pe_status { // Requests status of attached to the ent
 
 struct pe_status_dynamics : pe_status {
 	enum entype { type_id=8 };
-	pe_status_dynamics() : v(ZERO),w(ZERO),a(ZERO),wa(ZERO),centerOfMass(ZERO) {
+	pe_status_dynamics() : v(),w(),a(),wa(),centerOfMass() {
 		MARK_UNUSED partid,ipart; type=type_id; mass=energy=0; nContacts=0; time_interval=0; submergedFraction=0; 
 	}
 
@@ -2318,7 +2318,7 @@ struct IPhysicalWorld {
 	//			if specified and pip->bThreadSafe==false, the caller must manually release the lock in pip->plock (but only if there were any contacts)
 	// Returns:
 	//		distance to the first hit for sweep checks and the number of hits for intersection checks (as float)
-	virtual float PrimitiveWorldIntersection(int itype, primitives::primitive *pprim, const Vec3 &sweepDir=Vec3(ZERO), int entTypes=ent_all, 
+	virtual float PrimitiveWorldIntersection(int itype, primitives::primitive *pprim, const Vec3 &sweepDir={}, int entTypes=ent_all,
 		geom_contact **ppcontact=0, int geomFlagsAll=0,int geomFlagsAny=geom_colltype0|geom_colltype_player, intersection_params *pip=0,
 		void *pForeignData=0, int iForeignData=0, IPhysicalEntity **pSkipEnts=0,int nSkipEnts=0, const char *pNameTag="PrimitiveWorldIntersection(Game)") = 0;
 
@@ -2337,14 +2337,14 @@ struct IPhysicalWorld {
 
 	virtual IPhysicalEntity *AddGlobalArea() = 0;
 	virtual IPhysicalEntity *AddArea(Vec3 *pt,int npt, float zmin,float zmax, const Vec3 &pos=Vec3(0,0,0), const quaternionf &q=quaternionf(IDENTITY),
-		float scale=1.0f, const Vec3 &normal=Vec3(ZERO), int *pTessIdx=0,int nTessTris=0,Vec3 *pFlows=0) = 0;
+		float scale=1.0f, const Vec3 &normal={}, int *pTessIdx=0,int nTessTris=0,Vec3 *pFlows=0) = 0;
 	virtual IPhysicalEntity *AddArea(IGeometry *pGeom, const Vec3& pos,const quaternionf &q,float scale) = 0;
 	virtual void RemoveArea(IPhysicalEntity *pArea) = 0;
 	virtual IPhysicalEntity *AddArea(Vec3 *pt,int npt, float r, const Vec3 &pos=Vec3(0,0,0),const quaternionf &q=quaternionf(IDENTITY),float scale=1) = 0;
 	// GetNextArea: iterates through all registered areas, if prevarea==0 returns the global area
 	virtual IPhysicalEntity *GetNextArea(IPhysicalEntity *pPrevArea=0) = 0;
 	// Checks areas for a given point
-	virtual int CheckAreas(const Vec3 &ptc, Vec3 &gravity, pe_params_buoyancy *pb, int nMaxBuoys=1, const Vec3 &vec=Vec3(ZERO), 
+	virtual int CheckAreas(const Vec3 &ptc, Vec3 &gravity, pe_params_buoyancy *pb, int nMaxBuoys=1, const Vec3 &vec={},
 		IPhysicalEntity *pent=0, int iCaller=1) = 0;
 
 	virtual void SetWaterMat(int imat) = 0;

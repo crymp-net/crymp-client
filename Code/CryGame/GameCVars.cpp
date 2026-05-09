@@ -1277,7 +1277,7 @@ void CGame::CmdKill(IConsoleCmdArgs* pArgs)
 	if (pGameRules)
 	{
 		HitInfo suicideInfo(pClientActor->GetEntityId(), pClientActor->GetEntityId(), pClientActor->GetEntityId(),
-			-1, 0, 0, -1, 0, ZERO, ZERO, ZERO);
+			-1, 0, 0, -1, 0, {}, {}, {});
 		suicideInfo.SetDamage(10000);
 
 		pGameRules->ClientHit(suicideInfo);
@@ -1302,7 +1302,7 @@ void CGame::CmdVehicleKill(IConsoleCmdArgs* pArgs)
 	if (pGameRules)
 	{
 		HitInfo suicideInfo(pVehicle->GetEntityId(), pVehicle->GetEntityId(), pVehicle->GetEntityId(),
-			-1, 0, 0, -1, 0, pVehicle->GetEntity()->GetWorldPos(), ZERO, ZERO);
+			-1, 0, 0, -1, 0, pVehicle->GetEntity()->GetWorldPos(), {}, {});
 		suicideInfo.SetDamage(10000);
 
 		pGameRules->ClientHit(suicideInfo);

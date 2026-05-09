@@ -130,7 +130,7 @@ void SIKLimb::Update(IEntity* pOwner, float frameTime)
 	assert(!_isnan(lAnimPos.len2()));
 
 	bool setLimbPos(true);
-	Vec3 finalPos = Vec3(ZERO);
+	Vec3 finalPos;
 
 	if (blendTime > 0.001f)
 	{
@@ -543,7 +543,6 @@ void CActor::Revive(ReasonForRevive reason)
 	m_inCombat = false;
 	m_enterCombat = false;
 	m_combatTimer = 0.0f;
-	//	m_lastFootStepPos = ZERO;
 	m_rightFoot = true;
 	m_pReplacementMaterial = 0;
 
@@ -2643,7 +2642,7 @@ Vec3 CActor::GetLocalEyePos2(int slot) const
 		int id_right = GetBoneID(BONE_EYE_R);
 		int id_left = GetBoneID(BONE_EYE_L);
 
-		Vec3 PelvisPos = Vec3(ZERO);
+		Vec3 PelvisPos;
 		if (id_pelvis > -1)
 			//	PelvisPos = Quat::CreateRotationZ(-gf_PI/2)*pCharacter->GetISkeleton()->GetAbsJointByID(id_pelvis).t;
 			PelvisPos = pCharacter->GetISkeletonPose()->GetAbsJointByID(id_pelvis).t;
@@ -2894,7 +2893,7 @@ void CActor::SetIKPos(const char* pLimbName, const Vec3& goalPos, int priority,
 	blendIn = std::max(0.0f, blendIn);
 	recover = std::max(0.0f, recover);
 
-	m_IKLimbs[limbID].SetWPos(GetEntity(), goalPos, ZERO, blendIn, recover, priority);
+	m_IKLimbs[limbID].SetWPos(GetEntity(), goalPos, {}, blendIn, recover, priority);
 }
 
 void CActor::ClearIKPosBlending(const char* pLimbName)
@@ -2972,7 +2971,7 @@ Vec3 CActor::GetAIAttentionPos()
 			return pTarget->GetPos();
 	}
 
-	return ZERO;
+	return {};
 }
 
 //------------------------------------------------------------------------
@@ -4423,7 +4422,7 @@ bool CActor::IsGhostPit()
 }
 
 IAttachment* CActor::CreateBoneAttachment(int characterSlot, const char* boneName, const char* attachmentName,
-	const Vec3& offsetPosition /*= Vec3(ZERO)*/,
+	const Vec3& offsetPosition /*= {}*/,
 	const Quat& offsetRotation /*= Quat(IDENTITY)*/)
 {
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(characterSlot);

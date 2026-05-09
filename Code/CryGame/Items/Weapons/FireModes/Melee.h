@@ -159,13 +159,13 @@ public:
 	virtual void Enable(bool enable) { m_enabled = enable; };
 	virtual bool IsEnabled() const { return m_enabled; };
 
-	virtual Vec3 GetFiringPos(const Vec3 &probableHit) const {return ZERO;}
-	virtual Vec3 GetFiringDir(const Vec3 &probableHit, const Vec3& firingPos) const {return ZERO;}
+	virtual Vec3 GetFiringPos(const Vec3 &probableHit) const {return {} ;}
+	virtual Vec3 GetFiringDir(const Vec3 &probableHit, const Vec3& firingPos) const {return {}; }
 	virtual void SetName(const char *name) { m_name = name; };
 	virtual const char *GetName() { return m_name.empty()?0:m_name.c_str();};
 
   virtual bool HasFireHelper() const { return false; }
-  virtual Vec3 GetFireHelperPos() const { return Vec3(ZERO); }
+  virtual Vec3 GetFireHelperPos() const { return {}; }
   virtual Vec3 GetFireHelperDir() const { return FORWARD_DIRECTION; }
 
   virtual int GetCurrentBarrel() const { return 0; }

@@ -231,7 +231,7 @@ struct ExplosionInfo
 		maxblurdistance(0.0f),
 		impact(false),
 		impact_normal(FORWARD_DIRECTION),
-		impact_velocity(ZERO),
+		impact_velocity(),
     impact_targetId(0),
 		blindAmount(0.0f),
 		flashbangScale(1.0f)
@@ -256,7 +256,7 @@ struct ExplosionInfo
 		maxblurdistance(0.0f),
 		impact(false),
 		impact_normal(FORWARD_DIRECTION),
-		impact_velocity(ZERO),
+		impact_velocity(),
     impact_targetId(0)
   {}
 

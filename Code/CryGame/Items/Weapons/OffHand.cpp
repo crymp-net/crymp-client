@@ -943,7 +943,8 @@ void COffHand::UpdateHeldObject()
 
 	Vec3 pos = GetSlotHelperPos(id, "item_attachment", true);
 
-	Vec3 fpPosOffset(ZERO), tpPosOffset(ZERO);
+	Vec3 fpPosOffset;
+	Vec3 tpPosOffset;
 	GetPredefinedPosOffset(pEntity, fpPosOffset, tpPosOffset);
 
 	if (!fpPosOffset.IsZero(0.0001f))
@@ -4182,7 +4183,7 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 			bool isTwoHand = IsTwoHandMode();
 
 			QuatT offset;
-			offset.t = Vec3(ZERO);
+			offset.t = {};
 
 			const bool isVehicle = g_pGame->GetIGameFramework()->GetIVehicleSystem()->IsVehicleClass(pObject->GetClass()->GetName());
 			const bool isActor = !isVehicle && g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(objectId) != nullptr;
@@ -4213,11 +4214,11 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 			// ---------------------------------------------------------
 			// POSITION OFFSET
 			// ---------------------------------------------------------
-			Vec3 positionOffset = Vec3(ZERO);
+			Vec3 positionOffset;
 
 			if (isTwoHand)
 			{
-				Vec3 vOffset = Vec3(ZERO);
+				Vec3 vOffset;
 
 				AABB bbox;
 				pObject->GetLocalBounds(bbox);
@@ -4267,8 +4268,8 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 				}
 			}
 
-			Vec3 fpPosOffset = Vec3(ZERO);
-			Vec3 tpPosOffset = Vec3(ZERO);
+			Vec3 fpPosOffset;
+			Vec3 tpPosOffset;
 			GetPredefinedPosOffset(pObject, fpPosOffset, tpPosOffset);
 
 			positionOffset += tpPosOffset;
@@ -4285,8 +4286,8 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 				pPlayer->SetArmIKLocalInvalid();
 			}
 
-			Vec3 left = Vec3(ZERO);
-			Vec3 right = Vec3(ZERO);
+			Vec3 left;
+			Vec3 right;
 
 			if (!GetPredefinedGripHandPos(pObject, left, right))
 			{
@@ -4850,7 +4851,7 @@ void COffHand::OnHeldObjectCollision(CPlayer* pClientActor, const EventPhysColli
 			}
 
 			IVehicle* pCarriedVehicle = m_pVehicleSystem->GetVehicle(m_heldEntityId);
-			Vec3 pos = ZERO;
+			Vec3 pos;
 			if (pCarriedVehicle && pCarriedVehicle->GetExitPositionForActor(pClientActor, pos, true))
 			{
 				const Ang3 angles = pCarriedVehicle->GetEntity()->GetWorldAngles(); // face same direction as vehicle.
@@ -4948,7 +4949,7 @@ void COffHand::PerformThrowAction_Press(EntityId throwableId, bool isLivingEnt /
 				//if (!m_forceThrow)
 				//{
 				//	IVehicle* pCarriedVehicle = m_pVehicleSystem->GetVehicle(throwableId);
-				//	Vec3 pos = ZERO;
+				//	Vec3 pos;
 				//	if (pCarriedVehicle && pCarriedVehicle->GetExitPositionForActor(pClientActor, pos, true))
 				//	{
 				//		const Ang3 angles = pCarriedVehicle->GetEntity()->GetWorldAngles(); // face same direction as vehicle.

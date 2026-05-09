@@ -362,8 +362,8 @@ CAlien::SMovementRequestParams::SMovementRequestParams(CMovementRequest& request
 
 CAlien::CAlien() :
 	m_pItemSystem(0),
-	m_weaponOffset(ZERO),
-	m_eyeOffset(ZERO),
+	m_weaponOffset(),
+	m_eyeOffset(),
 	m_curSpeed(0),
 	m_forceOrient(false),
 	m_endOfThePathTime(-1.0f),
@@ -1082,7 +1082,7 @@ void CAlien::UpdateStats(float frameTime)
 	}
 
 	//misc things
-	Vec3 lookTarget(ZERO);//GetAIAttentionPos());
+	Vec3 lookTarget;
 	if (lookTarget.len2() < 0.01f)
 		lookTarget = GetEntity()->GetSlotWorldTM(0) * GetLocalEyePos() + m_eyeMtx.GetColumn(1) * 10.0f;
 
@@ -1575,7 +1575,7 @@ void CAlien::ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTim
 			if (idx > -1)
 			{
 				Vec3 rootPos(pCharacter->GetISkeletonPose()->GetAbsJointByID(idx).t * m_stats.physicsAnimationRatio);
-				m_stats.animationSpeedVec = frameTime > 0.f ? Matrix33(GetEntity()->GetSlotWorldTM(0)) * ((rootPos - m_stats.lastRootPos) / frameTime) : Vec3(0);
+				m_stats.animationSpeedVec = frameTime > 0.f ? Matrix33(GetEntity()->GetSlotWorldTM(0)) * ((rootPos - m_stats.lastRootPos) / frameTime) : Vec3();
 				m_stats.lastRootPos = rootPos;
 
 				m_charLocalMtx.SetTranslation(m_charLocalMtx.GetTranslation() - rootPos);

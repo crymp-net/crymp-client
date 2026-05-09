@@ -421,7 +421,7 @@ void CHUDScopes::DisplayScope(CPlayer* pPlayerActor)
 		{
 			int zoommode = m_iZoomLevel;
 
-			Vec3 vWorldPos = Vec3(ZERO);
+			Vec3 vWorldPos;
 			if (!pCurrentWeapon->GetScopePosition(vWorldPos))
 				vWorldPos = g_pHUD->m_pRenderer->GetCamera().GetPosition();
 

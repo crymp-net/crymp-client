@@ -678,7 +678,6 @@ inline T BiRandom(T fRange)
 }
 
 //////////////////////////////////////////////////////////////////////////
-enum type_zero { ZERO };
 enum type_min { VMIN };
 enum type_max { VMAX };
 enum type_identity { IDENTITY };

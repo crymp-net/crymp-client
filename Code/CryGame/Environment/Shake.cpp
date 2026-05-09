@@ -68,7 +68,7 @@ void CShake::Update(SEntityUpdateContext& ctx, int updateSlot)
 			if (pView)
 			{
 				float strength = (1.0f - (dist2ToClient / maxRange)) * 0.5;
-				pView->SetViewShake(ZERO, Vec3(m_shake * strength, 0, m_shake * strength), 0.1f, 0.0225f, 1.5f, 1);
+				pView->SetViewShake(Ang3(), Vec3(m_shake * strength, 0, m_shake * strength), 0.1f, 0.0225f, 1.5f, 1);
 			}
 		}
 	}
