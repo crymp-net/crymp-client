@@ -1022,7 +1022,7 @@ void CPlayerInput::GetState(SSerializedPlayerInput& input)
 	{
 		input.deltaMovement = worldRot.GetNormalized() * m_filteredDeltaMovement;
 		// ensure deltaMovement has the right length
-		input.deltaMovement = input.deltaMovement.GetNormalizedSafe(ZERO) * m_filteredDeltaMovement.GetLength();
+		input.deltaMovement = input.deltaMovement.GetNormalizedSafe(Vec3()) * m_filteredDeltaMovement.GetLength();
 	}
 
 	input.sprint = (((m_actions & ACTION_SPRINT) != 0) && !m_pPlayer->m_stats.bIgnoreSprinting);

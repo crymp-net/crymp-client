@@ -126,7 +126,7 @@ void CC4Projectile::SetParams(EntityId ownerId, EntityId hostId, EntityId weapon
 }
 
 //-------------------------------------------
-void CC4Projectile::Explode(bool destroy, bool impact/* =false */, const Vec3& pos/* =ZERO */, const Vec3& normal/* =FORWARD_DIRECTION */, const Vec3& vel/* =ZERO */, EntityId targetId/* =0  */)
+void CC4Projectile::Explode(bool destroy, bool impact/* =false */, const Vec3& pos/* ={} */, const Vec3& normal/* =FORWARD_DIRECTION */, const Vec3& vel/* ={} */, EntityId targetId/* =0  */)
 {
 	if (m_frozen)
 		return;

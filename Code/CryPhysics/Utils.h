@@ -346,7 +346,7 @@ inline void ComputeMeshEigenBasis(strided_pointer<const Vec3> pVertices, strided
                                   Vec3r* eigen_axes, Vec3r& center)
 {
 	int i, j, k;
-	Vec3r m, mean(ZERO), v[3];
+	Vec3r m, mean, v[3];
 	real s, t, sum = 0, mtxbuf[9];
 	matrix C(3, 3, mtx_symmetric, mtxbuf);
 	C.zero();
@@ -363,7 +363,7 @@ inline void ComputeMeshEigenBasis(strided_pointer<const Vec3> pVertices, strided
 	}
 	if (sum == 0)
 	{
-		center = nTris > 0 ? pVertices[pIndices[0]] : Vec3(ZERO);
+		center = nTris > 0 ? pVertices[pIndices[0]] : Vec3();
 		IdentityBasis(eigen_axes);
 		return;
 	}
@@ -417,7 +417,7 @@ inline void SpatialTranspose(matrixf& src, matrixf& dst)
 template<class ftype>
 inline Vec3_tpl<ftype> cross_with_ort(const Vec3_tpl<ftype>& vec, int iz)
 {
-	Vec3_tpl<ftype> res(ZERO);
+	Vec3_tpl<ftype> res;
 	int ix = inc_mod3[iz], iy = dec_mod3[iz];
 	res[iz] = 0;
 	res[ix] = vec[iy];

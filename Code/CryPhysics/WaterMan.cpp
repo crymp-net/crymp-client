@@ -525,8 +525,8 @@ void CWaterMan::SetViewerPos(const Vec3& newpos, int iCaller)
 	Vec3 axisx, axisy, g, newOrigin;
 	vector2di ic, ibbox[2], strideTile(1, (m_nTiles * 2) + 1);
 	pe_params_buoyancy pb[4];
-	for (i = 0, nbuoys = m_pWorld->CheckAreas(newpos, g, pb, 4, Vec3(ZERO), 0, iCaller);
-	     i < nbuoys && pb[i].iMedium; i++)
+	for (i = 0, nbuoys = m_pWorld->CheckAreas(newpos, g, pb, 4, Vec3(), 0, iCaller); i < nbuoys && pb[i].iMedium;
+	     i++)
 		;
 	if (i >= nbuoys ||
 	    fabs_tpl((newpos - pb[i].waterPlane.origin) * pb[i].waterPlane.n) > m_tileSz * (m_nTiles + 1))

@@ -165,7 +165,7 @@ public:
 	int PostSetStateFromSnapshot() override { return 1; }
 	unsigned int GetStateChecksum() override { return 0; }
 
-	int UpdateStructure(float time_interval, pe_explosion* pexpl, int iCaller = 0, Vec3 gravity = Vec3(0));
+	int UpdateStructure(float time_interval, pe_explosion* pexpl, int iCaller = 0, Vec3 gravity = {});
 	virtual void RecomputeMassDistribution(int ipart = -1, int bMassChanged = 1) {}
 
 	virtual void ComputeBBox(Vec3* BBox, int flags = update_part_bboxes);

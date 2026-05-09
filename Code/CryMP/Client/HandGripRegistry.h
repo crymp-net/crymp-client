@@ -12,10 +12,10 @@ struct HandGripInfo
 {
 	bool hasLeft = false;
 	bool hasRight = false;
-	Vec3 leftEL = Vec3(ZERO);
-	Vec3 rightEL = Vec3(ZERO);
-	Vec3 posOffset_FP = Vec3(ZERO); // additional entity offset if specified
-	Vec3 posOffset_TP = Vec3(ZERO); // additional entity offset if specified
+	Vec3 leftEL = {};
+	Vec3 rightEL = {};
+	Vec3 posOffset_FP = {}; // additional entity offset if specified
+	Vec3 posOffset_TP = {}; // additional entity offset if specified
 };
 
 class HandGripRegistry

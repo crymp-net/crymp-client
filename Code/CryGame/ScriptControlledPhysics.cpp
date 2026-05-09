@@ -137,7 +137,7 @@ void CScriptControlledPhysics::OnPostStep(EventPhysPostStep *pPostStep)
 
 			pPostStep->pos=target;
 
-			av.v=ZERO;
+			av.v={};
 		}
 		else
 		{
@@ -180,7 +180,7 @@ void CScriptControlledPhysics::OnPostStep(EventPhysPostStep *pPostStep)
 			m_rotationSpeed=0.0f;
 			m_rotating=false;
 			pPostStep->q=m_rotationTarget;
-			av.w=ZERO;
+			av.w={};
 		}
 		else
 		{

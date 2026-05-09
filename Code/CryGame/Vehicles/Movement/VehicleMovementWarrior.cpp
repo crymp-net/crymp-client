@@ -126,7 +126,7 @@ void CVehicleMovementWarrior::Reset()
 void CVehicleMovementWarrior::ResetThrusters()
 {
   assert(m_vecThrusters.size() == m_thrustersInit.size());
-  assert(m_numThrusters == m_thrustersInit.size());
+  assert(m_numThrusters == static_cast<int>(m_thrustersInit.size()));
 
   for (int i=0; i<m_numThrusters; ++i)
   { 

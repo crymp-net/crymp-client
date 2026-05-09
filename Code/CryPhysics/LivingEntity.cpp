@@ -1607,7 +1607,7 @@ int CLivingEntity::Step(float time_interval)
 	int i, j, imin, jmin = 0, iter, nents, ncont, bFlying, bWasFlying, bPushOther, bUnprojected, idmat = 0,
 			bFastPhys = 0, bPush, bHasFastPhys, iCyl, icnt, nUnproj, bStaticUnproj, bDynUnproj, bMoving = 0,
 			bCheckBBox;
-	Vec3 pos, vel, pos0, vel0, newpos, move(ZERO), nslope, ncontact, ptcontact, ncontactHist[4], ncontactSum,
+	Vec3 pos, vel, pos0, vel0, newpos, move, nslope, ncontact, ptcontact, ncontactHist[4], ncontactSum,
 	    BBoxInner[2], BBoxOuter[2], velGround, axis;
 	float movelen, tmin, h, hcur, dh = 0, tfirst, vrel, move0, movesum, kInertia, imp;
 	coord_block_BBox partCoord;
@@ -2864,7 +2864,7 @@ int CLivingEntity::Step(float time_interval)
 			          ((bGroundContact | m_bStuck) ^ 1);
 			m_bActiveEnvironment = m_bStuck;
 
-			Vec3 last_force(ZERO);
+			Vec3 last_force;
 			if (bFlying)
 			{
 				if (!bWasFlying)
@@ -3377,7 +3377,7 @@ RigidBody* CLivingEntity::GetRigidBody(int ipart, int bWillModify)
 		if (!m_pBody)
 		{
 			m_pBody = new RigidBody;
-			m_pBody->Create(m_pos, Vec3(1), m_qrot, m_size.GetVolume() * 8, m_mass, m_qrot, m_pos);
+			m_pBody->Create(m_pos, Vec3(1, 1, 1), m_qrot, m_size.GetVolume() * 8, m_mass, m_qrot, m_pos);
 		}
 		Vec3 axis = m_qrot * Vec3(0, 0, 1);
 		m_pBody->pos = m_pos + axis * m_hCyl;

@@ -39,8 +39,9 @@ struct ae_joint
 		nChildren = nChildrenTree = 0;
 		iParent = -2;
 		idbody = -1;
-		prev_q = q = Ang3(ZERO);
-		qext = Ang3(ZERO);
+		prev_q = {};
+		q = {};
+		qext = {};
 		prev_dq = dq.zero();
 		dqext.zero();
 		ddq.zero();
@@ -1383,7 +1384,8 @@ int CArticulatedEntity::Action(pe_action* _action, int bThreadSafe)
 			m_timeIdle = 0;
 		}
 
-		Vec3 P(ZERO), L(ZERO);
+		Vec3 P;
+		Vec3 L;
 		if (!is_unused(action->impulse))
 		{
 			P += action->impulse;
@@ -2147,7 +2149,7 @@ int CArticulatedEntity::StepJoint(int idx, float time_interval, int& bBounced, i
 	if (m_bCheckCollisions)
 	{
 		// check for new contacts; unproject if necessary; register new contacts
-		Vec3 sweep(0);
+		Vec3 sweep;
 		if (bFlying)
 		{
 			ip.iUnprojectionMode = 0;
@@ -2645,7 +2647,7 @@ int CArticulatedEntity::Step(float time_interval)
 	{
 		for (i = 0; i < m_nJoints; i++)
 		{
-			m_joints[i].q = Ang3(ZERO);
+			m_joints[i].q = {};
 			m_joints[i].dq.zero();
 		}
 		m_bAwake = 0;
@@ -3595,7 +3597,9 @@ int CArticulatedEntity::RegisterContacts(float time_interval, int nMaxPlaneConta
 
 		if (m_bGrounded || m_joints[idx].iParent >= 0)
 		{
-			Vec3 pivot[2], axisDrift(ZERO), axisTens(ZERO);
+			Vec3 pivot[2];
+			Vec3 axisDrift;
+			Vec3 axisTens;
 			if (!(pContact = CreateConstraintContact(idx)))
 			{
 				break;

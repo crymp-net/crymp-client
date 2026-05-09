@@ -65,7 +65,7 @@ public:
 	void SetData(const primitives::primitive*) override {}
 
 	float GetVolume() override { return 0; }
-	Vec3 GetCenter() override { return Vec3(ZERO); }
+	Vec3 GetCenter() override { return {}; }
 	void* GetForeignData(int iForeignData = 0) override
 	{
 		return iForeignData == m_iForeignData ? m_pForeignData : 0;

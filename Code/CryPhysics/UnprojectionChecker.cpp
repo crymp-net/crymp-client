@@ -1689,7 +1689,7 @@ int box_cylinder_lin_unprojection(unprojection_mode* pmode, const primitives::bo
                                   const primitives::cylinder* pcyl, int iFeature2, contact* pcontact,
                                   geom_contact_area* parea)
 {
-	Vec3r center, axis, dir, size = pbox->size, c, n, pt, vec0, vec1, dir_best(ZERO);
+	Vec3r center, axis, dir, size = pbox->size, c, n, pt, vec0, vec1, dir_best;
 	real nlen, dlen, r = pcyl->r, hh = pcyl->hh, ka, kb, kc, kd, e = pmode->minPtDist;
 	vector2d pt2d;
 	quotient tmin(pmode->tmax, 1), t, t0, tmax;
@@ -2253,7 +2253,7 @@ int box_capsule_lin_unprojection(unprojection_mode* pmode, const primitives::box
 
 	if (pmode->dir.len2() == 0)
 	{
-		Vec3 dir_best(ZERO);
+		Vec3 dir_best;
 		contact capcont;
 		bContact0 = box_cylinder_lin_unprojection(pmode, pbox, iFeature1, pcaps, 0x43, pcontact, parea);
 		if (bContact0)
@@ -2392,7 +2392,7 @@ int cyl_cyl_lin_unprojection(unprojection_mode* pmode, const primitives::cylinde
                              geom_contact_area* parea)
 {
 	const primitives::cylinder* pcyl[2] = {pcyl1, pcyl2};
-	Vec3r axis[2], center[2], dir, ptc, dp, dc, n, axisx, axisy, u, l, a1, dir_best(ZERO);
+	Vec3r axis[2], center[2], dir, ptc, dp, dc, n, axisx, axisy, u, l, a1, dir_best;
 	vector2d c2d, dir2d, pt2d[4], ptbest2d;
 	quotient tmax(0, 1), t, t0, t1;
 	real cosa, sina, rsina{}, a, b, c, d, roots[4], nlen, denom, r0{}, r1, dist, tbound[2];
@@ -3036,7 +3036,7 @@ int cylinder_capsule_lin_unprojection(unprojection_mode* pmode, const primitives
 
 	if (pmode->dir.len2() == 0)
 	{
-		Vec3 dir_best(ZERO);
+		Vec3 dir_best;
 		contact capcont;
 		bContact0 = cyl_cyl_lin_unprojection(pmode, pcyl, iFeature1, pcaps, 0x43, pcontact, parea);
 		if (bContact0)
@@ -3124,7 +3124,7 @@ int capsule_capsule_lin_unprojection(unprojection_mode* pmode, const primitives:
 
 	if (pmode->dir.len2() == 0)
 	{
-		Vec3 dir_best(ZERO);
+		Vec3 dir_best;
 		contact capcont;
 		bContact = cyl_cyl_lin_unprojection(pmode, pcaps1, 0x43, pcaps2, 0x43, pcontact, parea);
 		if (bContact)
@@ -3224,7 +3224,7 @@ int sphere_capsule_lin_unprojection(unprojection_mode* pmode, const primitives::
 
 	if (pmode->dir.len2() == 0)
 	{
-		Vec3 dir_best(ZERO);
+		Vec3 dir_best;
 		contact capcont;
 		bContact0 = sphere_cylinder_lin_unprojection(pmode, psph, iFeature1, pcaps, 0x43, pcontact, parea);
 		if (bContact0)

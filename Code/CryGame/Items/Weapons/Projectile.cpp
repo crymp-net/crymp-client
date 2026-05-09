@@ -706,7 +706,7 @@ void CProjectile::Destroy()
 		}
 	}
 
-	WhizSound(false, ZERO, ZERO);
+	WhizSound(false, Vec3(), Vec3());
 
 	bool returnToPoolOK = true;
 

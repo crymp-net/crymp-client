@@ -545,9 +545,9 @@ int CRigidEntity::SetParams(pe_params* _params, int bThreadSafe)
 				}
 				if (m_iLastLog < 0 && bRealMove)
 				{
+					const float val = m_pWorld->m_vars.maxContactGap * 4;
 					nEnts = m_pWorld->GetEntitiesAround(
-					    BBox0[0] - Vec3(m_pWorld->m_vars.maxContactGap * 4),
-					    BBox0[1] + Vec3(m_pWorld->m_vars.maxContactGap * 4), pentlist,
+					    BBox0[0] - Vec3(val, val, val), BBox0[1] + Vec3(val, val, val), pentlist,
 					    ent_sleeping_rigid | ent_living | ent_independent, this);
 					for (--nEnts; nEnts >= 0; nEnts--)
 					{
@@ -902,7 +902,8 @@ int CRigidEntity::Action(pe_action* _action, int bThreadSafe)
 
 		if (m_body.Minv > 0)
 		{
-			Vec3 P = action->impulse, L(ZERO);
+			Vec3 P = action->impulse;
+			Vec3 L;
 			if (!is_unused(action->angImpulse))
 			{
 				L = action->angImpulse;
@@ -1636,8 +1637,9 @@ int CRigidEntity::GetPotentialColliders(CPhysicalEntity**& pentlist, float dt)
 	{
 		return 0;
 	}
+	const float inflatorValue = m_pWorld->m_vars.maxContactGap * 4 * isneg(m_iLastLog);
 	Vec3 BBox[2] = {m_BBoxNew[0], m_BBoxNew[1]}, move = m_body.v * m_timeStepFull,
-	     inflator = Vec3(m_pWorld->m_vars.maxContactGap * 4 * isneg(m_iLastLog));
+	     inflator = Vec3(inflatorValue, inflatorValue, inflatorValue);
 	BBox[isneg(-move.x)].x += move.x;
 	BBox[isneg(-move.y)].y += move.y;
 	BBox[isneg(-move.z)].z += move.z;
@@ -2425,7 +2427,7 @@ entity_contact* CRigidEntity::RegisterContactPoint(int idx, const Vec3& pt, cons
 			                     ? pContact->n * min(m_pWorld->m_vars.maxUnprojVel,
 			                                         (penetration - m_pWorld->m_vars.maxContactGap) *
 			                                             m_pWorld->m_vars.unprojVelScale)
-			                     : Vec3(ZERO);
+			                     : Vec3();
 		}
 		else
 		{
@@ -2971,7 +2973,7 @@ int CRigidEntity::EnforceConstraints(float time_interval)
 
 float CRigidEntity::CalcEnergy(float time_interval)
 {
-	Vec3 v(ZERO);
+	Vec3 v;
 	float Emax = m_body.M * sqr(m_pWorld->m_vars.maxVel) * 2, Econstr = 0;
 	int i;
 	masktype constraint_mask;
@@ -3283,7 +3285,7 @@ int CRigidEntity::Step(float time_interval)
 						}
 						else
 						{
-							Vec3 thinDim(ZERO);
+							Vec3 thinDim;
 							if (m_nParts == 1)
 							{
 								primitives::box bbox;
@@ -3517,7 +3519,7 @@ int CRigidEntity::Step(float time_interval)
 				{ // penetration contacts - register points and add additional penalty impulse in solver
 					if (!(m_parts[g_CurCollParts[i][0]].flags & geom_squashy))
 					{
-						Vec3 ntilt(ZERO);
+						Vec3 ntilt;
 						axis.zero();
 						r = 0;
 						if (pcontacts[i].parea && pcontacts[i].parea->npt > 2)
@@ -4150,7 +4152,7 @@ int CRigidEntity::RegisterContacts(float time_interval, int nMaxPlaneContacts)
 						        max(0.0f, (penetration - m_pWorld->m_vars.maxContactGap)) *
 						            m_pWorld->m_vars.unprojVelScale);
 						pContactAng->vreq =
-						    pContact0->penetration > 0 ? pContact0->nloc * 10.0f : Vec3(ZERO);
+						    pContact0->penetration > 0 ? pContact0->nloc * 10.0f : Vec3();
 						pContactLin->K.SetZero();
 						if ((m_BBox[1] - m_BBox[0]).GetVolume() >
 						    (m_pColliders[i]->m_BBox[1] - m_pColliders[i]->m_BBox[0])
@@ -4464,7 +4466,8 @@ int CRigidEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
 	SRigidEntityNetSerialize helper = {m_pos, m_qrot, m_body.v, m_body.w, m_bAwake != 0};
 	if (!m_bAwake)
 	{
-		helper.vel = helper.angvel = ZERO;
+		helper.vel = {};
+		helper.angvel = {};
 	}
 	helper.Serialize(ser);
 
@@ -4854,7 +4857,7 @@ void CRigidEntity::ApplyBuoyancy(float time_interval, const Vec3& gravity, pe_pa
 		return;
 	}
 	int i = 0, ibuoy, ibuoySplash = -1;
-	Vec3 sz, center, dP, totResistance = Vec3(ZERO), vel0 = m_body.v;
+	Vec3 sz, center, dP, totResistance, vel0 = m_body.v;
 	float r, dist, V, Vsubmerged, Vfull, submergedFraction, waterFraction = 0;
 	geom_world_data gwd;
 	pe_action_impulse ai;

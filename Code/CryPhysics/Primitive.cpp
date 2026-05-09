@@ -53,7 +53,7 @@ int CPrimitive::Intersect(IGeometry* _pCollider, geom_world_data* pdata1, geom_w
 
 	BV *pBV1, *pBV2;
 	prim_inters inters;
-	Vec3 sweepdir(ZERO);
+	Vec3 sweepdir;
 	float sweepstep = 0;
 	ResetGlobalPrimsBuffers(iCaller);
 	g_idata[iCaller].Overlapper.Init();
@@ -131,7 +131,7 @@ int CPrimitive::Intersect(IGeometry* _pCollider, geom_world_data* pdata1, geom_w
 
 	if (!pparams->bSweepTest)
 	{
-		Vec3 ptm(0);
+		Vec3 ptm;
 		if (!pparams->bNoIntersection)
 		{
 			if (g_Intersector.CheckExists(itype[0], itype[1]))

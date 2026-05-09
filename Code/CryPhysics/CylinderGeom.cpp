@@ -575,7 +575,7 @@ float CCylinderGeom::CalculateBuoyancy(const primitives::plane* pplane, const ge
 void CCylinderGeom::CalculateMediumResistance(const primitives::plane* pplane, const geom_world_data* pgwd, Vec3& dPres,
                                               Vec3& dLres)
 {
-	Vec3 n, rotax, v, w, center, dir, org, pt0, dP(ZERO), dL(ZERO), ptside[4];
+	Vec3 n, rotax, v, w, center, dir, org, pt0, dP, dL, ptside[4];
 	vector2df ptbuf0[16], ptbuf1[16], *pt = ptbuf0, *pt1 = ptbuf1, *ptt;
 	float sina, r, rr, r2, hh, x0, y0, x1, y1, dx, dy, Fx, Fxy, Fxx, Fxxy, Fxyy, Fxxx, alpha, square;
 	int i, icap, npt, sgx, itypebuf0[16], itypebuf1[16], *itype = itypebuf0, *itype1 = itypebuf1, *itypet;

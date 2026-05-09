@@ -376,7 +376,8 @@ int CParticleEntity::Action(pe_action* _action, int bThreadSafe)
 	if (_action->type == pe_action_impulse::type_id)
 	{
 		pe_action_impulse* action = (pe_action_impulse*)_action;
-		Vec3 P = action->impulse, L(ZERO);
+		Vec3 P = action->impulse;
+		Vec3 L;
 		if (!is_unused(action->angImpulse))
 		{
 			L = action->angImpulse;
@@ -908,10 +909,10 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 		if ((m_nStepCount | (int)(char)m_areaCheckPeriod >> 31) == 0)
 		{
 			pe_params_buoyancy pb[4];
-			Vec3 vmedium[2] = {Vec3(ZERO), Vec3(ZERO)};
+			Vec3 vmedium[2];
 			float depth;
 
-			nhits = m_pWorld->CheckAreas(this, gravity, pb, 4, Vec3(ZERO), iCaller);
+			nhits = m_pWorld->CheckAreas(this, gravity, pb, 4, Vec3(), iCaller);
 			if (nhits)
 			{
 				if (!is_unused(gravity))

@@ -24,7 +24,7 @@ void CNetPlayerInput::PreUpdate()
 	Quat worldRot = m_pPlayer->GetBaseQuat(); 
 	Vec3 deltaMovement = worldRot.GetInverted().GetNormalized() * m_curInput.deltaMovement;
 	// absolutely ensure length is correct
-	deltaMovement = deltaMovement.GetNormalizedSafe(ZERO) * m_curInput.deltaMovement.GetLength();
+	deltaMovement = deltaMovement.GetNormalizedSafe(Vec3()) * m_curInput.deltaMovement.GetLength();
 	moveRequest.AddDeltaMovement(deltaMovement);
 
 	Vec3 lookDirection(m_curInput.lookDirection);

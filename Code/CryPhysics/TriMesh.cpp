@@ -4109,7 +4109,7 @@ int CTriMesh::Intersect(IGeometry* pCollider, geom_world_data* pdata1, geom_worl
 				}
 				else
 				{
-					unproj.dir = -pdata1->v + (pdata2 ? pdata2->v : Vec3(0));
+					unproj.dir = -pdata1->v + (pdata2 ? pdata2->v : Vec3());
 					if (unproj.dir.len2() > 0)
 					{
 						unproj.dir.normalize();
@@ -5762,7 +5762,7 @@ void CTriMesh::CalcVolumetricPressure(geom_world_data* gwd, const Vec3& epicente
                                       const Vec3& centerOfMass, Vec3& P, Vec3& L)
 {
 	int i, j, npt, iter;
-	Vec3 pt[64], ptc, dP, Pres(ZERO), Lres(ZERO), c, cm;
+	Vec3 pt[64], ptc, dP, Pres, Lres, c, cm;
 	float r2, t1, t2, rmin2, rscale;
 	c = (epicenter - gwd->offset) * gwd->R;
 	cm = (centerOfMass - gwd->offset) * gwd->R;
@@ -5863,7 +5863,7 @@ float CTriMesh::CalculateBuoyancy(const primitives::plane* pplane, const geom_wo
 	gtest.scale = pgwd->scale;
 	int itri, i, j, imask, nAbove, iLow, iHigh, sign[3], nPieces;
 	float t, V[4], Vaccum = 0;
-	Vec3 com[4], com_accum(ZERO), pt[3];
+	Vec3 com[4], com_accum, pt[3];
 
 	for (itri = 0; itri < m_nTris; itri++)
 	{
@@ -6104,7 +6104,7 @@ float CTriMesh::GetIslandDisk(int matid, const Vec3& ptref, Vec3& center, Vec3& 
 	ReadLock lock(m_lockUpdate);
 	const int szq = 256;
 	int i, j, itri, itri1 = -1, ihead, itail, queue[szq];
-	Vec3 cnt, cnt0(1E10f), ntot;
+	Vec3 cnt, cnt0(1E10f, 1E10f, 1E10f), ntot;
 	float area, totArea, det, maxdet, r;
 	Matrix33 C, Ctmp;
 	primitives::box bbox;

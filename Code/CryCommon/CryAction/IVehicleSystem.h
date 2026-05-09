@@ -332,7 +332,7 @@ struct SDamageEffect
 	SDamageEffect()
 		: pHelper(NULL),
       isGravityDirUsed(false),
-      gravityDir(ZERO),
+      gravityDir(),
       pulsePeriod(0.f)
 	{
 	}

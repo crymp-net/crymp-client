@@ -63,7 +63,7 @@ void CSphereGeom::GetRandomPos(RandomPos& ran, GeomQuery& geo, EGeomForm eForm)
 			float fLen2;
 			do
 			{
-				ran.vPos = BiRandom(Vec3(1.f));
+				ran.vPos = BiRandom(Vec3(1.f, 1.f, 1.f));
 				fLen2 = ran.vPos.GetLengthSquared();
 			}
 			while (fLen2 > 1.f);

@@ -1066,8 +1066,8 @@ void CWheeledVehicleEntity::CheckAdditionalGeometry(float time_interval)
 				Vec3 BBoxWheel[2], BBoxEnt[2] = {Vec3(), Vec3()};
 				r = m_BBox[1] - m_BBox[0];
 				r.x = max(max(r.x, r.y), r.z);
-				BBoxEnt[0] = Vec3(r.x);
-				BBoxEnt[1] = Vec3(-r.x);
+				BBoxEnt[0] = Vec3(r.x, r.x, r.x);
+				BBoxEnt[1] = Vec3(-r.x, -r.x, -r.x);
 				for (j1 = 0; j1 < pentlist[i]->m_nParts; j1++)
 				{
 					pentlist[i]->m_parts[j1].pPhysGeomProxy->pGeom->GetBBox(&abox);

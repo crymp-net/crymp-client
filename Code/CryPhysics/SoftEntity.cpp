@@ -1265,7 +1265,7 @@ enoughgeoms:
 
 	pe_params_buoyancy pb[4];
 	primitives::plane waterPlane;
-	Vec3 waterFlow(ZERO);
+	Vec3 waterFlow;
 	float waterDensity = 0, rthickness = 1.0f / m_thickness;
 	waterPlane.origin.Set(0, 0, -1000);
 	waterPlane.n.Set(0, 0, 1);

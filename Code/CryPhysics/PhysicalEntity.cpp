@@ -1267,8 +1267,9 @@ int CPhysicalEntity::Action(pe_action* _action, int bThreadSafe)
 			{
 				float rdensity = m_parts[i].pLattice->m_density * m_parts[i].pPhysGeom->V *
 				                 cube(m_parts[i].scale) / m_parts[i].mass;
-				Vec3 ptloc = ((action->point - m_pos) * m_qrot - m_parts[i].pos) * m_parts[i].q,
-				     P(ZERO), L(ZERO);
+				Vec3 ptloc = ((action->point - m_pos) * m_qrot - m_parts[i].pos) * m_parts[i].q;
+				Vec3 P;
+				Vec3 L;
 				rdensity *= scale;
 				if (m_parts[i].scale != 1.0f)
 				{
@@ -1389,7 +1390,8 @@ int CPhysicalEntity::Action(pe_action* _action, int bThreadSafe)
 					gp.flags = m_parts[i].flags;
 					gp.flagsCollider = m_parts[i].flagsCollider;
 					mtxPart = action->mtxRel *
-					          Matrix34(Vec3(m_parts[i].scale), m_parts[i].q, m_parts[i].pos);
+					          Matrix34(Vec3(m_parts[i].scale, m_parts[i].scale, m_parts[i].scale),
+					                   m_parts[i].q, m_parts[i].pos);
 					gp.pLattice = m_parts[i].pLattice;
 					gp.idmatBreakable = m_parts[i].idmatBreakable;
 					gp.pMatMapping = m_parts[i].pMatMapping;
@@ -2231,7 +2233,7 @@ int CPhysicalEntity::UpdateStructure(float time_interval, pe_explosion* pexpl, i
 	pp.pos = m_pos;
 	pp.q = m_qrot;
 	nPlanes = min(m_nGroundPlanes, sizeof(ground) / sizeof(ground[0]));
-	if (iCaller >= 0 && (!m_pWorld->CheckAreas(this, gravity, &pb, 1, Vec3(ZERO), iCaller) || is_unused(gravity)))
+	if (iCaller >= 0 && (!m_pWorld->CheckAreas(this, gravity, &pb, 1, Vec3(), iCaller) || is_unused(gravity)))
 	{
 		gravity = m_pWorld->m_vars.gravity;
 	}
@@ -2836,11 +2838,13 @@ int CPhysicalEntity::UpdateStructure(float time_interval, pe_explosion* pexpl, i
 						if (!pents)
 						{
 							iter = m_pWorld->GetEntitiesAround(
-							    m_BBox[0] - Vec3(0.1f), m_BBox[1] + Vec3(0.1f), pents,
+							    m_BBox[0] - Vec3(0.1f, 0.1f, 0.1f),
+							    m_BBox[1] + Vec3(0.1f, 0.1f, 0.1f), pents,
 							    ent_rigid | ent_sleeping_rigid | ent_independent);
 						}
-						BBoxNew[0] -= Vec3(m_pWorld->m_vars.maxContactGap * 5);
-						BBoxNew[1] += Vec3(m_pWorld->m_vars.maxContactGap * 5);
+						const float val = m_pWorld->m_vars.maxContactGap * 5;
+						BBoxNew[0] -= Vec3(val, val, val);
+						BBoxNew[1] += Vec3(val, val, val);
 						for (j = iter - 1; j >= 0; j--)
 						{
 							if (AABB_overlap(pents[j]->m_BBox, BBoxNew))
@@ -3799,9 +3803,11 @@ int CPhysicalEntity::UpdateStructure(float time_interval, pe_explosion* pexpl, i
 
 									pMeshNew->GetBBox(&bbox1);
 									bbox.Basis *= Matrix33(!m_parts[i].q * !m_qrot);
+									const float gapValue =
+									    m_pWorld->m_vars.maxContactGap * 5;
 									sz = (bbox1.size * bbox1.Basis.Fabs()) *
 									         m_parts[i].scale +
-									     Vec3(m_pWorld->m_vars.maxContactGap * 5);
+									     Vec3(gapValue, gapValue, gapValue);
 									BBoxNew[0] = BBoxNew[1] =
 									    m_pos +
 									    m_qrot * (m_parts[i].pos +
@@ -3902,8 +3908,8 @@ int CPhysicalEntity::UpdateStructure(float time_interval, pe_explosion* pexpl, i
 				RecomputeMassDistribution();
 				// pe_action_reset ar; ar.bClearContacts=0;
 				// Action(&ar,1);
-				for (j = m_pWorld->GetEntitiesAround(m_BBox[0] - Vec3(0.1f), m_BBox[1] + Vec3(0.1f),
-				                                     pents,
+				for (j = m_pWorld->GetEntitiesAround(m_BBox[0] - Vec3(0.1f, 0.1f, 0.1f),
+				                                     m_BBox[1] + Vec3(0.1f, 0.1f, 0.1f), pents,
 				                                     ent_rigid | ent_sleeping_rigid | ent_independent) -
 				         1;
 				     j >= 0; j--)
@@ -3936,7 +3942,8 @@ SkipMeshUpdates:
 	}
 	if (!(m_flags & aef_recorded_physics) && (nRemoveGeoms || nMeshSplits))
 	{
-		for (i1 = m_pWorld->GetEntitiesAround(m_BBox[0] - Vec3(0.1f), m_BBox[1] + Vec3(0.1f), pents,
+		for (i1 = m_pWorld->GetEntitiesAround(m_BBox[0] - Vec3(0.1f, 0.1f, 0.1f),
+		                                      m_BBox[1] + Vec3(0.1f, 0.1f, 0.1f), pents,
 		                                      ent_rigid | ent_sleeping_rigid | ent_independent) -
 		          1;
 		     i1 >= 0; i1--)
@@ -4084,11 +4091,11 @@ int CPhysicalEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags
 	else if ((flags & ssf_from_child_class) == 0)
 	{
 		SRigidEntityNetSerialize helper;
-		helper.angvel = ZERO;
+		helper.angvel = {};
 		helper.pos = m_pos;
 		helper.rot = m_qrot;
 		helper.simclass = 0;
-		helper.vel = ZERO;
+		helper.vel = {};
 		helper.Serialize(ser);
 	}
 

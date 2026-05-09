@@ -1193,7 +1193,7 @@ void CPlayer::UpdateHeldObjectIK()
 
 	// Quick one-hand path
 	pe_status_dynamics dyn;
-	Vec3 objectPos = Vec3(ZERO);
+	Vec3 objectPos;
 	if (pent->GetStatus(&dyn))
 		objectPos = dyn.centerOfMass;
 	else
@@ -1656,7 +1656,7 @@ void CPlayer::PrePhysicsUpdate()
 			}
 			else
 			{
-				frameMovementParams.desiredVelocity = ZERO;
+				frameMovementParams.desiredVelocity = {};
 				CPlayerMovement playerMovement(*this, frameMovementParams, frameTime);
 				playerMovement.Process(*this);
 				playerMovement.Commit(*this);
@@ -2795,7 +2795,7 @@ void CPlayer::UpdateSwimStats(float frameTime)
 {
 	bool isClient(IsClient());
 
-	Vec3 localReferencePos = ZERO;
+	Vec3 localReferencePos;
 	int spineID = GetBoneID(BONE_SPINE3);
 	if (spineID > -1)
 	{
@@ -2807,9 +2807,9 @@ void CPlayer::UpdateSwimStats(float frameTime)
 			localReferencePos.x = 0.0f;
 			localReferencePos.y = 0.0f;
 			if (!localReferencePos.IsValid())
-				localReferencePos = ZERO;
+				localReferencePos = {};
 			if (localReferencePos.GetLengthSquared() > (2.0f * 2.0f))
-				localReferencePos = ZERO;
+				localReferencePos = {};
 		}
 	}
 
@@ -3025,7 +3025,7 @@ void CPlayer::UpdateUWBreathing(float frameTime, Vec3 worldBreathPos)
 				damage += m_pNanoSuit->GetHealthRegenRate() * drownEffectDelay;
 				if (gEnv->bServer)
 				{
-					HitInfo hitInfo(GetEntityId(), GetEntityId(), GetEntityId(), -1, 0, 0, -1, 0, ZERO, ZERO, ZERO);
+					HitInfo hitInfo(GetEntityId(), GetEntityId(), GetEntityId(), -1, 0, 0, -1, 0, {}, {}, {});
 					hitInfo.SetDamage(damage);
 
 					if (CGameRules* pGameRules = g_pGame->GetGameRules())
@@ -3970,7 +3970,7 @@ void CPlayer::Revive(ReasonForRevive reason)
 	m_FPWeaponAngleOffset.Set(0, 0, 0);
 	m_FPWeaponLastDirVec.Set(0, 0, 0);
 
-	m_lastAnimContPos = ZERO;
+	m_lastAnimContPos = {};
 
 	m_angleOffset.Set(0, 0, 0);
 
@@ -4469,7 +4469,7 @@ void CPlayer::ResetAnimations()
 				pCharacter->GetISkeleton()->SetPlusRotation(boneID, IDENTITY);*/
 		}
 
-		pCharacter->GetISkeletonPose()->SetLookIK(false, 0, ZERO);
+		pCharacter->GetISkeletonPose()->SetLookIK(false, 0, {});
 	}
 }
 
@@ -4676,8 +4676,8 @@ void CPlayer::Freeze(bool freeze)
 		if (m_stats.isOnLadder.Value())
 		{
 			pe_simulation_params sp;
-			sp.gravity = ZERO;
-			sp.gravityFreefall = ZERO;
+			sp.gravity = {};
+			sp.gravityFreefall = {};
 
 			pPhysicalEntity->SetParams(&sp);
 		}
@@ -6101,7 +6101,7 @@ void CPlayer::UpdateFootSteps(float frameTime)
 					gearSearchEffectId = pMaterialEffects->GetEffectIdByName("footsteps", "gear_search");
 		}
 
-		Vec3 proxyOffset = Vec3(ZERO);
+		Vec3 proxyOffset;
 		Matrix34 tm = GetEntity()->GetWorldTM();
 		tm.Invert();
 		params.soundProxyOffset = tm.TransformVector(params.pos - GetEntity()->GetWorldPos());

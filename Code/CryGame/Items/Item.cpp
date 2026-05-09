@@ -119,7 +119,7 @@ CItem::CItem()
 	m_noDrop(false),
 	m_constraintId(0),
 	m_useFPCamSpacePP(true),
-	m_serializeActivePhysics(0),
+	m_serializeActivePhysics(),
 	m_serializeDestroyed(false),
 	m_bPostPostSerialize(false)
 {
@@ -1439,8 +1439,8 @@ void CItem::Drop(float impulseScale, bool selectNext, bool byDeath)
 			SMovementState moveState;
 			pMC->GetMovementState(moveState);
 
-			Vec3 dir(ZERO);
-			Vec3 vel(ZERO);
+			Vec3 dir;
+			Vec3 vel;
 			dir.Set(0.0f, 0.0f, -1.0f);
 
 			if (pOwner->IsPlayer())
@@ -2020,7 +2020,7 @@ Vec3 CItem::GetMountedAngleLimits() const
 	if (m_stats.mounted)
 		return Vec3(m_mountparams.min_pitch, m_mountparams.max_pitch, m_mountparams.yaw_range);
 	else
-		return ZERO;
+		return {};
 }
 
 //------------------------------------------------------------------------

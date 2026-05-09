@@ -1127,7 +1127,7 @@ void CalcMediumResistance(const Vec3* ptsrc, int npt, const Vec3& n, const primi
                           const Vec3& vworld, const Vec3& wworld, const Vec3& com, Vec3& P, Vec3& L)
 {
 	int i;
-	Vec3 pt0[16], pt[16], v, w, rotax, dP(ZERO), dL(ZERO);
+	Vec3 pt0[16], pt[16], v, w, rotax, dP, dL;
 	float x0, y0, dx, dy, Fxy, Fxx, Fxxy, Fxyy, Fxxx, square = 0, sina;
 	npt = crop_polygon_with_plane(ptsrc, npt, pt0, waterPlane.n, waterPlane.origin * waterPlane.n);
 	for (i = 0; i < npt; i++)

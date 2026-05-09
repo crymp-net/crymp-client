@@ -249,8 +249,9 @@ void CRopeEntity::RecalcBBox()
 			m_BBox[0] = min(m_BBox[0], m_segs[i].pt);
 			m_BBox[1] = max(m_BBox[1], m_segs[i].pt);
 		}
-		m_BBox[0] -= Vec3(m_collDist * 2);
-		m_BBox[1] += Vec3(m_collDist * 2);
+		const float val = m_collDist * 2;
+		m_BBox[0] -= Vec3(val, val, val);
+		m_BBox[1] += Vec3(val, val, val);
 		AtomicAdd(&m_pWorld->m_lockGrid, -m_pWorld->RepositionEntity(this, 1, m_BBox));
 	}
 }
@@ -1146,7 +1147,7 @@ void CRopeEntity::MeshVtxUpdated()
 {
 	int i;
 	primitives::box* pbox = &((CSingleBoxTree*)m_pMesh->m_pTree)->m_Box;
-	Vec3 axisx, axisy, BBox[2] = {Vec3(0), Vec3(0)};
+	Vec3 axisx, axisy, BBox[2];
 
 	for (i = 0; i < 2; i++)
 	{
@@ -1326,7 +1327,7 @@ int CRopeEntity::Step(float time_interval)
 				      bHasContacts = 0;
 	int flags = m_flags;
 	Vec3 pos, gravity, dir, ptend[2], sz, BBox[2], ptnew, dv, dw, vrel, dir0src, dir1src, dir0dst, dir1dst,
-	    axis0src, axis1src, axis0dst, axis1dst, offstv(ZERO);
+	    axis0src, axis1src, axis0dst, axis1dst, offstv;
 	float len2, diff, a{}, b, r2, r2new, pAp, vmax, k, E, damping = max(0.0f, 1.0f - (m_damping * time_interval)),
 							      rnSegs = 1.0f / m_nSegs, rcollDist = 0, angleSrc,
 							      angleDst, scaletv = 1.0f;
@@ -2042,7 +2043,7 @@ int CRopeEntity::Step(float time_interval)
 		{
 			int i1, j1, iMoveEnd[2], ncont, bIncomplete[2], bStrainRechecked = 0;
 			float tmax[2];
-			Vec3 dirUnproj[2] = {Vec3(ZERO), Vec3(ZERO)};
+			Vec3 dirUnproj[2];
 			rope_vtx vtxBest;
 			geom_world_data gwd1;
 			WriteLock lockVtx(m_lockVtx);

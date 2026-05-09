@@ -112,7 +112,7 @@ int CPhysArea::ApplyParams(const Vec3& pt, Vec3& gravity, const Vec3& vel, pe_pa
 
 	if (m_ptSpline && !m_bUniform)
 	{
-		Vec3 p0, p1, p2, v0, v1, v2, gcent(ZERO), gpull;
+		Vec3 p0, p1, p2, v0, v1, v2, gcent, gpull;
 		int iClosestSeg;
 		float tClosest, mindist;
 		mindist = FindSplineClosestPt(ptloc, iClosestSeg, tClosest);

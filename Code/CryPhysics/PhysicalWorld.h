@@ -140,7 +140,7 @@ public:
 	int CollideEntityWithPrimitive(IPhysicalEntity* _pent, int itype, primitives::primitive* pprim, Vec3 dir,
 	                               ray_hit* phit);
 
-	float PrimitiveWorldIntersection(int itype, primitives::primitive* pprim, const Vec3& sweepDir = Vec3(ZERO),
+	float PrimitiveWorldIntersection(int itype, primitives::primitive* pprim, const Vec3& sweepDir = {},
 	                                 int entTypes = ent_all, geom_contact** ppcontact = 0, int geomFlagsAll = 0,
 	                                 int geomFlagsAny = geom_colltype0 | geom_colltype_player,
 	                                 intersection_params* pip = 0, void* pForeignData = 0, int iForeignData = 0,
@@ -263,16 +263,15 @@ public:
 
 	IPhysicalEntity* AddGlobalArea();
 	IPhysicalEntity* AddArea(Vec3* pt, int npt, float zmin, float zmax, const Vec3& pos = Vec3(0, 0, 0),
-	                         const quaternionf& q = quaternionf(), float scale = 1.0f,
-	                         const Vec3& normal = Vec3(ZERO), int* pTessIdx = 0, int nTessTris = 0,
-	                         Vec3* pFlows = 0);
+	                         const quaternionf& q = quaternionf(), float scale = 1.0f, const Vec3& normal = {},
+	                         int* pTessIdx = 0, int nTessTris = 0, Vec3* pFlows = 0);
 	IPhysicalEntity* AddArea(IGeometry* pGeom, const Vec3& pos, const quaternionf& q, float scale);
 	IPhysicalEntity* AddArea(Vec3* pt, int npt, float r, const Vec3& pos, const quaternionf& q, float scale);
 	void RemoveArea(IPhysicalEntity* pArea);
-	int CheckAreas(const Vec3& ptc, Vec3& gravity, pe_params_buoyancy* pb, int nMaxBuoys = 1,
-	               const Vec3& vel = Vec3(ZERO), IPhysicalEntity* pent = 0, int iCaller = 0);
+	int CheckAreas(const Vec3& ptc, Vec3& gravity, pe_params_buoyancy* pb, int nMaxBuoys = 1, const Vec3& vel = {},
+	               IPhysicalEntity* pent = 0, int iCaller = 0);
 	int CheckAreas(CPhysicalEntity* pent, Vec3& gravity, pe_params_buoyancy* pb, int nMaxBuoys = 1,
-	               const Vec3& vel = Vec3(ZERO), int iCaller = 0);
+	               const Vec3& vel = {}, int iCaller = 0);
 	void RepositionArea(CPhysArea* pArea);
 	IPhysicalEntity* GetNextArea(IPhysicalEntity* pPrevArea = 0);
 

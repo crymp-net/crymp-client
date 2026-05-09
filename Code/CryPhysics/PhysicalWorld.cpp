@@ -4336,7 +4336,7 @@ void CPhysicalWorld::SimulateExplosion(pe_explosion* pexpl, IPhysicalEntity** pS
 	epc.partid[0] = 0;
 	epc.idmat[0] = 0;
 	epc.penetration = epc.radius = 0;
-	if (!CheckAreas(pexpl->epicenter, gravity, &pb, 1, Vec3(ZERO), 0, iCaller) || is_unused(gravity))
+	if (!CheckAreas(pexpl->epicenter, gravity, &pb, 1, Vec3(), 0, iCaller) || is_unused(gravity))
 	{
 		gravity = m_vars.gravity;
 	}
@@ -6151,7 +6151,9 @@ CPhysicalEntity* CPhysicalWorld::LoadPhysicalEntityPtr(TSerialize ser)
 		}
 	}
 
-	for (i = GetEntitiesAround(com - Vec3(0.1f), com + Vec3(0.1f), pents, 1 << iSimClass | 1 << iSimClass1) - 1;
+	for (i = GetEntitiesAround(com - Vec3(0.1f, 0.1f, 0.1f), com + Vec3(0.1f, 0.1f, 0.1f), pents,
+	                           1 << iSimClass | 1 << iSimClass1) -
+	         1;
 	     i >= 0; i--)
 	{
 		getEntityMassAndCom(pents[i], mass1, com1);
@@ -6449,8 +6451,8 @@ IPhysicalEntity* CPhysicalWorld::AddGlobalArea()
 
 		EventPhysAreaChange epac;
 		epac.pEntity = m_pGlobalArea;
-		epac.boxAffected[0] = Vec3(-FLT_MAX);
-		epac.boxAffected[1] = Vec3(FLT_MAX);
+		epac.boxAffected[0] = Vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		epac.boxAffected[1] = Vec3(FLT_MAX, FLT_MAX, FLT_MAX);
 		SignalEvent(&epac, 0);
 	}
 	return m_pGlobalArea;
