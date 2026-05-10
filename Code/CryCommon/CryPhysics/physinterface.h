@@ -10,11 +10,13 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#ifndef physinterface_h
-#define physinterface_h
+#pragma once
 
-#include "CryCommon/CryNetwork/SerializeFwd.h"
+#include "CryCommon/CryMath/Cry_Math.h"
 #include "CryCommon/CryMath/Cry_Geo.h"
+#include "CryCommon/CryNetwork/SerializeFwd.h"
+
+#include "primitives.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Physics defines.
@@ -1750,18 +1752,18 @@ struct IPhysicalEntity {
 		@params flags a combination of snapshot_flags
 		@return non0 if successful
 	*/
-	virtual int GetStateSnapshot(class CStream &stm, float time_back=0, int flags=0) = 0;
+	virtual int GetStateSnapshot(class CStream &stm, float time_back=0, int flags=0) { return 0; } // CryMP: unused
 	virtual int GetStateSnapshot(TSerialize ser, float time_back=0, int flags=0) = 0;
 	/*! Reads state from snapshot
 		@param stm stream
 		@return size of snapshot
 	*/
-	virtual int SetStateFromSnapshot(class CStream &stm, int flags=0) = 0;
+	virtual int SetStateFromSnapshot(class CStream &stm, int flags=0) { return 0; } // CryMP: unused
 	virtual int SetStateFromSnapshot(TSerialize ser, int flags=0) = 0;
 	virtual int SetStateFromTypedSnapshot(TSerialize ser, int type, int flags=0) = 0;
 	virtual int PostSetStateFromSnapshot() = 0;
-	virtual int GetStateSnapshotTxt(char *txtbuf,int szbuf, float time_back=0) = 0;
-	virtual void SetStateFromSnapshotTxt(const char *txtbuf,int szbuf) = 0;
+	virtual int GetStateSnapshotTxt(char *txtbuf,int szbuf, float time_back=0) { return 0; } // CryMP: unused
+	virtual void SetStateFromSnapshotTxt(const char *txtbuf,int szbuf) {} // CryMP: unused
 	virtual unsigned int GetStateChecksum() = 0;
 	/*! Evolves entity in time. Normally this is called from PhysicalWorld::TimeStep
 		@param time_interval time step
@@ -2361,5 +2363,3 @@ struct IPhysicalWorld {
 
 	virtual void SerializeGarbageTypedSnapshot( TSerialize ser, int iSnapshotType, int flags ) = 0;
 };
-
-#endif

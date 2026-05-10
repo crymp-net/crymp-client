@@ -408,6 +408,8 @@ add_library(Base OBJECT
 	Code/CryCommon/CryCore/CryString.h
 	Code/CryCommon/CryCore/Endian.h
 	Code/CryCommon/CryCore/MiniQueue.h
+	Code/CryCommon/CryCore/MTPseudoRandom.cpp
+	Code/CryCommon/CryCore/MTPseudoRandom.h
 	Code/CryCommon/CryCore/MultiThread.h
 	Code/CryCommon/CryCore/PoolAllocator.h
 	Code/CryCommon/CryCore/PoolAllocatorSynchronization.h
@@ -565,6 +567,96 @@ add_library(Base OBJECT
 	Code/CryMP/Server/SafeWriting/APIImpl.cpp
 	Code/CryMP/Server/SafeWriting/SafeWriting.h
 	Code/CryMP/Server/SafeWriting/SafeWriting.cpp
+	Code/CryPhysics/AABBTree.cpp
+	Code/CryPhysics/AABBTree.h
+	Code/CryPhysics/ArticulatedEntity.cpp
+	Code/CryPhysics/ArticulatedEntity.h
+	Code/CryPhysics/BoxGeom.cpp
+	Code/CryPhysics/BoxGeom.h
+	Code/CryPhysics/BreakableGrid2d.cpp
+	Code/CryPhysics/BreakableGrid2d.h
+	Code/CryPhysics/BVTree.cpp
+	Code/CryPhysics/BVTree.h
+	Code/CryPhysics/CapsuleGeom.cpp
+	Code/CryPhysics/CapsuleGeom.h
+	Code/CryPhysics/ChangeRequest.cpp
+	Code/CryPhysics/ChangeRequest.h
+	Code/CryPhysics/ContactSolver.cpp
+	Code/CryPhysics/ContactSolver.h
+	Code/CryPhysics/CryPhysics.cpp
+	Code/CryPhysics/CryPhysics.h
+	Code/CryPhysics/CylinderGeom.cpp
+	Code/CryPhysics/CylinderGeom.h
+	Code/CryPhysics/Geometry.cpp
+	Code/CryPhysics/Geometry.h
+	Code/CryPhysics/GeomManager.cpp
+	Code/CryPhysics/GeomManager.h
+	Code/CryPhysics/Heightfield.cpp
+	Code/CryPhysics/Heightfield.h
+	Code/CryPhysics/HeightfieldBV.cpp
+	Code/CryPhysics/HeightfieldBV.h
+	Code/CryPhysics/IntersectData.cpp
+	Code/CryPhysics/IntersectData.h
+	Code/CryPhysics/IntersectionChecker.cpp
+	Code/CryPhysics/IntersectionChecker.h
+	Code/CryPhysics/LivingEntity.cpp
+	Code/CryPhysics/LivingEntity.h
+	Code/CryPhysics/Matrix.h
+	Code/CryPhysics/OBBTree.cpp
+	Code/CryPhysics/OBBTree.h
+	Code/CryPhysics/OverlapChecker.cpp
+	Code/CryPhysics/OverlapChecker.h
+	Code/CryPhysics/ParticleEntity.cpp
+	Code/CryPhysics/ParticleEntity.h
+	Code/CryPhysics/PhysArea.cpp
+	Code/CryPhysics/PhysArea.h
+	Code/CryPhysics/PhysicalEntity.cpp
+	Code/CryPhysics/PhysicalEntity.h
+	Code/CryPhysics/PhysicalPlaceholder.cpp
+	Code/CryPhysics/PhysicalPlaceholder.h
+	Code/CryPhysics/PhysicalStub.cpp
+	Code/CryPhysics/PhysicalStub.h
+	Code/CryPhysics/PhysicalWorld.cpp
+	Code/CryPhysics/PhysicalWorld.h
+	Code/CryPhysics/Polynomial.h
+	Code/CryPhysics/Primitive.cpp
+	Code/CryPhysics/Primitive.h
+	Code/CryPhysics/Qhull.cpp
+	Code/CryPhysics/Qhull.h
+	Code/CryPhysics/Quotient.h
+	Code/CryPhysics/RayBV.cpp
+	Code/CryPhysics/RayBV.h
+	Code/CryPhysics/RayGeom.cpp
+	Code/CryPhysics/RayGeom.h
+	Code/CryPhysics/RigidBody.cpp
+	Code/CryPhysics/RigidBody.h
+	Code/CryPhysics/RigidEntity.cpp
+	Code/CryPhysics/RigidEntity.h
+	Code/CryPhysics/RopeEntity.cpp
+	Code/CryPhysics/RopeEntity.h
+	Code/CryPhysics/SingleBoxTree.cpp
+	Code/CryPhysics/SingleBoxTree.h
+	Code/CryPhysics/SoftEntity.cpp
+	Code/CryPhysics/SoftEntity.h
+	Code/CryPhysics/SphereGeom.cpp
+	Code/CryPhysics/SphereGeom.h
+	Code/CryPhysics/TetrLattice.cpp
+	Code/CryPhysics/TetrLattice.h
+	Code/CryPhysics/TriMesh.cpp
+	Code/CryPhysics/TriMesh.h
+	Code/CryPhysics/UnprojectionChecker.cpp
+	Code/CryPhysics/UnprojectionChecker.h
+	Code/CryPhysics/Utils.cpp
+	Code/CryPhysics/Utils.h
+	Code/CryPhysics/Vector.h
+	Code/CryPhysics/VoxelBV.cpp
+	Code/CryPhysics/VoxelBV.h
+	Code/CryPhysics/VoxelGeom.cpp
+	Code/CryPhysics/VoxelGeom.h
+	Code/CryPhysics/WaterMan.cpp
+	Code/CryPhysics/WaterMan.h
+	Code/CryPhysics/WheeledVehicleEntity.cpp
+	Code/CryPhysics/WheeledVehicleEntity.h
 	Code/CryScriptSystem/LuaLibs/bitlib.c
 	Code/CryScriptSystem/ScriptBindings/ScriptBindings.cpp
 	Code/CryScriptSystem/ScriptBindings/ScriptBindings.h
