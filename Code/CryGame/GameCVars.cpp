@@ -639,7 +639,19 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_animationModelMultSpeed", &mp_animationModelMultSpeed, 1.0f, VF_NOT_NET_SYNCED);
 	pConsole->Register("mp_menuSpeed", &mp_menuSpeed, 3.0f, VF_NOT_NET_SYNCED);
 	pConsole->Register("mp_hitIndicator", &mp_hitIndicator, 1, VF_NOT_NET_SYNCED, "Enable hit indicator");
-	pConsole->Register("mp_chatHighResolution", &mp_chatHighResolution, 0, VF_NOT_NET_SYNCED);
+	pConsole->Register("mp_chatHighResolution", &mp_chatHighResolution, 0,
+		VF_NOT_NET_SYNCED,
+		"Enable high resolution chat rendering",
+		[](ICVar* pVar)
+		{
+			const int mode = pVar->GetIVal();
+
+			if (g_pGame->GetHUD())
+			{
+				g_pGame->GetHUD()->EnableChatGfx(mode > 0);
+			}
+		}
+	);
 	pConsole->Register("mp_spectatorSlowMult", &mp_spectatorSlowMult, 0.15f, VF_NOT_NET_SYNCED, "Speed mult for spectating while holding Ctrl");
 	pConsole->Register("mp_buyPageKeepTime", &mp_buyPageKeepTime, 30, VF_NOT_NET_SYNCED, "The time in sec it will remember your last buy page");
 	pConsole->Register("mp_attachBoughtEquipment", &mp_attachBoughtEquipment, 0, VF_NOT_NET_SYNCED, "Automatically attach bought weapon attachments");
@@ -653,6 +665,25 @@ void SCVars::InitCVars(IConsole* pConsole)
 
 	pConsole->Register("cl_hud_chat", &cl_hud_chat, 1, VF_NOT_NET_SYNCED, "Shows / hides chat");
 	pConsole->Register("ads", &ads, 1, VF_NOT_NET_SYNCED, "Enable or disable (100h+) ads");
+
+	pConsole->Register("hud_scale", &hud_scale, 1.0f, VF_NOT_NET_SYNCED,
+		"Scale of the HUD",
+		[](ICVar* pVar)
+		{
+			const float clamped = CLAMP(pVar->GetFVal(), 0.4f, 1.2f);
+
+			if (pVar->GetFVal() != clamped)
+			{
+				pVar->Set(clamped);
+				return;
+			}
+
+			if (g_pGame->GetHUD())
+			{
+				g_pGame->GetHUD()->UpdateRatio();
+			}
+		}
+	);
 
 	mp_language = pConsole->RegisterString("mp_language", "", VF_NOT_NET_SYNCED, "Change game language",
 		[](ICVar* pVar)
@@ -1117,6 +1148,19 @@ void CGame::RegisterConsoleCommands()
 
 	m_pConsole->AddCommand("g_battleDust_reload", CmdBattleDustReload, 0, "Reload the battle dust parameters xml");
 	m_pConsole->AddCommand("preloadforstats", "PreloadForStats()", VF_CHEAT, "Preload multiplayer assets for memory statistics.");
+
+	m_pConsole->AddCommand("reloadhud",
+		[](IConsoleCmdArgs* pArgs)
+		{
+			CryLogAlways("Reloading HUD (Flash instances)...");
+			if (g_pGame)
+			{
+				g_pGame->ReloadFlashInstances();
+			}
+		},
+		0,
+		"Reloads HUD Flash instances"
+	);
 }
 
 //------------------------------------------------------------------------
@@ -1158,6 +1202,8 @@ void CGame::UnregisterConsoleCommands()
 
 	// variables from CHUDCommon
 	m_pConsole->RemoveCommand("ShowGODMode");
+
+	m_pConsole->RemoveCommand("reloadhud");
 }
 
 //------------------------------------------------------------------------

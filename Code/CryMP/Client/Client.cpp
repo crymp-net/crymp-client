@@ -395,6 +395,37 @@ void Client::AddKeyBind(const std::string_view& key, HSCRIPTFUNCTION function)
 
 void Client::OnKeyPress(const std::string_view& key)
 {
+	if (key == "lalt")
+	{
+		m_hudScaleModifierDown = true;
+		return;
+	}
+
+	if (m_hudScaleModifierDown)
+	{
+		if (key == "up")
+		{
+			m_hudScaleDirection = 1;
+			return;
+		}
+
+		if (key == "down")
+		{
+			m_hudScaleDirection = -1;
+			return;
+		}
+
+		if (key == "right")
+		{
+			ICVar* pHudScale = gEnv->pConsole->GetCVar("hud_scale");
+			if (pHudScale)
+				pHudScale->Set(1.0f);
+
+			m_hudScaleDirection = 0;
+			return;
+		}
+	}
+
 	for (const KeyBind& bind : m_keyBinds)
 	{
 		if (bind.key == key)
@@ -418,6 +449,21 @@ void Client::OnKeyPress(const std::string_view& key)
 
 void Client::OnKeyRelease(const std::string_view& key)
 {
+	if (key == "lalt")
+	{
+		m_hudScaleModifierDown = false;
+		m_hudScaleDirection = 0;
+		return;
+	}
+
+	if (key == "up" || key == "down" || key == "right")
+	{
+		m_hudScaleDirection = 0;
+
+		if (m_hudScaleModifierDown)
+			return;
+	}
+
 	for (const KeyBind& bind : m_keyBinds)
 	{
 		if (bind.key == key)
@@ -453,6 +499,8 @@ void Client::OnPostUpdate(float deltaTime)
 	m_pExecutor->OnUpdate();
 	m_pScriptCallbacks->OnUpdate(deltaTime);
 	m_pDrawTools->OnUpdate();
+
+	UpdateHudScale(deltaTime);
 }
 
 void Client::OnSaveGame(ISaveGame *pSaveGame)
@@ -736,4 +784,24 @@ void Client::WarmupRendererTextPath()
 
 	float color[] = { 1.f, 1.f, 1.f, 0.f };
 	gEnv->pRenderer->Draw2dLabel(1.f, 1.f, 1.f, color, false, ".");
+}
+
+void Client::UpdateHudScale(float deltaTime)
+{
+	if (!m_hudScaleDirection)
+		return;
+
+	ICVar* pHudScale = gEnv->pConsole->GetCVar("hud_scale");
+	if (!pHudScale)
+		return;
+
+	constexpr float minScale = 0.4f;
+	constexpr float maxScale = 1.2f;
+	constexpr float speed = 0.45f;
+
+	float scale = pHudScale->GetFVal();
+	scale += speed * deltaTime * static_cast<float>(m_hudScaleDirection);
+	scale = clamp_tpl(scale, minScale, maxScale);
+
+	pHudScale->Set(scale);
 }

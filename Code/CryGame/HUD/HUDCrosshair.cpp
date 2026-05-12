@@ -30,9 +30,9 @@ History:
 CHUDCrosshair::CHUDCrosshair(CHUD* pHUD)
 {
 	m_pHUD = pHUD;
-	m_animCrossHair.Load("Libs/UI/HUD_Crosshair.gfx", eFD_Center, eFAF_ManualRender);
-	m_animFriendCross.Load("Libs/UI/HUD_FriendlyCross.gfx", eFD_Center, eFAF_ManualRender);
-	m_animInterActiveIcons.Load("Libs/UI/HUD_InterActiveIcons.gfx", eFD_Center, eFAF_ManualRender);
+	m_animCrossHair.Load("Libs/UI/HUD_Crosshair.gfx", eFD_Center | eFD_Scaling, eFAF_ManualRender);
+	m_animFriendCross.Load("Libs/UI/HUD_FriendlyCross.gfx", eFD_Center | eFD_Scaling, eFAF_ManualRender);
+	m_animInterActiveIcons.Load("Libs/UI/HUD_InterActiveIcons.gfx", eFD_Center | eFD_Scaling, eFAF_ManualRender);
 
 	m_useIcons["@use"] = 1;
 	m_useIcons["@use_vehicle"] = 2; //"enter

@@ -37,8 +37,8 @@ public:
 	CGameFlashAnimation();
 	virtual ~	CGameFlashAnimation();
 
-	void Init(const char *strFileName, EFlashDock docking = eFD_Center, uint32 flags = eFAF_Default);
-	bool Load(const char *strFileName, EFlashDock docking = eFD_Center, uint32 flags = eFAF_Default);
+	void Init(const char *strFileName, uint32 docking = eFD_Center, uint32 flags = eFAF_Default);
+	bool Load(const char *strFileName, uint32 docking = eFD_Center, uint32 flags = eFAF_Default);
 	bool Reload(bool forceUnload=false);
 	virtual void Unload();
 	uint32 GetFlags() const;
