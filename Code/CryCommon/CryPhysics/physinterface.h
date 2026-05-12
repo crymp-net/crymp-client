@@ -336,6 +336,8 @@ enum phentity_flags {
 	pef_override_impulse_scale=0x200000, pef_players_can_break=0x400000, pef_cannot_squash_players=0x10000000,
 	pef_ignore_areas=0x800000,
 	pef_log_state_changes=0x1000000, pef_log_collisions=0x2000000, pef_log_env_changes=0x4000000, pef_log_poststep=0x8000000,
+	//CryMP
+	pef_ignore_network_state = 0x20000000,
 };
 
 struct pe_params_flags : pe_params {

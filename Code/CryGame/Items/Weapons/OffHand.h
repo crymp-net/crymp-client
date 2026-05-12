@@ -335,7 +335,6 @@ private:
 	unsigned int m_timerEnableCollisions = 0;
 	bool m_footAlignmentEnabled = true;
 	int m_heldVehicleCollisions = 0;
-	float m_heldEntityMassBackup = 0.0f;
 
 	struct SGripHitLocal
 	{

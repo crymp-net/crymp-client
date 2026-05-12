@@ -4615,7 +4615,11 @@ int CRigidEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 
 		float distance = m_pos.GetDistance(helper.pos);
 
-		if (m_body.Minv || ser.GetSerializationTarget() != eST_Network)
+		//CryMP
+		const bool ignoreNetState = ser.GetSerializationTarget() == eST_Network &&
+			(m_flags & pef_ignore_network_state);
+
+		if (!ignoreNetState && (m_body.Minv || ser.GetSerializationTarget() != eST_Network))
 		{
 			if (helper.simclass && ser.GetSerializationTarget() == eST_Network)
 			{
