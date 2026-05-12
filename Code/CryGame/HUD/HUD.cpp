@@ -454,7 +454,7 @@ void CHUD::EnableChatGfx(bool highResolution)
 	m_animChat.Load(path, eFD_Left);
 	if (!highResolution)
 	{
-		m_animChat.SetDock(eFD_Left | eFD_Scaling);
+		m_animChat.SetDock(eFD_Left | eFD_Bottom | eFD_Scaling);
 	}
 
 	if (m_pHUDTextChat)
@@ -518,6 +518,7 @@ bool CHUD::Init(IActor* pActor)
 	m_animMissionObjective.Load("Libs/UI/HUD_MissionObjective_Icon.gfx", eFD_Center, eFAF_Visible);
 	m_animQuickMenu.Load("Libs/UI/HUD_QuickMenu.gfx", eFD_Center | eFD_Scaling);
 	m_animRadarCompassStealth.Load("Libs/UI/HUD_RadarCompassStealth.gfx", eFD_Left | eFD_Bottom | eFD_Scaling, eFAF_Visible);
+	m_animRadarCompassStealth.SetMaxScale(1.15f);
 
 	m_animNetworkConnection.Load("Libs/UI/HUD_Network_Icon.gfx", eFD_Center | eFD_Scaling, eFAF_ThisHandler);
 

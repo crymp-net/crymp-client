@@ -44,7 +44,7 @@ public:
 	IFlashPlayer*	GetFlashPlayer() const;
 
 	void SetDock(uint32 eFDock);
-	uint32 GetDock()
+	uint32 GetDock() const
 	{
 		return m_dock;
 	}

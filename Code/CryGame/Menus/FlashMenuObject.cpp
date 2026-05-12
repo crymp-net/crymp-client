@@ -306,6 +306,11 @@ void CFlashMenuObject::UpdateRatio()
 		}
 	}
 
+	if (m_pLoadingMessage)
+	{
+		m_pLoadingMessage->UpdateRatio();
+	}
+
 	StopVideo();
 
 	const char* movie = VALUE_BY_KEY(m_stateEntryMovies, gMovies);

@@ -36,7 +36,8 @@ CHUDVehicleInterface::CHUDVehicleInterface(CHUD* pHUD, CGameFlashAnimation* pAmm
 	m_iLastReloadBarValue = -1;
 
 	m_animMainWindow.Init("Libs/UI/HUD_VehicleHUD.gfx", eFD_Center | eFD_Scaling, eFAF_ManualRender | eFAF_Visible | eFAF_ThisHandler);
-	m_animStats.Init("Libs/UI/HUD_VehicleStats.gfx", eFD_Bottom | eFD_Center, eFAF_ManualRender | eFAF_Visible);
+	m_animMainWindow.SetMaxScale(1.0f);
+	m_animStats.Init("Libs/UI/HUD_VehicleStats.gfx", eFD_Bottom | eFD_Center | eFD_Scaling, eFAF_ManualRender | eFAF_Visible);
 
 	memset(m_hasMainHUD, 0, (int)EHUD_LAST);
 
@@ -90,8 +91,11 @@ void CHUDVehicleInterface::Update(float fDeltaTime)
 			m_lastSetFriendly = m_friendlyFire;
 		}
 
-		m_animMainWindow.GetFlashPlayer()->Advance(fDeltaTime);
-		m_animMainWindow.GetFlashPlayer()->Render();
+		if (g_pHUD->IsPDAActive() == false) //CryMP: Hide vehicle HUD if PDA active
+		{
+			m_animMainWindow.GetFlashPlayer()->Advance(fDeltaTime);
+			m_animMainWindow.GetFlashPlayer()->Render();
+		}
 	}
 
 	if (m_animStats.GetVisible())
