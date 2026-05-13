@@ -2,6 +2,7 @@
 #include <cstdio> // std::snprintf
 
 #include "CryCommon/CryCore/MTPseudoRandom.h"
+#include "CryCommon/CrySystem/ISystem.h"
 
 #include "Qhull.h"
 #include "Utils.h"
@@ -2157,17 +2158,56 @@ int jgrid_checker::check_cell(const vector2di& icell, int& ilastcell)
 	return 0;
 }
 
-void jgrid_checker::MarkCellInterior(int i)
+// CryMP: replaced recursive flood fill with iterative traversal to prevent
+// stack overflows and long stalls on extremely large breakable grids.
+
+void jgrid_checker::MarkCellInterior(int start)
 {
-	int j, icell;
-	pCellMask[i] = 2;
-	for (j = 0; j < 4; j++)
+	if (!pgrid || !pCellMask)
+		return;
+
+	const int sx = pgrid->size.x;
+	const int sy = pgrid->size.y;
+
+	if (sx <= 0 || sy <= 0)
+		return;
+
+	const int cellCount = sx * sy;
+
+	if (start < 0 || start >= cellCount)
+		return;
+
+	if (pCellMask[start] & 2)
+		return;
+
+	std::vector<int> stack;
+	stack.reserve(1024);
+
+	pCellMask[start] = 2;
+	stack.push_back(start);
+
+	while (!stack.empty())
 	{
-		if (!(pCellMask[icell = i + vector2di((1 - (j & 2)) & -(j & 1), ((j & 2) - 1) & ~-(j & 1)) *
-		                                pgrid->stride] &
-		      2))
+		const int cell = stack.back();
+		stack.pop_back();
+
+		for (int dir = 0; dir < 4; ++dir)
 		{
-			MarkCellInterior(icell);
+			const vector2di ofs(
+				(1 - (dir & 2)) & -(dir & 1),
+				((dir & 2) - 1) & ~-(dir & 1)
+			);
+
+			const int next = cell + ofs * pgrid->stride;
+
+			if (next < 0 || next >= cellCount)
+				continue;
+
+			if (pCellMask[next] & 2)
+				continue;
+
+			pCellMask[next] = 2;
+			stack.push_back(next);
 		}
 	}
 }

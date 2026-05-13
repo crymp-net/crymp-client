@@ -56,4 +56,6 @@ public:
 	int* m_pTris;
 	char* m_pCellDiv;
 	int m_nTris;
+
+	bool m_disabled = false;
 };

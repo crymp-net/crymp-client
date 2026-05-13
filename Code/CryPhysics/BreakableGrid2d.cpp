@@ -1,4 +1,5 @@
 #include "BreakableGrid2d.h"
+#include "CryCommon/CrySystem/ISystem.h"
 #include "Utils.h"
 
 int CBreakableGrid2d::get_neighb(int iTri, int iEdge)
@@ -26,6 +27,8 @@ void CBreakableGrid2d::get_edge_ends(int iTri, int iEdge, int& iend0, int& iend1
 
 void CBreakableGrid2d::Generate(vector2df* ptsrc, int npt, const vector2di& nCells, int bStaticBorder, int seed)
 {
+	m_disabled = false;
+
 	int i, j, ix, iy, ncells;
 	vector2df ptmin, ptmax, step, v0, v1;
 	vector2di sz;
@@ -40,6 +43,31 @@ void CBreakableGrid2d::Generate(vector2df* ptsrc, int npt, const vector2di& nCel
 	}
 
 	sz.set(nCells.x + 2, nCells.y + 3);
+
+	PhysicsVars* pVars = gEnv->pPhysicalWorld->GetPhysVars();
+
+	const int maxBreakableGridCells = max(1, pVars->nMaxBreakableGridCells);
+	const int generatedCells = sz.x * sz.y;
+
+	// CryMP: some custom maps generate extremely large breakable grids that can
+	// cause severe stalls during flood fill and chunk generation.
+	if (generatedCells > maxBreakableGridCells)
+	{
+		CryLogAlways(
+			"[BreakGrid] disabled huge grid: cells=%d max=%d size=(%d,%d) requested=(%d,%d)",
+			generatedCells,
+			maxBreakableGridCells,
+			sz.x,
+			sz.y,
+			nCells.x,
+			nCells.y
+		);
+
+		m_disabled = true;
+		m_nTris = 0;
+		return;
+	}
+
 	for (i = 1, ptmin = ptmax = ptsrc[0]; i < npt; i++)
 	{
 		ptmin = min(ptmin, ptsrc[i]);
@@ -182,8 +210,13 @@ void CBreakableGrid2d::Generate(vector2df* ptsrc, int npt, const vector2di& nCel
 int* CBreakableGrid2d::BreakIntoChunks(const vector2df& pt, float r, vector2df*& ptout, int maxPatchTris,
                                        float jointhresh, int seed)
 {
+	ptout = 0;
+
+	if (m_disabled)
+		return 0;
+
 	int i, j, nPatches, nSeedTris, nPatchTris, iTri, iTriNew, nCells, ihead, itail, szQueue, iEdge, iCurPatch, nVtx,
-	    nStaticTris, nUsedTris, ivtx[3], nTris, bStable;
+		nStaticTris, nUsedTris, ivtx[3], nTris, bStable;
 	// int iMotherPatch,bHasInclusions,iPatch;
 	vector2di sz = m_coord.size;
 	vector2df c, v0, v1;
