@@ -53,8 +53,7 @@ void CBreakableGrid2d::Generate(vector2df* ptsrc, int npt, const vector2di& nCel
 	// cause severe stalls during flood fill and chunk generation.
 	if (generatedCells > maxBreakableGridCells)
 	{
-		CryLogAlways(
-			"[BreakGrid] disabled huge grid: cells=%d max=%d size=(%d,%d) requested=(%d,%d)",
+		CryLog("[BreakGrid] disabled huge grid: cells=%d max=%d size=(%d,%d) requested=(%d,%d)",
 			generatedCells,
 			maxBreakableGridCells,
 			sz.x,
