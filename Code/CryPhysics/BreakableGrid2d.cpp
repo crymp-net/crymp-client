@@ -209,10 +209,10 @@ void CBreakableGrid2d::Generate(vector2df* ptsrc, int npt, const vector2di& nCel
 int* CBreakableGrid2d::BreakIntoChunks(const vector2df& pt, float r, vector2df*& ptout, int maxPatchTris,
                                        float jointhresh, int seed)
 {
-	ptout = 0;
+	ptout = nullptr;
 
 	if (m_disabled)
-		return 0;
+		return nullptr;
 
 	int i, j, nPatches, nSeedTris, nPatchTris, iTri, iTriNew, nCells, ihead, itail, szQueue, iEdge, iCurPatch, nVtx,
 		nStaticTris, nUsedTris, ivtx[3], nTris, bStable;
