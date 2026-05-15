@@ -249,6 +249,7 @@ void CPhysicalWorld::Init()
 	m_vars.netMinSnapDot = 0.99f;
 	m_vars.netAngSnapMul = 0.01f;
 	m_vars.netSmoothTime = 5.0f;
+	m_vars.nMaxBreakableGridCells = 50000;
 	m_iNextId = 1;
 	m_iNextIdDown = m_lastExtId = m_nExtIds = 0;
 	m_pEntsById = 0;

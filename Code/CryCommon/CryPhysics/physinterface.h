@@ -1924,6 +1924,8 @@ struct PhysicsVars : SolverSettings {
 	float netMinSnapDot;
 	float netAngSnapMul;
 	float netSmoothTime;
+	//CryMP
+	int nMaxBreakableGridCells;
 };
 
 struct ray_hit {
