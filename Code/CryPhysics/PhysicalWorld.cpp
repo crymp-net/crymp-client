@@ -3136,8 +3136,32 @@ int CPhysicalWorld::RepositionEntity(CPhysicalPlaceholder* pobj, int flags, Vec3
 	if (flags & 2)
 	{
 		CPhysicalEntity* pent = (CPhysicalEntity*)pobj;
+
 		if (pent->m_iPrevSimClass != pent->m_iSimClass && pent->m_bPermanent + bQueued)
 		{
+			if (pent->GetType() == PE_ARTICULATED)
+			{
+				CArticulatedEntity* ae = (CArticulatedEntity*)pent;
+
+				// CryMP: Prevent player-sized articulated ragdolls from entering the sleeping sim class while airborne.
+				// The engine can sometimes request class 2 -> class 1 before the ragdoll is grounded, which freezes it mid-air.
+				// Grounded ragdolls are still allowed to sleep normally.
+				if (ae->m_iPrevSimClass == 2 &&
+					ae->m_iSimClass == 1 &&
+					!ae->m_bGrounded &&
+					ae->m_iSimTypeCur == 1 &&
+					ae->m_body.M > 40.0f &&
+					ae->m_nJoints >= 10 &&
+					ae->m_nParts >= 10)
+				{
+					ae->m_bAwake = 1;
+					ae->m_nSleepFrames = 0;
+					ae->m_iSimClass = 2;
+
+					return bGridLocked;
+				}
+			}
+
 			ChangeEntitySimClass(pent);
 			i = pent->m_iPrevSimClass;
 			pent->m_iPrevSimClass = pent->m_iSimClass;

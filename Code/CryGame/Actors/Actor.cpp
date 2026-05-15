@@ -1471,17 +1471,6 @@ void CActor::Update(SEntityUpdateContext& ctx, int slot)
 	if (GetEntity()->IsHidden() && !(GetEntity()->GetFlags() & ENTITY_FLAG_UPDATE_HIDDEN))
 		return;
 
-	if (!IsClient() && GetPhysicsProfile() == eAP_Ragdoll)
-	{
-		IPhysicalEntity* pPhysics = GetEntity()->GetPhysics();
-		if (pPhysics)
-		{
-			pe_action_awake actionAwake;
-			actionAwake.bAwake = 1;
-			pPhysics->Action(&actionAwake);
-		}
-	}
-
 	if (m_sleepTimer > 0.0f && gEnv->bServer)
 	{
 		pe_status_dynamics dynStat;
