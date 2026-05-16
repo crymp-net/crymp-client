@@ -206,4 +206,10 @@ namespace WinAPI
 		void ConvertPosToWindow(void* window, long& x, long& y);
 		void ConvertPosToScreen(void* window, long& x, long& y);
 	}
+
+	/////////////
+	// Threads //
+	/////////////
+
+	void SetCurrentThreadName(const char* name);
 }
