@@ -845,6 +845,7 @@ target_compile_options(Base PUBLIC /W4
 	/wd4456  # Disable - declaration of 'identifier' hides previous local declaration
 	/wd4458  # Disable - declaration of 'identifier' hides class member
 	/wd4702  # Disable - unreachable code
+	/wd4714  # Disable - marked as __forceinline not inlined
 	/wd5054  # Disable - operator 'operator-name': deprecated between enumerations of different types
 	/w15262  # Enable - implicit fall-through occurs here; are you missing a break statement?
 	/w45263  # Enable - calling 'std::move' on a temporary object prevents copy elision
