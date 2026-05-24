@@ -47,11 +47,11 @@ CVehicleMovementHovercraft::CVehicleMovementHovercraft()
 , m_thrusterTilt( 0 )
 , m_dampLimitCoeff( 1 )
 , m_pushTilt( 0 )
-, m_pushOffset(ZERO)
+, m_pushOffset()
 , m_cornerTilt( 0 )
-, m_cornerOffset(ZERO)
+, m_cornerOffset()
 , m_turnDamping( 0 )
-, m_massOffset(ZERO)
+, m_massOffset()
 , m_hoverTimer( 0.f )
 , m_linearDamping( 0.1f )
 , m_bRetainGravity( false )
@@ -238,8 +238,18 @@ bool CVehicleMovementHovercraft::InitThrusters(const CVehicleParams& table)
 
     if (!m_bSampleByHelpers)
     {
-        // distribute thrusters
-        assert(m_numThrusters >= 1 && m_numThrusters <= 9);
+      m_vecThrusters[i]->heightInitial = m_vecThrusters[i]->pos.z;
+      m_vecThrusters[i]->hoverHeight = m_hoverHeight;
+      m_vecThrusters[i]->hoverVariance = m_hoverVariance;
+      m_vecThrusters[i]->heightAdaption = 0.f;
+    }
+  }
+  else
+  {
+    // place thrusters at helpers
+    for (int i=0; i<m_numThrusters; ++i)
+    {
+      m_vecThrusters.push_back( new SThruster( Vec3(), thrusterDir ));
 
         if (m_numThrusters >= 4)
         {
@@ -273,7 +283,13 @@ bool CVehicleMovementHovercraft::InitThrusters(const CVehicleParams& table)
             m_vecThrusters[i]->heightAdaption = 0.f;
         }
     }
-    else
+
+    assert(static_cast<int>(m_vecThrusters.size()) == m_numThrusters);
+  }
+
+  // tilt thruster direction to outside
+  if (table->GetValue("thrusterTilt", m_thrusterTilt)){
+    if (m_thrusterTilt > 0.f && m_thrusterTilt < 90.f)
     {
         // place thrusters at helpers 
         CVehicleParams thrusterTable = table.findChild("Thrusters");
@@ -386,8 +402,7 @@ bool CVehicleMovementHovercraft::InitThrusters(const CVehicleParams& table)
     m_massOffset = bbox.GetCenter();
     //CryLog("[Hovercraft movement]: got mass offset (%f, %f, %f)", m_massOffset.x, m_massOffset.y, m_massOffset.z);
 
-    float gravity = m_gravity.IsZero() ? 9.81f : m_gravity.len();
-    m_liftForce = mass * gravity;
+  assert(m_numThrusters == static_cast<int>(m_vecThrusters.size()));
 
     assert(m_numThrusters == m_vecThrusters.size());
 

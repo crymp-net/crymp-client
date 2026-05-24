@@ -259,7 +259,7 @@ void CBeam::Update(float frameTime, unsigned int frameId)
 
 					uint16 seq = m_pWeapon->GenerateShootSeqN();
 
-					m_pWeapon->RequestShoot(0, ZERO, ZERO, ZERO, ZERO, 0, 0, seq, 0, false);
+					m_pWeapon->RequestShoot(0, Vec3(), Vec3(), Vec3(), Vec3(), 0, 0, seq, 0, false);
 
 					TickDamage(rayhit, dir, seq);
 				}

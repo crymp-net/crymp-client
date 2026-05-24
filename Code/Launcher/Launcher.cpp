@@ -14,6 +14,7 @@
 #include "CryCommon/CrySystem/ICryPak.h"
 #include "CryMP/Client/Client.h"
 #include "CryMP/Server/Server.h"
+#include "CryPhysics/CryPhysics.h"
 #include "CryScriptSystem/ScriptSystem.h"
 #include "CrySystem/CPUInfo.h"
 #include "CrySystem/CrashTest.h"
@@ -29,6 +30,7 @@
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
+#include "DsoalDeployer.h"
 #include "Launcher.h"
 #include "MemoryPatch.h"
 #include "Resources.h"
@@ -324,6 +326,48 @@ static void ReplaceStreamEngine(void* pCrySystem)
 #endif
 }
 
+static IPhysicalWorld* CreateNewPhysics(ISystem* pSystem)
+{
+	CryLogAlways("$3[CryMP] Initializing Physics");
+
+	return CreatePhysicalWorld(pSystem);
+}
+
+static void ReplacePhysics(void* pCrySystem)
+{
+	void* pFactory = CreateNewPhysics;
+
+#ifdef BUILD_64BIT
+	const std::size_t codeOffset = 0x43392;
+	const std::size_t codeMaxSize = 0x53;
+
+	unsigned char code[] = {
+		0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, 0x0
+		0x48, 0x8B, 0xCE,                                            // mov rcx, rsi
+		0xFF, 0xD0,                                                  // call rax
+	};
+
+	std::memcpy(&code[2], &pFactory, 8);
+#else
+	const std::size_t codeOffset = 0x556CF;
+	const std::size_t codeMaxSize = 0x49;
+
+	unsigned char code[] = {
+		0xB8, 0x00, 0x00, 0x00, 0x00,  // mov eax, 0x0
+		0x55,                          // push ebp
+		0xFF, 0xD0,                    // call eax
+		0x83, 0xC4, 0x04,              // add esp, 0x4
+	};
+
+	std::memcpy(&code[1], &pFactory, 4);
+#endif
+
+	static_assert(sizeof(code) <= codeMaxSize);
+
+	WinAPI::FillMem(WinAPI::RVA(pCrySystem, codeOffset), code, sizeof(code));
+	WinAPI::FillNOP(WinAPI::RVA(pCrySystem, codeOffset + sizeof(code)), codeMaxSize - sizeof(code));
+}
+
 static IScriptSystem* CreateNewScriptSystem(ISystem* pSystem, bool)
 {
 	CryLogAlways("$3[CryMP] Initializing Script System");
@@ -505,27 +549,6 @@ static std::string_view ChooseLanguage(std::string_view defaultLanguage, ICVar* 
 	return language;
 }
 
-static void PatchFlashFont()
-{
-	const std::string_view lang = LocalizationManager::GetInstance().GetCurrentLanguage().name;
-
-	// these languages have their own special font
-	if (lang != "japanese" && lang != "korean" && lang != "chinese" && lang != "thai")
-	{
-		CryPak& cryPak = CryPak::GetInstance();
-
-		// the same font for all other languages
-		cryPak.AddRedirect(
-			"Languages/HUD_Font_LocFont.gfx",
-			"Languages/HUD_Font_LocFont_override.gfx"
-		);
-		cryPak.AddRedirect(
-			"Languages/HUD_Font_LocFont_glyphs.gfx",
-			"Languages/HUD_Font_LocFont_glyphs_override.gfx"
-		);
-	}
-}
-
 static void ReplaceLocalizationManager(void* pCrySystem)
 {
 	struct DummyCSystem
@@ -550,8 +573,6 @@ static void ReplaceLocalizationManager(void* pCrySystem)
 			}
 
 			LocalizationManager::GetInstance().SetLanguage(language.data());
-
-			PatchFlashFont();
 		}
 	};
 
@@ -1152,7 +1173,7 @@ void Launcher::PatchEngine()
 		//MemoryPatch::CrySystem::MakeDX9Default(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::RemoveSecuROM(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::UnhandledExceptions(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::EnableServerPhysicsThread(m_dlls.pCrySystem);
+		//MemoryPatch::CrySystem::EnableServerPhysicsThread(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::HookCryWarning(m_dlls.pCrySystem, &OnCryWarning);
 
 		InstallEarlyEngineInitHook(m_dlls.pCrySystem);
@@ -1163,6 +1184,11 @@ void Launcher::PatchEngine()
 		ReplaceScriptSystem(m_dlls.pCrySystem);
 		ReplaceHardwareMouse(m_dlls.pCrySystem);
 		ReplaceLocalizationManager(m_dlls.pCrySystem);
+
+		if (!WinAPI::CmdLine::HasArg("-oldphysics"))
+		{
+			ReplacePhysics(m_dlls.pCrySystem);
+		}
 	}
 
 	if (m_dlls.pCry3DEngine)
@@ -1198,6 +1224,13 @@ void Launcher::PatchEngine()
 	if (m_dlls.pFmodEx)
 	{
 		MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(m_dlls.pFmodEx);
+
+#ifdef CLIENT_LAUNCHER
+		if (WinAPI::CmdLine::HasArg("-dsoal"))
+		{
+			DsoalDeployer::Init(m_dlls.pFmodEx);
+		}
+#endif
 	}
 }
 
@@ -1349,7 +1382,7 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 	logger.LogAlways("%s", banner);
 	logger.LogAlways("Compiled by " CRYMP_COMPILER);
 	logger.LogAlways("Copyright (C) 2001-2008 Crytek GmbH");
-	logger.LogAlways("Copyright (C) 2014-2025 CryMP");
+	logger.LogAlways("Copyright (C) 2014-2026 CryMP");
 	logger.LogAlways("");
 
 	logger.SetPrefix(logPrefix);

@@ -125,6 +125,7 @@ namespace
 		const std::string version = "1.1.1." + std::to_string(GetInt(serverInfo, "ver"));
 		info.m_gameVersion = version.c_str();
 
+
 		if (GetBool(serverInfo, "gs"))
 		{
 			info.m_mapName      = GetCString(serverInfo, "mapdnm");
@@ -137,9 +138,8 @@ namespace
 		}
 
 		// not used
-		info.m_country = "";
-
-		// TODO: add optional SSM info?
+		info.m_country = ""; 
+		
 		info.m_modName = "";
 		info.m_modVersion = "";
 
@@ -150,6 +150,7 @@ namespace
 
 		// custom stuff
 		pListener->UpdateValue(serverID, "connectable", GetInt(serverInfo, "available") ? "1" : "0");
+		pListener->UpdateValue(serverID, "teams", std::to_string(GetInt(serverInfo, "teams")).c_str());
 	}
 }
 

@@ -436,22 +436,36 @@ void CHUDScore::Render()
 		{
 			int playerScore = player.m_score;
 			SFlashVarValue args[12] = { name.c_str(),
-																	team,
-																	(player.m_entityId == pClientActor->GetEntityId()) ? true : false,
-																	playerScore,
-																	player.m_kills,
-																	player.m_teamKills,
-																	player.m_deaths,
-																	player.m_ping,
-																	player.m_entityId,
-																	player.m_alive ? 0 : 1,
-																	selected,
-																	muted };
+										team,
+										(player.m_entityId == pClientActor->GetEntityId()) ? true : false,
+										playerScore,
+										player.m_kills,
+										player.m_teamKills,
+										player.m_deaths,
+										player.m_ping,
+										player.m_entityId,
+										player.m_alive ? 0 : 1,
+										selected,
+										muted
+			};
 			m_pFlashBoard->Invoke("addEntry", args, 12);
 		}
 		else
 		{
-			SFlashVarValue args[12] = { name.c_str(), team, (player.m_entityId == pClientActor->GetEntityId()) ? true : false, pp, player.m_kills, player.m_deaths, player.m_ping, player.m_entityId, strRank.c_str(), player.m_alive ? 0 : 1,selected, muted };
+			SFlashVarValue args[12] = { 
+				name.c_str(), 														// strName
+				team,																// iTeamID
+				(player.m_entityId == pClientActor->GetEntityId()) ? true : false,	// bSelf
+				pp,																	// iPoints
+				player.m_kills,														// iKills
+				player.m_deaths,													// iDeaths
+				player.m_ping,														// iPing
+				player.m_entityId,													// iID
+				strRank.c_str(),													// iRank (although this is string...)
+				player.m_alive ? 0 : 1,												// iPlayerDeath
+				selected, 															// iSelected
+				muted																// isMuted
+			};
 			m_pFlashBoard->Invoke("addEntry", args, 12);
 		}
 	}

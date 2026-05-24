@@ -204,12 +204,8 @@ bool IntersectSweptSphere(Vec3 *hitPos, float& hitDist, const Lineseg& lineseg, 
 
 // -------------------
 
-CShark::CShark() : 
-//m_pTrailAttachment(NULL),
-//m_trailSpeedScale(0.f),
-m_chosenEscapeDir(ZERO),
-m_escapeDir(ZERO)
-{	
+CShark::CShark()
+{
 	ResetValues();
 }
 
@@ -219,16 +215,16 @@ void CShark::ResetValues()
 
 	m_state = S_Sleeping;
 
-	m_velocity = ZERO;
-	m_lastCheckedPos = ZERO;
+	m_velocity = {};
+	m_lastCheckedPos = {};
 	m_turnSpeed = 0.0f;
 	m_turnSpeedGoal = 0.0f;
 	m_roll = 0.0f;
-	m_weaponOffset = ZERO;
+	m_weaponOffset = {};
 	m_remainingCirclingTime = -1;
 	m_targetId = 0;
-	m_moveTarget = ZERO;
-	m_circleDisplacement = ZERO;
+	m_moveTarget = {};
+	m_circleDisplacement = {};
 	m_lastPos.zero();
 	m_lastRot.zero();
 	m_curSpeed = 0;
@@ -493,7 +489,7 @@ void CShark::Update(SEntityUpdateContext& ctx, int updateSlot)
 	Interpolate(m_modelOffset,goal,5.0f,frameTime);
 */
 
-	m_charLocalMtx.SetTranslation(ZERO);
+	m_charLocalMtx.SetTranslation(Vec3());
 	GetAnimatedCharacter()->SetExtraAnimationOffset(m_charLocalMtx);
 
 }
@@ -506,7 +502,7 @@ void CShark::SetStartPos(const Vec3& targetPos)
 	if(dist>0)
 		dir /= dist;
 	else
-		dir = Vec3Constants<float>::fVec3_OneY;
+		dir = Vec3(0, 1, 0);
 
 	Matrix34 tm(GetEntity()->GetWorldTM());
 	
@@ -520,11 +516,11 @@ void CShark::SetStartPos(const Vec3& targetPos)
 
 	tm.SetTranslation(m_startPos);
 
-	Vec3 right = dir ^ Vec3Constants<float>::fVec3_OneZ;
+	Vec3 right = dir ^ Vec3(0, 0, 1);
 
 	tm.SetColumn(1, dir);
 	tm.SetColumn(0, right.normalize());
-	tm.SetColumn(2, Vec3Constants<float>::fVec3_OneZ);
+	tm.SetColumn(2, Vec3(0, 0, 1));
 
 	GetEntity()->SetWorldTM(tm);
 
@@ -538,7 +534,7 @@ float CShark::GetDistHeadTarget(const Vec3& targetPos, const Vec3& targetDirN,fl
 	ISkeletonPose* pSkeletonPose;
 	if((pCharacter = GetEntity()->GetCharacter(0)) && (pSkeletonPose= pCharacter->GetISkeletonPose()))
 	{
-		Vec3 headBonePos(ZERO);
+		Vec3 headBonePos;
 
 		int16 jointid = pSkeletonPose->GetJointIDByName(m_params.headBoneName.c_str());
 		int16 jointid1 = pSkeletonPose->GetJointIDByName(m_params.spineBoneName1.c_str());
@@ -590,7 +586,7 @@ void CShark::UpdateStatus(float frameTime, const IEntity* pTarget)
 	//gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(myPos, ColorB(255,0,255,255), myPos+ myBodyDir*6, ColorB(255,0,255,255));
 	Vec3 targetDir(targetPos - myPos);
 	float distTarget = targetDir.GetLength();
-	Vec3 targetDirN(distTarget>0 ? targetDir/distTarget : ZERO);
+	Vec3 targetDirN(distTarget>0 ? targetDir/distTarget : Vec3());
 	float distHeadTarget = -1;
 	Vec3 targetDir2DN(targetDirN.x,targetDirN.y,0);
 	if(targetDir2DN.IsZero())
@@ -651,7 +647,7 @@ void CShark::UpdateStatus(float frameTime, const IEntity* pTarget)
 				{
 					if(m_tryCount == escapePointSize)
 						m_escapeDir = Vec3(70,0,0);
-					m_escapeDir = m_escapeDir.GetRotated(ZERO,Vec3Constants<float>::fVec3_OneZ,2 * gf_PI / float(numTriesRadialDirections));
+					m_escapeDir = m_escapeDir.GetRotated(Vec3(),Vec3(0, 0, 1),2 * gf_PI / float(numTriesRadialDirections));
 					currentStartPos = targetPos + m_escapeDir;
 				}
 				//find escape direction
@@ -754,7 +750,7 @@ void CShark::UpdateStatus(float frameTime, const IEntity* pTarget)
 				if(m_remainingCirclingTime==-1)
 					m_remainingCirclingTime = m_params.circlingTime;
 				m_numHalfCircles = m_params.numCircles * numCircleSteps+1;
-				m_circleDisplacement = ZERO;
+				m_circleDisplacement = {};
 				m_bCircularTrajectory = false;
 			}
 		}
@@ -797,7 +793,7 @@ void CShark::UpdateStatus(float frameTime, const IEntity* pTarget)
 					
 					const float angle = DEG2RAD(360/float(numCircleSteps)) * sgn(CrossZ(myBodyDir, targetDir2DN));
 					Vec3 radius = - targetDir2DN * m_circleRadius;
-					m_circleDisplacement = radius.GetRotated(ZERO,Vec3Constants<float>::fVec3_OneZ,angle);
+					m_circleDisplacement = radius.GetRotated(Vec3(),Vec3(0, 0, 1),angle);
 
 					if(!bTargetOnVehicle)
 					{
@@ -812,7 +808,7 @@ void CShark::UpdateStatus(float frameTime, const IEntity* pTarget)
 						for(int i=0; i<3; i++)
 						{
 							if(i>0)
-								nextCircleDisplacement = nextCircleDisplacement.GetRotated(ZERO,Vec3Constants<float>::fVec3_OneZ,angle);
+								nextCircleDisplacement = nextCircleDisplacement.GetRotated(Vec3(),Vec3(0, 0, 1),angle);
 							
 							if (gEnv->pPhysicalWorld->RayWorldIntersection(targetPos, nextCircleDisplacement* thr, objTypes, flags, &ray, 1))
 							{
@@ -900,7 +896,7 @@ void CShark::UpdateStatus(float frameTime, const IEntity* pTarget)
 					{
 						if(m_tryCount == escapePointSize)
 							m_escapeDir = Vec3(500,0,0);
-						m_escapeDir = m_escapeDir.GetRotated(ZERO,Vec3Constants<float>::fVec3_OneZ,2 * gf_PI / float(numTriesRadialDirections));
+						m_escapeDir = m_escapeDir.GetRotated(Vec3(),Vec3(0, 0, 1),2 * gf_PI / float(numTriesRadialDirections));
 					}
 					//find escape direction
 					static const int objTypes = ent_terrain|ent_static|ent_sleeping_rigid|ent_rigid;    
@@ -1004,7 +1000,7 @@ void CShark::UpdateSpawning()
 		{
 			if(m_tryCount == escapePointSize)
 				m_escapeDir = Vec3(70,0,0);
-			m_escapeDir = m_escapeDir.GetRotated(ZERO,Vec3Constants<float>::fVec3_OneZ,2 * gf_PI / float(numTriesRadialDirections));
+			m_escapeDir = m_escapeDir.GetRotated(Vec3(),Vec3(0, 0, 1),2 * gf_PI / float(numTriesRadialDirections));
 			currentStartPos = targetPos + m_escapeDir;
 		}
 		//find escape direction
@@ -1296,7 +1292,7 @@ void CShark::ProcessMovement(float frameTime)
 	{
 		// Slow down if the desired direction differs from the current direction.
 		Vec3 desiredDir(m_moveTarget - GetEntity()->GetWorldPos()) ;
-		Vec3 bodyDir(GetEntity()->GetWorldTM().TransformVector(Vec3Constants<float>::fVec3_OneY));
+		Vec3 bodyDir(GetEntity()->GetWorldTM().TransformVector(Vec3(0, 1, 0)));
 		float	dot =  bodyDir.Dot(desiredDir.GetNormalizedSafe());
 		float distMoveTarget = desiredDir.GetLength();
 /*

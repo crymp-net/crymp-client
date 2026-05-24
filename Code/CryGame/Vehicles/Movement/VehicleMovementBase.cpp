@@ -41,7 +41,7 @@ CVehicleMovementBase::CVehicleMovementBase()
 	m_pVehicle(0),
 	m_pEntity(0),
 	m_maxSpeed(0.f),
-	m_enginePos(ZERO),
+	m_enginePos(),
 	m_runSoundDelay(0.f),
 	m_rpmScale(0.f),
 	m_rpmPitchSpeed(0.f),
@@ -61,11 +61,11 @@ CVehicleMovementBase::CVehicleMovementBase()
 	m_boostEndurance(10.f),
 	m_boostStrength(1.f),
 	m_boostRegen(10.f),
-	m_lastMeasuredVel(ZERO),
+	m_lastMeasuredVel(),
 	m_measureSpeedTimer(0.f),
 	m_soundMasterVolume(1.f),
-	m_dampAngle(ZERO),
-	m_dampAngVel(ZERO),
+	m_dampAngle(),
+	m_dampAngVel(),
 	m_pPaParams(NULL)
 {
 	m_pWind[0] = m_pWind[1] = NULL;
@@ -996,7 +996,7 @@ void CVehicleMovementBase::ApplyAirDamp(float angleMin, float angVelMin, float d
 
 	Ang3 angles(worldTM);
 	Vec3 localW = worldTM.GetInverted().TransformVector(m_PhysDyn.w);
-	Vec3 correction(ZERO);
+	Vec3 correction;
 
 	for (int i = 0; i < 3; ++i)
 	{
@@ -1229,7 +1229,7 @@ ISound* CVehicleMovementBase::PlaySound(EVehicleMovementSound eSID, float pulse,
 		const string& soundName = GetSoundName(eSID);
 
 		if (!soundName.empty())
-			m_soundStats.sounds[eSID] = m_pEntitySoundsProxy->PlaySound(soundName.c_str(), offset, Vec3Constants<float>::fVec3_OneY, nSoundFlags, eSoundSemantic_Vehicle);
+			m_soundStats.sounds[eSID] = m_pEntitySoundsProxy->PlaySound(soundName.c_str(), offset, Vec3(0, 1, 0), nSoundFlags, eSoundSemantic_Vehicle);
 
 		m_soundStats.lastPlayed[eSID] = currTime;
 
@@ -1613,7 +1613,7 @@ bool CVehicleMovementBase::IsProfilingMovement()
 
 	static ICVar* pDebugVehicle = gEnv->pConsole->GetCVar("v_debugVehicle");
 
-	if (g_pGameCVars->v_profileMovement && (m_pVehicle->IsPlayerDriving() || 0 == strcmpi(pDebugVehicle->GetString(), m_pVehicle->GetEntity()->GetName())))
+	if (g_pGameCVars->v_profileMovement && (m_pVehicle->IsPlayerDriving() || 0 == _stricmp(pDebugVehicle->GetString(), m_pVehicle->GetEntity()->GetName())))
 		return true;
 
 	return false;
@@ -1895,7 +1895,7 @@ void CVehicleMovementBase::InitWind()
 		//area.falloff0 = 0.8f;    
 		m_pWind[0]->SetParams(&area);
 
-		SetWind(Vec3(ZERO));
+		SetWind(Vec3());
 	}
 }
 
@@ -2083,7 +2083,7 @@ void CVehicleMovementBase::DebugDraw(const float deltaTime)
 
 	while (g_pGameCVars->v_debugSounds)
 	{
-		if (!m_pVehicle->IsPlayerPassenger() && 0 != strcmpi(m_pVehicle->GetEntity()->GetName(), pDebugVehicle->GetString()))
+		if (!m_pVehicle->IsPlayerPassenger() && 0 != _stricmp(m_pVehicle->GetEntity()->GetName(), pDebugVehicle->GetString()))
 			break;
 
 		gEnv->pRenderer->Draw2dLabel(500, y, 1.5f, color, false, "vehicle rpm: %.2f", m_rpmScale);
@@ -2167,7 +2167,7 @@ void CVehicleMovementBase::DebugDraw(const float deltaTime)
 
 	while (g_pGameCVars->v_sprintSpeed != 0.f)
 	{
-		if (!m_pVehicle->IsPlayerPassenger() && 0 != strcmpi(m_pVehicle->GetEntity()->GetName(), pDebugVehicle->GetString()))
+		if (!m_pVehicle->IsPlayerPassenger() && 0 != _stricmp(m_pVehicle->GetEntity()->GetName(), pDebugVehicle->GetString()))
 			break;
 
 		float speed = m_pVehicle->GetStatus().speed;

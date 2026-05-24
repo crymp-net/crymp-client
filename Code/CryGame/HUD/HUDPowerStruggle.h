@@ -32,7 +32,17 @@ public:
 	~CHUDPowerStruggle();
 
 	void Update(float fDeltaTime);
+	void UpdatePlayerPP();
+	void UpdateSwingOMeter(float fDeltaTime);
+	void UpdateHexIcons(float fDeltaTime);
 	void Reset();
+
+	enum ESOMHideReason
+	{
+		eSOMHideReason_None = 0,
+		eSOMHideReason_PDA = BIT(0),
+		eSOMHideReason_Binoculars = BIT(1),
+	};
 
 	//buyable item types
 	enum BuyMenuPage
@@ -99,7 +109,7 @@ public:
 	// sets current client team
 	void SetSOMTeam(int teamId);
 	// hide/unhide SOM
-	void HideSOM(bool hide);
+	void SetSOMHidden(ESOMHideReason reason, bool hide);
 
 	void SetLastBuyMenuPage(BuyMenuPage page, bool updateTime = false);
 
@@ -225,6 +235,8 @@ private:
 	wstring m_lastHQArg1, m_lastHQArg2;
 
 	int m_teamId;
+
+	int m_somHideFlags = 0;
 };
 
 #endif

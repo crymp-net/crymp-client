@@ -10,42 +10,14 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#ifndef CRYTEK_CRYVECTOR2_H
-#define CRYTEK_CRYVECTOR2_H
-
-template<typename T> struct Vec2_tpl;
-template<typename T> struct Vec2Constants
-{
-	static const Vec2_tpl<T> fVec2_Zero;
-	static const Vec2_tpl<T> fVec2_OneX;
-	static const Vec2_tpl<T> fVec2_OneY;
-	static const Vec2_tpl<T> fVec2_OneZ;
-	static const Vec2_tpl<T> fVec2_One;
-};
-
+#pragma once
 
 template<class F> struct Vec2_tpl 
 {
+	F x{};
+	F y{};
 
-	F x,y;
-		
-#ifdef _DEBUG
-	ILINE Vec2_tpl() 
-	{
-		if (sizeof(F)==4)
-		{
-			uint32* p=(uint32*)&x;		p[0]=F32NAN;	p[1]=F32NAN;
-		}
-		if (sizeof(F)==8)
-		{
-			uint64* p=(uint64*)&x;		p[0]=F64NAN;	p[1]=F64NAN;
-		}
-	}
-#else
-	ILINE Vec2_tpl()	{};
-#endif
-
-	Vec2_tpl(type_zero) : x(0),y(0) {}
+	Vec2_tpl() = default;
 
 	ILINE Vec2_tpl(F vx,F vy) { x=F(vx); y=F(vy);  }
 
@@ -58,9 +30,6 @@ template<class F> struct Vec2_tpl
 
 	explicit ILINE Vec2_tpl(const Vec3_tpl<F>& v) : x((F)v.x), y((F)v.y) { assert(this->IsValid()); }
 
-	//template<class F1> Vec2_tpl& operator=(const Vec2_tpl<F1>& src) { x=F(src.x); y=F(src.y); return *this; }
-	//template<class F1> Vec2_tpl& operator=(const Vec3_tpl<F1>& src) { x=F(src.x); y=F(src.y); return *this; }
-
 	int operator!() const { return x==0 && y==0; }
 
 	Vec2_tpl& Normalize() 
@@ -71,7 +40,7 @@ template<class F> struct Vec2_tpl
 		return *this; 
 	}
 
-	Vec2_tpl& NormalizeSafe( const struct Vec2_tpl<F>& safe = Vec2Constants<F>::fVec2_Zero ) 
+	Vec2_tpl& NormalizeSafe(const Vec2_tpl<F>& safe = {})
 	{ 
 		F rlen=sqrt_tpl(x*x+y*y); 
 		if (rlen>0) 
@@ -93,7 +62,7 @@ template<class F> struct Vec2_tpl
 		return Vec2_tpl<F>(x*rlen,y*rlen); 
 	}
 
-	Vec2_tpl GetNormalizedSafe( const struct Vec2_tpl<F>& safe = Vec2Constants<F>::fVec2_OneX ) const 
+	Vec2_tpl GetNormalizedSafe(const Vec2_tpl& safe = Vec2_tpl(1, 0)) const
 	{ 
 		F rlen=sqrt_tpl(x*x+y*y); 
 		if (rlen>0) 
@@ -115,18 +84,6 @@ template<class F> struct Vec2_tpl
 	Vec2_tpl rot90ccw() { return Vec2_tpl(-y,x); }
 	Vec2_tpl rot90cw() { return Vec2_tpl(y,-x); }
 
-	#ifdef quotient_h
-		quotient_tpl<F> fake_atan2() const {
-			quotient_tpl<F> res;
-			int quad = -(signnz(x*x-y*y)-1>>1); // hope the optimizer will remove complement shifts and adds
-			if (quad) { res.x=-y; res.y=x; } 
-			else { res.x=x; res.y=y; } 
-			int sgny = signnz(res.y);	quad |= 1-sgny; //(res.y<0)<<1;
-			res.x *= sgny; res.y *= sgny;
-			res += 1+(quad<<1);
-			return res;
-		}
-	#endif
 	F atan2() const { return atan2_tpl(y,x); }
 
 	Vec2_tpl operator-() const { return Vec2_tpl(-x,-y); }
@@ -247,11 +204,3 @@ template<class F1,class F2>
 Vec2_tpl<F1>& operator-=(Vec2_tpl<F1> &op1, const Vec2_tpl<F2> &op2) { 
 	op1.x-=op2.x;op1.y-=op2.y; return op1; 
 }
-
-template <typename T> const Vec2_tpl<T> Vec2Constants<T>::fVec2_Zero(0, 0);
-template <typename T> const Vec2_tpl<T> Vec2Constants<T>::fVec2_OneX(1, 0);
-template <typename T> const Vec2_tpl<T> Vec2Constants<T>::fVec2_OneY(0, 1);
-template <typename T> const Vec2_tpl<T> Vec2Constants<T>::fVec2_One(1, 1);
-
-
-#endif // CRYTEK_CRYVECTOR2_H

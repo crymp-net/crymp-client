@@ -121,6 +121,9 @@ struct IFireMode
 	virtual void OnEnterThirdPerson()
 	{
 	}
+	virtual void OnSetViewMode(int mode)
+	{
+	}
 };
 
 
@@ -173,6 +176,9 @@ struct IZoomMode
 	{
 	}
 	virtual void OnEnterThirdPerson()
+	{
+	}
+	virtual void NetSetZoomStep(int step)
 	{
 	}
 };

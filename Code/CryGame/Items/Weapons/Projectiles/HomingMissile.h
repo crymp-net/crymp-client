@@ -51,7 +51,6 @@ public:
 
 	struct DestinationParams
 	{
-		DestinationParams(): pt(0) {};
 		void SerializeWith(TSerialize ser)
 		{
 			ser.Value("pt", pt, 'wrl3');

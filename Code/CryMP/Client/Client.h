@@ -210,6 +210,9 @@ public:
 		return m_lastSpawnId;
 	}
 
+	void ReloadLocalizationLua();
+	void WarmupRendererTextPath();
+
 private:
 
 	enum Timers
@@ -218,6 +221,11 @@ private:
 	};
 
 	void SynchWithPhysicsPosition(IEntity* pEntity);
+	void FixCVars();
+	void UpdateHudScale(float deltaTime);
+
+	bool m_hudScaleModifierDown = false;
+	int m_hudScaleDirection = 0;
 };
 
 ///////////////////////

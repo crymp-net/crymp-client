@@ -115,7 +115,7 @@ CGunTurret::CGunTurret()
 	m_lightId(0),
 	m_destroyed(false),
 	m_canShoot(false),
-	m_deviationPos(0)
+	m_deviationPos()
 {
 	m_barrelRotation.SetIdentity();
 }
@@ -1198,10 +1198,17 @@ void CGunTurret::UpdateOrientation(float deltaTime)
 		m_turretSound = INVALID_SOUNDID;
 	}
 
+	if (m_barrelRotationDirty)
+	{
+		changed = true;
+	}
+
 	if (changed)
 	{
 		turretTM.SetRotationXYZ(turretAngles, turretTM.GetTranslation());
 		GetEntity()->SetSlotLocalTM(eIGS_Aux0, turretTM);
+
+		m_barrelRotationDirty = false;
 	}
 
 	// update weapon  
@@ -1804,6 +1811,7 @@ void CGunTurret::SetCharacterAttachmentLocalTM(int slot, const char* name, const
 	if (slot == eIGS_ThirdPerson && !strcmp(name, "barrel"))
 	{
 		m_barrelRotation = tm;
+		m_barrelRotationDirty = true;
 	}
 	else
 		CWeapon::SetCharacterAttachmentLocalTM(slot, name, tm);
@@ -1852,12 +1860,10 @@ void    CGunTurret::DrawDebug()
 	IPersistantDebug* pDebug = gEnv->pGame->GetIGameFramework()->GetIPersistantDebug();
 	pDebug->Begin("CGunTurret::DrawDebug", true);
 
-	Vec3 gun(ZERO), rocket(ZERO), radar(ZERO), barrel(ZERO);
-
-	gun = GetSlotHelperPos(eIGS_ThirdPerson, m_fireHelper.c_str(), true);
-	rocket = GetSlotHelperPos(eIGS_ThirdPerson, m_rocketHelper.c_str(), true);
-	barrel = GetSlotHelperPos(eIGS_ThirdPerson, m_barrelHelper.c_str(), true);
-	radar = GetSlotHelperPos(eIGS_Aux0, m_radarHelper.c_str(), true);
+	const Vec3 gun = GetSlotHelperPos(eIGS_ThirdPerson, m_fireHelper.c_str(), true);
+	const Vec3 rocket = GetSlotHelperPos(eIGS_ThirdPerson, m_rocketHelper.c_str(), true);
+	const Vec3 barrel = GetSlotHelperPos(eIGS_ThirdPerson, m_barrelHelper.c_str(), true);
+	const Vec3 radar = GetSlotHelperPos(eIGS_Aux0, m_radarHelper.c_str(), true);
 
 	pDebug->AddSphere(gun, 0.2f, ColorF(1, 0, 0, 1), 1.f);
 	pDebug->AddSphere(rocket, 0.2f, ColorF(0, 1, 0, 1), 1.f);

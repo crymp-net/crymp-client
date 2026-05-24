@@ -35,13 +35,13 @@ CVehicleMovementStdBoat::CVehicleMovementStdBoat()
 , m_turnAccelCoeff( 2 )
 , m_accelCoeff( 2 )
 , m_pushTilt( 0 )
-, m_pushOffset(ZERO)
+, m_pushOffset()
 , m_cornerTilt( 0 )
-, m_cornerOffset(ZERO)
+, m_cornerOffset()
 , m_turnDamping( 0 )
-, m_massOffset(ZERO)
+, m_massOffset()
 , m_pedalLimitReverse(1.f)
-, m_waveIdleStrength(ZERO)
+, m_waveIdleStrength()
 , m_waveSpeedMult(0.f)
 , m_turnVelocityMult(1.f)
 , m_inWater(false)
@@ -320,7 +320,7 @@ void CVehicleMovementStdBoat::Update(const float deltaTime)
 void CVehicleMovementStdBoat::UpdateRunSound(const float deltaTime)
 {
 
-  Vec3 localAccel(ZERO);
+  Vec3 localAccel;
   m_measureSpeedTimer+=deltaTime;
 
   if (m_measureSpeedTimer > 0.25f)
@@ -637,7 +637,7 @@ void CVehicleMovementStdBoat::ProcessAI(const float deltaTime)
 		Limit(inputSpeed, -m_maxSpeed, m_maxSpeed);
 	}
 
-	Vec3 vMove(ZERO);
+	Vec3 vMove;
 	{
 		if (m_aiRequest.HasMoveTarget())
 			vMove = ( m_aiRequest.GetMoveTarget() - m_pEntity->GetWorldPos() ).GetNormalizedSafe();

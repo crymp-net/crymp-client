@@ -152,7 +152,7 @@ enum EAnimationStateNodeFlags
 
 struct SAnimationMovement
 {
-	SAnimationMovement() : translation(ZERO), rotation(IDENTITY), duration(0.0f) {}
+	SAnimationMovement() : translation(), rotation(IDENTITY), duration(0.0f) {}
 	SAnimationMovement( const Vec3& t, const Quat& r, CTimeValue d) : translation(t), rotation(r), duration(d) {}
 	Vec3 translation;
 	Quat rotation;

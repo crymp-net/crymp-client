@@ -10,6 +10,7 @@
 #include "CryCommon/Cry3DEngine/I3DEngine.h"
 #include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryGame/Game.h"
+#include "CryGame/GameCVars.h"
 #include "Library/WinAPI.h"
 
 #include "WeatherSystem.h"
@@ -64,6 +65,8 @@ void CWeatherSystem::Reset(bool deapply) {
 	m_activeEmitters.clear();
 	m_activeValues.clear();
 	m_activeMask.reset();
+
+	m_lastTodXmlPath.clear();
 }
 
 void CWeatherSystem::Update(float frameTime) {
@@ -95,8 +98,24 @@ void CWeatherSystem::Update(float frameTime) {
 			{
 				if (todPath != m_lastTodXmlPath)
 				{
-					TimeOfDay* pTODImpl = static_cast<TimeOfDay*>(pTOD);
-					pTODImpl->LoadCustomSettings(todPath);
+					//CryMP: Allow optional blend duration override from SSS, fallback to default if not specified.
+					float blendDuration = 10.0f;
+
+					float customBlendFloat = 0.0f;
+					if (pSSS->GetGlobalValue(WEATHER_TOD_BLEND_DURATION_SECONDS_ID, customBlendFloat))
+					{
+						blendDuration = std::max(customBlendFloat, 0.0f);
+					}
+					else
+					{
+						int customBlendInt = 0;
+						if (pSSS->GetGlobalValue(WEATHER_TOD_BLEND_DURATION_SECONDS_ID, customBlendInt))
+						{
+							blendDuration = std::max((float)customBlendInt, 0.0f);
+						}
+					}
+
+					pTOD->LoadCustomSettings(todPath, blendDuration);
 
 					m_lastTodXmlPath = todPath;
 				}
@@ -686,4 +705,220 @@ CWeatherSystem::SEffectInfo CWeatherSystem::GetEffectInfo(std::string_view effec
 		} while (pos != std::string::npos);
 		return info;
 	}
+}
+
+void CWeatherSystem::PostUpdate()
+{
+	if (!gEnv->bClient)
+	{
+		return;
+	}
+
+	CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
+	if (!pSSS)
+		return;
+
+	ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
+
+	bool showClockBar = false;
+	bool showBlendBar = false;
+
+	pSSS->GetGlobalValue(WEATHER_TOD_SHOW_CLOCK_BAR_ID, showClockBar);
+	pSSS->GetGlobalValue(WEATHER_TOD_SHOW_BLEND_BAR_ID, showBlendBar);
+
+	if (!showClockBar && !showBlendBar)
+	{
+		return;
+	}
+
+	constexpr float BAR_W = 160.0f;
+	constexpr float BAR_H = 10.0f;
+	constexpr float BORDER = 1.5f;
+	constexpr float CENTER_X = 400.0f;
+	constexpr float TOP_Y = 5.0f;
+
+	constexpr float TEXT_XPAD = 4.0f;
+	constexpr float TEXT_Y = -1.0f;
+	constexpr float TEXT_SCALE = 0.9f;
+
+	auto FormatHourMinute = [&](float timeValue, char* outText, size_t outSize)
+		{
+			float wrapped = std::fmod(timeValue, 24.0f);
+			if (wrapped < 0.0f)
+			{
+				wrapped += 24.0f;
+			}
+
+			int hours = (int)wrapped;
+			int minutes = (int)(((wrapped - (float)hours) * 60.0f) + 0.5f);
+
+			if (minutes >= 60)
+			{
+				minutes = 0;
+				hours = (hours + 1) % 24;
+			}
+
+			std::snprintf(outText, outSize, "ToD %02d:%02d", hours, minutes);
+		};
+
+	auto PackedColorToColorF = [&](int packed) -> ColorF
+		{
+			const float r = ((packed >> 16) & 0xFF) / 255.0f;
+			const float g = ((packed >> 8) & 0xFF) / 255.0f;
+			const float b = (packed & 0xFF) / 255.0f;
+			return ColorF(r, g, b, 1.0f);
+		};
+
+	auto DrawTextSimple = [&](float x, float y, const char* text, const ColorF& color)
+		{
+			if (!text || !text[0])
+			{
+				return;
+			}
+
+			SDrawTextInfo ti;
+			ti.color[0] = color.r;
+			ti.color[1] = color.g;
+			ti.color[2] = color.b;
+			ti.color[3] = color.a;
+			ti.xscale = TEXT_SCALE;
+			ti.yscale = TEXT_SCALE;
+
+			gEnv->pRenderer->Draw2dText(x, y, text, ti);
+		};
+
+	auto DrawBar = [&](float progress, const ColorF& fillColor, const char* text, const ColorF& textColor)
+		{
+			progress = std::clamp(progress, 0.0f, 1.0f);
+
+			const float x = CENTER_X - BAR_W * 0.5f;
+			const float y = TOP_Y;
+			const float currW = BAR_W * progress;
+
+			gEnv->pRenderer->SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST);
+
+			gEnv->pRenderer->Draw2dImage(
+				x - BORDER, y - BORDER,
+				BAR_W + BORDER * 2.0f, BAR_H + BORDER * 2.0f,
+				0, 0, 0, 0, 0, 0,
+				0.0f, 0.0f, 0.0f, 0.70f
+			);
+
+			if (currW > 0.0f)
+			{
+				gEnv->pRenderer->Draw2dImage(
+					x, y,
+					currW, BAR_H,
+					0, 0, 0, 0, 0, 0,
+					fillColor.r, fillColor.g, fillColor.b, 0.95f
+				);
+			}
+
+			if (currW < BAR_W)
+			{
+				gEnv->pRenderer->Draw2dImage(
+					x + currW, y,
+					BAR_W - currW, BAR_H,
+					0, 0, 0, 0, 0, 0,
+					0.0f, 0.0f, 0.0f, 0.40f
+				);
+			}
+
+			if (text && text[0])
+			{
+				const float textX = x + TEXT_XPAD;
+				const float textY = y + TEXT_Y;
+				DrawTextSimple(textX, textY, text, textColor);
+			}
+		};
+
+	const ColorF hudLineColor = PackedColorToColorF(g_pGameCVars->hud_colorLine);
+	const ColorF hudTextColor = PackedColorToColorF(g_pGameCVars->hud_colorText);
+
+	// Blend has priority over clock
+	if (showBlendBar && pTOD->IsTransitioning())
+	{
+		const float t = pTOD->GetTransitionTime();
+		const float d = pTOD->GetTransitionDuration();
+
+		float progress = 0.0f;
+		if (d > 0.0f)
+		{
+			progress = std::clamp(t / d, 0.0f, 1.0f);
+		}
+
+		string xml = pTOD->GetActiveCustomTodFile();
+		if (xml.empty())
+		{
+			xml = m_lastTodXmlPath;
+		}
+
+		UpdateTodXmlNameCache(xml);
+
+		char label[128];
+		if (!m_cachedTodXmlName.empty())
+		{
+			std::snprintf(label, sizeof(label), "ToD %s", m_cachedTodXmlName.c_str());
+		}
+		else
+		{
+			std::snprintf(label, sizeof(label), "ToD Blending");
+		}
+
+		DrawBar(progress, hudLineColor, label, hudTextColor);
+		return;
+	}
+
+	if (showClockBar)
+	{
+		const float currentTime = pTOD->GetTime();
+
+		float wrapped = std::fmod(currentTime, 24.0f);
+		if (wrapped < 0.0f)
+		{
+			wrapped += 24.0f;
+		}
+
+		const float progress = wrapped / 24.0f;
+
+		char label[64];
+		FormatHourMinute(currentTime, label, sizeof(label));
+
+		DrawBar(progress, hudLineColor, label, hudTextColor);
+	}
+}
+
+std::string_view CWeatherSystem::GetTodXmlName(std::string_view path) const
+{
+	if (path.empty())
+	{
+		return {};
+	}
+
+	const size_t slashPos = path.find_last_of("/\\");
+	if (slashPos != std::string_view::npos)
+	{
+		path.remove_prefix(slashPos + 1);
+	}
+
+	const size_t dotPos = path.rfind('.');
+	if (dotPos != std::string_view::npos && path.substr(dotPos) == ".xml")
+	{
+		path = path.substr(0, dotPos);
+	}
+
+	return path;
+}
+
+void CWeatherSystem::UpdateTodXmlNameCache(const string& xmlPath)
+{
+	std::string path(xmlPath.c_str());
+
+	if (path == m_cachedTodXmlPath)
+	{
+		return;
+	}
+
+	m_cachedTodXmlPath = std::move(path);
+	m_cachedTodXmlName = this->GetTodXmlName(m_cachedTodXmlPath);
 }

@@ -166,8 +166,8 @@ void CItem::OnHit(float damage, const char* damageType)
 					{
 						int slot = (m_stats.viewmode & eIVM_FirstPerson) ? eIGS_FirstPerson : eIGS_ThirdPerson;
 
-						SpawnEffect(slot, level.effect.c_str(), level.helper.c_str(), Vec3Constants<float>::fVec3_Zero,
-							Vec3Constants<float>::fVec3_OneZ, level.scale);
+						SpawnEffect(slot, level.effect.c_str(), level.helper.c_str(), Vec3(),
+							Vec3(0, 0, 1), level.scale);
 					}
 				}
 			}
@@ -195,7 +195,7 @@ void CItem::UpdateDamageLevel()
 		{
 			if (level.effectId == -1)
 				level.effectId = AttachEffect(slot, 0, true, level.effect.c_str(), level.helper.c_str(),
-					Vec3Constants<float>::fVec3_Zero, Vec3Constants<float>::fVec3_OneZ, level.scale, true);
+					Vec3(), Vec3(0, 0, 1), level.scale, true);
 		}
 		else if (level.effectId != -1)
 		{

@@ -645,7 +645,7 @@ void CHunter::PlayFootliftEffects (int tentacle) const
 		if (pList && pList->m_particleList)        
 		{
 			const char* effect = pList->m_particleList->m_particleParams.name;
-			CEffectAttachment* pEffectAttachment = new CEffectAttachment(effect, Vec3Constants<float>::fVec3_Zero, Vec3Constants<float>::fVec3_OneY, 1.f);
+			CEffectAttachment* pEffectAttachment = new CEffectAttachment(effect, Vec3(), Vec3(0, 1, 0), 1.f);
 			pEffectAttachment->CreateEffect();
 			m_footAttachments[tentacle]->AddBinding(pEffectAttachment);              
 		}

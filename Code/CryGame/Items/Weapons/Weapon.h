@@ -599,6 +599,8 @@ public:
 	virtual void OnEnterFirstPerson() override;
 	virtual void OnEnterThirdPerson() override;
 
+	void SetViewMode(int mode) override;
+
 protected:
 	virtual bool ReadItemParams(const IItemParamsNode* params);
 	const IItemParamsNode* GetFireModeParams(const char* name);
@@ -651,10 +653,6 @@ protected:
 
 
 	int										m_forcedHitMaterial;
-
-	float	m_dofValue;
-	float	m_dofSpeed;
-	float m_focusValue;
 
 	unsigned int m_timerLayerEnterId = 0;
 

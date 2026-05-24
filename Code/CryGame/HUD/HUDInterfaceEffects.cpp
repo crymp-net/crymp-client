@@ -337,6 +337,8 @@ void CHUD::UpdateMissionObjectiveIcon(EntityId objective, int friendly, FlashOnS
 		fSize = ((fA / fB) * fC) + fMaxSize;
 	}
 
+	fSize *= g_pGameCVars->hud_scale;
+
 	float centerX = 50.0;
 	float centerY = 50.0;
 
@@ -399,9 +401,9 @@ void CHUD::TrackProjectiles(CPlayer* pPlayerActor)
 	if(m_trackedProjectiles.empty())
 	{
 		if (m_friendlyTrackerStatus)
-			UpdateProjectileTracker(m_animFriendlyProjectileTracker, 0, m_friendlyTrackerStatus, ZERO);
+			UpdateProjectileTracker(m_animFriendlyProjectileTracker, 0, m_friendlyTrackerStatus, Vec3());
 		if (m_hostileTrackerStatus)
-			UpdateProjectileTracker(m_animHostileProjectileTracker, 0, m_hostileTrackerStatus, ZERO);
+			UpdateProjectileTracker(m_animHostileProjectileTracker, 0, m_hostileTrackerStatus, Vec3());
 
 		return;
 	}
@@ -575,7 +577,7 @@ void CHUD::TrackRadioMessages(CPlayer* pPlayerActor)
 
 	if (m_trackedRadioMessages.empty())
 	{
-		UpdateRadioMessageTracker(m_animTrackedRadioMessage, {}, m_radioTrackerStatus, ZERO);
+		UpdateRadioMessageTracker(m_animTrackedRadioMessage, {}, m_radioTrackerStatus, Vec3());
 		return;
 	}
 
@@ -1834,18 +1836,22 @@ void CHUD::ShowProgress(int progress, bool init /* = false */, int posX /* = 0 *
 		if (!pAnim->IsLoaded())
 		{
 			if(lockingBar)
-				m_animProgressLocking.Load("Libs/UI/HUD_TAC_Locking.gfx", eFD_Center, eFAF_Visible);
+			{
+				m_animProgressLocking.Load("Libs/UI/HUD_TAC_Locking.gfx", eFD_Center | eFD_Scaling, eFAF_Visible);
+			}
 			else
-				m_animProgress.Load("Libs/UI/HUD_ProgressBar.gfx", eFD_Center, eFAF_Default);
+			{
+				m_animProgress.Load("Libs/UI/HUD_ProgressBar.gfx", eFD_Center | eFD_Scaling, eFAF_Default);
+				CHUDCommon::RepositionFlashAnimation(&m_animProgress);
+			}
 			
 			m_iProgressBar = 0;
 			m_progressBarSmoothed = -1.0f;
 		}
 
 		pAnim->Invoke("showProgressBar", true);
-		const wchar_t* localizedText = text.empty() ? L"" : LocalizeWithParams(text.data(), true);
-
-		SFlashVarValue args[2] = {localizedText, topText ? 1 : 2};
+		std::wstring localizedText = LocalizeWithParams(text.data(), true);
+		SFlashVarValue args[2] = {localizedText.c_str(), topText ? 1 : 2};
 		pAnim->Invoke("setText", args, 2);
 		SFlashVarValue pos[2] = {posX*1024/800, posY*768/512};
 		pAnim->Invoke("setPosition", pos, 2);

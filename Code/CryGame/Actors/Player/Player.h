@@ -450,7 +450,7 @@ public:
 	};
 	struct LadderParams
 	{
-		LadderParams() : topPos(ZERO), bottomPos(ZERO), ladderOrientation(ZERO), reason(eLAT_None) {};
+		LadderParams() : topPos(), bottomPos(), ladderOrientation(), reason(eLAT_None) {};
 		LadderParams(Vec3 _topPos, Vec3 _bottomPos, Vec3 _ladderOrientation, ELadderActionType _reason)
 			: topPos(_topPos), bottomPos(_bottomPos), ladderOrientation(_ladderOrientation), reason(_reason) {};
 
@@ -740,7 +740,7 @@ public:
 	struct SStagingParams
 	{
 		SStagingParams() :
-			bActive(false), bLocked(false), vLimitDir(ZERO), vLimitRangeH(0.0f), vLimitRangeV(0.0f), stance(STANCE_NULL)
+			bActive(false), bLocked(false), vLimitDir(), vLimitRangeH(0.0f), vLimitRangeV(0.0f), stance(STANCE_NULL)
 		{
 		}
 
@@ -918,9 +918,9 @@ private:
 	float m_tpLeanOffset = 0.0f;
 	float m_tpProneOffset = 0.0f;
 	float m_prevFrozenAmount = 0.0f;
-	Vec3 m_vehicleViewDirSmooth = Vec3(ZERO);
-	Vec3 m_netAimDir = Vec3(ZERO);
-	Vec3 m_netAimDirSmooth = Vec3(ZERO);
+	Vec3 m_vehicleViewDirSmooth = {};
+	Vec3 m_netAimDir = {};
+	Vec3 m_netAimDirSmooth = {};
 	bool m_bSlowCamera = false;
 	bool GetAimTargetAdjusted(Vec3& aimTarget);
 
@@ -933,10 +933,6 @@ private:
 	void UpdateCharacter(ICharacterInstance* pCharacter, bool characterLoad = false);
 	void UpdateScreenFrost();
 	void UpdateScreenEffects(float frameTime);
-	void SetDofFxLimits(float focusmin, float focusmax, float focuslim, float speed = 0);
-	void SetDofFxMask(const char* texName);
-	void SetDofFxAmount(float amount, float speed = 0);
-	void ResetDofFx(float speed = 0);
 	void UpdateDofFx(float frameTime);
 	void SetMotionFxAmount(float amount, float speed = 0);
 	void SetMotionFxMask(const char* texName);
@@ -972,9 +968,17 @@ private:
 
 	int m_lastAttachmentCount = 0;
 
-	Vec3 m_lefthandGrip = Vec3(ZERO);
-	Vec3 m_righthandGrip = Vec3(ZERO);
+	Vec3 m_lefthandGrip = {};
+	Vec3 m_righthandGrip = {};
 	bool m_handGripsValid = false;
+
+public:
+	void SetDofFxLimits(float focusmin, float focusmax, float focuslim, float speed = 0);
+	void SetDofFxMask(const char* texName);
+	void SetDofFxAmount(float amount, float speed = 0);
+	void ApplyDofFxAmount(float amount);
+	void ApplyDofFxLimits(float focusmin, float focusmax, float focuslim);
+	void ResetDofFx(float speed = 0);
 
 private:
 

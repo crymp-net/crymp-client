@@ -61,12 +61,7 @@ static const float IDLE_CHECK_MOVEMENT_TIMEOUT = 3.0f;
 
 CPlayerMovementController::CPlayerMovementController(CPlayer* pPlayer) : m_pPlayer(pPlayer), m_animTargetSpeed(-1.0f), m_animTargetSpeedCounter(0)
 {
-	m_lookTarget = Vec3(ZERO);
-	m_aimTarget = Vec3(ZERO);
-	m_fireTarget = Vec3(ZERO);
 	Reset();
-
-
 }
 
 void CPlayerMovementController::Reset()
@@ -96,12 +91,12 @@ void CPlayerMovementController::Reset()
 	uint32 numAimTargets = m_aimTargets.size();
 	for (uint32 i = 0; i < numAimTargets; i++)
 	{
-		m_aimTargets[i] = Vec3(ZERO);
+		m_aimTargets[i] = {};
 	}
 
-	m_lookTarget = Vec3(ZERO);
-	m_aimTarget = Vec3(ZERO);
-	m_fireTarget = Vec3(ZERO);
+	m_lookTarget = {};
+	m_aimTarget = {};
+	m_fireTarget = {};
 
 }
 
@@ -358,7 +353,7 @@ ILINE static f32 GetYaw(const Vec3& v0, const Vec3& v1)
 ILINE static Quat GetTargetRotation(Vec3 oldTarget, Vec3 newTarget, Vec3 origin)
 {
 	Vec3 oldDir = (oldTarget - origin).GetNormalizedSafe(FORWARD_DIRECTION);
-	Vec3 newDir = (newTarget - origin).GetNormalizedSafe(ZERO);
+	Vec3 newDir = (newTarget - origin).GetNormalizedSafe(Vec3());
 	if (newDir.GetLength() < 0.001f)
 		return Quat::CreateIdentity();
 	else
@@ -862,7 +857,7 @@ bool CPlayerMovementController::UpdateNormal(float frameTime, SActorFrameMovemen
 				viewFollowMovement = 1.0f; //5.0f * desiredSpeed / stanceSpeed;
 				//
 				//and now, after used it for the viewFollowMovement convert it to the Actor local space
-				moveDirection = params.desiredVelocity.GetNormalizedSafe(ZERO);
+				moveDirection = params.desiredVelocity.GetNormalizedSafe(Vec3());
 				params.desiredVelocity = m_pPlayer->GetEntity()->GetWorldRotation().GetInverted() * params.desiredVelocity;
 			}
 		}
@@ -953,7 +948,7 @@ bool CPlayerMovementController::UpdateNormal(float frameTime, SActorFrameMovemen
 	}
 	else if (hasMoveTarget)
 	{
-		Vec3 desiredMoveDir = (moveTarget - playerPos).GetNormalizedSafe(ZERO);
+		Vec3 desiredMoveDir = (moveTarget - playerPos).GetNormalizedSafe(Vec3());
 		if (moveDirection.Dot(desiredMoveDir) < ANTICIPATION_COSINE_ANGLE)
 		{
 			hasLookTarget = true;
@@ -1029,8 +1024,8 @@ bool CPlayerMovementController::UpdateNormal(float frameTime, SActorFrameMovemen
 				Vec3 limitAxisY(m_pPlayer->GetActorParams()->vLimitDir);
 				limitAxisY.z = 0;
 				Vec3 limitAxisX(limitAxisY.y, -limitAxisY.x, 0);
-				limitAxisX.NormalizeSafe(Vec3Constants<float>::fVec3_OneX);
-				limitAxisY.NormalizeSafe(Vec3Constants<float>::fVec3_OneY);
+				limitAxisX.NormalizeSafe(Vec3(1, 0, 0));
+				limitAxisY.NormalizeSafe(Vec3(0, 1, 0));
 				float x = limitAxisX.Dot(aimDirection);
 				float y = limitAxisY.Dot(aimDirection);
 				float len = cry_sqrtf(sqr(x) + sqr(y));
@@ -1054,9 +1049,9 @@ bool CPlayerMovementController::UpdateNormal(float frameTime, SActorFrameMovemen
 				Vec3 aimDirection(params.aimTarget - weaponPosition);//m_currentMovementState.weaponPosition);
 				Vec3 limitAxisXY(aimDirection);
 				limitAxisXY.z = 0;
-				Vec3 limitAxisZ(Vec3Constants<float>::fVec3_OneZ);
+				Vec3 limitAxisZ(Vec3(0, 0, 1));
 
-				limitAxisXY.NormalizeSafe(Vec3Constants<float>::fVec3_OneY);
+				limitAxisXY.NormalizeSafe(Vec3(0, 1, 0));
 				float z = limitAxisZ.Dot(aimDirection);
 				float x = limitAxisXY.Dot(aimDirection);
 				float len = cry_sqrtf(sqr(z) + sqr(x));
@@ -1159,7 +1154,7 @@ bool CPlayerMovementController::UpdateNormal(float frameTime, SActorFrameMovemen
 		}
 	}
 
-	Vec3 viewDir = ((bodyTarget - playerPos).GetNormalizedSafe(ZERO));
+	Vec3 viewDir = ((bodyTarget - playerPos).GetNormalizedSafe(Vec3()));
 	if (m_pPlayer->IsClient()) //CryMP
 	{
 		params.lookIK = true;

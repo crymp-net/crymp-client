@@ -89,10 +89,10 @@ public:
 						{
 							const Quat& viewQuat = pPlayer->GetViewQuatFinal(); // WC
 							Vec3 dirWC = viewQuat * dir;
-							stagingParams.vLimitDir = dirWC.GetNormalizedSafe(ZERO);
+							stagingParams.vLimitDir = dirWC.GetNormalizedSafe(Vec3());
 						}
 						else
-							stagingParams.vLimitDir = dir.GetNormalizedSafe(ZERO);
+							stagingParams.vLimitDir = dir.GetNormalizedSafe(Vec3());
 					}
 
 					stagingParams.vLimitRangeH = DEG2RAD(rangeH);
@@ -123,10 +123,10 @@ public:
 							{
 								const Quat& viewQuat = pPlayer->GetViewQuatFinal(); // WC
 								Vec3 dirWC = viewQuat * dir;
-								pActorParams->vLimitDir = dirWC.GetNormalizedSafe(ZERO);
+								pActorParams->vLimitDir = dirWC.GetNormalizedSafe(Vec3());
 							}
 							else
-								pActorParams->vLimitDir = dir.GetNormalizedSafe(ZERO);
+								pActorParams->vLimitDir = dir.GetNormalizedSafe(Vec3());
 						}
 						else 
 							pActorParams->vLimitDir.zero();

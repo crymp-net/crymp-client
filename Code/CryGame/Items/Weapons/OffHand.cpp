@@ -943,7 +943,8 @@ void COffHand::UpdateHeldObject()
 
 	Vec3 pos = GetSlotHelperPos(id, "item_attachment", true);
 
-	Vec3 fpPosOffset(ZERO), tpPosOffset(ZERO);
+	Vec3 fpPosOffset;
+	Vec3 tpPosOffset;
 	GetPredefinedPosOffset(pEntity, fpPosOffset, tpPosOffset);
 
 	if (!fpPosOffset.IsZero(0.0001f))
@@ -4182,7 +4183,7 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 			bool isTwoHand = IsTwoHandMode();
 
 			QuatT offset;
-			offset.t = Vec3(ZERO);
+			offset.t = {};
 
 			const bool isVehicle = g_pGame->GetIGameFramework()->GetIVehicleSystem()->IsVehicleClass(pObject->GetClass()->GetName());
 			const bool isActor = !isVehicle && g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(objectId) != nullptr;
@@ -4213,11 +4214,11 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 			// ---------------------------------------------------------
 			// POSITION OFFSET
 			// ---------------------------------------------------------
-			Vec3 positionOffset = Vec3(ZERO);
+			Vec3 positionOffset;
 
 			if (isTwoHand)
 			{
-				Vec3 vOffset = Vec3(ZERO);
+				Vec3 vOffset;
 
 				AABB bbox;
 				pObject->GetLocalBounds(bbox);
@@ -4267,8 +4268,8 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 				}
 			}
 
-			Vec3 fpPosOffset = Vec3(ZERO);
-			Vec3 tpPosOffset = Vec3(ZERO);
+			Vec3 fpPosOffset;
+			Vec3 tpPosOffset;
 			GetPredefinedPosOffset(pObject, fpPosOffset, tpPosOffset);
 
 			positionOffset += tpPosOffset;
@@ -4285,8 +4286,8 @@ void COffHand::AttachObjectToHand(bool attach, EntityId objectId, bool throwObje
 				pPlayer->SetArmIKLocalInvalid();
 			}
 
-			Vec3 left = Vec3(ZERO);
-			Vec3 right = Vec3(ZERO);
+			Vec3 left;
+			Vec3 right;
 
 			if (!GetPredefinedGripHandPos(pObject, left, right))
 			{
@@ -4515,29 +4516,17 @@ void COffHand::HandleNewHeldEntity(const EntityId entityId, const bool isNewItem
 		UpdateEntityRenderFlags(entityId, EntityFpViewMode::ForceActive);
 	}
 
-	// Remote client in MP: mark client-only and zero mass while storing original mass on actor
+	// CryMP:
+	// Remote MP actors drive held objects through the attachment system.
+	// Ignore incoming rigid-body network state to prevent physics snapshots
+	// from fighting attachment transforms and removing local constraints.
 	if (gEnv->bClient && gEnv->bMultiplayer && pActor->IsRemote())
 	{
-		//pEntity->SetFlags(pEntity->GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
-
 		if (IPhysicalEntity* pObjectPhys = pEntity->GetPhysics())
 		{
-			pe_status_dynamics dyn;
-			if (pObjectPhys->GetStatus(&dyn))
-			{
-				pe_simulation_params simParams;
-				simParams.mass = 0.0f;
-
-				const int success = pObjectPhys->SetParams(&simParams);
-				if (success)
-				{
-					m_heldEntityMassBackup = dyn.mass;
-				}
-				else
-				{
-					CryLogWarningAlways("Failed to set mass to 0 on object '%s'", pEntity->GetName());
-				}
-			}
+			pe_params_flags pf;
+			pf.flagsOR = pef_ignore_network_state;
+			pObjectPhys->SetParams(&pf);
 		}
 	}
 
@@ -4545,7 +4534,7 @@ void COffHand::HandleNewHeldEntity(const EntityId entityId, const bool isNewItem
 
 	if (pActor->IsThirdPerson())
 	{
-		if (CPlayer *pPlayer = CPlayer::FromActor(pActor))
+		if (CPlayer* pPlayer = CPlayer::FromActor(pActor))
 		{
 			if (!pPlayer->IsGrabTargetSet(entityId))
 			{
@@ -4590,36 +4579,17 @@ void COffHand::HandleOldHeldEntity(const EntityId oldHeldEntityId, const bool is
 				);
 			}
 		}
-	
-		// Remote client in MP: restore mass, clear client-only, rephys vehicles, clear cached mass
-		if (gEnv->bClient && gEnv->bMultiplayer && (!pActor || pActor->IsRemote())) //No actor: Actor disconnected
-		{
-			//pOldEntity->SetFlags(pOldEntity->GetFlags() & ~ENTITY_FLAG_CLIENT_ONLY);
 
+		// CryMP:
+		// Re-enable rigid-body network state now that the object is no longer
+		// attachment-driven by a remote actor.
+		if (gEnv->bClient && gEnv->bMultiplayer && (!pActor || pActor->IsRemote())) // No actor: actor disconnected
+		{
 			if (IPhysicalEntity* pObjectPhys = pOldEntity->GetPhysics())
 			{
-				pe_status_dynamics dyn;
-				pObjectPhys->GetStatus(&dyn);
-
-				const float originalMass = m_heldEntityMassBackup;
-				if (originalMass > 0.0f && dyn.mass != originalMass)
-				{
-					pe_simulation_params simParams;
-					simParams.mass = originalMass;
-					
-					const int success = pObjectPhys->SetParams(&simParams);
-					if (success == 0)
-					{
-						CryLogWarningAlways("Failed to restore mass on object '%s'", pOldEntity->GetName());
-					}
-					m_heldEntityMassBackup = 0.0f;
-				}
-			}
-			
-			if (IVehicle* pVehicle = m_pGameFramework->GetIVehicleSystem()->GetVehicle(pOldEntity->GetId()))
-			{
-				// CryMP: trigger rephysicalization to avoid bugs caused by 0 mass
-				reinterpret_cast<IGameObjectProfileManager*>(pVehicle + 1)->SetAspectProfile(eEA_Physics, 1);
+				pe_params_flags pf;
+				pf.flagsAND = ~pef_ignore_network_state;
+				pObjectPhys->SetParams(&pf);
 			}
 		}
 	}
@@ -4850,7 +4820,7 @@ void COffHand::OnHeldObjectCollision(CPlayer* pClientActor, const EventPhysColli
 			}
 
 			IVehicle* pCarriedVehicle = m_pVehicleSystem->GetVehicle(m_heldEntityId);
-			Vec3 pos = ZERO;
+			Vec3 pos;
 			if (pCarriedVehicle && pCarriedVehicle->GetExitPositionForActor(pClientActor, pos, true))
 			{
 				const Ang3 angles = pCarriedVehicle->GetEntity()->GetWorldAngles(); // face same direction as vehicle.
@@ -4948,7 +4918,7 @@ void COffHand::PerformThrowAction_Press(EntityId throwableId, bool isLivingEnt /
 				//if (!m_forceThrow)
 				//{
 				//	IVehicle* pCarriedVehicle = m_pVehicleSystem->GetVehicle(throwableId);
-				//	Vec3 pos = ZERO;
+				//	Vec3 pos;
 				//	if (pCarriedVehicle && pCarriedVehicle->GetExitPositionForActor(pClientActor, pos, true))
 				//	{
 				//		const Ang3 angles = pCarriedVehicle->GetEntity()->GetWorldAngles(); // face same direction as vehicle.

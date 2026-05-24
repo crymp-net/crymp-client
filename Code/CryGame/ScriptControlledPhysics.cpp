@@ -11,6 +11,7 @@ History:
 
 *************************************************************************/
 #include "CryCommon/CrySystem/ISystem.h"
+#include "CryCommon/CryCore/CrySizer.h"
 #include "CryCommon/CryCore/TArray.h"  // CLAMP
 #include "CryCommon/CryPhysics/IPhysics.h"
 #include "ScriptControlledPhysics.h"
@@ -136,7 +137,7 @@ void CScriptControlledPhysics::OnPostStep(EventPhysPostStep *pPostStep)
 
 			pPostStep->pos=target;
 
-			av.v=ZERO;
+			av.v={};
 		}
 		else
 		{
@@ -179,7 +180,7 @@ void CScriptControlledPhysics::OnPostStep(EventPhysPostStep *pPostStep)
 			m_rotationSpeed=0.0f;
 			m_rotating=false;
 			pPostStep->q=m_rotationTarget;
-			av.w=ZERO;
+			av.w={};
 		}
 		else
 		{
