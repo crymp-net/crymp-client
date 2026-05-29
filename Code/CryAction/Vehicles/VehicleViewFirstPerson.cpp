@@ -360,9 +360,9 @@ Quat CVehicleViewFirstPerson::GetWorldRotGoal() const
 
 		// vx is "correct"
 		vy = (1.0f - m_relToHorizon) * Vec3(0, 0, 1).Cross(vx) + m_relToHorizon * vy;
-		vy.NormalizeSafe(Vec3Constants<float>::fVec3_OneY);
+		vy.NormalizeSafe(Vec3(0, 1, 0));
 		vz = vx.Cross(vy);
-		vz.NormalizeSafe(Vec3Constants<float>::fVec3_OneZ);
+		vz.NormalizeSafe(Vec3(0, 0, 1));
 
 		vehicleWorldRot = Quat(Matrix33::CreateFromVectors(vx, vy, vz));
 	}

@@ -151,7 +151,7 @@ struct InterpolatedVec3Helper : public InterpolateHelper<Vec3>
     }
     static Vec3 GetDefault()
     {
-        return Vec3(ZERO);
+        return Vec3();
     }
     static float GetDefaultTeleport()
     {

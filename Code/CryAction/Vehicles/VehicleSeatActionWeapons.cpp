@@ -245,8 +245,8 @@ void CVehicleSeatActionWeapons::SetupWeapon(SVehicleWeapon& weapon)
 	{
 		EntityId mountId = pVehiclePart ? pVehiclePart->GetEntity()->GetId() : m_pVehicle->GetEntityId();
 
-		static Vec3 offset(ZERO);
-		static Ang3 angles(ZERO);
+		static Vec3 offset;
+		static Ang3 angles;
 		pItem->MountAtEntity(mountId, offset, angles);
 
 		if (IWeapon* pWeapon = pItem->GetIWeapon())
@@ -666,8 +666,8 @@ void CVehicleSeatActionWeapons::SetWeaponEntityId(unsigned int index, EntityId w
 
 	EntityId mountId = pVehiclePart ? pVehiclePart->GetEntity()->GetId() : m_pVehicle->GetEntityId();
 
-	static Vec3 offset(ZERO);
-	static Ang3 angles(ZERO);
+	static Vec3 offset;
+	static Ang3 angles;
 	pItem->MountAtEntity(mountId, offset, angles);
 
 	if (IWeapon* pWeapon = pItem->GetIWeapon())

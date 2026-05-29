@@ -271,7 +271,7 @@ void CVehicleSeatActionRotateTurret::Update(float frameTime)
 			{
 				EntityId weaponId = pWeaponAction->GetWeaponEntityId(pWeaponAction->GetCurrentWeapon());
 				pWeaponAction->GetFiringPos(weaponId, 0, firingPos);
-				pWeaponAction->GetActualWeaponDir(weaponId, 0, vFiringDir, Vec3(ZERO), Vec3(ZERO) );
+				pWeaponAction->GetActualWeaponDir(weaponId, 0, vFiringDir, Vec3(), Vec3() );
 			}
 
 			// Just in case, fix the angle error between parts angle and weapon angle.
@@ -632,7 +632,7 @@ void CVehicleSeatActionRotateTurret::UpdatePartRotation(EVehicleTurretRotationTy
 		}
 	}
 
-	Ang3 deltaAngles(ZERO);
+	Ang3 deltaAngles;
 
 	if (m_rotations[eType].m_pPart && abs(m_rotations[eType].m_currentValue) > threshold)
 	{      
@@ -695,7 +695,7 @@ void CVehicleSeatActionRotateTurret::UpdatePartRotation(EVehicleTurretRotationTy
 
 	bool updated = updatedAngle > 0.f || m_rotations[eType].m_rotationChanged || m_rotations[eType].m_orientation.IsInterpolating();
 
-	Vec3 oldHelper2Pos = ZERO;
+	Vec3 oldHelper2Pos;
 	if(checkRotation)
 	{
 		oldHelper2Pos = m_rotTestHelpers[1]->GetWorldTM().GetTranslation();

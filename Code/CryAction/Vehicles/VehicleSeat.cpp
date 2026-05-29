@@ -850,9 +850,6 @@ bool CVehicleSeat::Exit(bool isTransitionEnabled, bool force/*=false*/)
 	if (m_transitionType == eVT_RemoteUsage)
 		return ExitRemotely();
 
-	Vec3 exitPos = Vec3(ZERO);
-	Vec3 exitWorldPos = Vec3(ZERO); //CryMP: Fime
-
 	IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
 	IActor* pActor = pActorSystem->GetActor(m_passengerId);
 
@@ -863,10 +860,11 @@ bool CVehicleSeat::Exit(bool isTransitionEnabled, bool force/*=false*/)
 	// This just ensures that when we reach StandUp there will be a valid place to exit from.
 	// Changed this for MP: only local client should decide whether it can get out or not (since it
 	//	will also decide where to place itself).
-	if (pActor && pActor->IsClient() && exitPos.IsEquivalent(ZERO))
+	if (pActor && pActor->IsClient())
 	{
 		Matrix34 worldTM = GetExitTM(pActor, false);
 		m_exitWorldPos = worldTM.GetTranslation();
+
 		EntityId blockerId = 0;
 		bool canExit = TestExitPosition(pActor, m_exitWorldPos, &blockerId);
 
@@ -914,7 +912,8 @@ bool CVehicleSeat::Exit(bool isTransitionEnabled, bool force/*=false*/)
 				{
 					Matrix34 worldTM = GetExitTM(pActor);
 					Vec3 adjustedPos;
-					//CryMP: 
+
+					//CryMP:
 					if (IAIActor* aiactor = pAIObject->CastToIAIActor())
 					{
 						if (pAIObject->GetValidPositionNearby(worldTM.GetTranslation(), adjustedPos))
@@ -1706,7 +1705,7 @@ void CVehicleSeat::UpdateRemote(IActor* pActor, float deltaTime)
 			if (pView && pView->IsAvailableRemotely() && pView->IsThirdPerson())
 			{
 				// remote thirdperson view uses AimPart as usual
-				pTurretAction->SetAimGoal(Vec3Constants<float>::fVec3_Zero);
+				pTurretAction->SetAimGoal(Vec3());
 			}
 			else
 			{
@@ -2555,9 +2554,8 @@ void CVehicleSeat::GetMovementState(SMovementState& movementState)
 			}
 			else
 			{
-				Vec3 vTmp(ZERO);
 				EntityId weaponId = m_pWeaponAction->GetWeaponEntityId(m_pWeaponAction->GetCurrentWeapon());
-				m_pWeaponAction->GetActualWeaponDir(weaponId, 0, movementState.aimDirection, Vec3(ZERO), vTmp);
+				m_pWeaponAction->GetActualWeaponDir(weaponId, 0, movementState.aimDirection, Vec3(), Vec3());
 				m_pWeaponAction->GetFiringPos(weaponId, 0, movementState.weaponPosition);
 				movementState.aimDirection.Normalize();
 			}

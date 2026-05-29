@@ -26,8 +26,8 @@ CVehicleSeatActionSteeringWheel::CVehicleSeatActionSteeringWheel()
 : m_pVehicleAnim(NULL),
   m_isBeingUsed(false)
 {
-	m_steeringActions	=	Vec3(ZERO);
-	m_steeringValues	=	Vec3(ZERO);
+	m_steeringActions	=	Vec3();
+	m_steeringValues	=	Vec3();
 }
 
 //------------------------------------------------------------------------

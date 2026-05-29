@@ -26,7 +26,7 @@ History:
 
 #define DEFAULT_FLOAT -1.f
 #define DEFAULT_INT -1
-#define DEFAULT_VEC3 Vec3(0)
+#define DEFAULT_VEC3 Vec3()
 
 //------------------------------------------------------------------------
 CVehiclePartLight::CVehiclePartLight()
@@ -123,8 +123,14 @@ bool CVehiclePartLight::Init(IVehicle* pVehicle, const CVehicleParams& table, IV
 	if (lightDefault) lightDefault->getAttr(name, var); \
 	lightTable.getAttr(name, var); \
 
-#define GET_LIGHT_VALUE_DEF_VEC3(name, var) { Vec3 val(DEFAULT_VEC3); \
-	GET_LIGHT_VALUE_VEC3(name, val); if (val != DEFAULT_VEC3) var = val; }
+
+#define GET_LIGHT_VALUE_DEF_VEC3(name, var) \
+{ \
+	Vec3 val; \
+	GET_LIGHT_VALUE_VEC3(name, val); \
+	if (val != DEFAULT_VEC3) \
+		var = val; \
+}
 
 #define GET_LIGHT_VALUE_STRING(name, var) \
 	if (lightDefault) {var = lightDefault->getAttr(name);} else \

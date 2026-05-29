@@ -238,18 +238,8 @@ bool CVehicleMovementHovercraft::InitThrusters(const CVehicleParams& table)
 
     if (!m_bSampleByHelpers)
     {
-      m_vecThrusters[i]->heightInitial = m_vecThrusters[i]->pos.z;
-      m_vecThrusters[i]->hoverHeight = m_hoverHeight;
-      m_vecThrusters[i]->hoverVariance = m_hoverVariance;
-      m_vecThrusters[i]->heightAdaption = 0.f;
-    }
-  }
-  else
-  {
-    // place thrusters at helpers
-    for (int i=0; i<m_numThrusters; ++i)
-    {
-      m_vecThrusters.push_back( new SThruster( Vec3(), thrusterDir ));
+        // distribute thrusters
+        assert(m_numThrusters >= 1 && m_numThrusters <= 9);
 
         if (m_numThrusters >= 4)
         {
@@ -283,19 +273,13 @@ bool CVehicleMovementHovercraft::InitThrusters(const CVehicleParams& table)
             m_vecThrusters[i]->heightAdaption = 0.f;
         }
     }
-
-    assert(static_cast<int>(m_vecThrusters.size()) == m_numThrusters);
-  }
-
-  // tilt thruster direction to outside
-  if (table->GetValue("thrusterTilt", m_thrusterTilt)){
-    if (m_thrusterTilt > 0.f && m_thrusterTilt < 90.f)
+    else
     {
         // place thrusters at helpers 
         CVehicleParams thrusterTable = table.findChild("Thrusters");
         for (int i = 0; i < m_numThrusters; ++i)
         {
-            m_vecThrusters.push_back(new SThruster(Vec3(ZERO), thrusterDir));
+            m_vecThrusters.push_back(new SThruster(Vec3(), thrusterDir));
 
             if (CVehicleParams thruster = thrusterTable.getChild(i))
             {
@@ -357,7 +341,7 @@ bool CVehicleMovementHovercraft::InitThrusters(const CVehicleParams& table)
             }
         }
 
-        assert(m_vecThrusters.size() == m_numThrusters);
+        assert(m_numThrusters == static_cast<int>(m_vecThrusters.size()));
     }
 
     // tilt thruster direction to outside   
@@ -402,9 +386,10 @@ bool CVehicleMovementHovercraft::InitThrusters(const CVehicleParams& table)
     m_massOffset = bbox.GetCenter();
     //CryLog("[Hovercraft movement]: got mass offset (%f, %f, %f)", m_massOffset.x, m_massOffset.y, m_massOffset.z);
 
-  assert(m_numThrusters == static_cast<int>(m_vecThrusters.size()));
+    float gravity = m_gravity.IsZero() ? 9.81f : m_gravity.len();
+    m_liftForce = mass * gravity;
 
-    assert(m_numThrusters == m_vecThrusters.size());
+    assert(m_numThrusters == static_cast<int>(m_vecThrusters.size()));
 
     int pushingThrusters = 0;
     for (int i = 0; i < m_numThrusters; ++i)

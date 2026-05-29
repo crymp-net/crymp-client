@@ -108,7 +108,7 @@ bool CVehicleViewBase::Init(CVehicleSeat* pSeat, const CVehicleParams& table)
 	if (m_velLenMax == m_velLenMin)
 		m_velLenMax += 1.0f;
 
-	m_rotation=Ang3(ZERO);
+	m_rotation=Ang3();
 
 	if (!IsThirdPerson())
 	{
@@ -166,7 +166,7 @@ bool CVehicleViewBase::Init(CVehicleSeat* pSeat)
 	m_velLenMax = 2.0f;
 	m_velLenMin = 1.0f;
 
-	m_rotation=Ang3(ZERO);
+	m_rotation=Ang3();
   m_rotationInit.zero();
 
 	m_viewAngleOffset.Set(0.f, 0.f, 0.f);

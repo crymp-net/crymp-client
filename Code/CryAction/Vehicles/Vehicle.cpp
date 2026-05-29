@@ -72,7 +72,7 @@ CVehicle::CVehicle() :
 	m_debugIndex(0),
 	m_usesVehicleActionToEnter(false),
 	m_isDestroyed(false),
-	m_initialposition(0.0f),
+	m_initialposition(),
 	m_lastWeaponId(0),
 	m_pSoundProxy(0),
 	m_abandonedSoundId(INVALID_SOUNDID),
@@ -1530,7 +1530,7 @@ void CVehicle::DebugDraw(const float frameTime)
 		//    float enterColor[] = {0.5,1,1,0.5};
 		for (TVehicleSeatVector::const_iterator it = m_seats.begin(), end = m_seats.end(); it != end; ++it)
 		{
-			Vec3 pos(0);
+			Vec3 pos;
 			if (IVehicleHelper* pHelper = it->second->GetSitHelper())
 				pos = pHelper->GetVehicleTM().GetTranslation();
 
@@ -4199,7 +4199,7 @@ void CVehicle::Destroy()
 	for (TVehicleComponentVector::iterator it = m_components.begin(); it != m_components.end(); ++it)
 	{
 		CVehicleComponent* pComponent = *it;
-		pComponent->OnHit(GetEntityId(), 0, 50000.0f, ZERO, 0.0f, "normal");
+		pComponent->OnHit(GetEntityId(), 0, 50000.0f, Vec3(), 0.0f, "normal");
 	}
 }
 
@@ -4219,7 +4219,7 @@ void CVehicle::EnableAbandonedWarnSound(bool enable)
 
 		if (enable)
 		{
-			m_abandonedSoundId = m_pSoundProxy->PlaySound("sounds/interface:multiplayer_interface:mp_vehicle_alarm", Vec3(0), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, eSoundSemantic_Vehicle);
+			m_abandonedSoundId = m_pSoundProxy->PlaySound("sounds/interface:multiplayer_interface:mp_vehicle_alarm", Vec3(), FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, eSoundSemantic_Vehicle);
 		}
 	}
 
@@ -4394,10 +4394,10 @@ void CVehicle::ProcessFlipped()
 	else
 	{
 		if (CVehicleComponent* pComponent = (CVehicleComponent*)GetComponent("Engine"))
-			pComponent->OnHit(GetEntityId(), GetEntityId(), 10000.f, Vec3(0), 0.f, "");
+			pComponent->OnHit(GetEntityId(), GetEntityId(), 10000.f, Vec3(), 0.f, "");
 
 		if (CVehicleComponent* pComponent = (CVehicleComponent*)GetComponent("FlippedOver"))
-			pComponent->OnHit(GetEntityId(), GetEntityId(), 10000.f, Vec3(0), 0.f, "");
+			pComponent->OnHit(GetEntityId(), GetEntityId(), 10000.f, Vec3(), 0.f, "");
 
 		KillTimer(eVT_Flipped);
 	}
@@ -4724,7 +4724,7 @@ IMPLEMENT_RMI(CVehicle, SvRequestChangeSeat)
 //------------------------------------------------------------------------
 IMPLEMENT_RMI(CVehicle, SvRequestLeave)
 {
-	ExitVehicleAtPosition(params.actorId, Vec3(ZERO)); //CryMP: fixme
+	ExitVehicleAtPosition(params.actorId, Vec3()); //CryMP: fixme
 
 	return true;
 }
@@ -4807,7 +4807,7 @@ IMPLEMENT_RMI(CVehicle, ClAbandonWarning)
 //------------------------------------------------------------------------
 bool CVehicle::GetExitPositionForActor(IActor* pActor, Vec3& pos, bool extended/*=false*/)
 {
-	Vec3 outPos = ZERO;
+	Vec3 outPos;
 	Matrix34 worldTM;
 
 	if (!pActor)

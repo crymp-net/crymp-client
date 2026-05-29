@@ -67,7 +67,7 @@ protected:
 	static const char* m_name;
 
 	IVehicleHelper* m_pHelper = nullptr;
-	Vec3 m_offset = Vec3(ZERO);
+	Vec3 m_offset = Vec3();
 	float m_relToHorizon = 0.0f;
 	bool m_hideVehicle = false;
 	int m_frameSlot = 0;
@@ -75,7 +75,7 @@ protected:
 	using TSlots = std::multimap<EntityId, int>;
 	TSlots m_slotFlags;
 
-	Vec3 m_viewPosition = Vec3(ZERO);
+	Vec3 m_viewPosition = Vec3();
 	Quat m_viewRotation = Quat(IDENTITY);
 
 	float m_speedPos = 0.0f;

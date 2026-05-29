@@ -196,12 +196,12 @@ void CVehicleDamageBehaviorIndicator::Update(const float deltaTime)
               pSound->Stop();
           } 
 
-          Vec3 offset(ZERO);
+          Vec3 offset;
 
           if (m_pHelper)
             offset = m_pHelper->GetVehicleTM().GetTranslation();
 
-          m_soundId = pSoundProxy->PlaySound(m_sound.c_str(), offset, Vec3Constants<float>::fVec3_OneY, FLAG_SOUND_DEFAULT_3D, eSoundSemantic_Vehicle);
+          m_soundId = pSoundProxy->PlaySound(m_sound.c_str(), offset, Vec3(0, 1, 0), FLAG_SOUND_DEFAULT_3D, eSoundSemantic_Vehicle);
 
           const int nSoundsMaxVol = 6;
           const int nSoundsMinVol = 10;
