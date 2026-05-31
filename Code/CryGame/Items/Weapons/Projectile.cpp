@@ -104,31 +104,44 @@ bool CProjectile::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 		case ePT_Rigid:
 		{
 			SEntityPhysicalizeParams params;
+			memset(&params, 0, sizeof(params));
+
 			params.type = PE_RIGID;
 			params.mass = m_pAmmoParams->mass;
 			params.nSlot = 0;
 
 			GetEntity()->Physicalize(params);
 
-			pe_action_set_velocity velocity;
 			m_pPhysicalEntity = GetEntity()->GetPhysics();
-			velocity.w = spin;
-			m_pPhysicalEntity->Action(&velocity);
 
-			if (m_pAmmoParams->pSurfaceType)
+			if (m_pPhysicalEntity)
 			{
-				int sfid = m_pAmmoParams->pSurfaceType->GetId();
+				pe_action_set_velocity velocity;
+				memset(&velocity, 0, sizeof(velocity));
 
-				pe_params_part part;
-				part.ipart = 0;
+				velocity.w = spin;
+				m_pPhysicalEntity->Action(&velocity);
 
-				GetEntity()->GetPhysics()->GetParams(&part);
-				for (int i = 0; i < part.nMats; i++)
-					part.pMatMapping[i] = sfid;
+				if (m_pAmmoParams->pSurfaceType)
+				{
+					const int sfid = m_pAmmoParams->pSurfaceType->GetId();
+
+					pe_params_part part;
+					memset(&part, 0, sizeof(part));
+
+					part.ipart = 0;
+
+					if (m_pPhysicalEntity->GetParams(&part) && !is_unused(part.pMatMapping) && part.pMatMapping && part.nMats > 0)
+					{
+						for (int i = 0; i < part.nMats; ++i)
+						{
+							part.pMatMapping[i] = sfid;
+						}
+					}
+				}
 			}
 		}
 		break;
-
 		case ePT_Static:
 		{
 			SEntityPhysicalizeParams params;
@@ -168,12 +181,15 @@ bool CProjectile::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 		if (m_pPhysicalEntity)
 		{
 			pe_simulation_params simulation;
+			memset(&simulation, 0, sizeof(simulation));
 			simulation.maxLoggedCollisions = m_pAmmoParams->maxLoggedCollisions;
 
 			pe_params_flags flags;
+			memset(&flags, 0, sizeof(flags));
 			flags.flagsOR = pef_log_collisions | (m_pAmmoParams->traceable ? pef_traceable : 0);
 
 			pe_params_part colltype;
+			memset(&colltype, 0, sizeof(colltype));
 			colltype.flagsAND = ~geom_colltype_explosion;
 
 			m_pPhysicalEntity->SetParams(&simulation);
