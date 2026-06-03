@@ -104,8 +104,6 @@ bool CProjectile::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 		case ePT_Rigid:
 		{
 			SEntityPhysicalizeParams params;
-			memset(&params, 0, sizeof(params));
-
 			params.type = PE_RIGID;
 			params.mass = m_pAmmoParams->mass;
 			params.nSlot = 0;
@@ -117,8 +115,6 @@ bool CProjectile::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 			if (m_pPhysicalEntity)
 			{
 				pe_action_set_velocity velocity;
-				memset(&velocity, 0, sizeof(velocity));
-
 				velocity.w = spin;
 				m_pPhysicalEntity->Action(&velocity);
 
@@ -127,8 +123,6 @@ bool CProjectile::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 					const int sfid = m_pAmmoParams->pSurfaceType->GetId();
 
 					pe_params_part part;
-					memset(&part, 0, sizeof(part));
-
 					part.ipart = 0;
 
 					if (m_pPhysicalEntity->GetParams(&part) && !is_unused(part.pMatMapping) && part.pMatMapping && part.nMats > 0)
@@ -181,15 +175,12 @@ bool CProjectile::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 		if (m_pPhysicalEntity)
 		{
 			pe_simulation_params simulation;
-			memset(&simulation, 0, sizeof(simulation));
 			simulation.maxLoggedCollisions = m_pAmmoParams->maxLoggedCollisions;
 
 			pe_params_flags flags;
-			memset(&flags, 0, sizeof(flags));
 			flags.flagsOR = pef_log_collisions | (m_pAmmoParams->traceable ? pef_traceable : 0);
 
 			pe_params_part colltype;
-			memset(&colltype, 0, sizeof(colltype));
 			colltype.flagsAND = ~geom_colltype_explosion;
 
 			m_pPhysicalEntity->SetParams(&simulation);
