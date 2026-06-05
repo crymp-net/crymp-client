@@ -465,7 +465,7 @@ void CScout::ProcessMovement(float frameTime)
 	if (m_params.movingBend)
 	{
 		float bend(m_stats.speed/GetStanceInfo(m_stance)->maxSpeed);
-		bend *= m_stats.velocity.GetNormalizedSafe(ZERO) * m_baseMtx.GetColumn(1);
+		bend *= m_stats.velocity.GetNormalizedSafe(Vec3()) * m_baseMtx.GetColumn(1);
 
 		m_desiredVeloctyQuat *= Quat::CreateRotationX(-bend * DEG2RAD(m_params.movingBend));
 	}
@@ -523,7 +523,7 @@ void CScout::ProcessMovement(float frameTime)
 			{
 				float shake = min(m_stats.speed*0.0015f,0.05f);
 				float strenght = (1.0f - (dist2ToClient/maxRange)) * m_params.cameraShakeMultiplier;
-				pView->SetViewShake(ZERO,Vec3(shake*strenght,0,shake*strenght),0.1f,0.0225f,1.5f,1);
+				pView->SetViewShake(Ang3(),Vec3(shake*strenght,0,shake*strenght),0.1f,0.0225f,1.5f,1);
 			}
 		}
 	}
@@ -652,7 +652,7 @@ void CScoutBeam::UpdatePosVelRot(float frameTime)
 
 					//Vec3 delta(grabWPos - grabCenter);
 					//float deltaLen(delta.len());
-					//asv.v = delta.GetNormalizedSafe(ZERO)*min(deltaLen,5.0f)*m_grabStats.followSpeed;
+					//asv.v = delta.GetNormalizedSafe({})*min(deltaLen,5.0f)*m_grabStats.followSpeed;
 
 					//asv.v = dyn.v + (grabWPos - grabCenter)*m_grabStats.followSpeed;
 				}
@@ -691,12 +691,12 @@ void CScout::SetActorMovement(SMovementRequestParams &control)
 		if( control.vLookTargetPos.IsZero())
 		{
 			SetDesiredDirection( GetEntity()->GetWorldRotation() * FORWARD_DIRECTION );
-			SetDesiredSpeed( ZERO );
+			SetDesiredSpeed(Vec3());
 		}
 		else
 		{
 			SetDesiredDirection((control.vLookTargetPos - state.eyePosition).GetNormalizedSafe());
-			SetDesiredSpeed( ZERO );
+			SetDesiredSpeed(Vec3());
 		}
 	}
 	else

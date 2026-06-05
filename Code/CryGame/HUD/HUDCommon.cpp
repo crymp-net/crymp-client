@@ -280,7 +280,40 @@ void CHUDCommon::CreateInterference()
 }
 
 //-----------------------------------------------------------------------------------------------------
-//-- Positioning and scaling animations
+
+void CHUDCommon::ApplyDocking(uint32 dock, int screenW, int screenH, int w, int h, int& x, int& y) const
+{
+	// Horizontal
+	if (dock & eFD_Left)
+		x = 0;
+	else if (dock & eFD_Right)
+		x = screenW - w;
+	else
+		x = (screenW - w) / 2;
+
+	// Vertical
+	if (dock & eFD_Top)
+		y = 0;
+	else if (dock & eFD_Bottom)
+		y = screenH - h;
+	else
+		y = (screenH - h) / 2;
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CHUDCommon::ApplyViewport(IFlashPlayer* pPlayer, int x, int y, int w, int h,
+	float dispX, float dispY, float distX, float distY, float alpha) const
+{
+	int finalX = (int)(x + dispX - distX * 0.5f);
+	int finalY = (int)(y + dispY - distY * 0.5f);
+	int finalW = max(1, w + (int)distX);
+	int finalH = max(1, h + (int)distY);
+
+	pPlayer->SetViewport(finalX, finalY, finalW, finalH);
+	pPlayer->SetVariable("_alpha", SFlashVarValue(alpha));
+}
+
 //-----------------------------------------------------------------------------------------------------
 
 void CHUDCommon::RepositionFlashAnimation(CGameFlashAnimation* pAnimation) const
@@ -288,17 +321,97 @@ void CHUDCommon::RepositionFlashAnimation(CGameFlashAnimation* pAnimation) const
 	if (!pAnimation)
 		return;
 
+	IFlashPlayer* pPlayer = pAnimation->GetFlashPlayer();
+	if (!pPlayer)
+		return;
+
+	const int screenW = gEnv->pRenderer->GetWidth();
+	const int screenH = gEnv->pRenderer->GetHeight();
+
+	if (screenW <= 0 || screenH <= 0)
+		return;
+
+	const uint32 dock = pAnimation->GetDock();
+
+	int x = 0, y = 0, w = 0, h = 0;
+
+	// --------------------------------------------------
+	// CENTERED FIT
+	// --------------------------------------------------
+	if (dock & eFD_CenteredFit)
+	{
+		const int fw = pPlayer->GetWidth();
+		const int fh = pPlayer->GetHeight();
+		if (fw <= 0 || fh <= 0)
+			return;
+
+		float scale = min((float)screenW / fw, (float)screenH / fh);
+
+		if (pAnimation->IsFixedScaleEnabled())
+			scale *= pAnimation->GetFixedScale();
+		else if (!pAnimation->GetIgnoreHUDScale())
+			scale *= CLAMP(g_pGameCVars->hud_scale, pAnimation->GetMinScale(), pAnimation->GetMaxScale());
+
+		w = max(1, (int)(fw * scale));
+		h = max(1, (int)(fh * scale));
+
+		ApplyDocking(dock, screenW, screenH, w, h, x, y);
+		ApplyViewport(pPlayer, x, y, w, h, m_displacementX, m_displacementY, m_distortionX, m_distortionY, m_alpha);
+		return;
+	}
+
+	// --------------------------------------------------
+	// SCALING
+	// --------------------------------------------------
+	if (dock & eFD_Scaling)
+	{
+		pAnimation->RepositionFlashAnimation();
+
+		float aspect = 0.f;
+		pPlayer->GetViewport(x, y, w, h, aspect);
+
+		float scale = 1.f;
+
+		if (pAnimation->IsFixedScaleEnabled())
+			scale = pAnimation->GetFixedScale();
+		else if (!pAnimation->GetIgnoreHUDScale())
+			scale = CLAMP(g_pGameCVars->hud_scale, pAnimation->GetMinScale(), pAnimation->GetMaxScale());
+
+		const int oldX = x;
+		const int oldY = y;
+		const int oldW = w;
+		const int oldH = h;
+
+		w = max(1, (int)(w * scale));
+		h = max(1, (int)(h * scale));
+
+		if (dock & eFD_Left)
+			x = oldX;
+		else if (dock & eFD_Right)
+			x = oldX + oldW - w;
+		else
+			x = oldX + ((oldW - w) / 2);
+
+		if (dock & eFD_Top)
+			y = oldY;
+		else if (dock & eFD_Bottom)
+			y = oldY + oldH - h;
+		else
+			y = oldY + ((oldH - h) / 2);
+
+		ApplyViewport(pPlayer, x, y, w, h, m_displacementX, m_displacementY, m_distortionX, m_distortionY, m_alpha);
+		return;
+	}
+
+	// --------------------------------------------------
+	// DEFAULT
+	// --------------------------------------------------
 	pAnimation->RepositionFlashAnimation();
 
-	IFlashPlayer* player = pAnimation->GetFlashPlayer();
-	if (player)
-	{
-		int iX0, iY0, iWidth, iHeight;
-		float fAspectRatio;
-		player->GetViewport(iX0, iY0, iWidth, iHeight, fAspectRatio);
-		player->SetViewport((int)(iX0 + m_displacementX - m_distortionX * 0.5), (int)(m_displacementY - m_distortionY * 0.5), iWidth + m_distortionX, iHeight + m_distortionY);
-		player->SetVariable("_alpha", SFlashVarValue(m_alpha));
-	}
+	float aspect = 0.f;
+	pPlayer->GetViewport(x, y, w, h, aspect);
+
+	ApplyViewport(pPlayer, x, y, w, h, m_displacementX, m_displacementY, m_distortionX, m_distortionY, m_alpha);
 }
 
 //-----------------------------------------------------------------------------------------------------

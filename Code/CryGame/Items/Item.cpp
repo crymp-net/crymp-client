@@ -119,7 +119,7 @@ CItem::CItem()
 	m_noDrop(false),
 	m_constraintId(0),
 	m_useFPCamSpacePP(true),
-	m_serializeActivePhysics(0),
+	m_serializeActivePhysics(),
 	m_serializeDestroyed(false),
 	m_bPostPostSerialize(false)
 {
@@ -424,7 +424,20 @@ void CItem::Update(SEntityUpdateContext& ctx, int slot)
 	if (slot == eIUS_General)
 	{
 		if (m_stats.mounted)
+		{
 			UpdateMounted(ctx.fFrameTime);
+		}
+		else
+		{
+			if (gEnv->bClient && !m_stats.fp)
+			{
+				CActor* pOwner = GetOwnerActor();
+				if (pOwner && (pOwner->IsClient() || pOwner->IsFpSpectatorTarget() || pOwner->IsTpSpectatorTarget()))
+				{
+					ProcessFirstPersonSkeleton();
+				}
+			}
+		}
 	}
 }
 
@@ -1099,9 +1112,9 @@ void CItem::SetHand(int hand)
 		result = SetGeometry(eIGS_FirstPerson, geometry.name, geometry.position, geometry.angles, geometry.scale);
 	}
 
+	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(eIGS_FirstPerson);
 	if (idx == 0)
 	{
-		ICharacterInstance* pCharacter = GetEntity()->GetCharacter(eIGS_FirstPerson);
 		if (!pCharacter)
 			return;
 
@@ -1114,7 +1127,13 @@ void CItem::SetHand(int hand)
 
 	if (result)
 	{
-		PlayAction(m_idleAnimation[eIGS_FirstPerson], 0, true, (eIPAF_Default | eIPAF_NoBlend) & ~eIPAF_Owner);
+		if (!m_idleAnimation[eIGS_FirstPerson].empty())
+		{
+			if ((pCharacter && pCharacter->GetISkeletonAnim()->GetNumAnimsInFIFO(0) < 1) || m_stats.fp)
+			{
+				PlayAction(m_idleAnimation[eIGS_FirstPerson], 0, true, (eIPAF_Default | eIPAF_NoBlend) & ~eIPAF_Owner);
+			}
+		}
 	}
 }
 
@@ -1420,8 +1439,8 @@ void CItem::Drop(float impulseScale, bool selectNext, bool byDeath)
 			SMovementState moveState;
 			pMC->GetMovementState(moveState);
 
-			Vec3 dir(ZERO);
-			Vec3 vel(ZERO);
+			Vec3 dir;
+			Vec3 vel;
 			dir.Set(0.0f, 0.0f, -1.0f);
 
 			if (pOwner->IsPlayer())
@@ -2001,7 +2020,7 @@ Vec3 CItem::GetMountedAngleLimits() const
 	if (m_stats.mounted)
 		return Vec3(m_mountparams.min_pitch, m_mountparams.max_pitch, m_mountparams.yaw_range);
 	else
-		return ZERO;
+		return {};
 }
 
 //------------------------------------------------------------------------

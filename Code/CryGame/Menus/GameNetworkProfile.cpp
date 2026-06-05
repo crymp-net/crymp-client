@@ -875,7 +875,7 @@ struct CGameNetworkProfile::SBuddies : public INetworkProfileListener
 						break;
 					}
 				}
-				pChat->AddChatMessage(string().Format("From [%s] :", name).c_str(), message, 0, false);
+				pChat->AddChatMessage(string().Format("From [%s] :", name).c_str(), 0, message, 0, false);
 			}
 		}
 	}

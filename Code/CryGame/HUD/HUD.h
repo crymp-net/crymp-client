@@ -112,6 +112,7 @@ public:
 
 	//HUD initialisation
 	bool Init(IActor* pActor);
+	void Reload();
 	//setting local actor / player id
 	void ResetPostSerElements();
 	void PlayerIdSet(EntityId playerId);
@@ -397,7 +398,7 @@ public:
 	EntityId GetOnScreenObjective() {return m_iOnScreenObjective; }
 	bool IsUnderAttack(IEntity *pEntity);
 	ILINE CHUDMissionObjectiveSystem& GetMissionObjectiveSystem() { return m_missionObjectiveSystem; }
-	const wchar_t* LocalizeWithParams(const char* label, bool bAdjustActions=true, const char* param1 = 0, const char* param2 = 0, const char* param3 = 0, const char* param4 = 0);
+	std::wstring LocalizeWithParams(const char* label, bool bAdjustActions = true, const char* param1 = 0, const char* param2 = 0, const char* param3 = 0, const char* param4 = 0);
 	//~mission objectives
 
 	//BattleStatus code : consult Marco C.
@@ -938,6 +939,7 @@ protected:
 	float m_hitIndicatorPlayerTimer = 0.0f;
 	float m_hitIndicatorVehicleTimer = 0.0f;
 	std::list<string> m_listBoughtItems;
+	float m_lastHudScale = -1.0f;
 
 public:
 
@@ -947,6 +949,8 @@ public:
 	}
 
 	bool m_bWeaponModifyOpen = false;
+
+	void UpdateTextScale();
 };
 
 //-----------------------------------------------------------------------------------------------------

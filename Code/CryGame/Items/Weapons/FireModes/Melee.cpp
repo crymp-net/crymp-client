@@ -83,8 +83,8 @@ void CMelee::Update(float frameTime, unsigned int frameId)
 				if (!pActor)
 					return;
 
-				Vec3 pos(ZERO);
-				Vec3 dir(ZERO);
+				Vec3 pos;
+				Vec3 dir;
 				IMovementController* pMC = pActor->GetMovementController();
 				if (!pMC)
 					return;
@@ -395,7 +395,7 @@ bool CMelee::PerformCylinderTest(const Vec3& pos, const Vec3& dir, float strengt
 	params.bStopAtFirstTri = false;
 	params.bNoBorder = true;
 	params.bNoAreaContacts = true;
-	n = gEnv->pPhysicalWorld->PrimitiveWorldIntersection(primitives::cylinder::type, &cyl, Vec3(ZERO),
+	n = gEnv->pPhysicalWorld->PrimitiveWorldIntersection(primitives::cylinder::type, &cyl, Vec3(),
 		ent_rigid | ent_sleeping_rigid | ent_independent | ent_static | ent_terrain | ent_water, &contacts, 0,
 		geom_colltype0 | geom_colltype_foliage | geom_colltype_player, &params, 0, 0, &pIgnore, pIgnore ? 1 : 0);
 

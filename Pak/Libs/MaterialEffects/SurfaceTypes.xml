@@ -1,0 +1,564 @@
+<SurfaceTypes>
+	<SurfaceType name="mat_default">
+		<BreakageParticles type="breakage" effect="breakable_objects.Shatter.Edges" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="destroy" effect="breakable_objects.Shatter.destroy" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="joint_break" effect="breakable_objects.joint_break.generic"/>
+		<BreakageParticles type="joint_shatter" effect="breakable_objects.joint_break.shatter"/>
+		<BreakageParticles type="freeze_vapor" effect="breakable_objects.shatter.shatter_large" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="freeze_shatter" effect="breakable_objects.shatter.vapor" count_per_unit="1" count_scale="1" scale="1"/>
+	</SurfaceType>
+ <SurfaceType name="mat_player_collider">
+  <Physics friction="0.6" />
+ </SurfaceType>
+ <SurfaceType name="mat_oil_drops">
+  <Physics friction="6" elasticity="-2"  pierceability="10"  />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_flesh_chunks">
+  <Physics friction="6" elasticity="-2"  pierceability="10"  can_shatter="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_alien_basic_wall" type="rock">
+  <Physics friction="0.2" elasticity="0.1"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_breakable_spike" type="rock">
+  <Physics friction="0.5" elasticity="0.050000001" breakable_id="4" pierceability="7" can_shatter="1"  break_energy="125" hit_points="18" hole_size="1.4" hit_maxdmg="20"  />
+		<BreakageParticles type="breakage" effect="bullet.hit_alien.spike" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="destroy" effect="bullet.hit_alien.spike" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="joint_break" effect="bullet.hit_alien.spike"/>
+		<BreakageParticles type="joint_shatter" effect="bullet.hit_alien.spike"/>
+ </SurfaceType>
+ <SurfaceType name="mat_alien_unbreakable_spike" type="rock">
+  <Physics friction="0.5" elasticity="0.050000001" pierceability="7" can_shatter="1"    />
+		<BreakageParticles type="breakage" effect="bullet.hit_alien.spike" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="destroy" effect="bullet.hit_alien.spike" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="joint_break" effect="bullet.hit_alien.spike"/>
+		<BreakageParticles type="joint_shatter" effect="bullet.hit_alien.spike"/>
+ </SurfaceType>
+ <SurfaceType name="mat_alien_breakable_ice_spike">
+  <Physics friction="0.5" elasticity="0.050000001" breakable_id="5" pierceability="7" can_shatter="1" break_energy="125" hit_points="18" hole_size="1.4" hit_maxdmg="20"  />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_flesh" type="flesh">
+ 	<Physics can_shatter="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_alien_breakable_bushes" type="rock">
+  <Physics friction="0.2" elasticity="0.1"  pierceability="3"    />
+		<BreakageParticles type="breakage" effect="alien_special.alien_vegetation.spikes_explode" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="destroy" effect="alien_special.alien_vegetation.spikes_explode" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="joint_break" effect="alien_special.alien_vegetation.spikes_explode"/>
+		<BreakageParticles type="joint_shatter" effect="alien_special.alien_vegetation.spikes_explode"/>
+ </SurfaceType>
+ <SurfaceType name="mat_alien_floor" type="rock">
+  <Physics friction="0.2" elasticity="0.1"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_glass" type="glass">
+  <Physics friction="0.60000002" elasticity="0.30000001"  pierceability="14"  break_energy="50"  breakable_2d="1" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_glass_destroyable" type="glass">
+  <Physics friction="0.2" elasticity="0.1"  pierceability="3" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_hunter_bottomFace">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_hunter_head">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_hunter_leftFace">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_hunter_leg">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_hunter_rightFace">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_hunter_topFace">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_hunter_torso">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_hunter_vulnerable">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_forcefield" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_forcefield_warrior" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_machine" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_machine_damageable" type="metal">
+  <Physics friction="0.2" elasticity="0.1"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_shell" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_tentacle" type="flesh"/>
+ <SurfaceType name="mat_alien_vulnerable">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_alien_wall" type="rock">
+  <Physics friction="0.2" elasticity="0.1"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_arm_left">
+  <Physics friction="1.1" elasticity="-2"  pierceability="5" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_arm_right">
+  <Physics friction="1.1" elasticity="-2"  pierceability="5" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_asphalt">
+  <Physics friction="1" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+  <SurfaceType name="mat_road_edge">
+  <Physics friction="1" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_bamboo">
+  <Physics friction="0.5" elasticity="0.050000001" breakable_id="2" pierceability="7" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_canopy">
+  <Physics friction="1.5" elasticity="0.050000001"  pierceability="10" no_collide="1" can_shatter="1" />
+		<BreakageParticles type="breakage" effect="bullet.hit_leaf.a" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="destroy" effect="bullet.hit_leaf.a" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="joint_break" effect="bullet.hit_leaf.a"/>
+		<BreakageParticles type="joint_shatter" effect="bullet.hit_leaf.a"/>
+ </SurfaceType>
+ <SurfaceType name="mat_canopy_banana" type="canopy">
+  <Physics friction="1.5" elasticity="0.050000001"  pierceability="10" no_collide="1" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_canopy_frozen" type="canopy">
+  <Physics friction="1.5" elasticity="0.050000001"  pierceability="10" no_collide="1" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_canopy_palm_tree" type="canopy">
+  <Physics friction="1.5" elasticity="0.050000001"  pierceability="10" no_collide="1" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_canvas">
+  <Physics friction="0.60000002" elasticity="0.2"  pierceability="14" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_cardboard">
+  <Physics friction="0.5" elasticity="0.050000001"  pierceability="7" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_cliff" type="rock">
+  <Physics friction="0.5" elasticity="0"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_concrete">
+  <Physics friction="1" elasticity="0.2"  pierceability="3"    />
+  <BreakageParticles type="breakage" effect="breakable_objects.joint_break.concrete" count_per_unit="1" count_scale="1" scale="1"/>
+  <BreakageParticles type="joint_break" effect="breakable_objects.joint_break.concrete"/>
+  <BreakageParticles type="joint_shatter" effect="breakable_objects.joint_break.concrete"/>
+  <BreakageParticles type="destroy" effect="breakable_objects.joint_break.concrete" count_per_unit="1" count_scale="1" scale="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_concrete_vehicleonly">
+  <Physics friction="1" elasticity="0.2"  pierceability="3"     vehicle_only_collisions="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_dirt">
+  <Physics friction="0.34999999" elasticity="0"  pierceability="7"    />
+ </SurfaceType>
+ <SurfaceType name="mat_fabric">
+  <Physics friction="0.80000001" elasticity="0"  pierceability="7" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_feathers">
+  <Physics friction="1" elasticity="0.1"  pierceability="14" can_shatter="1"   />
+  <BreakageParticles type="destroy" effect="bullet.hit_feathers.chicken_passing" count_per_unit="1" count_scale="1" scale="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_feathers_seagull">
+  <Physics friction="1" elasticity="0.1"  pierceability="10" can_shatter="1"   />
+  <BreakageParticles type="destroy" effect="bullet.hit_feathers.chicken_passing" count_per_unit="1" count_scale="1" scale="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_flesh">
+  <Physics friction="0.60000002" elasticity="-2"  pierceability="10" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_fish">
+  <Physics friction="0.60000002" elasticity="-2"  pierceability="10" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_frog">
+  <Physics friction="1" elasticity="0.1"  pierceability="14" can_shatter="1"  />
+  <BreakageParticles type="destroy" effect="melee.hit_flesh.hit" count_per_unit="1" count_scale="1" scale="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_flesh_chunks">
+  <Physics friction="6" elasticity="-2"  pierceability="10" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_foot_left">
+  <Physics friction="1.1" elasticity="-2"  pierceability="10" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_foot_right">
+  <Physics friction="1.1" elasticity="-2"  pierceability="10" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_glass" type="glass">
+  <Physics friction="0.60000002" elasticity="0.30000001" pierceability="14" break_energy="2000" breakable_2d="1" can_shatter="1" 
+   hit_points="3" hit_radius="0.4" hit_maxdmg="1" hit_maxhits="4"/>
+  <breakable_2d rigid_body="0" cell_size="0.1" blast_radius="0.35" max_patch_tris="8" shard_density="900"/>
+  <AI fImpactRadius="5" fImpactSoundRadius="25" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_glass_fine" type="glass">
+  <Physics friction="0.60000002" elasticity="0.30000001"  pierceability="14"  break_energy="25"  breakable_2d="1" can_shatter="1" />
+  <breakable_2d rigid_body="0" break_energy="25" cell_size="0.02" blast_radius="0.05" max_patch_tris="8" shard_density="300"/>
+  <AI fImpactRadius="5" fImpactSoundRadius="25" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_glass_thick" type="glass">
+  <Physics friction="0.60000002" elasticity="0.30000001"  pierceability="7"  break_energy="2000"  breakable_2d="1" can_shatter="1" 
+	 hit_points="4" hit_radius="0.4" hit_maxdmg="1" hit_maxhits="4"/>
+  <breakable_2d rigid_body="0" cell_size="0.1" blast_radius="0.35" max_patch_tris="8" shard_density="900"/>
+  <AI fImpactRadius="5" fImpactSoundRadius="25" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_glass_thin" type="glass">
+  <Physics friction="0.60000002" elasticity="0.30000001"  pierceability="14"  break_energy="2000"  breakable_2d="1" can_shatter="1" 
+  hit_points="2" hit_radius="0.4" hit_maxdmg="1" hit_maxhits="4"/>
+  <breakable_2d rigid_body="0" cell_size="0.1" blast_radius="0.4" max_patch_tris="8" shard_density="900"/>
+  <AI fImpactRadius="5" fImpactSoundRadius="25" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_glass_unbreakable" type="glass">
+  <Physics friction="0.60000002" elasticity="0.30000001"  pierceability="7"  />
+  <AI fImpactRadius="5" fImpactSoundRadius="25" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_glass_bulletproof" type="glass">
+  <Physics friction="0.60000002" elasticity="0.30000001"  pierceability="3"  />
+  <AI fImpactRadius="5" fImpactSoundRadius="25" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_glass_vehicle" type="glass">
+  <Physics friction="0.60000002" elasticity="0.30000001" pierceability="14" break_energy="2000" 
+   hit_radius="0.4" hit_points="10" hit_lifetime="5.0" hit_maxdmg="3" hit_maxhits="4" breakable_2d="1" can_shatter="1" />
+  <breakable_2d rigid_body="0" break_energy="2000" cell_size="0.06" blast_radius="0.12" max_patch_tris="12" shard_density="0"/>
+  <BreakageParticles particle_effect="bullet.hit_ice_shatter.c" count_per_unit="1" count_scale="0.1" scale="2" />
+  <AI fImpactRadius="5" fImpactSoundRadius="25" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_glue">
+  <Physics friction="50" elasticity="0"  pierceability="0"    />
+ </SurfaceType>
+ <SurfaceType name="mat_grass">
+  <Physics friction="0.60000002" elasticity="-2"  pierceability="14" no_collide="1" can_shatter="1"  />
+  <AI fImpactRadius="2.5" fImpactSoundRadius="20" fFootStepRadius="30" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_grass_terrain">
+  <Physics friction="0.60000002" elasticity="-2"  pierceability="14" no_collide="1" can_shatter="1"  />
+  <AI fImpactRadius="2.5" fImpactSoundRadius="20" fFootStepRadius="30" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_grass_frozen">
+  <Physics friction="0.1" elasticity="0.1"  pierceability="7" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_grass_tall">
+  <Physics friction="0.5" elasticity="0"  pierceability="14" no_collide="1" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_gravel">
+  <Physics friction="0.5" elasticity="0"  pierceability="6"    />
+  <AI fImpactRadius="2.5" fImpactSoundRadius="20" fFootStepRadius="30" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_grenade">
+  <Physics friction="5" elasticity="0.1"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_hand_left">
+  <Physics friction="1.1" elasticity="-2"  pierceability="5" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_hand_right">
+  <Physics friction="1.1" elasticity="-2"  pierceability="5" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_head">
+  <Physics friction="1.1" elasticity="-2"  pierceability="5" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_helmet">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_ice" type="ice_breakable">
+  <Physics friction="0.1" elasticity="0.1"  pierceability="7" can_shatter="1"  />
+
+	<BreakageParticles type="breakage" effect="breakable_objects.Shatter.Edges" count_per_unit="1" count_scale="1" scale="1"/>
+  <BreakageParticles type="destroy" effect="breakable_objects.Shatter.destroy" count_per_unit="1" count_scale="1" scale="1"/>
+  <BreakageParticles type="joint_break" effect="breakable_objects.joint_break.generic"/>
+  <BreakageParticles type="joint_shatter" effect="breakable_objects.joint_break.shatter"/>
+  <BreakageParticles type="freeze_vapor" effect="breakable_objects.shatter.shatter_large" count_per_unit="1" count_scale="1" scale="1"/>
+  <BreakageParticles type="freeze_shatter" effect="breakable_objects.shatter.vapor_human" count_per_unit="1" count_scale="1" scale="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_ice_breakable" type="ice_breakable">
+  <Physics friction="0.2" elasticity="0.1"  pierceability="6"  break_energy="1000"  breakable_2d="1" can_shatter="1" />
+  <breakable_2d rigid_body="1" break_energy="1000" cell_size="2" blast_radius="4" max_patch_tris="20" shard_density="800" particle_effect="bullet.hit_ice_shatter.a" />
+ </SurfaceType>
+ <SurfaceType name="mat_icicle" ice_type="ice_breakable">
+  <Physics friction="0.1" elasticity="0.1"  pierceability="7" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_invulnerable" type="default">
+  <Physics friction="1" elasticity="0"  pierceability="0"    />
+  <AI fImpactRadius="5" fImpactSoundRadius="25" fFootStepRadius="15" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_kevlar">
+  <Physics friction="0.60000002" elasticity="-2"  pierceability="5"    />
+  <BreakageParticles type="freeze_shatter" effect="breakable_objects.shatter.vapor_human" count_per_unit="1" count_scale="1" scale="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_ladder">
+  <Physics friction="0" elasticity="0"  pierceability="15"    />
+  <AI fImpactRadius="1" fImpactSoundRadius="1" fFootStepRadius="1" proneMult="1" crouchMult="1" movingMult="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_leaves">
+  <Physics friction="0.5" elasticity="0"  pierceability="14" no_collide="1" can_shatter="1" />
+  <AI fImpactRadius="2.5" fImpactSoundRadius="20" fFootStepRadius="30" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+		<BreakageParticles type="breakage" effect="bullet.hit_leaf.a" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="destroy" effect="bullet.hit_leaf.a" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="joint_break" effect="bullet.hit_leaf.a"/>
+		<BreakageParticles type="joint_shatter" effect="bullet.hit_leaf.a"/>
+ </SurfaceType>
+ <SurfaceType name="mat_leaves_terrain">
+  <Physics friction="0.5" elasticity="0"  pierceability="14" no_collide="1" can_shatter="1" />
+  <AI fImpactRadius="2.5" fImpactSoundRadius="20" fFootStepRadius="30" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_leg_left">
+  <Physics friction="0.4" elasticity="-2"  pierceability="5" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_leg_right">
+  <Physics friction="0.4" elasticity="-2"  pierceability="5" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+  <BreakageParticles type="joint_break" effect="breakable_objects.joint_break.metal"/>
+  <BreakageParticles type="joint_shatter" effect="breakable_objects.joint_break.metal"/>
+  <AI fImpactRadius="5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_metal_chainlink" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="8"    />
+ </SurfaceType>
+ <SurfaceType name="mat_metal_barbwire" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="8"    />
+	<AI fImpactRadius="5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_trolley_wheels" type="metal">
+  <Physics friction="0.0" elasticity="0"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_metal_grate" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+  <AI fImpactRadius="5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_metal_nd_p" type="metal">
+  <Physics friction="1" elasticity="0.2"  pierceability="7"    />
+ </SurfaceType>
+ <SurfaceType name="mat_metal_nofric" type="metal">
+  <Physics friction="-2" elasticity="-1"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_metal_pierceable" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="15"    />
+  <AI fImpactRadius="5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_metal_pierceable_nofric" type="metal">
+  <Physics friction="-1" elasticity="-1"  pierceability="15"    />
+ </SurfaceType>
+ <SurfaceType name="mat_metal_RayProxy" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="11"    />
+ </SurfaceType>
+ <SurfaceType name="mat_wood_RayProxy" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="11"    />
+ </SurfaceType>
+ <SurfaceType name="mat_metal_pipe" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_metal_rough" type="metal">
+  <Physics friction="1.5" elasticity="0.1"  pierceability="3"    />
+  <AI fImpactRadius="5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_metal_sheet" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+  <AI fImpactRadius="5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_metal_sheet_nodecal" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="8"    />
+ </SurfaceType>
+ <SurfaceType name="mat_metal_shell_large" type="metal"/>
+ <SurfaceType name="mat_metal_shell_shotgun" type="metal"/>
+ <SurfaceType name="mat_metal_shell_small" type="metal"/>
+ <SurfaceType name="mat_metal_smooth" type="metal">
+  <Physics friction="1.2" elasticity="0.050000001"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_metal_thick" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_metal_thick_weapons" type="metal">
+  <Physics friction="3.0" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_metal_vehicleonly" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"     vehicle_only_collisions="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_mud">
+  <Physics friction="1" elasticity="0"  pierceability="14"    />
+ </SurfaceType>
+ <SurfaceType name="mat_nodraw">
+  <Physics friction="0" elasticity="0"  pierceability="15"    />
+ </SurfaceType>
+ <SurfaceType name="mat_obstruct">
+  <Physics friction="1.5" elasticity="0"  pierceability="10" no_collide="1"   />
+ </SurfaceType>
+ <SurfaceType name="mat_pebble">
+  <Physics friction="0.5" elasticity="0"  pierceability="6"    />
+  <AI fImpactRadius="2.5" fImpactSoundRadius="20" fFootStepRadius="30" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_plastic">
+  <Physics friction="0.60000002" elasticity="0.2"  pierceability="7" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_plastic_nopierce">
+  <Physics friction="0.60000002" elasticity="0.2"  pierceability="3" can_shatter="1" />
+		<BreakageParticles type="breakage" effect="explosions.bottle.life_sustaining_coffee_pot" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="destroy" effect="explosions.bottle.life_sustaining_coffee_pot" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="joint_break" effect="explosions.bottle.life_sustaining_coffee_pot"/>
+		<BreakageParticles type="joint_shatter" effect="explosions.bottle.life_sustaining_coffee_pot"/>
+ </SurfaceType>
+ <SurfaceType name="mat_plastic_soft" type="plastic">
+  <Physics friction="0.5" elasticity="0.0099999998"  pierceability="7" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_raindrop_small">
+  <Physics friction="0.2" elasticity="0.1"  pierceability="15"    />
+ </SurfaceType>
+ <SurfaceType name="mat_rock">
+  <Physics friction="0.69999999" elasticity="0"  pierceability="3"    />
+  <AI fImpactRadius="2.5" fImpactSoundRadius="20" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_turtle">
+  <Physics friction="0.69999999" elasticity="0"  pierceability="3"    />
+		<BreakageParticles type="breakage" effect="bullet.hit_turtle.poor_thing" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="destroy" effect="bullet.hit_turtle.poor_thing" count_per_unit="1" count_scale="1" scale="1"/>
+ </SurfaceType>
+ <SurfaceType name="mat_rock_landslide">
+  <Physics friction="0.5" elasticity="0"  pierceability="3"    />
+  <AI fImpactRadius="2.5" fImpactSoundRadius="20" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_rock_dusty" type="rock">
+  <Physics friction="0.69999999" elasticity="0"  pierceability="3"    />
+  <AI fImpactRadius="2.5" fImpactSoundRadius="20" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_rock_vehicleonly">
+  <Physics friction="0.5" elasticity="0" pierceability="3" vehicle_only_collisions="1"/>  
+ </SurfaceType>
+ <SurfaceType name="mat_rubber">
+  <Physics friction="0.5" elasticity="1"  pierceability="3" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_rubber_nofric">
+  <Physics friction="-1" elasticity="-0.5"  pierceability="3" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_rubble_metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3" />
+ </SurfaceType>
+ <SurfaceType name="mat_rubble_mixed">
+  <Physics friction="0.5" elasticity="0"  pierceability="3"  />
+ </SurfaceType>
+ <SurfaceType name="mat_rubble_stone">
+  <Physics friction="0.5" elasticity="0"  pierceability="3" />
+ </SurfaceType>
+ <SurfaceType name="mat_rubble_wood">
+  <Physics friction="0.5" elasticity="0.050000001" breakable_id="2" pierceability="7"    />
+ </SurfaceType>
+ <SurfaceType name="mat_sand_dry">
+  <Physics friction="0.5" elasticity="-2"  pierceability="6"    />
+ </SurfaceType>
+ <SurfaceType name="mat_sand_wet">
+  <Physics friction="0.5" elasticity="-2"  pierceability="6"    />
+ </SurfaceType>
+ <SurfaceType name="mat_snow">
+  <Physics friction="0.5" elasticity="-2"  pierceability="7" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_soil">
+  <Physics friction="0.34999999" elasticity="0"  pierceability="7" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_soil_dusty">
+  <Physics friction="0.34999999" elasticity="0"  pierceability="7" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_spreading_fire">
+  <Physics friction="0.2" elasticity="0.1"  pierceability="15"    />
+ </SurfaceType>
+ <SurfaceType name="mat_tile">
+  <Physics friction="1" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_torso">
+  <Physics friction="1.1" elasticity="-2"  pierceability="5" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_twigs">
+  <Physics friction="0.5" elasticity="0"  pierceability="14" no_collide="1"   />
+ </SurfaceType>
+ <SurfaceType name="mat_vegetation">
+  <Physics friction="0.5" elasticity="0"  pierceability="14" no_collide="1" can_shatter="1"  />
+ </SurfaceType>
+ <SurfaceType name="mat_water">
+  <Physics friction="1" elasticity="0"  pierceability="14"    />
+ </SurfaceType>
+ <SurfaceType name="mat_water_muddy">
+  <Physics friction="1" elasticity="0"  pierceability="14"    />
+ </SurfaceType>
+ <SurfaceType name="mat_water_deep">
+  <Physics friction="1" elasticity="0"  pierceability="14"    />
+ </SurfaceType>
+ <SurfaceType name="mat_water_shallow">
+  <Physics friction="1" elasticity="0"  pierceability="14"    />
+ </SurfaceType>
+ <SurfaceType name="mat_wet">
+  <Physics friction="1" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_wheel" type="metal">
+  <Physics friction="0.80000001" elasticity="0.2"  pierceability="3"    />
+ </SurfaceType>
+ <SurfaceType name="mat_fruit" type="wood">
+		<BreakageParticles type="breakage" effect="bullet.hit_wood.fruit" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="destroy" effect="bullet.hit_wood.fruit" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="joint_break" effect="bullet.hit_wood.fruit"/>
+		<BreakageParticles type="joint_shatter" effect="bullet.hit_wood.fruit"/>
+		<BreakageParticles type="freeze_vapor" effect="bullet.hit_wood.fruit" count_per_unit="1" count_scale="1" scale="1"/>
+		<BreakageParticles type="freeze_shatter" effect="bullet.hit_wood.fruit" count_per_unit="1" count_scale="1" scale="1"/>
+  <Physics friction="0.5" elasticity="0.050000001"  pierceability="7" can_shatter="1" />
+ </SurfaceType>
+ <SurfaceType name="mat_wood" type="wood">
+  <Physics friction="0.5" elasticity="0.050000001"  pierceability="7" can_shatter="1" />
+  <BreakageParticles type="joint_break" effect="breakable_objects.joint_break.wood"/>
+  <BreakageParticles type="joint_shatter" effect="breakable_objects.joint_break.wood"/>
+  <BreakageParticles type="destroy" effect="breakable_objects.joint_break.wood" count_per_unit="1" count_scale="1" scale="1"/>
+  <AI fImpactRadius="2.5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_wood_breakable" type="wood">
+  <Physics friction="0.5" elasticity="0.050000001" breakable_id="2" pierceability="7"  break_energy="1000000" can_shatter="1" />
+  <BreakageParticles type="joint_break" effect="breakable_objects.tree_break.small"/>
+  <BreakageParticles type="joint_shatter" effect="breakable_objects.tree_break.small"/>
+  <BreakageParticles type="destroy" effect="breakable_objects.tree_break.small" count_per_unit="1" count_scale="1" scale="1"/>
+  <AI fImpactRadius="2.5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_wood_breakable2" type="wood">
+  <Physics friction="0.5" elasticity="0.050000001" breakable_id="3" pierceability="7"  break_energy="125"  hole_size="0.6" hit_points="9" hit_radius="10" hit_maxdmg="10" can_shatter="1" />
+  <BreakageParticles type="joint_break" effect="breakable_objects.tree_break.small"/>
+  <BreakageParticles type="joint_shatter" effect="breakable_objects.tree_break.small"/>
+  <BreakageParticles type="destroy" effect="breakable_objects.tree_break.small" count_per_unit="1" count_scale="1" scale="1"/>
+  <AI fImpactRadius="2.5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_wood_breakable_medium" type="wood">
+  <Physics friction="0.5" elasticity="0.050000001" breakable_id="5" pierceability="7"  break_energy="7000"  hole_size="1.4" hit_points="10" hit_radius="0.4" hit_maxdmg="10" can_shatter="1" />
+  <BreakageParticles type="joint_break" effect="breakable_objects.tree_break.small"/>
+  <BreakageParticles type="joint_shatter" effect="breakable_objects.tree_break.small"/>
+  <BreakageParticles type="destroy" effect="breakable_objects.tree_break.small" count_per_unit="1" count_scale="1" scale="1"/>
+  <AI fImpactRadius="2.5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_wood_breakable_thick" type="wood">
+  <Physics friction="0.5" elasticity="0.050000001" breakable_id="2" pierceability="7"  break_energy="1000000" can_shatter="1" />
+  <BreakageParticles type="joint_break" effect="breakable_objects.tree_break.small"/>
+  <BreakageParticles type="joint_shatter" effect="breakable_objects.tree_break.small"/>
+  <BreakageParticles type="destroy" effect="breakable_objects.tree_break.small" count_per_unit="1" count_scale="1" scale="1"/>
+  <AI fImpactRadius="2.5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_wood_breakable_thin" type="wood">
+  <Physics friction="0.5" elasticity="0.050000001" breakable_id="3" pierceability="7"  break_energy="2500"  
+  				hole_size="0.2" hit_points="2" hit_radius="0.3" hit_maxdmg="2" can_shatter="1" />
+  <BreakageParticles type="joint_break" effect="breakable_objects.tree_break.small"/>
+  <BreakageParticles type="joint_shatter" effect="breakable_objects.tree_break.small"/>
+  <BreakageParticles type="destroy" effect="breakable_objects.tree_break.small" count_per_unit="1" count_scale="1" scale="1"/>
+  <AI fImpactRadius="2.5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_wood_dusty" type="wood">
+  <Physics friction="0.5" elasticity="0.050000001"  pierceability="7" can_shatter="1"  />
+  <BreakageParticles type="joint_break" effect="breakable_objects.joint_break.wood"/>
+  <BreakageParticles type="joint_shatter" effect="breakable_objects.joint_break.wood"/>
+  <BreakageParticles type="destroy" effect="breakable_objects.joint_break.wood" count_per_unit="1" count_scale="1" scale="1"/>
+  <AI fImpactRadius="2.5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_wood_hollow" type="wood">
+  <Physics friction="0.5" elasticity="0.050000001"  pierceability="7" can_shatter="1" />
+  <BreakageParticles type="joint_break" effect="breakable_objects.joint_break.wood"/>
+  <BreakageParticles type="joint_shatter" effect="breakable_objects.joint_break.wood"/>
+  <BreakageParticles type="destroy" effect="breakable_objects.joint_break.wood" count_per_unit="1" count_scale="1" scale="1"/>
+  <AI fImpactRadius="2.5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_wood_solid" type="wood">
+  <Physics friction="0.5" elasticity="0.050000001"  pierceability="7" can_shatter="1" />
+  <AI fImpactRadius="2.5" fImpactSoundRadius="30" fFootStepRadius="20" proneMult="0.2" crouchMult="0.5" movingMult="2.5"/>
+ </SurfaceType>
+ <SurfaceType name="mat_wood_vehicleonly" type="wood">
+  <Physics friction="0.5" elasticity="0.050000001"  pierceability="7"     vehicle_only_collisions="1" can_shatter="1" />
+ </SurfaceType>
+</SurfaceTypes>

@@ -38,8 +38,8 @@ CTracer::~CTracer()
 
 void CTracer::Reset(const Vec3& pos)
 {
-    m_pos = Vec3(ZERO);
-    m_dest = Vec3(ZERO);
+    m_pos = {};
+    m_dest = {};
     m_startingpos = pos;
     m_age = 0.0f;
     m_lifeTime = 1.5f;
@@ -76,7 +76,7 @@ void CTracer::SetGeometry(const char* name, float scale)
         if (scale != 1.0f)
         {
             Matrix34 tm = Matrix34::CreateIdentity();
-            tm.Scale(Vec3(scale));
+            tm.Scale(Vec3(scale, scale, scale));
             pEntity->SetSlotLocalTM(m_geometrySlot, tm);
         }
     }
@@ -92,7 +92,7 @@ void CTracer::SetEffect(const char* name, float scale)
             if (scale != 1.0f)
             {
                 Matrix34 tm = Matrix34::CreateIdentity();
-                tm.Scale(Vec3(scale));
+                tm.Scale(Vec3(scale, scale, scale));
                 pEntity->SetSlotLocalTM(slot, tm);
             }
         }

@@ -321,8 +321,8 @@ protected:
   bool IsProfilingMovement();
 
   // sound methods
-  ISound* PlaySound(EVehicleMovementSound eSID, float pulse=0.f, const Vec3& offset=Vec3Constants<float>::fVec3_Zero, int soundFlags=0);
-  ISound* GetOrPlaySound(EVehicleMovementSound eSID, float pulse=0.f, const Vec3& offset=Vec3Constants<float>::fVec3_Zero, int soundFlags=0);
+  ISound* PlaySound(EVehicleMovementSound eSID, float pulse=0.f, const Vec3& offset={}, int soundFlags=0);
+  ISound* GetOrPlaySound(EVehicleMovementSound eSID, float pulse=0.f, const Vec3& offset={}, int soundFlags=0);
   virtual void StopSound(EVehicleMovementSound eSID);
   void StopSounds();
   ISound* GetSound(EVehicleMovementSound eSID);

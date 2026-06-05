@@ -659,7 +659,7 @@ int CScriptBind_GameRules::GetSpawnLocation(IFunctionHandler* pH, ScriptHandle p
 		EntityId groupId = 0;
 		float minDistanceToDeath = 0.0f;
 		float zOffset = 0.0f;
-		Vec3 deathPos(ZERO);
+		Vec3 deathPos;
 		EntityId skipId = 0;
 
 		if (pH->GetParamCount() > 3 && pH->GetParamType(4) == svtPointer)
@@ -698,7 +698,7 @@ int CScriptBind_GameRules::GetSpawnLocationTeam(IFunctionHandler* pH, ScriptHand
 		return pH->EndFunction();
 
 	float zOffset = 0.0f;
-	Vec3 deathPos(ZERO);
+	Vec3 deathPos;
 	if (pH->GetParamCount() > 1 && pH->GetParamType(2) == svtObject)
 		pH->GetParam(2, deathPos);
 

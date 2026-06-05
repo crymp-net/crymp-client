@@ -335,13 +335,12 @@ private:
 	unsigned int m_timerEnableCollisions = 0;
 	bool m_footAlignmentEnabled = true;
 	int m_heldVehicleCollisions = 0;
-	float m_heldEntityMassBackup = 0.0f;
 
 	struct SGripHitLocal
 	{
 		bool ok = false;
-		Vec3 leftLocal = ZERO;  
-		Vec3 rightLocal = ZERO; 
+		Vec3 leftLocal = {};
+		Vec3 rightLocal = {};
 		float widthWS = 0.0f;
 	};
 

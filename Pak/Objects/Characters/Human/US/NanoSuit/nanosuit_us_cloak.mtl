@@ -1,0 +1,100 @@
+<Material MtlFlags="256">
+ <SubMaterials>
+  <Material Name="Skel_torso" MtlFlags="1152" Shader="Nodraw" GenMask="0" SurfaceType="mat_torso" Diffuse="0.78823501,0.79607898,0" Specular="0,0,0" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures />
+   <MaterialLayers />
+  </Material>
+  <Material Name="Skel_Head" MtlFlags="1152" Shader="Nodraw" GenMask="0" SurfaceType="mat_head" Diffuse="0.98039198,0.99607801,0.58431399" Specular="0,0,0" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures />
+   <MaterialLayers />
+  </Material>
+  <Material Name="Skel_Arm_Left" MtlFlags="1152" Shader="Nodraw" GenMask="0" SurfaceType="mat_arm_left" Diffuse="0.58823502,0.35686299,0.62352902" Specular="0,0,0" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures />
+   <MaterialLayers />
+  </Material>
+  <Material Name="Skel_Arm_Right" MtlFlags="1152" Shader="Nodraw" GenMask="0" SurfaceType="mat_arm_right" Diffuse="0.47451001,0.70588201,0.81176502" Specular="0,0,0" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures />
+   <MaterialLayers />
+  </Material>
+  <Material Name="Skel_Leg_left" MtlFlags="1152" Shader="Nodraw" GenMask="0" SurfaceType="mat_leg_left" Diffuse="0.99215698,0,0" Specular="0,0,0" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures />
+   <MaterialLayers />
+  </Material>
+  <Material Name="Skel_Leg_Right" MtlFlags="1152" Shader="Nodraw" GenMask="0" SurfaceType="mat_leg_right" Diffuse="0.145098,0.57647097,0.97647101" Specular="0,0,0" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures />
+   <MaterialLayers />
+  </Material>
+  <Material Name="Skel_Foot_left" MtlFlags="1152" Shader="Nodraw" GenMask="0" SurfaceType="mat_foot_left" Diffuse="0.82745099,0.51764703,0.27058801" Specular="0,0,0" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures />
+   <MaterialLayers />
+  </Material>
+  <Material Name="Skel_Foot_right" MtlFlags="1152" Shader="Nodraw" GenMask="0" SurfaceType="mat_foot_right" Diffuse="0.58823502,0.71372598,0.76078397" Specular="0,0,0" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures />
+   <MaterialLayers />
+  </Material>
+  <Material Name="Skel_Hand_Left" MtlFlags="1152" Shader="Nodraw" GenMask="0" SurfaceType="mat_hand_left" Diffuse="0.2,0.145098,0.227451" Specular="0,0,0" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures />
+   <MaterialLayers />
+  </Material>
+  <Material Name="Skel_Hand_Right" MtlFlags="1152" Shader="Nodraw" GenMask="0" SurfaceType="mat_hand_right" Diffuse="0.152941,0.223529,0.25882399" Specular="0,0,0" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures />
+   <MaterialLayers />
+  </Material>
+  <Material Name="nanosuit" MtlFlags="132" Shader="Cloth" GenMask="268468496" SurfaceType="mat_kevlar" Diffuse="0.50196099,0.50196099,0.50196099" Specular="1,1,1" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures>
+    <Texture Map="Diffuse" File="objects/characters/human/us/nanosuit/nanosuit_us.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Specular" File="objects/characters/human/us/nanosuit/nanosuit_us_spec.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Normalmap" File="objects/characters/human/us/nanosuit/nanosuit_us_ddn.tif" Filter="7" Amount="50">
+     <TexMod />
+    </Texture>
+    <Texture Map="Environment" File="textures/cubemaps/camera_river_cubemap_bright.dds">
+     <TexMod />
+    </Texture>
+   </Textures>
+   <PublicParams AnisotropicShape="0.25" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="1.35" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.31400001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.465" FresnelScale="27.870001" FresnelScaleShadowBias="1" SparksPow="9.5799999" SparksMultiplier="3" SparksPhase="8.20000" SparksFrequency="5" SparksColor="0.451,0.608,0.902"/>
+   <MaterialLayers />
+  </Material>
+  <Material Name="L_arm" MtlFlags="132" Shader="Cloth" GenMask="268468496" SurfaceType="mat_kevlar" Diffuse="0.50196099,0.50196099,0.50196099" Specular="1,1,1" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures>
+    <Texture Map="Diffuse" File="objects/characters/human/us/nanosuit/nanosuit_us.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Specular" File="objects/characters/human/us/nanosuit/nanosuit_us_spec.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Normalmap" File="objects/characters/human/us/nanosuit/nanosuit_us_ddn.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Environment" File="textures/cubemaps/camera_river_cubemap_bright.dds">
+     <TexMod />
+    </Texture>
+   </Textures>
+   <PublicParams AnisotropicShape="0.25" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="1.35" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.31400001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.465" FresnelScale="27.870001" FresnelScaleShadowBias="1" SparksPow="9.5799999" SparksMultiplier="3" SparksPhase="8.20000" SparksFrequency="5" SparksColor="0.451,0.608,0.902"/>
+   <MaterialLayers />
+  </Material>
+  <Material Name="R_arm" MtlFlags="132" Shader="Cloth" GenMask="268468496" SurfaceType="mat_kevlar" Diffuse="0.50196099,0.50196099,0.50196099" Specular="1,1,1" Emissive="0,0,0" Shininess="10" Opacity="1">
+   <Textures>
+    <Texture Map="Diffuse" File="objects/characters/human/us/nanosuit/nanosuit_us.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Specular" File="objects/characters/human/us/nanosuit/nanosuit_us_spec.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Normalmap" File="objects/characters/human/us/nanosuit/nanosuit_us_ddn.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Environment" File="textures/cubemaps/camera_river_cubemap_bright.dds">
+     <TexMod />
+    </Texture>
+   </Textures>
+   <PublicParams AnisotropicShape="0.25" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="1.35" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.31400001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.465" FresnelScale="27.870001" FresnelScaleShadowBias="1" SparksPow="9.5799999" SparksMultiplier="3" SparksPhase="8.20000" SparksFrequency="5" SparksColor="0.451,0.608,0.902"/>
+   <MaterialLayers />
+  </Material>
+ </SubMaterials>
+ <PublicParams Displacement="0.025" AmbientMultiplier="1"/>
+ <MaterialLayers />
+</Material>

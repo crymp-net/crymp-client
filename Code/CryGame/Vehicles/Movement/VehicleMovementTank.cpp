@@ -486,7 +486,7 @@ void CVehicleMovementTank::ProcessAI(const float deltaTime)
 		Limit(inputSpeed, -m_maxSpeed, m_maxSpeed);
 	}
 
-	Vec3 vMove(ZERO);
+	Vec3 vMove;
 	{
 		if (m_aiRequest.HasMoveTarget())
 			vMove = ( m_aiRequest.GetMoveTarget() - m_PhysPos.pos ).GetNormalizedSafe();

@@ -122,32 +122,6 @@ static bool		m_merciTimeStarted = false;
 static bool		m_merciHealthUpdated = false;	//client only mercy time
 static float	m_merciTimeLastHit = 0.0f;
 
-//--------------------
-//this function will be called from the engine at the right time, since bones editing must be placed at the right time.
-int PlayerProcessBones(ICharacterInstance* pCharacter, void* player)
-{
-	//	return 1; //freezing and bone processing is not working very well.
-	CPlayer* pPlayer = static_cast<CPlayer*>(player);
-	const uint8 profile = pPlayer->GetPhysicsProfile();
-	if (pPlayer->GetEntity()->IsHidden() || profile == eAP_Ragdoll) //CryMP: IK not working with ragdolls, can be skipped
-	{
-		return 1;
-	}
-
-	const float timeFrame = gEnv->pTimer->GetFrameTime();
-
-	ISkeletonAnim* pISkeletonAnim = pCharacter->GetISkeletonAnim();
-	const uint32 numAnim = pISkeletonAnim->GetNumAnimsInFIFO(0);
-	if (numAnim)
-	{
-		//process bones specific stuff (IK, torso rotation, etc)
-		pPlayer->ProcessBonesRotation(pCharacter, timeFrame);
-	}
-
-	return 1;
-}
-//--------------------
-
 CPlayer::TAlienInterferenceParams CPlayer::m_interferenceParams;
 unsigned int CPlayer::s_ladderMaterial = 0;
 
@@ -243,7 +217,7 @@ CPlayer::~CPlayer()
 
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(0);
 	if (pCharacter)
-		pCharacter->GetISkeletonPose()->SetPostProcessCallback0(0, 0);
+		pCharacter->GetISkeletonPose()->SetPostProcessCallback0(nullptr, nullptr);
 
 	if (m_pNanoSuit)
 		delete m_pNanoSuit;
@@ -666,7 +640,22 @@ void CPlayer::UpdateFirstPersonEffects(float frameTime)
 
 				// deselect it
 				if (currentItem)
-					currentItem->PlayAction(g_pItemStrings->deselect, CItem::eIPAF_FirstPerson, false, CItem::eIPAF_Default | CItem::eIPAF_RepeatLastFrame);
+				{
+					// CryMP: Parachute forcibly switches to fists immediately.
+					// Do not leave the previous weapon blending/frozen in its FP deselect pose,
+					// because animation state is preserved across FP/TP switches.
+					currentItem->PlayAction(
+						g_pItemStrings->deselect,
+						CItem::eIPAF_FirstPerson,
+						false,
+						CItem::eIPAF_Default
+					);
+
+					if (ICharacterInstance* pChar = currentItem->GetEntity()->GetCharacter(CItem::eIGS_FirstPerson))
+					{
+						pChar->GetISkeletonAnim()->StopAnimationsAllLayers();
+					}
+				}
 				// schedule to start swimming after deselection is finished
 				pFists->EnableAnimations(false);
 				SelectItem(pFists->GetEntityId(), true);
@@ -1204,7 +1193,7 @@ void CPlayer::UpdateHeldObjectIK()
 
 	// Quick one-hand path
 	pe_status_dynamics dyn;
-	Vec3 objectPos = Vec3(ZERO);
+	Vec3 objectPos;
 	if (pent->GetStatus(&dyn))
 		objectPos = dyn.centerOfMass;
 	else
@@ -1667,7 +1656,7 @@ void CPlayer::PrePhysicsUpdate()
 			}
 			else
 			{
-				frameMovementParams.desiredVelocity = ZERO;
+				frameMovementParams.desiredVelocity = {};
 				CPlayerMovement playerMovement(*this, frameMovementParams, frameTime);
 				playerMovement.Process(*this);
 				playerMovement.Commit(*this);
@@ -2288,7 +2277,7 @@ void CPlayer::EnableFpSpectatorTarget(bool activate)
 		pPlayer->SetFpSpectator(activate);
 	}
 
-	m_stats.spectatorTargetType = activate ? SpectatorTargetType::FIRST_PERSON : SpectatorTargetType::NONE;
+	SetSpectatorTargetType(activate ? SpectatorTargetType::FIRST_PERSON : SpectatorTargetType::THIRD_PERSON);
 
 	EnableThirdPerson(!activate);
 
@@ -2322,24 +2311,15 @@ void CPlayer::EnableFpSpectatorTarget(bool activate)
 		if (activate)
 		{
 			const float zoomFov = GetActorParams()->zoomFoV;
-			int currentZoomStep = pWeapon->GetZoomStepFromFoV(zoomFov);
-			if (!currentZoomStep)
-				return;
+			const int currentZoomStep = pWeapon->GetZoomStepFromFoV(zoomFov);
 
-			const bool zoomed = pZoomMode->IsZoomed();
-			if (zoomed)
-				pZoomMode->ExitZoom();
-
-			pWeapon->StartZoom(GetEntityId(), 1);
-
-			//Weapons with more than 1 step
 			if (currentZoomStep > 0)
 			{
-				//are we zooming in or out
-				for (int i = 0, n = currentZoomStep; i < n; ++i)
-				{
-					pZoomMode->ZoomIn();
-				}
+				pZoomMode->NetSetZoomStep(currentZoomStep);
+			}
+			else
+			{
+				pWeapon->ExitZoom();
 			}
 		}
 		else
@@ -2815,7 +2795,7 @@ void CPlayer::UpdateSwimStats(float frameTime)
 {
 	bool isClient(IsClient());
 
-	Vec3 localReferencePos = ZERO;
+	Vec3 localReferencePos;
 	int spineID = GetBoneID(BONE_SPINE3);
 	if (spineID > -1)
 	{
@@ -2827,9 +2807,9 @@ void CPlayer::UpdateSwimStats(float frameTime)
 			localReferencePos.x = 0.0f;
 			localReferencePos.y = 0.0f;
 			if (!localReferencePos.IsValid())
-				localReferencePos = ZERO;
+				localReferencePos = {};
 			if (localReferencePos.GetLengthSquared() > (2.0f * 2.0f))
-				localReferencePos = ZERO;
+				localReferencePos = {};
 		}
 	}
 
@@ -3045,7 +3025,7 @@ void CPlayer::UpdateUWBreathing(float frameTime, Vec3 worldBreathPos)
 				damage += m_pNanoSuit->GetHealthRegenRate() * drownEffectDelay;
 				if (gEnv->bServer)
 				{
-					HitInfo hitInfo(GetEntityId(), GetEntityId(), GetEntityId(), -1, 0, 0, -1, 0, ZERO, ZERO, ZERO);
+					HitInfo hitInfo(GetEntityId(), GetEntityId(), GetEntityId(), -1, 0, 0, -1, 0, {}, {}, {});
 					hitInfo.SetDamage(damage);
 
 					if (CGameRules* pGameRules = g_pGame->GetGameRules())
@@ -3927,20 +3907,32 @@ void CPlayer::Revive(ReasonForRevive reason)
 	m_stats.spectatorMode = spectator;
 	m_stats.fpSpectator = fpSpectator;
 
-	if (reason == ReasonForRevive::SCRIPT_BIND)
+	if (IsClient())
 	{
-		EnableThirdPerson(thirdPerson);
-	}
-
-	if (spectatorTargetType != SpectatorTargetType::NONE)
-	{
-		if (spectatorTargetType == SpectatorTargetType::FIRST_PERSON)
+		if (reason == ReasonForRevive::SCRIPT_BIND)
 		{
-			EnableFpSpectatorTarget(true);
+			EnableThirdPerson(thirdPerson);
+		}
+	}
+	else
+	{
+		if (reason != ReasonForRevive::SCRIPT_BIND && reason != ReasonForRevive::SPAWN)
+		{
+			SetSpectatorTargetType(SpectatorTargetType::NONE);
 		}
 		else
 		{
-			SetSpectatorTargetType(spectatorTargetType);
+			if (spectatorTargetType != SpectatorTargetType::NONE)
+			{
+				if (spectatorTargetType == SpectatorTargetType::FIRST_PERSON)
+				{
+					EnableFpSpectatorTarget(true);
+				}
+				else
+				{
+					SetSpectatorTargetType(spectatorTargetType);
+				}
+			}
 		}
 	}
 
@@ -3978,7 +3970,7 @@ void CPlayer::Revive(ReasonForRevive reason)
 	m_FPWeaponAngleOffset.Set(0, 0, 0);
 	m_FPWeaponLastDirVec.Set(0, 0, 0);
 
-	m_lastAnimContPos = ZERO;
+	m_lastAnimContPos = {};
 
 	m_angleOffset.Set(0, 0, 0);
 
@@ -4297,7 +4289,35 @@ void CPlayer::PostPhysicalize()
 	if (!pCharacter)
 		return;
 
-	pCharacter->GetISkeletonPose()->SetPostProcessCallback0(PlayerProcessBones, this);
+	//--------------------
+	//this function will be called from the engine at the right time, since bones editing must be placed at the right time.
+	pCharacter->GetISkeletonPose()->SetPostProcessCallback0(
+		[](ICharacterInstance* pCharacter, void* player) -> int
+		{
+			CPlayer* pPlayer = static_cast<CPlayer*>(player);
+			const uint8 profile = pPlayer->GetPhysicsProfile();
+
+			//CryMP: IK not working with ragdolls / frozen, can be skipped
+			if (pPlayer->GetEntity()->IsHidden() || profile == eAP_Ragdoll || profile == eAP_Frozen) 
+			{
+				return 1;
+			}
+
+			const float timeFrame = gEnv->pTimer->GetFrameTime();
+
+			ISkeletonAnim* pISkeletonAnim = pCharacter->GetISkeletonAnim();
+			const uint32 numAnim = pISkeletonAnim->GetNumAnimsInFIFO(0);
+			if (numAnim)
+			{
+				//process bones specific stuff (IK, torso rotation, etc)
+				pPlayer->ProcessBonesRotation(pCharacter, timeFrame);
+			}
+
+			return 1;
+		},
+		this
+	);
+
 	pe_simulation_params sim;
 	sim.maxLoggedCollisions = 5;
 	pe_params_flags flags;
@@ -4449,7 +4469,7 @@ void CPlayer::ResetAnimations()
 				pCharacter->GetISkeleton()->SetPlusRotation(boneID, IDENTITY);*/
 		}
 
-		pCharacter->GetISkeletonPose()->SetLookIK(false, 0, ZERO);
+		pCharacter->GetISkeletonPose()->SetLookIK(false, 0, {});
 	}
 }
 
@@ -4656,8 +4676,8 @@ void CPlayer::Freeze(bool freeze)
 		if (m_stats.isOnLadder.Value())
 		{
 			pe_simulation_params sp;
-			sp.gravity = ZERO;
-			sp.gravityFreefall = ZERO;
+			sp.gravity = {};
+			sp.gravityFreefall = {};
 
 			pPhysicalEntity->SetParams(&sp);
 		}
@@ -6081,7 +6101,7 @@ void CPlayer::UpdateFootSteps(float frameTime)
 					gearSearchEffectId = pMaterialEffects->GetEffectIdByName("footsteps", "gear_search");
 		}
 
-		Vec3 proxyOffset = Vec3(ZERO);
+		Vec3 proxyOffset;
 		Matrix34 tm = GetEntity()->GetWorldTM();
 		tm.Invert();
 		params.soundProxyOffset = tm.TransformVector(params.pos - GetEntity()->GetWorldPos());
@@ -8299,55 +8319,67 @@ void CPlayer::SetDofFxAmount(float amount, float speed)
 		m_dof_amount_speed = 0.0f;
 		m_current_dof_amount = amount;
 		m_target_dof_amount = amount;
-	}
 
+		ApplyDofFxAmount(amount);
+	}
+}
+
+void CPlayer::ApplyDofFxAmount(float amount)
+{
 	gEnv->p3DEngine->SetPostEffectParam("Dof_BlurAmount", amount);
 
 	if (amount <= 0.075f)
-	{
 		gEnv->p3DEngine->SetPostEffectParam("Dof_Active", 0);
-	}
 	else
-	{
 		gEnv->p3DEngine->SetPostEffectParam("Dof_Active", 1);
-	}
+}
+
+void CPlayer::ApplyDofFxLimits(float focusmin, float focusmax, float focuslim)
+{
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusRange", -1);
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMin", focusmin);
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMax", focusmax);
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusLimit", focuslim);
 }
 
 void CPlayer::ResetDofFx(float speed)
 {
-	if (speed)
+	if (speed > 0.0f)
 	{
 		m_dof_amount_speed = speed;
 		m_dof_distance_speed = speed;
+
 		m_target_dof_min = 0.0f;
-		m_target_dof_max = 2000.f;
-		m_target_dof_lim = 2500.f;
+		m_target_dof_max = 2000.0f;
+		m_target_dof_lim = 2500.0f;
 		m_target_dof_amount = 0.0f;
 	}
 	else
 	{
 		m_dof_amount_speed = 0.0f;
 		m_dof_distance_speed = 0.0f;
+
 		m_target_dof_min = 0.0f;
-		m_target_dof_max = 2000.f;
-		m_target_dof_lim = 2500.f;
+		m_target_dof_max = 2000.0f;
+		m_target_dof_lim = 2500.0f;
 		m_target_dof_amount = 0.0f;
+
 		m_current_dof_min = 0.0f;
-		m_current_dof_max = 2000.f;
-		m_current_dof_lim = 2500.f;
+		m_current_dof_max = 2000.0f;
+		m_current_dof_lim = 2500.0f;
 		m_current_dof_amount = 0.0f;
 
-		SetDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
-		SetDofFxAmount(0.0f);
+		ApplyDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
+		ApplyDofFxAmount(0.0f);
 	}
 }
 
 void CPlayer::UpdateDofFx(float frameTime)
 {
-	if (m_dof_amount_speed <= 0.0f)
-	{
-		ResetDofFx();
-	}
+	//if (m_dof_amount_speed <= 0.0f)
+	//{
+	//	ResetDofFx();
+	//}
 
 	// Update dof amount
 	float curr_dof_amt = m_current_dof_amount;
@@ -8356,7 +8388,7 @@ void CPlayer::UpdateDofFx(float frameTime)
 	if (curr_dof_amt != target_dof_amt)
 	{
 		m_current_dof_amount = DofInterpolate(curr_dof_amt, target_dof_amt, m_dof_amount_speed, frameTime);
-		SetDofFxAmount(m_current_dof_amount);
+		ApplyDofFxAmount(m_current_dof_amount);
 	}
 
 	// Update dof distances
@@ -8391,7 +8423,7 @@ void CPlayer::UpdateDofFx(float frameTime)
 
 	if (changelimits)
 	{
-		SetDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
+		ApplyDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
 	}
 }
 
@@ -8602,4 +8634,11 @@ void CPlayer::PlayAnimation(const char* animationName, float speed /*= 1.0f*/, b
 
 	// Start the animation
 	pSkeletonAnim->StartAnimation(fixedResourceName, nullptr, nullptr, nullptr, params);
+}
+
+bool CPlayer::IsStanceInputValid(int stance) const
+{
+	// Valid actionable stance range: STANCE_STAND (0) .. STANCE_LAST-1
+	return (stance >= static_cast<int>(STANCE_STAND) &&
+		stance < static_cast<int>(STANCE_LAST));
 }

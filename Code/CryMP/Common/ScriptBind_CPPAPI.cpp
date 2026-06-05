@@ -990,9 +990,9 @@ int ScriptBind_CPPAPI::CreateCharacterDecal(IFunctionHandler* pH, ScriptHandle e
 		return pH->EndFunction();
 	}
 
-	Vec3 pos = Vec3(ZERO);
-	Vec3 normal = Vec3(ZERO);
-	Vec3 dir = Vec3(ZERO);
+	Vec3 pos;
+	Vec3 normal;
+	Vec3 dir;
 	bool adjust = false;
 	bool skipoverlaptest = false;
 	float size = 1.0f;
@@ -1229,9 +1229,10 @@ int ScriptBind_CPPAPI::CreateHandGripData(IFunctionHandler* pH)
 
 		const char* key = nullptr;
 		bool hasL = false, hasR = false;
-		Vec3 L = Vec3(ZERO), R = Vec3(ZERO);
-		Vec3 posOffset_FP = Vec3(ZERO);
-		Vec3 posOffset_TP = Vec3(ZERO);
+		Vec3 L;
+		Vec3 R;
+		Vec3 posOffset_FP;
+		Vec3 posOffset_TP;
 
 		row->GetValue("key", key);
 		row->GetValue("hasL", hasL);

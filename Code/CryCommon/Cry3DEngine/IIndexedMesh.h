@@ -20,6 +20,8 @@
 #include "CryCommon/CryMath/Cry_Color.h"
 #include "CryCommon/CryCore/CryMalloc.h"
 #include "CryCommon/CryCore/StlUtils.h"
+#include "CryCommon/CryRenderer/VertexFormats.h"
+#include "CryCommon/CryMath/Cry_Geo.h"
 
 // Description:
 //    2D Texture coordinates used by CMesh.

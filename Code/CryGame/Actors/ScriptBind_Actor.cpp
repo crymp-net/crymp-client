@@ -1253,7 +1253,7 @@ int CScriptBind_Actor::AttachVulnerabilityEffect(IFunctionHandler* pH, int chara
 
 	//CryLog("AttachVulnerabilityEffect: closest att %s, attaching effect %s", pClosestAtt->GetName(), effect);
 
-	CEffectAttachment* pEffectAttachment = new CEffectAttachment(effect, Vec3(ZERO), Vec3(0, 1, 0), 1.f);
+	CEffectAttachment* pEffectAttachment = new CEffectAttachment(effect, Vec3(), Vec3(0, 1, 0), 1.f);
 
 	pClosestAtt->AddBinding(pEffectAttachment);
 	pClosestAtt->HideAttachment(0);
@@ -1316,7 +1316,7 @@ int CScriptBind_Actor::GetClosestAttachment(IFunctionHandler* pH, int characterS
 	if (pDotChar)
 		*pDotChar = 0;
 
-	strlwr(attachmentName);
+	_strlwr(attachmentName);
 	//
 
 	return pH->EndFunction(attachmentName);
@@ -1908,7 +1908,8 @@ int CScriptBind_Actor::SetHeldObjectOffsets(IFunctionHandler* pH)
 	if (!(pH->GetParamCount() >= 1 && pH->GetParamType(1) == svtObject && pH->GetParam(1, root) && root))
 		return pH->EndFunction(applied);
 
-	Vec3 fp(ZERO), tp(ZERO);
+	Vec3 fp;
+	Vec3 tp;
 	bool hasFP = false, hasTP = false;
 	{
 		CScriptSetGetChain chain(root);

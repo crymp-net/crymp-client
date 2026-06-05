@@ -89,7 +89,7 @@ public:
 	virtual uint16 GetSequence() const;
 
 	
-	virtual void Explode(bool destroy, bool impact=false, const Vec3 &pos=ZERO, const Vec3 &normal=FORWARD_DIRECTION, const Vec3 &vel=ZERO, EntityId targetId=0 );
+	virtual void Explode(bool destroy, bool impact=false, const Vec3 &pos={}, const Vec3 &normal=FORWARD_DIRECTION, const Vec3 &vel={}, EntityId targetId=0 );
 	virtual void TrailSound(bool enable, const Vec3 &dir=Vec3(0.0f,1.0f,0.0f));
 	virtual void WhizSound(bool enable, const Vec3 &pos, const Vec3 &dir);
 	void UpdateWhiz();
@@ -179,7 +179,7 @@ protected:
 	int m_trailSoundId = INVALID_SOUNDID;
 	int m_trailEffectId = -1;
 	int m_trailUnderWaterId = -1;
-	Vec3 m_last = ZERO;
+	Vec3 m_last = {};
 
 	EntityId m_ownerId = 0;
 	EntityId m_hostId = 0;
@@ -192,9 +192,9 @@ protected:
 	bool m_tracked = false;
 
 	bool m_firstDropApplied = false;
-	Vec3 m_initial_pos = ZERO;
-	Vec3 m_initial_dir = ZERO;
-	Vec3 m_initial_vel = ZERO;
+	Vec3 m_initial_pos = {};
+	Vec3 m_initial_dir = {};
+	Vec3 m_initial_vel = {};
 
 	bool m_remote = false;
 	uint16 m_seq = 0;

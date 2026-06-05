@@ -19,6 +19,7 @@
 #include "OptionsManager.h"
 #include "FlashMenuObject.h"
 #include "CryCommon/CryRenderer/IVideoPlayer.h"
+#include "Library/StringTools.h"
 
 static TKeyValuePair<EGsUiCommand, const char*>
 gUiCommands[] = {
@@ -335,7 +336,14 @@ bool CMPHub::HandleFSCommand(const char* pCmd, const char* pArgs)
 	case eGUC_enterlobby:
 		if (m_currentScreen)
 		{
-			m_menu = std::make_unique<CMultiPlayerMenu>(false, m_currentScreen, this);
+			if (!m_menu)
+			{
+				m_menu = std::make_unique<CMultiPlayerMenu>(false, m_currentScreen, this);
+			}
+
+			m_menu->UpdateButtonModes();
+			m_menu->UpdateServerList();
+
 			if (!IsIngame())
 				m_lastMenu = 2;
 		}
@@ -465,7 +473,9 @@ void CMPHub::SetCurrentFlashScreen(IFlashPlayer* screen, bool ingame)
 			OnUIEvent(SUIEvent(eUIE_destroy, ingame ? 0 : 1));
 			for (int i = m_dialogs.size() - 1;i >= 0;--i)
 				m_dialogs[i]->Close();
-			m_menu = nullptr;
+			
+			//CryMP: Don't delete m_menu incase we disconnect from game
+			///m_menu = nullptr;
 		}
 	}
 
@@ -479,13 +489,28 @@ void CMPHub::SetCurrentFlashScreen(IFlashPlayer* screen, bool ingame)
 	}
 
 	m_menuOpened = false;
+
+	bool updateWindow = false;
+	IFlashPlayer* pPreviousFlash = m_currentScreen;
+
 	m_currentScreen = screen ? screen : (m_currentStartScreen ? m_currentStartScreen : m_currentIngameScreen);
+
+	//Crymp:
+	if (m_menu)
+	{
+		m_menu->SetFlashPlayer(m_currentScreen);
+	}
+
+	if (pPreviousFlash != m_currentScreen)
+	{
+		updateWindow = true;
+	}
 
 	if (m_currentScreen)
 	{
 		if (gEnv->bMultiplayer)
 		{
-			OnShowIngameMenu();
+			OnShowIngameMenu(updateWindow);
 		}
 	}
 
@@ -659,30 +684,9 @@ void CMPHub::SetLoginInfo(const char* nick)
 	}
 }
 
-void ExpandToWChar(const char* charString, wstring& outString)
-{
-	outString.resize(strlen(charString));
-	wchar_t* dst = outString.begin();
-	const char* src = charString;
-	while (const wchar_t c = (wchar_t)(*src++))
-	{
-		*dst++ = c;
-	}
-}
-
 void CMPHub::DisconnectError(EDisconnectionCause dc, bool connecting, const char* serverMsg/*=NULL*/)
 {
 	const char* msg = VALUE_BY_KEY(dc, gDisconnectErrors);
-
-	//CryMP: Default to ServerList, if server disconnected us
-	if (!connecting)
-	{
-		CFlashMenuObject* pMenu = g_pGame->GetMenu();
-		if (pMenu)
-		{
-			pMenu->ShowInGameMenu(true);
-		}
-	}
 
 	switch (dc)
 	{
@@ -697,7 +701,7 @@ void CMPHub::DisconnectError(EDisconnectionCause dc, bool connecting, const char
 			{
 				wstring final;
 				wstring localised, tmp;
-				ExpandToWChar(serverMsg + 21, tmp);
+				StringTools::AppendTo(tmp, serverMsg + 21);
 				pLoc->LocalizeLabel(msg, localised);
 				wstring newstring = L"%1\n@{ui_reason}: %2";
 				pLoc->FormatStringMessage(final, newstring, localised.c_str(), tmp.c_str());
@@ -732,7 +736,7 @@ void CMPHub::DisconnectError(EDisconnectionCause dc, bool connecting, const char
 			if (strlen(serverMsg) > 21 && strncmp(serverMsg + 21, "None", 4) != 0)
 			{
 				wstring localised, tmp;
-				ExpandToWChar(serverMsg + 21, tmp);
+				StringTools::AppendTo(tmp, serverMsg + 21);
 				pLoc->LocalizeLabel(msg, localised);
 				pLoc->FormatStringMessage(final, localised, tmp.c_str());
 			}
@@ -756,7 +760,7 @@ void CMPHub::DisconnectError(EDisconnectionCause dc, bool connecting, const char
 			{
 				wstring final;
 				wstring localised, tmp;
-				ExpandToWChar(serverMsg, tmp);
+				StringTools::AppendTo(tmp, serverMsg);
 				pLoc->LocalizeLabel(msg, localised);
 				pLoc->FormatStringMessage(final, localised, tmp.c_str());
 
@@ -976,15 +980,17 @@ void CMPHub::OnMenuOpened()
 	}
 }
 
-void CMPHub::OnShowIngameMenu()
+void CMPHub::OnShowIngameMenu(bool updateWindow)
 {
-	if (!m_currentScreen)
+	if (!updateWindow || !m_currentScreen)
 		return;
+
 	m_currentScreen->SetVariable("MainWindow", 2);
 	if (m_lastMenu)
+	{
 		m_currentScreen->SetVariable("SubWindow", m_lastMenu);
+	}
 }
-
 
 bool CMPHub::IsIngame()const
 {
@@ -1092,4 +1098,9 @@ void CMPHub::ShowRetrivePasswordResult(bool ok)
 	{
 		ShowError("@ui_menu_EmailWasNotSend");
 	}
+}
+
+bool CMPHub::IsConnectingToPopulatedServer()
+{
+	return m_menu && m_menu->IsConnectingToPopulatedServer();
 }

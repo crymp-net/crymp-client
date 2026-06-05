@@ -169,8 +169,8 @@ SAmmoParams::SAmmoParams(const IItemParamsNode* pItemParams_, const IEntityClass
 	, speed(0.0f)
 	, maxLoggedCollisions(1)
 	, traceable(0)
-	, spin(ZERO)
-	, spinRandom(ZERO)
+	, spin()
+	, spinRandom()
 	, pSurfaceType(0)
 	, pParticleParams(0)
 	, fpGeometry(0)
@@ -291,15 +291,15 @@ void SAmmoParams::LoadPhysics()
 	const char* typ = physics->GetAttribute("type");
 	if (typ)
 	{
-		if (!strcmpi(typ, "particle"))
+		if (!_stricmp(typ, "particle"))
 		{
 			physicalizationType = ePT_Particle;
 		}
-		else if (!strcmpi(typ, "rigid"))
+		else if (!_stricmp(typ, "rigid"))
 		{
 			physicalizationType = ePT_Rigid;
 		}
-		else if (!strcmpi(typ, "static"))
+		else if (!_stricmp(typ, "static"))
 		{
 			physicalizationType = ePT_Static;
 		}

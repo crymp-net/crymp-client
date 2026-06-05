@@ -5,8 +5,6 @@
 
 RESOURCE_ICON ICON "ServerIcon.ico"
 
-RESOURCE_MASTERS_TXT RCDATA "../masters.txt"
-
 RESOURCE_INTERNAL_PAK RCDATA CRYMP_INTERNAL_PAK_PATH
 
 VS_VERSION_INFO VERSIONINFO
@@ -20,7 +18,7 @@ BEGIN
 		BLOCK "040904E4"
 		BEGIN
 			VALUE "CompanyName",      "CryMP"
-			VALUE "LegalCopyright",   "(C) 2025 CryMP"
+			VALUE "LegalCopyright",   "(C) 2026 CryMP"
 			VALUE "ProductName",      "CryMP Server"
 			VALUE "ProductVersion",   CRYMP_VERSION_STRING
 			VALUE "FileVersion",      CRYMP_VERSION_STRING
