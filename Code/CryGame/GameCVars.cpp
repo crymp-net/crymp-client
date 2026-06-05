@@ -608,7 +608,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_pickupThrowMult", &mp_pickupThrowMult, 1.0f, OPTIONAL_SYNC, "Throw multiplier for objects");
 	pConsole->Register("mp_pickupMaxVehicleCollisions", &mp_pickupMaxVehicleCollisions, 0, OPTIONAL_SYNC, "Maximum vehicle collisions untill throwing object");
 	pConsole->Register("mp_weaponsOnBack", &mp_weaponsOnBack, 0, OPTIONAL_SYNC, "Attach weapons to back as in SP");
-	pConsole->Register("mp_thirdPerson", &mp_thirdPerson, 1, OPTIONAL_SYNC, "Allow ThirdPerson mode (F1)", OnChangeThirdPerson);
+	pConsole->Register("mp_thirdPerson", &mp_thirdPerson, 0, OPTIONAL_SYNC, "Allow ThirdPerson mode (F1)", OnChangeThirdPerson);
 	pConsole->Register("mp_animationGrenadeSwitch", &mp_animationGrenadeSwitch, 0, OPTIONAL_SYNC, "Enable FP animations for grenade switching");
 	pConsole->Register("mp_ragdollUnrestricted", &mp_ragdollUnrestricted, 1, OPTIONAL_SYNC);
 	pConsole->Register("mp_killMessages", &mp_killMessages, 1, OPTIONAL_SYNC);
