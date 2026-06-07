@@ -110,25 +110,32 @@ bool CProjectile::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 
 			GetEntity()->Physicalize(params);
 
-			pe_action_set_velocity velocity;
 			m_pPhysicalEntity = GetEntity()->GetPhysics();
-			velocity.w = spin;
-			m_pPhysicalEntity->Action(&velocity);
 
-			if (m_pAmmoParams->pSurfaceType)
+			if (m_pPhysicalEntity)
 			{
-				int sfid = m_pAmmoParams->pSurfaceType->GetId();
+				pe_action_set_velocity velocity;
+				velocity.w = spin;
+				m_pPhysicalEntity->Action(&velocity);
 
-				pe_params_part part;
-				part.ipart = 0;
+				if (m_pAmmoParams->pSurfaceType)
+				{
+					const int sfid = m_pAmmoParams->pSurfaceType->GetId();
 
-				GetEntity()->GetPhysics()->GetParams(&part);
-				for (int i = 0; i < part.nMats; i++)
-					part.pMatMapping[i] = sfid;
+					pe_params_part part;
+					part.ipart = 0;
+
+					if (m_pPhysicalEntity->GetParams(&part) && !is_unused(part.pMatMapping) && part.pMatMapping && part.nMats > 0)
+					{
+						for (int i = 0; i < part.nMats; ++i)
+						{
+							part.pMatMapping[i] = sfid;
+						}
+					}
+				}
 			}
 		}
 		break;
-
 		case ePT_Static:
 		{
 			SEntityPhysicalizeParams params;

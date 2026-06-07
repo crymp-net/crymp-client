@@ -253,7 +253,7 @@ struct pe_params_part : pe_params {	// Sets geometrical parameters of entity par
 	int idmatBreakable;
 	ITetrLattice *pLattice;
 	int *pMatMapping;
-	int nMats;
+	int nMats = 0;
 	int bAddrefGeoms;
 
 	VALIDATORS_START
@@ -275,7 +275,8 @@ struct pe_params_sensors : pe_params { // Attaches optional sensors to entity (s
 struct pe_simulation_params : pe_params { // Sets gravity and maximum time step
 	enum entype { type_id=10 };
 	pe_simulation_params() { type=type_id; MARK_UNUSED maxTimeStep,gravity,minEnergy,damping,iSimClass,
-		softness,softnessAngular,dampingFreefall,gravityFreefall,mass,density,maxLoggedCollisions; }
+		softness,softnessAngular,dampingFreefall,gravityFreefall,mass,density,softnessGroup,
+		softnessAngularGroup,maxLoggedCollisions; }
 
 	int iSimClass;
 	float maxTimeStep; // maximum time step that entity can accept (larger steps will be split)
