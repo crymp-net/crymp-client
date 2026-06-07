@@ -15,13 +15,17 @@ on:
         description: CMake build type
         required: true
         type: string
+      suffix:
+        description: Optional artifact name suffix
+        required: false
+        type: string
     outputs:
       artifact_name:
         description: Name of the resulting artifact
         value: ${{ jobs.windows_msvc.outputs.artifact_name }}
 
 jobs:
-  windows_msvc:
+  msvc:
     runs-on: windows-latest
     env:
       BUILD_DIR: ${{ github.workspace }}\Build${{ inputs.bits }}
@@ -48,7 +52,7 @@ jobs:
           cmake -S . -B $env:BUILD_DIR -G Ninja -D CMAKE_BUILD_TYPE=${{ inputs.type }}
           cmake --build $env:BUILD_DIR
           $version = git describe --dirty --tags --match 'v*'
-          'artifact_name=CryMP-Client${{ inputs.bits }}-' + $version >> $env:GITHUB_OUTPUT
+          'artifact_name=CryMP-Client${{ inputs.bits }}-' + $version + '${{ inputs.suffix }}' >> $env:GITHUB_OUTPUT
 
       - name: Sign
         # skip code signing in PRs from forked repositories due to missing secrets

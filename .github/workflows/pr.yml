@@ -21,3 +21,19 @@ jobs:
     with:
       bits: 64
       type: RelWithDebInfo
+
+  build_32_debug:
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      bits: 32
+      type: Debug
+      suffix: -Debug
+
+  build_64_debug:
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      bits: 64
+      type: Debug
+      suffix: -Debug

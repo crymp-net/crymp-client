@@ -9,6 +9,7 @@ on:
     branches:
       - master
     tags:
+      # sync dev version with the official one upon release
       - v*
 
 jobs:
