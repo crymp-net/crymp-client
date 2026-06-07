@@ -58,7 +58,7 @@ void Server::Init(IGameFramework* pGameFramework)
 		});
 	}
 
-	const std::string ssm(WinAPI::CmdLine::GetArgValue("-ssm"));
+	const std::string ssm(WinAPI::CmdLine::GetArgValue("-ssm", "SafeWriting")); // SafeWriting is the default
 	if (!ssm.empty())
 	{
 		CryLogAlways("$6[CryMP] Detected SSM: %s", ssm.c_str());
