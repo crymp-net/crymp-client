@@ -18,18 +18,24 @@ on:
     outputs:
       artifact_name:
         description: Name of the resulting CryMP-Server.zip artifact
-        value: ${{ jobs.create_server_zip.outputs.artifact_name }}
+        value: ${{ jobs.create.outputs.artifact_name }}
 jobs:
   create:
     runs-on: ubuntu-latest
     outputs:
-      artifact_name: ${{ steps.zip.outputs.artifact_name }}
+      artifact_name: ${{ steps.prep.outputs.artifact_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           # for git describe
           fetch-depth: 0
+
+      - name: Prepare artifact name
+        id: prep
+        run: |
+          version=$(git describe --dirty --tags --match 'v*')
+          echo "artifact_name=CryMP-Server-${version}" >> "$GITHUB_OUTPUT"
 
       - name: Download 32-bit build artifact
         uses: actions/download-artifact@v8
@@ -42,17 +48,14 @@ jobs:
           name: ${{ inputs.build_artifact_64 }}
 
       - name: Prepare zip
-        id: zip
         run: |
           chmod 755 CryMP-Server32.exe CryMP-Server64.exe
           mv SSMs/SafeWriting/SafeWriting SSMs/SafeWriting/ServerFolder ./
-          version=$(git describe --dirty --tags --match 'v*')
-          echo "artifact_name=CryMP-Server-${version}" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ steps.zip.outputs.artifact_name }}
+          name: ${{ steps.prep.outputs.artifact_name }}
           path: |
             CryMP-Server32.*
             CryMP-Server64.*
