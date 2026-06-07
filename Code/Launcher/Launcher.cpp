@@ -911,16 +911,24 @@ static std::FILE* ProvideLogFile()
 
 void Launcher::SetCmdLine()
 {
-	const std::string_view cmdLine = WinAPI::CmdLine::GetFull();
+	std::string cmdLine = WinAPI::CmdLine::GetFull();
+
+#ifdef SERVER_LAUNCHER
+	const std::filesystem::path defaultServerRoot = std::filesystem::absolute("CryMP-Server");
+	if (!WinAPI::CmdLine::HasArg("-root") && std::filesystem::is_directory(defaultServerRoot))
+	{
+		cmdLine += " -root \"";
+		cmdLine += defaultServerRoot.string();
+		cmdLine += "\" +exec server.cfg";
+	}
+#endif
 
 	if (cmdLine.length() >= sizeof(m_params.cmdLine))
 	{
 		throw StringTools::ErrorFormat("Command line is too long!");
 	}
 
-	std::memcpy(m_params.cmdLine, cmdLine.data(), cmdLine.length());
-
-	m_params.cmdLine[cmdLine.length()] = '\0';
+	std::memcpy(m_params.cmdLine, cmdLine.c_str(), cmdLine.length() + 1);
 }
 
 void Launcher::InitWorkingDirectory()
@@ -1430,8 +1438,6 @@ void Launcher::Run()
 		m_params.isDedicatedServer = true;
 	}
 
-	this->SetCmdLine();
-
 	if (WinAPI::GetApplicationPath().filename().string().find("CryMP") != 0)
 	{
 		throw StringTools::ErrorFormat("Invalid name of the executable!");
@@ -1443,6 +1449,7 @@ void Launcher::Run()
 	}
 
 	this->InitWorkingDirectory();
+	this->SetCmdLine();
 
 	this->LoadEngine();
 	this->PatchEngine();
