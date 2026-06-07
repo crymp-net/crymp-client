@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       suffix:
-        description: Optional artifact name suffix
+        description: Optional output artifact name suffix
         required: false
         type: string
     outputs:
@@ -35,7 +35,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          # for version generator
+          # for git describe
           fetch-depth: 0
 
       - name: Build
