@@ -22,7 +22,7 @@ on:
     outputs:
       artifact_name:
         description: Name of the resulting artifact
-        value: ${{ jobs.windows_msvc.outputs.artifact_name }}
+        value: ${{ jobs.msvc.outputs.artifact_name }}
 
 jobs:
   msvc:
