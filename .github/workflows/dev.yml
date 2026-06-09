@@ -9,6 +9,7 @@ on:
     branches:
       - master
     tags:
+      # sync dev version with the official one upon release
       - v*
 
 jobs:
@@ -25,6 +26,15 @@ jobs:
     with:
       bits: 64
       type: RelWithDebInfo
+
+  server_zip:
+    uses: ./.github/workflows/server-zip.yml
+    needs:
+      - build_32
+      - build_64
+    with:
+      build_artifact_32: ${{ needs.build_32.outputs.artifact_name }}
+      build_artifact_64: ${{ needs.build_64.outputs.artifact_name }}
 
   publish:
     if: github.repository_owner == 'crymp-net'
