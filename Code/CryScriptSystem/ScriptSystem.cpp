@@ -9,9 +9,9 @@ extern "C"
 #include <lauxlib.h>
 }
 
+#include <mimalloc.h>
 #include <tracy/Tracy.hpp>
 
-#include "CryCommon/CryCore/CryMalloc.h"
 #include "CryCommon/CrySystem/CryFile.h"
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryCommon/CrySystem/IConsole.h"
@@ -73,8 +73,7 @@ void *ScriptSystem::Allocate(size_t size)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
 
-	// TODO: optimized memory allocator
-	void *block = CryMalloc(size);
+	void *block = mi_malloc(size);
 	TracyAllocN(block, size, "ScriptSystem");
 
 	// we never fail
@@ -92,7 +91,7 @@ void ScriptSystem::Deallocate(void *block)
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
 
 	TracyFreeN(block, "ScriptSystem");
-	CryFree(block);
+	mi_free(block);
 }
 
 void ScriptSystem::PushAny(const ScriptAnyValue & any)

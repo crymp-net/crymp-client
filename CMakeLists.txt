@@ -46,8 +46,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(CRYMP_CONSOLE_APP "Enable console window with standard output." OFF)
 
-option(CRYMP_USE_MIMALLOC "Use mimalloc as global allocator." OFF)
-
 option(CRYMP_DEBUG_ALLOCATOR_ENABLED "Enable debug allocator to detect memory errors." OFF)
 option(CRYMP_DEBUG_ALLOCATOR_VERBOSE "Log each allocation and deallocation to standard output." OFF)
 option(CRYMP_DEBUG_ALLOCATOR_OVERFLOW_INSTEAD_OF_UNDERFLOW "Detect buffer overflows instead of underflows." OFF)
@@ -788,6 +786,11 @@ add_library(Base OBJECT
 	ThirdParty/Lua/src/lvm.h
 	ThirdParty/Lua/src/lzio.c
 	ThirdParty/Lua/src/lzio.h
+	ThirdParty/mimalloc/include/mimalloc-new-delete.h
+	ThirdParty/mimalloc/include/mimalloc-override.h
+	ThirdParty/mimalloc/include/mimalloc-stats.h
+	ThirdParty/mimalloc/include/mimalloc.h
+	ThirdParty/mimalloc/src/static.c
 	ThirdParty/miniz/miniz.c
 	ThirdParty/miniz/miniz.h
 	ThirdParty/nlohmann/json.hpp
@@ -802,33 +805,18 @@ if(BUILD_BITS EQUAL 64)
 	target_compile_definitions(Base PUBLIC BUILD_64BIT)
 endif()
 
-if(CRYMP_USE_MIMALLOC)
-	target_sources(Base PRIVATE
-		ThirdParty/mimalloc/src/alloc.c
-		ThirdParty/mimalloc/src/alloc-aligned.c
-		ThirdParty/mimalloc/src/alloc-posix.c
-		ThirdParty/mimalloc/src/arena.c
-		ThirdParty/mimalloc/src/bitmap.c
-		ThirdParty/mimalloc/src/heap.c
-		ThirdParty/mimalloc/src/init.c
-		ThirdParty/mimalloc/src/options.c
-		ThirdParty/mimalloc/src/os.c
-		ThirdParty/mimalloc/src/page.c
-		ThirdParty/mimalloc/src/random.c
-		ThirdParty/mimalloc/src/segment.c
-		ThirdParty/mimalloc/src/segment-map.c
-		ThirdParty/mimalloc/src/stats.c
-		ThirdParty/mimalloc/src/prim/prim.c
-	)
-
-	target_include_directories(Base SYSTEM PUBLIC ThirdParty/mimalloc/include)
-endif()
-
 if(CRYMP_TRACY_ENABLED)
 	target_compile_definitions(Base PUBLIC TRACY_ENABLE)
 endif()
 
 target_compile_definitions(Base PUBLIC _CRT_SECURE_NO_WARNINGS _WIN32_WINNT=0x0601)  # Win7+
+
+# mimalloc configuration
+target_compile_definitions(Base PUBLIC
+	MI_OPT_SIMD=1
+	MI_SECURE=3
+	MI_SKIP_COLLECT_ON_EXIT=1
+)
 
 target_compile_options(Base PUBLIC /W4
 	/wd4018  # Disable - 'token' : signed/unsigned mismatch
@@ -855,7 +843,7 @@ target_include_directories(Base PUBLIC Code ${PROJECT_BINARY_DIR})
 target_include_directories(Base SYSTEM PUBLIC
 	ThirdParty
 	ThirdParty/Lua/src
-	ThirdParty/miniz
+	ThirdParty/mimalloc/include
 	ThirdParty/tracy/public
 )
 
