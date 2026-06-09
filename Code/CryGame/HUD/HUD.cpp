@@ -150,8 +150,8 @@ CHUD::CHUD()
 	m_bInMenu = false;
 	m_bDestroyInitializePending = false;
 
-	m_friendlyTrackerStatus = 0;
-	m_hostileTrackerStatus = 0;
+	m_friendlyTrackerStatus.fill(0);
+	m_hostileTrackerStatus.fill(0);
 
 	m_bThirdPerson = false;
 	m_bNightVisionActive = false;
@@ -513,8 +513,17 @@ bool CHUD::Init(IActor* pActor)
 
 	m_animPlayerStats.Load("Libs/UI/HUD_AmmoHealthEnergySuit.gfx", eFD_Right | eFD_Bottom | eFD_Scaling, eFAF_Visible | eFAF_ThisHandler);
 	m_animAmmoPickup.Load("Libs/UI/HUD_AmmoPickup.gfx", eFD_Right | eFD_Bottom | eFD_Scaling, eFAF_Visible);
-	m_animFriendlyProjectileTracker.Load("Libs/UI/HUD_GrenadeDetect_Friendly.gfx", eFD_Center, eFAF_Visible); 
-	m_animHostileProjectileTracker.Load("Libs/UI/HUD_GrenadeDetect.gfx", eFD_Center, eFAF_Visible);
+
+	for (auto& anim : m_animFriendlyProjectileTrackers)
+	{
+		anim.Load("Libs/UI/HUD_GrenadeDetect_Friendly.gfx", eFD_Center, eFAF_Visible);
+	}
+
+	for (auto& anim : m_animHostileProjectileTrackers)
+	{
+		anim.Load("Libs/UI/HUD_GrenadeDetect.gfx", eFD_Center, eFAF_Visible);
+	}
+
 	m_animMissionObjective.Load("Libs/UI/HUD_MissionObjective_Icon.gfx", eFD_Center, eFAF_Visible);
 	m_animQuickMenu.Load("Libs/UI/HUD_QuickMenu.gfx", eFD_Center | eFD_Scaling);
 	m_animRadarCompassStealth.Load("Libs/UI/HUD_RadarCompassStealth.gfx", eFD_Left | eFD_Bottom | eFD_Scaling, eFAF_Visible);
@@ -3525,15 +3534,21 @@ void CHUD::OnPostUpdate(float frameTime)
 					m_animPlayerPP.GetFlashPlayer()->Render();
 				}
 			}
-			if (m_animFriendlyProjectileTracker.GetVisible()) //CryMP: grenade indicator in spectator mode
+			for (auto& anim : m_animFriendlyProjectileTrackers)
 			{
-				m_animFriendlyProjectileTracker.GetFlashPlayer()->Advance(frameTime);
-				m_animFriendlyProjectileTracker.GetFlashPlayer()->Render();
+				if (anim.GetVisible())
+				{
+					anim.GetFlashPlayer()->Advance(frameTime);
+					anim.GetFlashPlayer()->Render();
+				}
 			}
-			if (m_animHostileProjectileTracker.GetVisible())
+			for (auto& anim : m_animHostileProjectileTrackers)
 			{
-				m_animHostileProjectileTracker.GetFlashPlayer()->Advance(frameTime); //CryMP: grenade indicator in spectator mode
-				m_animHostileProjectileTracker.GetFlashPlayer()->Render();
+				if (anim.GetVisible())
+				{
+					anim.GetFlashPlayer()->Advance(frameTime);
+					anim.GetFlashPlayer()->Render();
+				}
 			}
 			if (m_animMissionObjective.GetVisible() && m_bShowAllOnScreenObjectives) //CryMP: for names in mp spectatemode, update mission objective!
 			{
@@ -5016,30 +5031,38 @@ void CHUD::UnloadSimpleHUDElements(bool unload)
 
 	if (!unload)
 	{
-		m_animTrackedRadioMessage.Reload(); // CryMP: tracked radio messages
-		m_animFriendlyProjectileTracker.Reload();
-		m_animHostileProjectileTracker.Reload();
+		m_animTrackedRadioMessage.Reload();
+
+		for (auto& anim : m_animFriendlyProjectileTrackers)
+			anim.Reload();
+
+		for (auto& anim : m_animHostileProjectileTrackers)
+			anim.Reload();
+
 		m_animMissionObjective.Reload();
 		m_animQuickMenu.Reload();
 		m_animTacLock.Reload();
-		//		m_animTargetter.Reload();
 		m_animDownloadEntities.Reload();
 
 		ResetQuickMenu();
 	}
 	else
 	{
-		m_animTrackedRadioMessage.Reload(); // CryMP: tracked radio messages
-		m_animFriendlyProjectileTracker.Unload();
-		m_animHostileProjectileTracker.Unload();
+		m_animTrackedRadioMessage.Reload();
+
+		for (auto& anim : m_animFriendlyProjectileTrackers)
+			anim.Unload();
+
+		for (auto& anim : m_animHostileProjectileTrackers)
+			anim.Unload();
+
 		m_animMissionObjective.Unload();
 		m_animQuickMenu.Unload();
 		m_animTacLock.Unload();
-		//		m_animTargetter.Unload();
 		m_animDownloadEntities.Unload();
 
-		m_friendlyTrackerStatus = 0;
-		m_hostileTrackerStatus = 0;
+		m_friendlyTrackerStatus.fill(0);
+		m_hostileTrackerStatus.fill(0);
 	}
 }
 
@@ -5526,4 +5549,21 @@ void CHUD::UpdateTextScale()
 
 	if (scaleChanged || m_animSubtitles.NeedsHUDScaleApply())
 		m_animSubtitles.ApplyScale(hudScale);
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CHUD::OnMaxGrenadeIndicatorsChanged()
+{
+	const int maxIndicators = CLAMP(
+		g_pGameCVars->hud_maxGrenadeIndicators,
+		0,
+		kMaxGrenadeTrackers
+	);
+
+	for (int i = maxIndicators; i < kMaxGrenadeTrackers; ++i)
+	{
+		UpdateProjectileTracker(m_animFriendlyProjectileTrackers[i], nullptr, m_friendlyTrackerStatus[i], Vec3());
+		UpdateProjectileTracker(m_animHostileProjectileTrackers[i], nullptr, m_hostileTrackerStatus[i], Vec3());
+	}
 }
