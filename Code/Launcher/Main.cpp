@@ -26,12 +26,9 @@ int main()
 int __stdcall WinMain(void*, void*, char*, int)
 #endif
 {
-	Launcher launcher;
-	gLauncher = &launcher;
-
 	try
 	{
-		launcher.Run();
+		Launcher().Run();
 	}
 	catch (const CryMP_Error& error)
 	{

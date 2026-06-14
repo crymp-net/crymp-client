@@ -12,6 +12,8 @@
 
 #include "TimeOfDay.h"
 
+extern void* g_pCry3DEngine;
+
 int TimeOfDay::FloatSpline::GetNumDimensions()
 {
 	return 1;
@@ -134,17 +136,17 @@ void TimeOfDay::ColorSpline::SerializeSpline(XmlNodeRef& node, bool loading)
 	}
 }
 
-TimeOfDay::TimeOfDay(void* pCry3DEngine)
+TimeOfDay::TimeOfDay()
 {
 	// offsets for the original Cry3DEngine DLL from Crysis build 6156
 #ifdef BUILD_64BIT
-	m_currentTimeCVarValue = *(static_cast<float**>(pCry3DEngine) + 0x4571C) + 0xED;
-	m_speedCVarValue = *(static_cast<float**>(pCry3DEngine) + 0x4571C) + 0xEE;
-	m_someOtherTimer = static_cast<ITimer**>(pCry3DEngine) + 0x44FAE;
+	m_currentTimeCVarValue = *(static_cast<float**>(g_pCry3DEngine) + 0x4571C) + 0xED;
+	m_speedCVarValue = *(static_cast<float**>(g_pCry3DEngine) + 0x4571C) + 0xEE;
+	m_someOtherTimer = static_cast<ITimer**>(g_pCry3DEngine) + 0x44FAE;
 #else
-	m_currentTimeCVarValue = *(static_cast<float**>(pCry3DEngine) + 0x7126F) + 0xED;
-	m_speedCVarValue = *(static_cast<float**>(pCry3DEngine) + 0x7126F) + 0xEE;
-	m_someOtherTimer = static_cast<ITimer**>(pCry3DEngine) + 0x7040D;
+	m_currentTimeCVarValue = *(static_cast<float**>(g_pCry3DEngine) + 0x7126F) + 0xED;
+	m_speedCVarValue = *(static_cast<float**>(g_pCry3DEngine) + 0x7126F) + 0xEE;
+	m_someOtherTimer = static_cast<ITimer**>(g_pCry3DEngine) + 0x7040D;
 #endif
 
 	this->SetTimer(gEnv->pTimer);
