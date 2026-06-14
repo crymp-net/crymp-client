@@ -396,6 +396,7 @@ add_library(Base OBJECT
 	Code/CryCommon/CryAnimation/ICryAnimation.h
 	Code/CryCommon/CryAnimation/IFacialAnimation.h
 	Code/CryCommon/CryAnimation/IJoystick.h
+	Code/CryCommon/CryCore/BitFiddling.h
 	Code/CryCommon/CryCore/ConfigurableVariant.h
 	Code/CryCommon/CryCore/CryArray.h
 	Code/CryCommon/CryCore/CryFixedString.h
@@ -411,6 +412,7 @@ add_library(Base OBJECT
 	Code/CryCommon/CryCore/MultiThread.h
 	Code/CryCommon/CryCore/PoolAllocator.h
 	Code/CryCommon/CryCore/PoolAllocatorSynchronization.h
+	Code/CryCommon/CryCore/STLPoolAllocator.h
 	Code/CryCommon/CryCore/StlUtils.h
 	Code/CryCommon/CryCore/StringUtils.h
 	Code/CryCommon/CryCore/TArray.h
