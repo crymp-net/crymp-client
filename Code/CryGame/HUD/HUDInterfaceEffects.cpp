@@ -406,18 +406,13 @@ void CHUD::TrackProjectiles(CPlayer* pPlayerActor)
 
 	const int maxIndicators = CLAMP(g_pGameCVars->hud_maxGrenadeIndicators, 0, kMaxGrenadeTrackers);
 
-	const auto hideAllTrackers = [this]()
-		{
-			for (int i = 0; i < kMaxGrenadeTrackers; ++i)
-			{
-				UpdateProjectileTracker(m_animFriendlyProjectileTrackers[i], nullptr, m_friendlyTrackerStatus[i], Vec3());
-				UpdateProjectileTracker(m_animHostileProjectileTrackers[i], nullptr, m_hostileTrackerStatus[i], Vec3());
-			}
-		};
-
 	if (m_trackedProjectiles.empty() || maxIndicators <= 0)
 	{
-		hideAllTrackers();
+		for (int i = 0; i < kMaxGrenadeTrackers; ++i)
+		{
+			UpdateProjectileTracker(m_animFriendlyProjectileTrackers[i], nullptr, m_friendlyTrackerStatus[i], Vec3());
+			UpdateProjectileTracker(m_animHostileProjectileTrackers[i], nullptr, m_hostileTrackerStatus[i], Vec3());
+		}
 		return;
 	}
 
