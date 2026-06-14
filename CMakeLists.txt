@@ -15,6 +15,25 @@ if(NOT CMAKE_MSVC_RUNTIME_LIBRARY)
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
+# use /ZI instead of /Zi in Debug and RelWithDebInfo to enable Edit and Continue
+foreach(flags
+	CMAKE_C_FLAGS_DEBUG
+	CMAKE_C_FLAGS_RELWITHDEBINFO
+	CMAKE_CXX_FLAGS_DEBUG
+	CMAKE_CXX_FLAGS_RELWITHDEBINFO
+)
+	string(REPLACE /Zi "" ${flags} "${${flags}}")
+	set(${flags} "${${flags}} /ZI")
+endforeach()
+
+# use /INCREMENTAL in Debug and RelWithDebInfo to enable Edit and Continue
+foreach(flags
+	CMAKE_EXE_LINKER_FLAGS_DEBUG
+	CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO
+)
+	set(${flags} "${${flags}} /INCREMENTAL")
+endforeach()
+
 # C11
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
