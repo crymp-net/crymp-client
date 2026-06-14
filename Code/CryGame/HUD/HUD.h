@@ -20,6 +20,8 @@ History:
 
 //-----------------------------------------------------------------------------------------------------
 
+#include <array>
+
 #include "HUDEnums.h"
 #include "HUDCommon.h"
 #include "CryCommon/CrySystem/IFlashPlayer.h"
@@ -717,8 +719,6 @@ private:
 
   EHUDGAMERULES m_currentGameRules;
 
-	CGameFlashAnimation	m_animFriendlyProjectileTracker;
-	CGameFlashAnimation	m_animHostileProjectileTracker;
 	CGameFlashAnimation	m_animMissionObjective;
 	CGameFlashAnimation	m_animPDA;
 	CGameFlashAnimation	m_animQuickMenu;
@@ -767,6 +767,11 @@ private:
 	CGameFlashAnimation m_animHitIndicatorPlayer;
 	CGameFlashAnimation m_animHitIndicatorVehicle;
 	CGameFlashAnimation m_animTrackedRadioMessage;
+
+	static constexpr int kMaxGrenadeTrackers = 8;
+
+	std::array<CGameFlashAnimation, kMaxGrenadeTrackers> m_animFriendlyProjectileTrackers;
+	std::array<CGameFlashAnimation, kMaxGrenadeTrackers> m_animHostileProjectileTrackers;
 
 	std::optional<float> m_nanosuitMenuOpenTime;
 	uint8_t              m_nanosuitOpenMode = 0;
@@ -918,8 +923,8 @@ private:
 
 	std::vector<STrackedRadioMessage> m_trackedRadioMessages;
 	
-	uint8 m_friendlyTrackerStatus;
-	uint8 m_hostileTrackerStatus;
+	std::array<uint8, kMaxGrenadeTrackers> m_friendlyTrackerStatus = {};
+	std::array<uint8, kMaxGrenadeTrackers> m_hostileTrackerStatus = {};
 
 	uint8_t m_radioTrackerStatus;
 
@@ -951,6 +956,7 @@ public:
 	bool m_bWeaponModifyOpen = false;
 
 	void UpdateTextScale();
+	void OnMaxGrenadeIndicatorsChanged();
 };
 
 //-----------------------------------------------------------------------------------------------------
