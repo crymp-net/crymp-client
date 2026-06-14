@@ -1194,6 +1194,50 @@ target_link_libraries(CryGame PUBLIC Base)
 
 ################################################################################
 
+add_library(libogg OBJECT
+	ThirdParty/libogg/src/bitwise.c
+	ThirdParty/libogg/src/framing.c
+)
+
+target_include_directories(libogg SYSTEM PUBLIC
+	ThirdParty/libogg/include
+)
+
+################################################################################
+
+add_library(libvorbis OBJECT
+	ThirdParty/libvorbis/lib/analysis.c
+	ThirdParty/libvorbis/lib/bitrate.c
+	ThirdParty/libvorbis/lib/block.c
+	ThirdParty/libvorbis/lib/codebook.c
+	ThirdParty/libvorbis/lib/envelope.c
+	ThirdParty/libvorbis/lib/floor0.c
+	ThirdParty/libvorbis/lib/floor1.c
+	ThirdParty/libvorbis/lib/info.c
+	ThirdParty/libvorbis/lib/lookup.c
+	ThirdParty/libvorbis/lib/lpc.c
+	ThirdParty/libvorbis/lib/lsp.c
+	ThirdParty/libvorbis/lib/mapping0.c
+	ThirdParty/libvorbis/lib/mdct.c
+	ThirdParty/libvorbis/lib/psy.c
+	ThirdParty/libvorbis/lib/registry.c
+	ThirdParty/libvorbis/lib/res0.c
+	ThirdParty/libvorbis/lib/sharedbook.c
+	ThirdParty/libvorbis/lib/smallft.c
+	ThirdParty/libvorbis/lib/synthesis.c
+	ThirdParty/libvorbis/lib/vorbisenc.c
+	ThirdParty/libvorbis/lib/vorbisfile.c
+	ThirdParty/libvorbis/lib/window.c
+)
+
+target_include_directories(libvorbis SYSTEM PUBLIC
+	ThirdParty/libvorbis/include
+)
+
+target_link_libraries(libvorbis PUBLIC libogg)
+
+################################################################################
+
 add_library(OpenAL OBJECT
 	ThirdParty/openal-soft/al/auxeffectslot.cpp
 	ThirdParty/openal-soft/al/auxeffectslot.h
