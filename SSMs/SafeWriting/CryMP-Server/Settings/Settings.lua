@@ -16,7 +16,7 @@ SafeWriting.Settings={
 	EnablePremiumBuilders=false;	--enable leveldesigner for premiums, their builds wont save when !ldsave
 	LevelDesignerPremiumLimit=128;	--max entities that can be built by premium player
 	
-	ServerDescription="SSM SafeWriting server";	--description for your server
+	ServerDescription="A new CryMP server";	--description for your server
 	APIKey=nil;	--leave this empty unless you are a trusted server
 	
 	OptimizeSpeed=false;	--makes server do less output (recommended for non-stop servers)
@@ -74,11 +74,11 @@ SafeWriting.Settings={
 	EnableChatLog=true; -- enables chat log in console
 	LogChatToAdmins=true; --enables logging chat to admins
 	AllowShortPMs=true;	--enables short form of private messages: @player text...
-	UseClearNames=true; --when enabled, removes all ¡,´,ÿ,¸,²,¨,½,^,°,¢ from letters in name
+	UseClearNames=true; --when enabled, removes all non-ASCII from letters in name
 	DisableTranslations=false; --put this to true, to use english language for all players, but Translations.lua will be still required!
 	FixOverpoweredAA=true;	--put this to true, to fix overpowered AACannon on 5767
 	
-	ChatEntityName="<SSM SafeWriting>";
+	ChatEntityName="<SERVER>";
 	TempEntityName=">>";	--for non-dll version of mod! name of entity which is used to send spectator messages, if you want it to be empty, use space (" "), not ""!
 	AdminTag="<ADMIN>"; -- makes admin invulnerable, with infinite energy
 	ModeratorTag="<MOD>"; --gives extra health (+300) to moderator
@@ -171,7 +171,7 @@ SafeWriting.Settings={
 		"Iodum","Xenon","Lanthanum","Actinium",
 	};
 		
-	SpamMessages=true; --enable this to enable spammy messages
+	SpamMessages=false; --enable this to enable spammy messages
 	SpammyMessagesType="server"; --server,info,center,console,big,error
 	SpammyInterval=10; -- in seconds, 1 message per ? seconds
 	SpammyMessages={	--here you put messages,which will spam to players in every ? seconds

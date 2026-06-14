@@ -9,11 +9,6 @@
 
 #include "config.h"
 
-#ifdef CRYMP_USE_MIMALLOC
-#include <mimalloc.h>
-#include <mimalloc-new-delete.h>
-#endif
-
 #include <tracy/Tracy.hpp>
 
 #define WIN32_LEAN_AND_MEAN
@@ -476,8 +471,6 @@ static void* CryMalloc_hook_internal(std::size_t size, std::size_t& allocatedSiz
 
 #if defined(CRYMP_DEBUG_ALLOCATOR_ENABLED)
 	void* ptr = GetDebugAlloc().Allocate(size);
-#elif defined(CRYMP_USE_MIMALLOC)
-	void* ptr = mi_zalloc(size);
 #else
 	void* ptr = std::calloc(1, size);
 #endif
@@ -526,8 +519,6 @@ static void* CryRealloc_hook_internal(void* oldPtr, std::size_t newSize, std::si
 	{
 #if defined(CRYMP_DEBUG_ALLOCATOR_ENABLED)
 		oldSize = GetDebugAlloc().GetSize(oldPtr);
-#elif defined(CRYMP_USE_MIMALLOC)
-		oldSize = mi_usable_size(oldPtr);
 #else
 		oldSize = _msize(oldPtr);
 #endif
@@ -549,8 +540,6 @@ static void* CryRealloc_hook_internal(void* oldPtr, std::size_t newSize, std::si
 		TracyFreeN(oldPtr, "CryMalloc");
 #if defined(CRYMP_DEBUG_ALLOCATOR_ENABLED)
 		GetDebugAlloc().Deallocate(oldPtr);
-#elif defined(CRYMP_USE_MIMALLOC)
-		mi_free(oldPtr);
 #else
 		std::free(oldPtr);
 #endif
@@ -584,8 +573,6 @@ static std::size_t CryGetMemSize_hook_internal(void* ptr)
 
 #if defined(CRYMP_DEBUG_ALLOCATOR_ENABLED)
 	return GetDebugAlloc().GetSize(ptr);
-#elif defined(CRYMP_USE_MIMALLOC)
-	return mi_usable_size(ptr);
 #else
 	return _msize(ptr);
 #endif
@@ -627,9 +614,6 @@ static std::size_t CryFree_hook_internal(void* ptr)
 	TracyFreeN(ptr, "CryMalloc");
 #if defined(CRYMP_DEBUG_ALLOCATOR_ENABLED)
 	size = GetDebugAlloc().Deallocate(ptr);
-#elif defined(CRYMP_USE_MIMALLOC)
-	size = mi_usable_size(ptr);
-	mi_free(ptr);
 #else
 	size = _msize(ptr);
 	std::free(ptr);
@@ -667,29 +651,10 @@ static void CrySystemCrtFree_hook(void* ptr)
 // CryMemoryManager
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef CRYMP_USE_MIMALLOC
-static void mimalloc_message_sink(const char* message, void*)
-{
-	CryLogAlways("[mimalloc] %s", message);
-}
-
-static void mimalloc_error_sink(int error, void*)
-{
-	CryLogAlways("[mimalloc] error=%d", error);
-}
-#endif
-
 void CryMemoryManager::Init(void* pCrySystem)
 {
 #ifdef BUILD_64BIT
 	g_STLport_Allocator = new STLport_Allocator;
-#endif
-
-#ifdef CRYMP_USE_MIMALLOC
-	mi_register_output(&mimalloc_message_sink, nullptr);
-	mi_register_error(&mimalloc_error_sink, nullptr);
-	mi_option_enable(mi_option_show_errors);
-	mi_option_enable(mi_option_verbose);
 #endif
 
 	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CryMalloc"), &CryMalloc_hook);
@@ -702,10 +667,6 @@ void CryMemoryManager::Init(void* pCrySystem)
 
 void CryMemoryManager::ProvideHeapInfo(std::FILE* file, void* address)
 {
-#ifdef CRYMP_USE_MIMALLOC
-	std::fprintf(file, "[mimalloc] version=%d\n", mi_version());
-#endif
-
 #ifdef CRYMP_DEBUG_ALLOCATOR_ENABLED
 	GetDebugAlloc().ProvideHeapInfo(file, address);
 #endif
