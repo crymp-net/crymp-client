@@ -5490,7 +5490,8 @@ float CPhysicalWorld::PrimitiveWorldIntersection(int itype, primitives::primitiv
 
 int CPhysicalWorld::RayTraceEntity(IPhysicalEntity* pient, Vec3 origin, Vec3 dir, ray_hit* pHit, pe_params_pos* pp)
 {
-	if (!(dir.len2() > 0 && origin.len2() >= 0))
+	// CryMP: reject invalid input before creating ray geometry or dereferencing pointers.
+	if (!pient || !pHit || !origin.IsValid() || !dir.IsValid() || !(dir.len2() > 0.0f))
 	{
 		return 0;
 	}
@@ -5501,21 +5502,40 @@ int CPhysicalWorld::RayTraceEntity(IPhysicalEntity* pient, Vec3 origin, Vec3 dir
 	float scale = 1.0f;
 	CRayGeom aray(origin, dir);
 	geom_world_data gwd;
-	geom_contact* pcontacts;
 	intersection_params ip;
-	pHit->dist = 1E10;
+
+	// CryMP: Intersect writes contacts through this pointer; original code used an uninitialized pointer.
+	geom_contact contactsBuf[64];
+	geom_contact* pcontacts = contactsBuf;
+
+	pHit->dist = 1E10f;
+	pHit->pCollider = 0;
+	pHit->ipart = 0;
+	pHit->partid = 0;
+	pHit->surface_idx = -1;
+	pHit->idmatOrg = -1;
+	pHit->foreignIdx = -1;
+	pHit->pt.zero();
+	pHit->n.zero();
 
 	if (((CPhysicalPlaceholder*)pient)->m_iSimClass != 5)
 	{
 		CPhysicalEntity* pent = ((CPhysicalPlaceholder*)pient)->GetEntity();
+		if (!pent)
+		{
+			return 0;
+		}
+
 		if (pp)
 		{
 			pos = pp->pos;
 			qrot = pp->q;
+
 			if (!is_unused(pp->scale))
 			{
 				scale = pp->scale;
 			}
+
 			get_xqs_from_matrices(pp->pMtx3x4, pp->pMtx3x3, pos, qrot, scale);
 		}
 		else
@@ -5523,30 +5543,45 @@ int CPhysicalWorld::RayTraceEntity(IPhysicalEntity* pient, Vec3 origin, Vec3 dir
 			pos = pent->m_pos;
 			qrot = pent->m_qrot;
 		}
+
 		for (i = 0; i < pent->m_nParts; i++)
 		{
-			//(pent->m_qrot*pent->m_parts[i].q).getmatrix(gwd.R);	//Q2M_IVO
+			if (!pent->m_parts[i].pPhysGeom || !pent->m_parts[i].pPhysGeom->pGeom)
+			{
+				continue;
+			}
+
 			gwd.R = Matrix33(qrot * pent->m_parts[i].q);
 			gwd.offset = pos + qrot * pent->m_parts[i].pos;
 			gwd.scale = scale * pent->m_parts[i].scale;
+
+			pcontacts = contactsBuf;
 			ncont = pent->m_parts[i].pPhysGeom->pGeom->Intersect(&aray, &gwd, 0, &ip, pcontacts);
+
+			if (ncont > (int)(sizeof(contactsBuf) / sizeof(contactsBuf[0])))
+			{
+				ncont = (int)(sizeof(contactsBuf) / sizeof(contactsBuf[0]));
+			}
+
 			WriteLockCond lockColl(*ip.plock, 0);
 			lockColl.SetActive(isneg(-ncont));
-			for (; ncont > 0 && pcontacts[ncont - 1].t < pHit->dist && pcontacts[ncont - 1].n * dir > 0;
-			     ncont--)
-				;
+
+			for (; ncont > 0 && pcontacts[ncont - 1].t < pHit->dist && pcontacts[ncont - 1].n * dir > 0; ncont--)
+			{
+			}
+
 			if (ncont > 0)
 			{
-				pHit->dist = pcontacts[ncont - 1].t;
+				const geom_contact& contact = pcontacts[ncont - 1];
+
+				pHit->dist = contact.t;
 				pHit->pCollider = pent;
-				pHit->partid = pent->m_parts[pHit->ipart = i].id;
-				pHit->surface_idx = pent->GetMatId(pcontacts[ncont - 1].id[0], i);
-				pHit->idmatOrg = pcontacts[ncont - 1].id[0] +
-				                 (pent->m_parts[i].surface_idx + 1 & pcontacts[ncont - 1].id[0] >> 31);
-				pHit->foreignIdx =
-				    pent->m_parts[i].pPhysGeom->pGeom->GetForeignIdx(pcontacts[ncont - 1].iPrim[0]);
-				pHit->pt = pcontacts[ncont - 1].pt;
-				pHit->n = pcontacts[ncont - 1].n;
+				pHit->partid = pent->m_parts[i].id;
+				pHit->surface_idx = pent->GetMatId(contact.id[0], i);
+				pHit->idmatOrg = contact.id[0] + (pent->m_parts[i].surface_idx + 1 & contact.id[0] >> 31);
+				pHit->foreignIdx = pent->m_parts[i].pPhysGeom->pGeom->GetForeignIdx(contact.iPrim[0]);
+				pHit->pt = contact.pt;
+				pHit->n = contact.n;
 			}
 		}
 	}
@@ -5555,7 +5590,7 @@ int CPhysicalWorld::RayTraceEntity(IPhysicalEntity* pient, Vec3 origin, Vec3 dir
 		return ((CPhysArea*)pient)->RayTrace(origin, dir, pHit, pp);
 	}
 
-	return isneg(pHit->dist - 1E9);
+	return isneg(pHit->dist - 1E9f);
 }
 
 CPhysicalEntity* CPhysicalWorld::CheckColliderListsIntegrity()
