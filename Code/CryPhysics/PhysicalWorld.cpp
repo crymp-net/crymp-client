@@ -1,6 +1,7 @@
 #include "CryCommon/CryCore/MTPseudoRandom.h"
 #include "CryCommon/CryNetwork/ISerialize.h"
 #include "CryCommon/CrySystem/ISystem.h"
+#include "CryCommon/CryEntitySystem/IEntitySystem.h"
 
 #include "ArticulatedEntity.h"
 #include "BoxGeom.h"
@@ -2886,6 +2887,35 @@ void CPhysicalWorld::TimeStep(float time_interval, int flags)
 	}
 }
 
+int CPhysicalWorld::FindTypedListOwner(CPhysicalEntity* pent)
+{
+	if (!pent)
+	{
+		return -1;
+	}
+
+	for (int list = 0; list < 8; ++list)
+	{
+		int count = 0;
+
+		for (CPhysicalEntity* p = m_pTypedEnts[list]; p; p = p->m_next)
+		{
+			if (++count > 100000)
+			{
+				CryLogAlways("FindTypedListOwner: loop detected list=%d head=%p pent=%p", list, m_pTypedEnts[list], pent);
+				return -1;
+			}
+
+			if (p == pent)
+			{
+				return list;
+			}
+		}
+	}
+
+	return -1;
+}
+
 void CPhysicalWorld::DetachEntityGridThunks(CPhysicalPlaceholder* pobj)
 {
 	if (pobj->m_iGThunk0)
@@ -2924,62 +2954,157 @@ void CPhysicalWorld::DetachEntityGridThunks(CPhysicalPlaceholder* pobj)
 void CPhysicalWorld::ChangeEntitySimClass(CPhysicalEntity* pent)
 {
 	WriteLock lock(m_lockList);
-	if ((unsigned int)pent->m_iPrevSimClass < 8u)
+
+	if (!pent)
 	{
+		return;
+	}
+
+	const int oldClass = pent->m_iPrevSimClass;
+	const int newClass = pent->m_iSimClass;
+
+	if ((unsigned int)newClass >= 8u)
+	{
+		CryLogAlways(
+			"[PhysicalWorld] ChangeEntitySimClass: invalid newClass pent=%p old=%d new=%d",
+			pent,
+			oldClass,
+			newClass);
+		return;
+	}
+
+	const int actualOldList = FindTypedListOwner(pent);
+
+	if (actualOldList == newClass)
+	{
+		IEntity* pEntity = 0;
+		const char* pName = "<none>";
+		const char* pClass = "<none>";
+
+		if (pent->m_iForeignData == PHYS_FOREIGN_ID_ENTITY && pent->m_pForeignData)
+		{
+			pEntity = static_cast<IEntity*>(pent->m_pForeignData);
+			pName = pEntity->GetName();
+
+			if (pEntity->GetClass())
+			{
+				pClass = pEntity->GetClass()->GetName();
+			}
+		}
+
+		CryLogAlways(
+			"[PhysicalWorld] ChangeEntitySimClass: already in target list "
+			"ent=%s class=%s id=%d "
+			"pent=%p old=%d actual=%d new=%d perm=%d",
+			pName,
+			pClass,
+			pent->m_id,
+			pent,
+			oldClass,
+			actualOldList,
+			newClass,
+			pent->m_bPermanent);
+
+		pent->m_iPrevSimClass = newClass;
+
+		for (int ithunk = pent->m_iGThunk0; ithunk; ithunk = m_gthunks[ithunk].inextOwned)
+		{
+			m_gthunks[ithunk].iSimClass = newClass;
+		}
+
+		return;
+	}
+
+	if (actualOldList >= 0)
+	{
+		const int list = actualOldList;
+
+		if ((unsigned int)list >= 8u)
+		{
+			CryLogAlways(
+				"[PhysicalWorld] ChangeEntitySimClass: invalid actualOldList=%d pent=%p",
+				list,
+				pent);
+			return;
+		}
+
 		if (pent->m_next)
 		{
 			pent->m_next->m_prev = pent->m_prev;
 		}
-		(pent->m_prev ? pent->m_prev->m_next : m_pTypedEnts[pent->m_iPrevSimClass]) = pent->m_next;
-		if (pent == m_pTypedEntsPerm[pent->m_iPrevSimClass])
+
+		if (pent->m_prev)
 		{
-			m_pTypedEntsPerm[pent->m_iPrevSimClass] = pent->m_next;
+			pent->m_prev->m_next = pent->m_next;
+		}
+		else
+		{
+			m_pTypedEnts[list] = pent->m_next;
+		}
+
+		if (pent == m_pTypedEntsPerm[list])
+		{
+			m_pTypedEntsPerm[list] = pent->m_next;
 		}
 	}
 
+	pent->m_next = 0;
+	pent->m_prev = 0;
+
 	if (!pent->m_bPermanent)
 	{
-		pent->m_next = m_pTypedEnts[pent->m_iSimClass];
+		pent->m_next = m_pTypedEnts[newClass];
 		pent->m_prev = 0;
+
 		if (pent->m_next)
 		{
 			pent->m_next->m_prev = pent;
 		}
-		m_pTypedEnts[pent->m_iSimClass] = pent;
+
+		m_pTypedEnts[newClass] = pent;
 	}
 	else
 	{
-		pent->m_next = m_pTypedEntsPerm[pent->m_iSimClass];
-		if (m_pTypedEntsPerm[pent->m_iSimClass])
+		pent->m_next = m_pTypedEntsPerm[newClass];
+
+		if (m_pTypedEntsPerm[newClass])
 		{
-			pent->m_prev = m_pTypedEntsPerm[pent->m_iSimClass]->m_prev;
+			pent->m_prev = m_pTypedEntsPerm[newClass]->m_prev;
+
 			if (pent->m_prev)
 			{
 				pent->m_prev->m_next = pent;
 			}
+
 			pent->m_next->m_prev = pent;
 		}
-		else if (m_pTypedEnts[pent->m_iSimClass])
+		else if (m_pTypedEnts[newClass])
 		{
-			for (pent->m_prev = m_pTypedEnts[pent->m_iSimClass]; pent->m_prev && pent->m_prev->m_next;
-			     pent->m_prev = pent->m_prev->m_next)
+			for (pent->m_prev = m_pTypedEnts[newClass];
+				pent->m_prev && pent->m_prev->m_next;
+				pent->m_prev = pent->m_prev->m_next)
 				;
+
 			pent->m_prev->m_next = pent;
 		}
 		else
 		{
 			pent->m_prev = 0;
 		}
-		if (m_pTypedEntsPerm[pent->m_iSimClass] == m_pTypedEnts[pent->m_iSimClass])
+
+		if (m_pTypedEntsPerm[newClass] == m_pTypedEnts[newClass])
 		{
-			m_pTypedEnts[pent->m_iSimClass] = pent;
+			m_pTypedEnts[newClass] = pent;
 		}
-		m_pTypedEntsPerm[pent->m_iSimClass] = pent;
+
+		m_pTypedEntsPerm[newClass] = pent;
 	}
+
+	pent->m_iPrevSimClass = newClass;
 
 	for (int ithunk = pent->m_iGThunk0; ithunk; ithunk = m_gthunks[ithunk].inextOwned)
 	{
-		m_gthunks[ithunk].iSimClass = pent->m_iSimClass;
+		m_gthunks[ithunk].iSimClass = newClass;
 	}
 }
 
