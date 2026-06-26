@@ -932,326 +932,400 @@ void CHUD::UpdateHitIndicator()
 	}
 }
 
-void CHUD::Targetting(EntityId pTargetEntity, bool bStatic)
+void CHUD::UpdateHUDIndicators()
 {
 	UpdateHitIndicator();
 
-	if(IsAirStrikeAvailable() && GetScopes()->IsBinocularsShown())
+	if (IsAirStrikeAvailable() && GetScopes()->IsBinocularsShown())
 	{
-		float fCos = fabsf(cosf(gEnv->pTimer->GetAsyncCurTime()));
-		auto it = m_possibleAirStrikeTargets.begin();
-		for(; it != m_possibleAirStrikeTargets.end(); ++it)
-		{
-			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(*it);
-			if(pEntity)
-			{
-				m_pHUDSilhouettes->SetSilhouette(pEntity, 1.0f-0.6f*fCos, 1.0f-0.4f*fCos, 1.0f-0.20f*fCos, 0.5f, -1.0f);
-			}
-		}
+		UpdateAirStrikeTargetSilhouettes();
 	}
 	else
 	{
-		IEntity *pEntityTargetAutoaim = gEnv->pEntitySystem->GetEntity(m_entityTargetAutoaimId);
-		if(!pEntityTargetAutoaim)
-		{
-			m_entityTargetAutoaimId = 0;
-		}
-		else
-		{
-			float r = 0.8f;
-			float g = 0.8f;
-			float b = 1.0f;
-			//CryMP: Custom colors for VTOL lockons
-			//Neutral: White
-			//Team: Blue
-			//Enemy: Orange-Red
-			if (m_pGameRules->IsHostile(m_entityTargetAutoaimId, m_pClientActor->GetEntityId())
-				&& (!m_pGameRules->IsNeutral(m_entityTargetAutoaimId) || m_pGameRules->GetTeamCount() < 2))
-			{
-				r = 1.0f;
-				g = 0.1f;
-				b = 0.0f;
-			}
-			else if (m_pGameRules->IsSameTeam(m_entityTargetAutoaimId, m_pClientActor->GetEntityId()))
-			{
-				r = 0.137255f;
-				g = 0.137255f;
-				b = 0.556863f;
-			}
-			m_pHUDSilhouettes->SetSilhouette(pEntityTargetAutoaim, r, g, b, 0.5f, -1.0f);
-		}
+		UpdateAutoAimTargetSilhouette();
 	}
 
-	// Tac lock
-	CWeapon* pWeapon = GetCurrentWeapon();
-	if (pWeapon && m_bTacLock)
-	{
-		Vec3 vAimPos = pWeapon->GetAimLocation();
-		Vec3 vTargetPos	= pWeapon->GetTargetLocation();
-
-		Vec3 vAimScreenSpace;		
-		m_pRenderer->ProjectToScreen(vAimPos.x,vAimPos.y,vAimPos.z,&vAimScreenSpace.x,&vAimScreenSpace.y,&vAimScreenSpace.z);
-
-		Vec3 vTargetScreenSpace;
-		m_pRenderer->ProjectToScreen(vTargetPos.x,vTargetPos.y,vTargetPos.z,&vTargetScreenSpace.x,&vTargetScreenSpace.y,&vTargetScreenSpace.z);
-
-		float fScaleX = 0.0f;
-		float fScaleY = 0.0f;
-		float fHalfUselessSize = 0.0f;
-		GetProjectionScale(&m_animTacLock,&fScaleX,&fScaleY,&fHalfUselessSize);
-
-		m_animTacLock.SetVariable("AimSpot._x",SFlashVarValue(vAimScreenSpace.x*fScaleX+fHalfUselessSize));
-		m_animTacLock.SetVariable("AimSpot._y",SFlashVarValue(vAimScreenSpace.y*fScaleY));
-
-		m_animTacLock.SetVariable("TargetSpot._x",SFlashVarValue(vTargetScreenSpace.x*fScaleX+fHalfUselessSize));
-		m_animTacLock.SetVariable("TargetSpot._y",SFlashVarValue(vTargetScreenSpace.y*fScaleY));
-	}
+	UpdateTacLockHUD();
 
 	//OnScreenMissionObjective
-	float fX(0.0f), fY(0.0f);
-	const int team = m_pGameRules->GetTeam(m_pClientActor->GetEntityId());
-
-	if(m_iPlayerOwnedVehicle)
-	{
-		IEntity *pEntity = gEnv->pEntitySystem->GetEntity(m_iPlayerOwnedVehicle);
-		if(!pEntity)
-		{
-			m_iPlayerOwnedVehicle = 0;
-		}
-		else 
-		{
-			IVehicle *pCurrentVehicle = m_pClientActor->GetLinkedVehicle();
-			if(!(pCurrentVehicle && pCurrentVehicle->GetEntityId() == m_iPlayerOwnedVehicle))
-				UpdateMissionObjectiveIcon(m_iPlayerOwnedVehicle,1,eOS_Purchase);
-		}
-	}
-
-	if(!gEnv->bMultiplayer && GetScopes()->IsBinocularsShown() && g_pGameCVars->g_difficultyLevel < 3)
-	{
-		//draw single player mission objectives
-		std::map<EntityId, CHUDRadar::RadarObjective>::const_iterator it = m_pHUDRadar->m_missionObjectives.begin();
-		std::map<EntityId, CHUDRadar::RadarObjective>::const_iterator end = m_pHUDRadar->m_missionObjectives.end();
-		for(; it != end; ++it)
-		{
-			UpdateMissionObjectiveIcon(it->first, 0, eOS_SPObjective);
-		}
-	}
-
-/*	if(m_pHUDRadar->m_selectedTeamMates.size())
-	{
-		std::vector<EntityId>::iterator it = m_pHUDRadar->m_selectedTeamMates.begin();
-		for(; it != m_pHUDRadar->m_selectedTeamMates.end(); ++it)
-		{
-			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(*it);
-			if(pEntity)
-				UpdateMissionObjectiveIcon(*it,1,eOS_TeamMate);
-		}
-	}*/
+	UpdatePlayerOwnedVehicleIcon();
+	UpdateSinglePlayerMissionObjectiveIcons();
 
 	SetTACWeapon(false);
+	UpdateSynchedTacWeaponIcons();
 
+	//CryMP
+	GatherUnderAttackBuildings();
+	UpdateObjectiveIcons();
+
+	// icons for friendly claymores and mines
+	UpdateExplosiveObjectiveIcons();
+
+	//CryMP: Reserved for synced custom mission objective icons.
+	UpdateCustomSynchedObjectiveIcons();
+
+	UpdateAllMissionObjectives();
+}
+
+void CHUD::UpdateAirStrikeTargetSilhouettes()
+{
+	const float fCos = fabsf(cosf(gEnv->pTimer->GetAsyncCurTime()));
+
+	for (const EntityId entityId : m_possibleAirStrikeTargets)
+	{
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
+		if (pEntity)
+		{
+			m_pHUDSilhouettes->SetSilhouette(
+				pEntity,
+				1.0f - 0.6f * fCos,
+				1.0f - 0.4f * fCos,
+				1.0f - 0.20f * fCos,
+				0.5f,
+				-1.0f
+			);
+		}
+	}
+}
+
+void CHUD::UpdateAutoAimTargetSilhouette()
+{
+	IEntity* pEntityTargetAutoaim = gEnv->pEntitySystem->GetEntity(m_entityTargetAutoaimId);
+	if (!pEntityTargetAutoaim)
+	{
+		m_entityTargetAutoaimId = 0;
+		return;
+	}
+
+	float r = 0.8f;
+	float g = 0.8f;
+	float b = 1.0f;
+
+	//CryMP: Custom colors for VTOL lockons
+	//Neutral: White
+	//Team: Blue
+	//Enemy: Orange-Red
+	if (m_pGameRules->IsHostile(m_entityTargetAutoaimId, m_pClientActor->GetEntityId())
+		&& (!m_pGameRules->IsNeutral(m_entityTargetAutoaimId) || m_pGameRules->GetTeamCount() < 2))
+	{
+		r = 1.0f;
+		g = 0.1f;
+		b = 0.0f;
+	}
+	else if (m_pGameRules->IsSameTeam(m_entityTargetAutoaimId, m_pClientActor->GetEntityId()))
+	{
+		r = 0.137255f;
+		g = 0.137255f;
+		b = 0.556863f;
+	}
+
+	m_pHUDSilhouettes->SetSilhouette(pEntityTargetAutoaim, r, g, b, 0.5f, -1.0f);
+}
+
+void CHUD::UpdateTacLockHUD()
+{
+	// Tac lock
+	CWeapon* pWeapon = GetCurrentWeapon();
+	if (!pWeapon || !m_bTacLock)
+		return;
+
+	const Vec3 vAimPos = pWeapon->GetAimLocation();
+	const Vec3 vTargetPos = pWeapon->GetTargetLocation();
+
+	Vec3 vAimScreenSpace;
+	m_pRenderer->ProjectToScreen(
+		vAimPos.x,
+		vAimPos.y,
+		vAimPos.z,
+		&vAimScreenSpace.x,
+		&vAimScreenSpace.y,
+		&vAimScreenSpace.z
+	);
+
+	Vec3 vTargetScreenSpace;
+	m_pRenderer->ProjectToScreen(
+		vTargetPos.x,
+		vTargetPos.y,
+		vTargetPos.z,
+		&vTargetScreenSpace.x,
+		&vTargetScreenSpace.y,
+		&vTargetScreenSpace.z
+	);
+
+	float fScaleX = 0.0f;
+	float fScaleY = 0.0f;
+	float fHalfUselessSize = 0.0f;
+	GetProjectionScale(&m_animTacLock, &fScaleX, &fScaleY, &fHalfUselessSize);
+
+	m_animTacLock.SetVariable("AimSpot._x", SFlashVarValue(vAimScreenSpace.x * fScaleX + fHalfUselessSize));
+	m_animTacLock.SetVariable("AimSpot._y", SFlashVarValue(vAimScreenSpace.y * fScaleY));
+
+	m_animTacLock.SetVariable("TargetSpot._x", SFlashVarValue(vTargetScreenSpace.x * fScaleX + fHalfUselessSize));
+	m_animTacLock.SetVariable("TargetSpot._y", SFlashVarValue(vTargetScreenSpace.y * fScaleY));
+}
+
+void CHUD::UpdatePlayerOwnedVehicleIcon()
+{
+	if (!m_iPlayerOwnedVehicle)
+		return;
+
+	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_iPlayerOwnedVehicle);
+	if (!pEntity)
+	{
+		m_iPlayerOwnedVehicle = 0;
+		return;
+	}
+
+	IVehicle* pCurrentVehicle = m_pClientActor->GetLinkedVehicle();
+	if (!(pCurrentVehicle && pCurrentVehicle->GetEntityId() == m_iPlayerOwnedVehicle))
+	{
+		UpdateMissionObjectiveIcon(m_iPlayerOwnedVehicle, 1, eOS_Purchase);
+	}
+}
+
+void CHUD::UpdateSinglePlayerMissionObjectiveIcons()
+{
+	if (gEnv->bMultiplayer)
+		return;
+
+	if (!GetScopes()->IsBinocularsShown())
+		return;
+
+	if (g_pGameCVars->g_difficultyLevel >= 3)
+		return;
+
+	//draw single player mission objectives
+	for (const auto& objective : m_pHUDRadar->m_missionObjectives)
+	{
+		UpdateMissionObjectiveIcon(objective.first, 0, eOS_SPObjective);
+	}
+}
+
+void CHUD::UpdateSynchedTacWeaponIcons()
+{
+	const int team = m_pGameRules->GetTeam(m_pClientActor->GetEntityId());
 	const std::vector<CGameRules::SMinimapEntity> synchEntities = m_pGameRules->GetMinimapEntities();
-	for(int m = 0; m < synchEntities.size(); ++m)
+
+	for (const auto& mEntity : synchEntities)
 	{
 		bool vehicle = false;
-		CGameRules::SMinimapEntity mEntity = synchEntities[m];
-		MiniMapIcon type = m_pHUDRadar->GetSynchedEntityType(mEntity.type);
-		IEntity *pEntity = NULL;
-		if(type == MiniMapIcon::NuclearWeapon)
+		IEntity* pEntity = nullptr;
+
+		const MiniMapIcon type = m_pHUDRadar->GetSynchedEntityType(mEntity.type);
+		if (type == MiniMapIcon::NuclearWeapon)
 		{
-			if(IItem *pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(mEntity.entityId))
+			if (IItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(mEntity.entityId))
 			{
 				pEntity = gEnv->pEntitySystem->GetEntity(mEntity.entityId);
-				if(EntityId ownerId = pItem->GetOwnerId())
+
+				if (const EntityId ownerId = pItem->GetOwnerId())
 				{
 					pEntity = gEnv->pEntitySystem->GetEntity(ownerId);
 
-					if (ownerId==g_pGame->GetIGameFramework()->GetClientActorId())
+					if (ownerId == g_pGame->GetIGameFramework()->GetClientActorId())
 					{
 						SetTACWeapon(true);
-						pEntity=0;
+						pEntity = nullptr;
 					}
 				}
 			}
 			else
 			{
 				pEntity = gEnv->pEntitySystem->GetEntity(mEntity.entityId);
-				if (IVehicle *pVehicle=g_pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(mEntity.entityId))
-				{
-					vehicle=true;
 
-					if (pVehicle->GetDriver()==g_pGame->GetIGameFramework()->GetClientActor())
+				if (IVehicle* pVehicle = g_pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(mEntity.entityId))
+				{
+					vehicle = true;
+
+					if (pVehicle->GetDriver() == g_pGame->GetIGameFramework()->GetClientActor())
 					{
 						SetTACWeapon(true);
-						pEntity=0;
+						pEntity = nullptr;
 					}
 				}
 			}
 		}
 
-		if (!pEntity) 
+		if (!pEntity)
 			continue;
 
-		float fX(0.0f), fY(0.0f);
+		const int friendly = m_pHUDRadar->FriendOrFoe(gEnv->bMultiplayer, team, pEntity, m_pGameRules);
 
-		int friendly = m_pHUDRadar->FriendOrFoe(gEnv->bMultiplayer,  team, pEntity, m_pGameRules);
-		if(vehicle)
-			UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_TACTank);
+		if (vehicle)
+		{
+			UpdateMissionObjectiveIcon(pEntity->GetId(), friendly, eOS_TACTank);
+		}
 		else
 		{
-			CPlayer *pShooter = CPlayer::FromIActor(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pEntity->GetId()));
-			if (pShooter && (!pShooter->IsCloaked() || friendly==EFriend || pShooter->GetLinkedVehicle()))
-				UpdateMissionObjectiveIcon(pEntity->GetId(),friendly,eOS_TACWeapon);
+			CPlayer* pShooter = CPlayer::FromIActor(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pEntity->GetId()));
+			if (pShooter && (!pShooter->IsCloaked() || friendly == EFriend || pShooter->GetLinkedVehicle()))
+			{
+				UpdateMissionObjectiveIcon(pEntity->GetId(), friendly, eOS_TACWeapon);
+			}
 		}
 
 		bool yetdrawn = false;
-		if(vehicle)
+		if (vehicle)
 		{
-			IVehicle *pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
-			if(pVehicle)
+			IVehicle* pVehicle = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(pEntity->GetId());
+			if (pVehicle)
 			{
-				IActor *pDriverActor = pVehicle->GetDriver();
-				if(pDriverActor)
+				IActor* pDriverActor = pVehicle->GetDriver();
+				if (pDriverActor)
 				{
-					IEntity *pDriver = pDriverActor->GetEntity();
-					if(pDriver)
+					IEntity* pDriver = pDriverActor->GetEntity();
+					if (pDriver)
 					{
-						SFlashVarValue arg[2] = {(int)pEntity->GetId(),pDriver->GetName()};
+						SFlashVarValue arg[2] = { (int)pEntity->GetId(), pDriver->GetName() };
 						m_animMissionObjective.Invoke("setPlayerName", arg, 2);
 						yetdrawn = true;
 					}
 				}
 				else
 				{
-					SFlashVarValue arg[2] = {(int)pEntity->GetId(),"@ui_osmo_NODRIVER"};
+					SFlashVarValue arg[2] = { (int)pEntity->GetId(), "@ui_osmo_NODRIVER" };
 					m_animMissionObjective.Invoke("setPlayerName", arg, 2);
 					yetdrawn = true;
 				}
 			}
 		}
-		if(!yetdrawn)
+
+		if (!yetdrawn)
 		{
-			SFlashVarValue arg[2] = {(int)pEntity->GetId(),pEntity->GetName()};
+			SFlashVarValue arg[2] = { (int)pEntity->GetId(), pEntity->GetName() };
 			m_animMissionObjective.Invoke("setPlayerName", arg, 2);
 		}
 	}
-	
-	//CryMP
-	GatherUnderAttackBuildings();
+}
 
-	auto it = m_pHUDRadar->GetObjectives()->begin();
-	for(; it != m_pHUDRadar->GetObjectives()->end(); ++it)
+void CHUD::UpdateObjectiveIcons()
+{
+	const int team = m_pGameRules->GetTeam(m_pClientActor->GetEntityId());
+
+	for (const EntityId entityId : *m_pHUDRadar->GetObjectives())
 	{
-		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(*it);
-		if(pEntity)
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
+		if (!pEntity)
+			continue;
+
+		int friendly = m_pHUDRadar->FriendOrFoe(gEnv->bMultiplayer, team, pEntity, m_pGameRules);
+		const MiniMapIcon type = m_pHUDRadar->ChooseMiniMapIcon(pEntity);
+		const bool pUnderAttack = IsUnderAttackFast(entityId);
+
+		if (friendly == 1 && pUnderAttack)
 		{
-			int friendly = m_pHUDRadar->FriendOrFoe(gEnv->bMultiplayer, team, pEntity, m_pGameRules);
-			MiniMapIcon type = m_pHUDRadar->ChooseMiniMapIcon(pEntity);
-			const bool pUnderAttack = IsUnderAttackFast(*it);
-			if(friendly==1 && pUnderAttack)
-			{
-				friendly = 3;
-				AddOnScreenMissionObjective(pEntity, friendly);
-			}
-			else if(HasTACWeapon() && (type == MiniMapIcon::Headquarter || type == MiniMapIcon::Headquarter2) && friendly == 2)
-			{
-				// Show TAC Target icon
-				AddOnScreenMissionObjective(pEntity, friendly);
-			}
-			else if(m_bShowAllOnScreenObjectives || m_iOnScreenObjective==(*it))
-			{
-				AddOnScreenMissionObjective(pEntity, friendly);
-			}
+			friendly = 3;
+			AddOnScreenMissionObjective(pEntity, friendly);
+		}
+		else if (HasTACWeapon() && (type == MiniMapIcon::Headquarter || type == MiniMapIcon::Headquarter2) && friendly == 2)
+		{
+			// Show TAC Target icon
+			AddOnScreenMissionObjective(pEntity, friendly);
+		}
+		else if (m_bShowAllOnScreenObjectives || m_iOnScreenObjective == entityId)
+		{
+			AddOnScreenMissionObjective(pEntity, friendly);
 		}
 	}
+}
 
-	// icons for friendly claymores and mines
-	if(gEnv->bMultiplayer)
+void CHUD::UpdateExplosiveObjectiveIcons()
+{
+	if (!gEnv->bMultiplayer)
+		return;
+
+	int color = 1;
+	bool bSpectating = false;
+
+	CPlayer* pCurrentPlayer = m_pClientActor;
+
+	//CryMP: Show explosives icons in spectator mode
+	IActor* pTarget = m_pClientActor->GetSpectatorTargetActor();
+	if (pTarget)
 	{
-		int color = 1;
-		bool bSpectating = false;
+		pCurrentPlayer = CPlayer::FromIActor(pTarget);
+		bSpectating = true;
+	}
 
-		CPlayer* pCurrentPlayer = m_pClientActor;
-		//CryMP: Show explosives icons in spectator mode
-		IActor* pTarget = m_pClientActor->GetSpectatorTargetActor();
-		if (pTarget)
+	if (!pCurrentPlayer)
+		return;
+
+	const int playerTeam = m_pGameRules->GetTeam(pCurrentPlayer->GetEntityId());
+
+	for (const EntityId explosiveId : m_explosiveList)
+	{
+		const int explosiveTeam = m_pGameRules->GetTeam(explosiveId);
+		const bool InstantAction = m_pGameRules->GetTeamCount() < 2;
+
+		if (!(bSpectating || (explosiveTeam != 0 && explosiveTeam == playerTeam) || (explosiveTeam == 0 && InstantAction)))
+			continue;
+
+		CProjectile* pProjectile = g_pGame->GetWeaponSystem()->GetProjectile(explosiveId);
+		if (!pProjectile)
+			continue;
+
+		Vec3 targetPoint(0, 0, 0);
+		FlashOnScreenIcon icon = eOS_Bottom;
+
+		Vec3 dir = pProjectile->GetEntity()->GetWorldPos() - pCurrentPlayer->GetEntity()->GetWorldPos();
+		const float length = dir.GetLength();
+		const bool bOwnerOfExplosive = pProjectile->GetOwnerId() == pCurrentPlayer->GetEntityId();
+		IEntityClass* pClass = pProjectile->GetEntity()->GetClass();
+
+		const bool bEnemyExplosive = explosiveTeam != playerTeam;
+
+		if (UseSilhouetteIndicator())
 		{
-			pCurrentPlayer = CPlayer::FromIActor(pTarget);
-			bSpectating = true;
-		}
-
-		if (pCurrentPlayer)
-		{ 
-			const int playerTeam = m_pGameRules->GetTeam(pCurrentPlayer->GetEntityId());
-			for (const auto explosiveId : m_explosiveList)
+			if (pClass == m_pClaymore || pClass == m_pAVMine || m_pC4)
 			{
-				const int explosiveTeam = m_pGameRules->GetTeam(explosiveId);
-				const bool InstantAction(m_pGameRules->GetTeamCount() < 2);
-				if (bSpectating || (explosiveTeam != 0 && explosiveTeam == playerTeam) || (explosiveTeam == 0 && InstantAction))
+				if (length < 500)
 				{
-					Vec3 targetPoint(0, 0, 0);
-					FlashOnScreenIcon icon = eOS_Bottom;
-					CProjectile* pProjectile = g_pGame->GetWeaponSystem()->GetProjectile(explosiveId);
-					if (pProjectile)
+					if (bSpectating && bEnemyExplosive)
 					{
-						Vec3 dir = pProjectile->GetEntity()->GetWorldPos() - pCurrentPlayer->GetEntity()->GetWorldPos();
-						const auto length = dir.GetLength();
-						const bool bOwnerOfExplosive = (pProjectile->GetOwnerId() == pCurrentPlayer->GetEntityId());
-						IEntityClass* pClass = pProjectile->GetEntity()->GetClass();
-
-						const bool bEnemyExplosive = (explosiveTeam != playerTeam);
-
-						if (UseSilhouetteIndicator())
-						{
-							if (pClass == m_pClaymore || pClass == m_pAVMine || m_pC4)
-							{
-								if (length < 500)
-								{
-									if (bSpectating && bEnemyExplosive)
-									{
-										//in spectator mode (team 0) we also show enemy explosives (red)
-										GetSilhouettes()->SetSilhouette(pProjectile->GetEntity(), 0.9f, 0.1f, 0.1f, 1.0f, 3.0f);
-									}
-									else if ((bOwnerOfExplosive) || (explosiveTeam && playerTeam == explosiveTeam))
-									{
-										GetSilhouettes()->SetSilhouette(pProjectile->GetEntity(), 0.0353f, 0.6235f, 0.9137f, 1.0f, 3.0f);
-									}
-								}
-							}
-							continue;
-						}
-
-						// quick check for proximity
-						if (length > 70)
-							continue;
-
-						// in IA, only display mines/claymores placed by this player
-						if (InstantAction && !bOwnerOfExplosive)
-							continue;
-
-						if (pClass == m_pClaymore)
-						{
-							icon = eOS_Claymore;
-							CClaymore* pClaymore = static_cast<CClaymore*>(pProjectile);
-							if (pClaymore)
-							{
-								targetPoint = pProjectile->GetEntity()->GetWorldPos() + pClaymore->GetTriggerDirection();
-							}
-						}
-						//CryMP: Also display friendly C4
-						else if (pClass == m_pAVMine || pClass == m_pC4)
-						{
-							icon = eOS_Mine;
-						}
-
-						UpdateMissionObjectiveIcon(explosiveId, color, icon, true, targetPoint);
+						//in spectator mode (team 0) we also show enemy explosives (red)
+						GetSilhouettes()->SetSilhouette(pProjectile->GetEntity(), 0.9f, 0.1f, 0.1f, 1.0f, 3.0f);
+					}
+					else if ((bOwnerOfExplosive) || (explosiveTeam && playerTeam == explosiveTeam))
+					{
+						GetSilhouettes()->SetSilhouette(pProjectile->GetEntity(), 0.0353f, 0.6235f, 0.9137f, 1.0f, 3.0f);
 					}
 				}
 			}
+			continue;
 		}
-	}
 
-	UpdateAllMissionObjectives();
+		// quick check for proximity
+		if (length > 70)
+			continue;
+
+		// in IA, only display mines/claymores placed by this player
+		if (InstantAction && !bOwnerOfExplosive)
+			continue;
+
+		if (pClass == m_pClaymore)
+		{
+			icon = eOS_Claymore;
+
+			CClaymore* pClaymore = static_cast<CClaymore*>(pProjectile);
+			if (pClaymore)
+			{
+				targetPoint = pProjectile->GetEntity()->GetWorldPos() + pClaymore->GetTriggerDirection();
+			}
+		}
+		//CryMP: Also display friendly C4
+		else if (pClass == m_pAVMine || pClass == m_pC4)
+		{
+			icon = eOS_Mine;
+		}
+
+		UpdateMissionObjectiveIcon(explosiveId, color, icon, true, targetPoint);
+	}
+}
+
+void CHUD::UpdateCustomSynchedObjectiveIcons()
+{
+	//CryMP: Reserved for synced custom mission objective icons.
+	//Keep this before UpdateAllMissionObjectives(), so custom icons use the same Flash batch.
 }
 
 void CHUD::GatherUnderAttackBuildings()

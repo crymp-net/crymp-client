@@ -560,7 +560,19 @@ private:
 	void TrackProjectiles(CPlayer* pPlayerActor);
 	bool UseSilhouetteIndicator();
 	void UpdateProjectileTracker(CGameFlashAnimation &anim, IEntity *pProjectile, uint8 &status, const Vec3 &player);
-	void Targetting(EntityId pTargetEntity, bool bStatic);
+
+	//CryMP: Targetting / on-screen indicator update helpers
+	void UpdateHUDIndicators();
+	void UpdateAirStrikeTargetSilhouettes();
+	void UpdateAutoAimTargetSilhouette();
+	void UpdateTacLockHUD();
+	void UpdatePlayerOwnedVehicleIcon();
+	void UpdateSinglePlayerMissionObjectiveIcons();
+	void UpdateSynchedTacWeaponIcons();
+	void UpdateObjectiveIcons();
+	void UpdateExplosiveObjectiveIcons();
+	void UpdateCustomSynchedObjectiveIcons(); // empty for now, ready for later
+
 	void UpdateVoiceChat();
 
 	void TrackRadioMessages(CPlayer* pPlayerActor);

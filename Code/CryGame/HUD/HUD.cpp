@@ -3420,8 +3420,7 @@ void CHUD::OnPostUpdate(float frameTime)
 
 		UpdateProgressBar(frameTime);
 
-		// Target autoaim and locking
-		Targetting(0, false);
+		UpdateHUDIndicators();
 
 		UpdateHealth();
 
