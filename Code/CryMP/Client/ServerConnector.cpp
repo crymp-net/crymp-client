@@ -108,7 +108,6 @@ void ServerConnector::ResetCVars()
 	pGameCVars->mp_pickupMassLimit = 0;
 	pGameCVars->mp_pickupThrowMult = 1.0f;
 	pGameCVars->mp_pickupMaxVehicleCollisions = 0;
-	pGameCVars->mp_thirdPerson = 1;
 	pGameCVars->mp_rpgMod = 0;
 	pGameCVars->mp_radioTagging = 0;
 	pGameCVars->mp_healthBars = 0;
