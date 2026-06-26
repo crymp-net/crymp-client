@@ -1,0 +1,40 @@
+<item name="Exocet" class="VehicleWeapon" invisible="1" configuration="mp" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ammos>
+		<ammo name="exocetmissile" extra="100" amount="100" />
+	</ammos>
+	<actions>
+  	<action name="fire">
+  		<sound target="firstperson" name="sounds/weapons:vehicle_us_vtol:fire_fp" radius="200" />
+  		<sound target="thirdperson" name="sounds/weapons:vehicle_us_vtol:fire" radius="200" />
+  	</action>
+  </actions>
+	<firemodes>
+		<firemode name="Single" type="Single">
+			<fire>
+				<param name="ammo_type" value="exocetmissile" />
+				<param name="clip_size" value="100" />				
+				<param name="damage" value="350" />
+				<param name="rate" value="15" />
+				<param name="offset" value="5" />
+				<param name="autoaim" value="false" />
+				<param name="autoaim_distance" value="200" />
+				<param name="autoaim_tolerance" value="6" />				
+				<param name="autoaim_minvolume" value="16" />
+			  <param name="autoaim_maxvolume" value="2048" />				
+			  <param name="autoaim_autofiringdir" value="false" />
+			</fire>
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Rocketlauncher.Sidewinder" helper="" light_helper="" light_radius="10" time="0.100" />
+				<thirdperson effect="muzzleflash.Rocketlauncher.Sidewinder_tp" helper="" light_helper="" light_radius="10" time="0.100" />
+			</muzzleflash>
+		</firemode>		
+	</firemodes>
+</item>

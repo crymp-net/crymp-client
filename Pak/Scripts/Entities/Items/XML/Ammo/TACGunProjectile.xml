@@ -1,0 +1,49 @@
+<ammo name="tacgunprojectile" class="Rocket">
+	<geometry>
+		<firstperson name="objects/weapons/us/frag_grenade/frag_grenade_tp_inair.cgf" />
+		<thirdperson name="objects/weapons/us/frag_grenade/frag_grenade_tp_inair.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="0.55" />
+		<param name="speed" value="40" />
+		<param name="radius" value="0.3" />
+				
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, -9.8" />
+		<param name="water_gravity" value="0, 0, -1" />
+		
+		<param name="thrust" value="0" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="8" />
+		<param name="material" value="mat_metal" />
+		<param name="pierceability" value="8" />
+		
+		<param name="traceable" value="1" />
+		<param name="single_contact" value="1" />
+	</physics>
+	<explosion>
+		<param name="pressure" value="200" />
+		<param name="max_radius" value="50" />
+		<param name="hole_size" value="0" />
+		<param name="terrain_hole_size" value="0" />
+		<param name="decal" value="" />
+		<param name="effect_scale" value="0.7" />
+		<param name="radialblurdist" value="100" />
+		<param name="type" value="tac" />
+	</explosion>
+	<params>
+		<param name="lifetime" value="55" />
+		<param name="showtime" value="0.15" />
+		<param name="aitype"	value="rpg" />
+	</params>
+
+	<trail>
+		<param name="effect" value="smoke_and_fire.Tank_round.tac" />
+		<param name="scale" value="0.75" />
+	</trail>
+</ammo>

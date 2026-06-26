@@ -1,0 +1,14 @@
+<item name="SniperScope" class="Item" priority="103" configuration="mp">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="scopeAttachment" value="1" />
+		<param name="display_name" value="@mp_eSScope" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/attachments/scope_sniper/scope_sniper_fp.cgf"/>
+		<thirdperson name="objects/weapons/attachments/scope_sniper/scope_sniper_tp.cgf" />
+		<aux1  name="objects/weapons/attachments/scope_sniper/scope_sniper_zoom_fp.cgf" />
+	</geometry>
+</item>

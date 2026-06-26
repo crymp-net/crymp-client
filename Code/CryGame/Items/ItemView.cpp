@@ -128,6 +128,24 @@ void CItem::UpdateFPCharacter(float frameTime)
 }
 
 //------------------------------------------------------------------------
+void CItem::ProcessFirstPersonSkeleton()
+{
+	const int fpSlot = eIGS_FirstPerson;
+
+	if (ICharacterInstance* pCharacter = GetEntity()->GetCharacter(fpSlot))
+	{
+		Matrix34 mloc = GetEntity()->GetSlotLocalTM(fpSlot, false);
+		Matrix34 m34 = GetEntity()->GetWorldTM() * mloc;
+		QuatT renderLocation(m34);
+
+		pCharacter->GetISkeletonPose()->SetForceSkeletonUpdate(8);
+		pCharacter->SkeletonPreProcess(renderLocation, renderLocation, GetISystem()->GetViewCamera(), 0x55);
+		pCharacter->SkeletonPostProcess(renderLocation, renderLocation, 0, 1.0f, 0x55);
+	}
+
+}
+
+//------------------------------------------------------------------------
 bool CItem::FilterView(struct SViewParams& viewParams)
 {
 	if (m_camerastats.animating && m_camerastats.follow)
@@ -406,6 +424,12 @@ void CItem::SetViewMode(int mode)
 
 	m_stats.viewmode = mode;
 
+	CActor* pOwner = GetOwnerActor();
+	const bool isLocalOwner = pOwner && pOwner->IsClient();
+
+	//////////////////////////////////////////////////////
+	// --- FIRST PERSON SLOT ---
+	//////////////////////////////////////////////////////
 	if (mode & eIVM_FirstPerson)
 	{
 		SetHand(m_stats.hand);
@@ -422,13 +446,19 @@ void CItem::SetViewMode(int mode)
 			DrawSlot(eIGS_FirstPerson, true, !m_stats.mounted);
 		}
 		else
+		{
 			DrawSlot(eIGS_FirstPerson, false, false);
+		}
 	}
 	else
 	{
-		SetGeometry(eIGS_FirstPerson, ItemString());
+		DrawSlot(eIGS_FirstPerson, false, false);
+
 	}
 
+	//////////////////////////////////////////////////////
+	// --- THIRD PERSON SLOT ---
+	//////////////////////////////////////////////////////
 	if (mode & eIVM_ThirdPerson)
 	{
 		DrawSlot(eIGS_ThirdPerson, true);
@@ -436,7 +466,9 @@ void CItem::SetViewMode(int mode)
 			CopyRenderFlags(GetOwner());
 	}
 	else
+	{
 		DrawSlot(eIGS_ThirdPerson, false);
+	}
 }
 
 //------------------------------------------------------------------------

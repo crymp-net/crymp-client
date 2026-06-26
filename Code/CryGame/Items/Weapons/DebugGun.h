@@ -55,6 +55,20 @@ private:
   int m_lastHighlightedType = -1;
   int m_selectedSurfaceIdx = 0;
 
+  bool m_armLeft = false;
+  bool m_armRight = false;
+  bool m_removeGripForEntity = false;
+
+  // helpers
+  void ArmLeftCapture();
+  void ArmRightCapture();
+  void CaptureIfArmed(IEntity* pEntity, const ray_hit& rayhit);
+  void DebugDrawHandGripsForEntity(IEntity* pEntity, float lifeSec);
+
+  void DumpGripListOnly() const;
+
+  void PlaceTempSphere(const Vec3& worldPos, bool isRight, float lifeSec) const;
+
 };
 
 #endif // __DebugGun_H__

@@ -236,8 +236,6 @@ public:
 	virtual void setAttr( const char* key,const Quat &value ) = 0;
 	//////////////////////////////////////////////////////////////////////////
 	// Inline Helpers.
-	void setAttr( const char* key,unsigned long value ) { setAttr( key,(unsigned int)value ); };
-	void setAttr( const char* key,long value ) { setAttr( key,(int)value ); };
 	void setAttr( const char* key,double value ) { setAttr( key,(float)value ); };
 	//////////////////////////////////////////////////////////////////////////
 
@@ -261,8 +259,6 @@ public:
 	virtual bool getAttr( const char *key,XmlString &value ) const = 0;
 	//////////////////////////////////////////////////////////////////////////
 	// Inline Helpers.
-	bool getAttr( const char *key,long &value ) const { int v; if (getAttr(key,v)) { value = v; return true; } else return false; }
-	bool getAttr( const char *key,unsigned long &value ) const { unsigned int v; if (getAttr(key,v)) { value = v; return true; } else return false; }
 	bool getAttr( const char *key,unsigned short &value ) const { unsigned int v; if (getAttr(key,v)) { value = v; return true; } else return false; }
 	bool getAttr( const char *key,unsigned char &value ) const { unsigned int v; if (getAttr(key,v)) { value = v; return true; } else return false; }
 	bool getAttr( const char *key,short &value ) const { int v; if (getAttr(key,v)) { value = v; return true; } else return false; }

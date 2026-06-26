@@ -1,0 +1,57 @@
+<ammo name="a2ahomingmissile_ascmod" class="HomingMissile">
+	<geometry>
+		<firstperson name="objects/weapons/rockets/sidewinder/sidewinder.cgf" />
+		<thirdperson name="objects/weapons/rockets/sidewinder/sidewinder.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="20" />
+		<param name="speed" value="75" />
+		<param name="radius" value="0.25" />
+		
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, 0" />
+		<param name="water_gravity" value="0, 0, -1" />
+		
+		<param name="thrust" value="0" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="8" />
+		<param name="material" value="mat_metal" />
+	
+		<param name="single_contact" value="1" />
+		<param name="pierceability" value="8" />
+	</physics>
+	<explosion>
+		<param name="pressure" value="1800" />
+		<param name="min_radius" value="5" />
+		<param name="max_radius" value="10" />
+		<param name="min_phys_radius" value="2.2" />
+		<param name="max_phys_radius" value="3" />
+		<param name="hole_size" value="5" />
+		<param name="terrain_hole_size" value="10" />
+		<param name="effect" value="explosions.rocket_terrain.explosion" />
+		<param name="effect_scale" value="0.6" />
+	</explosion>
+	<params>
+		<param name="lifetime" value="5" />
+		<param name="showtime" value="0.15" />
+		<param name="turn_speed" value="250" />
+		<param name="cruise" value="0" />
+		<param name="controlled" value="1" />
+		<param name="autoControlled" value="1" />
+		<param name="lazyness" value="1" />
+		<param name="detonation_radius" value="2.5" />
+		<param name="initial_delay" value="0.0" />
+	</params>
+	
+	<trail>
+		<param name="effect" value="smoke_and_fire.weapon_stinger.sidewinder" /> 
+		<param name="scale" value="1" />
+		<param name="sound" value="sounds/physics:bullet_whiz:missile_whiz_loop" />
+	</trail>	
+	
+</ammo>

@@ -1,0 +1,89 @@
+<item name="WarriorMOARTurret" class="GunTurret">
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="0" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+		<param name="mass"				value="0" />		
+		<param name="radar_helper" 		value="mounttoradar" />
+		<param name="barrel_helper"   value="" />
+		<param name="fire_helper" 		value="dummy_gun" />		
+	</params>	
+	<turret>
+	  <search>
+	    <hints>	      
+	      <hint x="-1" y="-0.2"/>
+	      <hint x="1" y="-0.2"/>	      	      
+	      <hint x="-1" y="-0.5"/>
+	      <hint x="1" y="-0.5"/>	      	      
+	    </hints>
+	    <light helper="searchlight" color="1,1,1" diffuse_mul="3" texture="textures/lights/flashlight1.dds" material="materials/lightbeams/lightbeam_floodlight.mtl" hdr_dyn="2" />
+	  </search>	  	  
+	  <fire>	    	    	    
+	    <hints>	      
+	      <hint x="1" y="11"/>
+	      <hint x="-1" y="5"/>
+	      <!--
+	      <hint x="0.75" y="7"/>
+	      <hint x="-0.75" y="5"/>
+	      <hint x="0.5" y="3"/>	      
+	      <hint x="-0.25" y="1"/>	      	      
+	      -->
+	    </hints>
+	    <param name="deviation_speed" value="2" />
+	    <param name="deviation_amount" value="0.2" />
+	    <param name="randomness" value="0.33" />
+	  </fire>
+	</turret>	
+ 	<geometry>
+ 		<thirdperson name="objects/characters/alien/warrior/whitebox_gun.cgf" angles="0,0,0" position="0,0,0" />
+ 		<aux0 name="objects/characters/alien/warrior/whitebox_turret.cgf" /> 
+ 		<destroyed name="objects/characters/alien/warrior/whitebox_turret.cgf" /> 		
+ 	</geometry>
+	<actions>	
+    <action name="fire">			
+			<sound target="thirdperson" name="sounds/weapons:moar_warrior:fire_loop" />
+		</action>
+		<action name="blast">			
+			<sound target="thirdperson" name="sounds/weapons:moar_warrior:fire" />
+		</action>
+		<action name="hit">			
+			<sound target="thirdperson" name="sounds/physics:bullet_impact:moar_large_beam_impact" static="1" />			
+		</action>
+		<action name="destroy">
+		  <effect target="thirdperson" name="alien_weapons.Moac.Warrior_Turret_Explosion" helper="" />
+		</action>
+	</actions>
+		<firemodes>
+		<firemode name="Beam" type="FreezingBeam">
+			<fire>
+				<param name="offset" value="0.15" />				
+				<param name="spin_up_time" value="1.5" />				
+				<param name="damage" value="5" />
+				<param name="hit_type" value="frost" />			
+				<param name="helper_tp" value="dummy_gun" />	
+			</fire>
+			<beam>			  	  			  
+			  <param name="tick" value="0.1" />
+			  <param name="range" value="100" />
+				<param name="hit_decal" value="materials/decals/alien_hunter_freeze.mtl" />
+				<param name="hit_decal_size" value="4.0" />
+				<param name="hit_decal_size_min" value="1.6" />
+				<param name="hit_decal_lifetime" value="180" />
+				<param name="hit_effect" value="Alien_Weapons.Freeze_Beam.Warrior_MOAR_Impact" />
+				<param name="hit_effect_scale" value="1" />								
+			</beam>			
+	    <freeze>
+	      <param name="freeze_speed" value="0.65" />
+	    </freeze>	  	    
+			<effect>				
+				<thirdperson effect="alien_weapons.freeze_beam.Warrior_MOAR_firing" helper="dummy_gun" light_radius="0" scale="0.01"/>
+			</effect>
+			<spinup>				
+				<thirdperson effect="alien_weapons.freeze_beam.Warrior_MOAR_charging" helper="dummy_gun" light_radius="0" />	
+			</spinup>
+		</firemode>
+	</firemodes>
+</item>

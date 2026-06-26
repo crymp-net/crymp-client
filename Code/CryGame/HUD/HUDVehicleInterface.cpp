@@ -35,8 +35,9 @@ CHUDVehicleInterface::CHUDVehicleInterface(CHUD* pHUD, CGameFlashAnimation* pAmm
 	m_iSecondaryAmmoCount = m_iPrimaryAmmoCount = m_iSecondaryClipSize = m_iPrimaryClipSize = 0;// m_iHeat = 0;
 	m_iLastReloadBarValue = -1;
 
-	m_animMainWindow.Init("Libs/UI/HUD_VehicleHUD.gfx", eFD_Center, eFAF_ManualRender | eFAF_Visible | eFAF_ThisHandler);
-	m_animStats.Init("Libs/UI/HUD_VehicleStats.gfx", eFD_Center, eFAF_ManualRender | eFAF_Visible);
+	m_animMainWindow.Init("Libs/UI/HUD_VehicleHUD.gfx", eFD_Center | eFD_Scaling, eFAF_ManualRender | eFAF_Visible | eFAF_ThisHandler);
+	m_animMainWindow.SetMaxScale(1.0f);
+	m_animStats.Init("Libs/UI/HUD_VehicleStats.gfx", eFD_Bottom | eFD_Center | eFD_Scaling, eFAF_ManualRender | eFAF_Visible);
 
 	memset(m_hasMainHUD, 0, (int)EHUD_LAST);
 
@@ -90,8 +91,11 @@ void CHUDVehicleInterface::Update(float fDeltaTime)
 			m_lastSetFriendly = m_friendlyFire;
 		}
 
-		m_animMainWindow.GetFlashPlayer()->Advance(fDeltaTime);
-		m_animMainWindow.GetFlashPlayer()->Render();
+		if (g_pHUD->IsPDAActive() == false) //CryMP: Hide vehicle HUD if PDA active
+		{
+			m_animMainWindow.GetFlashPlayer()->Advance(fDeltaTime);
+			m_animMainWindow.GetFlashPlayer()->Render();
+		}
 	}
 
 	if (m_animStats.GetVisible())
@@ -197,10 +201,10 @@ CHUDVehicleInterface::EVehicleHud CHUDVehicleInterface::ChooseVehicleHUD(IVehicl
 
 void CHUDVehicleInterface::OnEnterVehicle(IActor* pActor, const char* szVehicleClassName, const char* szSeatName)
 {
-	m_bParachute = (bool)(!strcmpi(szVehicleClassName, "Parachute"));
+	m_bParachute = (bool)(!_stricmp(szVehicleClassName, "Parachute"));
 	if (m_bParachute)
 	{
-		bool open = (bool)(!strcmpi(szSeatName, "Open"));
+		bool open = (bool)(!_stricmp(szSeatName, "Open"));
 		m_animStats.Reload();
 		assert(NULL == m_pVehicle);  // Attempt to enter in parachute while already in a vehicle!
 		m_animStats.Invoke("setActiveParachute", open);
@@ -595,7 +599,7 @@ void CHUDVehicleInterface::OnVehicleEvent(EVehicleEvent event, const SVehicleEve
 			{
 				IEntitySoundProxy* pSoundProxy = (IEntitySoundProxy*)pEntity->GetProxy(ENTITY_PROXY_SOUND);
 				if (pSoundProxy)
-					pSoundProxy->PlaySound("sounds/physics:player_foley:switch_seat", Vec3Constants<float>::fVec3_Zero, Vec3Constants<float>::fVec3_OneY, 0, eSoundSemantic_Player_Foley);
+					pSoundProxy->PlaySound("sounds/physics:player_foley:switch_seat", Vec3(), Vec3(0, 1, 0), 0, eSoundSemantic_Player_Foley);
 				if (pPlayerActor->GetEntity() == pEntity)
 					g_pHUD->SetFireMode(NULL, NULL, true);
 			}
@@ -603,7 +607,7 @@ void CHUDVehicleInterface::OnVehicleEvent(EVehicleEvent event, const SVehicleEve
 
 		UpdateSeats();
 	}
-	else if (eVE_Damaged == event || eVE_Collision == event || eVE_Repair)
+	else if (eVE_Damaged == event || eVE_Collision == event || eVE_Repair == event)
 	{
 		UpdateDamages(m_eCurVehicleHUD, m_pVehicle);
 	}

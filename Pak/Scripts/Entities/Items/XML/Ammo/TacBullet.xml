@@ -1,0 +1,28 @@
+<ammo name="tacbullet" class="TacBullet">
+	<geometry>
+	</geometry>
+	<flags>
+		<param name="clientonly" value="1" />
+	</flags>
+	<whiz>
+		<param name="sound" value="sounds/physics:bullet_whiz:bullet_whiz_small" />
+		<param name="speed" value="22" />
+	</whiz>
+	<physics type="particle">
+		<param name="mass" value="0.00225" />
+		<param name="speed" value="250" />
+		
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0" />
+		<param name="gravity" value="0, 0, -1" />
+		<param name="water_gravity" value="0, 0, -1" />
+		<param name="pierceability" value="7" />
+
+		<param name="single_contact" value="1" />
+	</physics>
+	<params>
+		<param name="lifetime" value="2" />
+		<param name="showtime" value="0.15" />
+		<param name="sleepTime" value="60.0" />
+	</params>
+</ammo>

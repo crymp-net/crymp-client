@@ -71,6 +71,9 @@ public:
 
 	bool IsVisible() { return m_bShow; }
 
+	void ApplyDocking(uint32 dock, int screenW, int screenH, int w, int h, int& x, int& y) const;
+	void ApplyViewport(IFlashPlayer* pPlayer, int x, int y, int w, int h, float dispX, float dispY, float distX, float distY, float alpha) const;
+
 	// Positioning and scaling animations
 	void	RepositionFlashAnimation(CGameFlashAnimation *pAnimation) const;
 

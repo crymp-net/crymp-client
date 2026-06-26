@@ -106,7 +106,7 @@ bool CPlant::OutOfAmmo() const
 //------------------------------------------------------------------------
 void CPlant::NetShoot(const Vec3 &hit, int ph)
 {
-	NetShootEx(ZERO, ZERO, ZERO, hit, 1.0f, ph);
+	NetShootEx(Vec3(), Vec3(), Vec3(), hit, 1.0f, ph);
 }
 
 //------------------------------------------------------------------------
@@ -124,7 +124,23 @@ void CPlant::NetShootEx(const Vec3 &pos, const Vec3 &dir, const Vec3 &vel, const
 			flags = flags & ~(CItem::eIPAF_Sound); //Currently no 3D sound for 3rd person planting
 		}
 		m_pWeapon->PlayAction(ItemString(m_plantactions.plant.c_str()), 0, false, flags, fpSpecTarget ? 2.0f : 1.0f);
-		m_pWeapon->HideItem(false);
+
+		if (fpSpecTarget)
+		{
+			m_pWeapon->GetScheduler()->TimerAction(
+				m_pWeapon->GetCurrentAnimationTime(CItem::eIGS_FirstPerson),
+				MakeAction([this](CItem* /*unused*/) {
+					m_pWeapon->PlayAction(g_pItemStrings->select, 0, false, CItem::eIPAF_Default | CItem::eIPAF_NoBlend | CItem::eIPAF_CleanBlending);
+					m_pWeapon->HideItem(false);
+
+					}),
+				/*persistent=*/false
+			);
+		}
+		else
+		{
+			m_pWeapon->HideItem(false);
+		}
 	}
 
 }
@@ -416,7 +432,7 @@ void CPlant::Plant(const Vec3 &pos, const Vec3 &dir, const Vec3 &vel, bool net, 
 	}
 
 	if (!net)
-		m_pWeapon->RequestShoot(ammo, pos, dir, vel, ZERO, 1.0f, pAmmo? pAmmo->GetGameObject()->GetPredictionHandle() : 0, m_pWeapon->GetShootSeqN(), 0, true);
+		m_pWeapon->RequestShoot(ammo, pos, dir, vel, Vec3(), 1.0f, pAmmo? pAmmo->GetGameObject()->GetPredictionHandle() : 0, m_pWeapon->GetShootSeqN(), 0, true);
 
 	m_pWeapon->HideItem(true);
 }

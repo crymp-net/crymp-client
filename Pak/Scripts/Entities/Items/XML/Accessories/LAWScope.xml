@@ -1,0 +1,11 @@
+<item name="LAWScope" class="Item">
+	<params>
+		<param name="giveable" value="0" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="scopeAttachment" value="2" />
+	</params>
+	<geometry>
+		<aux1  name="objects/weapons/US/LAW/Law_zoom_fp.cgf" />
+	</geometry>
+</item>

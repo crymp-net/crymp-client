@@ -20,12 +20,9 @@
 //========================================================================================
 
 #include "CryCommon/CryCore/platform.h"
+#include <float.h>
 #include <math.h>
 #include "Cry_ValidNumber.h"
-
-#ifdef LINUX
-#include <values.h>
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // Forward declarations                                                      //
@@ -110,26 +107,6 @@ ILINE f64 clamp( f64 X, f64 Min, f64 Max )
 	X = (X+Min+fabs(X-Min))*0.5;  //return the max 
 	return X;
 }
-
-
-#ifdef __GNUC__
-// GCC generates very bad (slow) code for the template versions of min() and
-// max() below, so we'll provided overloads for all primitive types.
-#define _MINMAXFUNC(TYPE) \
-	ILINE TYPE min(TYPE a, TYPE b) { return a < b ? a : b; } \
-	ILINE TYPE max(TYPE a, TYPE b) { return b < a ? a : b; }
-
-_MINMAXFUNC(int) _MINMAXFUNC(unsigned)
-_MINMAXFUNC(float)
-_MINMAXFUNC(double)
-
-ILINE int min(int a, unsigned b) { return min(a, static_cast<int>(b)); }
-ILINE int min(unsigned a, int b) { return min(static_cast<int>(a), b); }
-ILINE unsigned max(int a, unsigned b) { return max(static_cast<unsigned>(a), b); }
-ILINE unsigned max(unsigned a, int b) { return max(a, static_cast<unsigned>(b)); }
-
-#undef _MINMAXFUNC
-#endif//__GNUC__
 
 // Bring min and max from std namespace to global scope.
 template <class T>
@@ -422,14 +399,10 @@ ILINE int8 float_to_ifrac8( float f )
 }
 
 
-static int32 inc_mod3[]={1,2,0}, dec_mod3[]={2,0,1};
-#ifdef PHYSICS_EXPORTS
+constexpr int32 inc_mod3[] = {1,2,0};
+constexpr int32 dec_mod3[] = {2,0,1};
 #define incm3(i) inc_mod3[i]
 #define decm3(i) dec_mod3[i]
-#else
-inline int32 incm3(int32 i) { return i+1 & (i-2)>>31; }
-inline int32 decm3(int32 i) { return i-1 + ((i-1)>>31&3); }
-#endif
 
 
 template<class F> inline F square(F fOp) { return(fOp*fOp); }
@@ -685,7 +658,6 @@ inline T BiRandom(T fRange)
 }
 
 //////////////////////////////////////////////////////////////////////////
-enum type_zero { ZERO };
 enum type_min { VMIN };
 enum type_max { VMAX };
 enum type_identity { IDENTITY };

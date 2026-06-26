@@ -211,7 +211,7 @@ struct SAnimationStateData
 struct SAnimationTargetRequest
 {
 	SAnimationTargetRequest()
-		: position(ZERO)
+		: position()
 		, direction(FORWARD_DIRECTION)
 		, positionRadius(0.5f)
 		, directionRadius(gf_PI)
@@ -260,20 +260,20 @@ struct SAnimationTarget
 		, notAiControlledAnymore(false)
 		, isNavigationalSO(false)
 		, maxRadius(0)
-		, position(ZERO)
+		, position()
 		, positionRadius(0.0f)
 		, orientationRadius(0.0f)
 		, orientation(IDENTITY)
 		, activationTimeRemaining(0)
-		, errorVelocity(ZERO)
+		, errorVelocity()
 		, errorRotationalVelocity(IDENTITY)
 		{}
-	int preparing : 1;
-	int activated : 1;
-	int doingSomething : 1;
-	mutable int allowActivation : 1;
-	mutable int notAiControlledAnymore : 1;
-	int isNavigationalSO : 1;
+	unsigned int preparing : 1;
+	unsigned int activated : 1;
+	unsigned int doingSomething : 1;
+	mutable unsigned int allowActivation : 1;
+	mutable unsigned int notAiControlledAnymore : 1;
+	unsigned int isNavigationalSO : 1;
 	float maxRadius;
 	Vec3 position;
 	float positionRadius;

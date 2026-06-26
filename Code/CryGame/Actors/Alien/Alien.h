@@ -351,15 +351,15 @@ public:
 		AABB		m_stanceSizeAABB;	// approximate local bounds of the stance.
 		AABB		m_colliderSizeAABB;	// approximate local bounds of the stance collider only.
 
-		SBodyInfo() : vEyePos(ZERO), vEyeDir(ZERO), vEyeDirAnim(ZERO),
-			vFwdDir(ZERO), vUpDir(ZERO), vFireDir(ZERO),
+		SBodyInfo() : vEyePos(), vEyeDir(), vEyeDirAnim(),
+			vFwdDir(), vUpDir(), vFireDir(),
 			maxSpeed(0), normalSpeed(0), minSpeed(0),
 			stance(STANCE_NULL)
 		{
-			m_stanceSizeAABB.min	=Vec3(ZERO);
-			m_stanceSizeAABB.max	=Vec3(ZERO);
-			m_colliderSizeAABB.min=Vec3(ZERO);
-			m_colliderSizeAABB.max=Vec3(ZERO);
+			m_stanceSizeAABB.min = {};
+			m_stanceSizeAABB.max = {};
+			m_colliderSizeAABB.min = {};
+			m_colliderSizeAABB.max = {};
 		}
 	};
 

@@ -1,0 +1,103 @@
+<item name="Golfclub" class="Fists" category="pistol" priority="2">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="1" />
+		<param name="droppable" value="0" />
+		<param name="pose" 				value="pistol" />
+		<param name="mass"				value="1" />
+		<dualwield>
+			<suffix value="akimbo_" />
+		</dualwield>
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/us/nw/nw_arms.chr" angles="0,0,0" position="0,0,0.075"/>
+		<thirdperson name="objects/library/architecture/aircraftcarrier/props/misc/golfclub.cgf" angles="0,0,0"/>
+	</geometry>
+	<actions>
+		<action name="select">
+			<animation target="firstperson" name="select_fist_01" />
+			<animation target="owner" name="select" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_fist_01" />
+			<animation target="owner" name="deselect" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_fist_%hand%_%suffix%01" />
+			<animation target="owner" name="idle" />
+		</action>
+
+		<action name="melee">
+			<animation target="firstperson" name="punch_left_01" />
+			<animation target="firstperson" name="punch_right_01" />
+			<animation target="owner" name="punch" />
+			<sound target="firstperson" name="sounds/weapons:punch:fire" radius="5" static="0" />
+			<sound target="thirdperson" name="sounds/weapons:punch:fire" radius="5" static="0" />
+		</action>
+		
+		<action name="hit">
+			<sound target="firstperson" name="sounds/physics:bullet_impact:punch_impact" radius="5" />
+			<sound target="thirdperson" name="sounds/physics:bullet_impact:punch_impact" radius="5" />
+		</action>
+		
+		<action name="pickup_beam">
+			<animation target="firstperson" name="pick_up_beam_01" />
+			<animation target="owner" name="punch" />
+		</action>
+
+		<action name="idle_beam">
+			<animation target="firstperson" name="beam_idle_01" />
+			<animation target="owner" name="punch" />
+		</action>
+
+		<action name="throw_beam">
+			<animation target="firstperson" name="throw_beam_01" />
+			<animation target="owner" name="punch" />
+		</action>
+		
+		<action name="offhand_on">
+			<animation target="firstperson" name="remove_fist_%offhand%_01" speed="3" />
+		</action>
+
+		<action name="offhand_off">
+			<animation target="firstperson" name="select_fist_%offhand%_01" />
+		</action>
+
+	</actions>
+	<firemodes>
+		<firemode name="melee" type="Melee">
+			<melee>
+				<param name="helper" value="Collision" />
+				<param name="offset" value="0.85" />
+				<param name="damage" value="550" />
+				<param name="impulse" value="30" />
+				<param name="delay" value="0.15" />
+				<param name="duration" value="0.095" />
+			</melee>
+			<actions>
+				<param name="attack" value="melee" />
+			</actions>
+		</firemode>
+		<firemode type="Throw" name="ThrowObject" enabled="0">
+			<fire>
+				<param name="helper_fp" value="beam_helper" />
+			</fire>
+			<throw>
+				<param name="delay" 					 value="0.925" />
+				<param name="hold_duration" 	 value="1.0" />
+				<param name="hold_min_scale" 	 value="0.25" />
+				<param name="hold_max_scale" 	 value="0.65" />
+				<param name="auto_select_last" value="1" />
+			</throw>
+			<recoil>
+				<param name="max_recoil"	value="0" />
+				<param name="attack" 			value="0" />
+			</recoil>
+			<actions>
+				<param name="throw" value="throw_beam" />
+			</actions>
+		</firemode>
+	</firemodes>
+	<zoommodes>
+	</zoommodes>
+</item>

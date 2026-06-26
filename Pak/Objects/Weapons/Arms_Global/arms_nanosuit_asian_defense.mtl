@@ -1,0 +1,60 @@
+<Material MtlFlags="256">
+ <SubMaterials>
+  <Material Name="arms" MtlFlags="128" Shader="Cloth" GenMask="268468480" SurfaceType="" Diffuse="0.50196081,0.50196081,0.50196081" Specular="0.39607847,0.39607847,0.39607847" Emissive="0,0,0" Shininess="31.299999" Opacity="1">
+   <Textures>
+    <Texture Map="Diffuse" File="objects/weapons/arms_global/arms_nanosuit_asian.tif">
+     <TexMod />
+    </Texture>
+    <Texture Map="Specular" File="objects/weapons/arms_global/arms_nanosuit_asian_spec.tif">
+     <TexMod />
+    </Texture>
+    <Texture Map="Normalmap" File="objects/weapons/arms_global/arms_nanosuit_asian_ddn.tif">
+     <TexMod />
+    </Texture>
+    <Texture Map="Environment" File="textures/cubemaps/camera_river_cubemap_bright.dds">
+     <TexMod />
+    </Texture>
+   </Textures>
+   <PublicParams AnimFrequency="0" AnimAmplitudeWav0="0" AnimAmplitudeWav1="0" AnimAmplitudeWav2="0" AnimPhase="1" AnisotropicShape="0.60000002" SparksPow="6" SparksMultiplier="11" SparksPhase="5" SparksFrequency="6" SparksColor="1,1,1" DiffuseExponent="0.5" FuzzynessSmoothness="1" FuzzynessStrength="2" FuzzynessSpread="2.9200001" FuzzynessSaturation="1" SpecularMultiplier="0.40000001" MetallicAmount="1" ReflectionAmount="1" FresnelBias="1" FresnelScale="0.75" FresnelScaleShadowBias="1"/>
+   <MaterialLayers />
+  </Material>
+  <Material Name="uniform" MtlFlags="128" Shader="Cloth" GenMask="268468496" SurfaceType="mat_kevlar" Diffuse="0.50196081,0.50196081,0.50196081" Specular="0.74117649,0.74117649,0.74117649" Emissive="0,0,0" Shininess="15" Opacity="1">
+   <Textures>
+    <Texture Map="Diffuse" File="objects/characters/human/asian/nanosuit/nanosuit_asian_lower.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Specular" File="objects/characters/human/asian/nanosuit/nanosuit_asian_lower_spec.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Normalmap" File="objects/characters/human/asian/nanosuit/nanosuit_asian_lower_ddn.tif">
+     <TexMod />
+    </Texture>
+    <Texture Map="Environment" File="textures/cubemaps/camera_river_cubemap_bright.dds">
+     <TexMod />
+    </Texture>
+   </Textures>
+   <PublicParams AnimFrequency="0" AnimAmplitudeWav0="0" AnimAmplitudeWav1="0" AnimAmplitudeWav2="0" AnimPhase="0" AnisotropicShape="0.60000002" SparksPow="6.5" SparksMultiplier="5" SparksPhase="2.3" SparksFrequency="10" SparksColor="1,1,1" DiffuseExponent="0.5" FuzzynessSmoothness="1" FuzzynessStrength="2" FuzzynessSpread="2.9200001" FuzzynessSaturation="1" SpecularMultiplier="0.30000001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.2" FresnelScale="10" FresnelScaleShadowBias="1"/>
+   <MaterialLayers />
+  </Material>
+  <Material Name="vest" MtlFlags="128" Shader="Cloth" GenMask="268468496" SurfaceType="mat_kevlar" Diffuse="0.50196081,0.50196081,0.50196081" Specular="0.74117649,0.74117649,0.74117649" Emissive="0,0,0" Shininess="15" Opacity="1">
+   <Textures>
+    <Texture Map="Diffuse" File="objects/characters/human/asian/nanosuit/nanosuit_asian_upper.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Specular" File="objects/characters/human/asian/nanosuit/nanosuit_asian_upper_spec.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Normalmap" File="objects/characters/human/asian/nanosuit/nanosuit_asian_upper_ddn.tif">
+     <TexMod />
+    </Texture>
+    <Texture Map="Environment" File="textures/cubemaps/camera_river_cubemap_bright.dds">
+     <TexMod />
+    </Texture>
+   </Textures>
+   <PublicParams AnimFrequency="0" AnimAmplitudeWav0="0" AnimAmplitudeWav1="0" AnimAmplitudeWav2="0" AnimPhase="0" AnisotropicShape="0.60000002" SparksPow="6.5" SparksMultiplier="5" SparksPhase="2.3" SparksFrequency="10" SparksColor="1,1,1" DiffuseExponent="0.5" FuzzynessSmoothness="1" FuzzynessStrength="2" FuzzynessSpread="2.9200001" FuzzynessSaturation="1" SpecularMultiplier="0.30000001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.2" FresnelScale="10" FresnelScaleShadowBias="1"/>
+   <MaterialLayers />
+  </Material>
+ </SubMaterials>
+ <PublicParams AmbientMultiplier="1"/>
+ <MaterialLayers />
+</Material>

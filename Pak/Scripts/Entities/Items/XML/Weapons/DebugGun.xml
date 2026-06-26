@@ -1,0 +1,76 @@
+<item name="DebugGun" class="DebugGun" category="debug" priority="1">
+	<params>
+		<param name="debug" 			value="1" />
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="1" />
+		<param name="pose" 				value="pistol" />
+	</params>	
+	<geometry>		
+		<firstperson name="objects/weapons/us/socom/socom_right_fp.chr" hand="right" angles="0,0,0"/>
+		<thirdperson name="objects/weapons/us/socom/socom_tp.cgf" />
+		<boneAttachments>
+			<attachment target="firstperson" name="muzzle_flash_effect" bone="weapon_term" position="0,0,-.075" />
+			<attachment target="firstperson" name="muzzle_flash_light" bone="weapon_term" />
+		</boneAttachments>
+	</geometry>
+	<actions>
+		<action name="select">
+			<animation target="firstperson" name="select_%hand%_%suffix%01" />
+			<animation target="owner" name="select" />
+			<sound target="firstperson" name="sounds/weapons:socom_fp:select" radius="5" />
+			<sound target="thirdperson" name="sounds/weapons:socom:select" radius="5" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_%hand%_%suffix%01" />
+			<animation target="owner" name="deselect" />
+			<sound target="firstperson" name="sounds/weapons:socom_fp:deselect" radius="5" />
+			<sound target="thirdperson" name="sounds/weapons:socom:deselect" radius="5" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_%hand%_%suffix%01" />
+			<animation target="owner" name="idle" />
+		</action>				
+		<action name="fire">
+			<animation target="firstperson" name="fire_bullets_%hand%_%suffix%01" />
+			<animation target="owner" name="shoot" />
+			<sound target="firstperson" name="sounds/weapons:socom_fp:fire" radius="75" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:socom:fire" radius="75" static="1" />
+		</action>
+	
+		<action name="zoom_in">
+			<animation target="firstperson" name="zoom_in_%hand%_01" speed="2" />
+		</action>
+		<action name="zoom_out">
+			<animation target="firstperson" name="zoom_out_%hand%_01" speed="2" />
+		</action>
+	</actions>
+	<layers>
+		<layer name="zoomed">
+			<animation target="firstperson" name="zoom_layered_%hand%_01" layerId="1" />
+			<bones>
+				<bone name="root" />
+			</bones>
+		</layer>
+		<layer name="slider_back">
+			<animation target="firstperson" name="slider_back_layered_%hand%_01" layerId="4" />
+			<bones>
+				<bone name="Slider_Base" />
+				<bone name="Slide_Release_Base" />
+			</bones>
+		</layer>
+	</layers>	
+	<zoommodes>
+		<zoommode type="default">
+			<zoom>
+				<param name="layer" value="zoomed" />
+				<param name="zoom_in_time" value="0.2" />
+				<param name="zoom_out_time" value="0.2" />
+				<stages>
+					<stage value="1.4" />
+				</stages>
+			</zoom>
+		</zoommode>
+		<zoommode name="IronSight" type="IronSight">
+		</zoommode>
+	</zoommodes>
+</item>

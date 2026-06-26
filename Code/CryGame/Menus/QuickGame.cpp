@@ -486,7 +486,7 @@ void CQuickGame::NextStage()
 		}
 		if (m_ui->CheckLogin())
 		{
-			if (m_browser && m_browser)
+			if (m_browser)
 			{
 				m_list->Reset();
 				m_browser->Start(false);

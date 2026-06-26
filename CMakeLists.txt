@@ -46,14 +46,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(CRYMP_CONSOLE_APP "Enable console window with standard output." OFF)
 
-option(CRYMP_USE_MIMALLOC "Use mimalloc as global allocator." OFF)
-
 option(CRYMP_DEBUG_ALLOCATOR_ENABLED "Enable debug allocator to detect memory errors." OFF)
 option(CRYMP_DEBUG_ALLOCATOR_VERBOSE "Log each allocation and deallocation to standard output." OFF)
 option(CRYMP_DEBUG_ALLOCATOR_OVERFLOW_INSTEAD_OF_UNDERFLOW "Detect buffer overflows instead of underflows." OFF)
 option(CRYMP_DEBUG_ALLOCATOR_CHECK_READS "Check for both invalid reads and writes." OFF)
 
 option(CRYMP_TRACY_ENABLED "Enable Tracy profiler." OFF)
+
+option(CRYMP_PAK_HOT_RELOADING_ENABLED "Use the Pak folder directly for hot reloading. For development only." OFF)
+
+if(CRYMP_PAK_HOT_RELOADING_ENABLED)
+	set(CRYMP_PAK_HOT_RELOADING_PATH ${PROJECT_SOURCE_DIR}/Pak)
+endif()
 
 ################################################################################
 
@@ -149,7 +153,6 @@ add_library(Base OBJECT
 	Code/CryAction/GameTokenSystem.h
 	Code/CryAction/ItemParamsNode.cpp
 	Code/CryAction/ItemParamsNode.h
-	Code/CryAction/ItemSystem_XMLData.cpp
 	Code/CryAction/ItemSystem.cpp
 	Code/CryAction/ItemSystem.h
 	Code/CryAction/LevelSystem.cpp
@@ -403,6 +406,8 @@ add_library(Base OBJECT
 	Code/CryCommon/CryCore/CryString.h
 	Code/CryCommon/CryCore/Endian.h
 	Code/CryCommon/CryCore/MiniQueue.h
+	Code/CryCommon/CryCore/MTPseudoRandom.cpp
+	Code/CryCommon/CryCore/MTPseudoRandom.h
 	Code/CryCommon/CryCore/MultiThread.h
 	Code/CryCommon/CryCore/PoolAllocator.h
 	Code/CryCommon/CryCore/PoolAllocatorSynchronization.h
@@ -516,6 +521,8 @@ add_library(Base OBJECT
 	Code/CryMP/Client/FileCache.h
 	Code/CryMP/Client/FileDownloader.cpp
 	Code/CryMP/Client/FileDownloader.h
+	Code/CryMP/Client/HandGripRegistry.cpp
+	Code/CryMP/Client/HandGripRegistry.h
 	Code/CryMP/Client/HealthManager.cpp
 	Code/CryMP/Client/HealthManager.h
 	Code/CryMP/Client/MapDownloader.cpp
@@ -534,14 +541,14 @@ add_library(Base OBJECT
 	Code/CryMP/Client/ServerConnector.h
 	Code/CryMP/Client/ServerInfo.cpp
 	Code/CryMP/Client/ServerInfo.h
-	Code/CryMP/Client/ServerPAK.cpp
-	Code/CryMP/Client/ServerPAK.h
 	Code/CryMP/Client/SpeedAggregator.cpp
 	Code/CryMP/Client/SpeedAggregator.h
 	Code/CryMP/Client/WeatherSystem.cpp
 	Code/CryMP/Client/WeatherSystem.h
 	Code/CryMP/Common/Executor.cpp
 	Code/CryMP/Common/Executor.h
+	Code/CryMP/Common/ServerPAK.cpp
+	Code/CryMP/Common/ServerPAK.h
 	Code/CryMP/Common/GSMasterHook.cpp
 	Code/CryMP/Common/GSMasterHook.h
 	Code/CryMP/Common/HTTP.cpp
@@ -558,6 +565,96 @@ add_library(Base OBJECT
 	Code/CryMP/Server/SafeWriting/APIImpl.cpp
 	Code/CryMP/Server/SafeWriting/SafeWriting.h
 	Code/CryMP/Server/SafeWriting/SafeWriting.cpp
+	Code/CryPhysics/AABBTree.cpp
+	Code/CryPhysics/AABBTree.h
+	Code/CryPhysics/ArticulatedEntity.cpp
+	Code/CryPhysics/ArticulatedEntity.h
+	Code/CryPhysics/BoxGeom.cpp
+	Code/CryPhysics/BoxGeom.h
+	Code/CryPhysics/BreakableGrid2d.cpp
+	Code/CryPhysics/BreakableGrid2d.h
+	Code/CryPhysics/BVTree.cpp
+	Code/CryPhysics/BVTree.h
+	Code/CryPhysics/CapsuleGeom.cpp
+	Code/CryPhysics/CapsuleGeom.h
+	Code/CryPhysics/ChangeRequest.cpp
+	Code/CryPhysics/ChangeRequest.h
+	Code/CryPhysics/ContactSolver.cpp
+	Code/CryPhysics/ContactSolver.h
+	Code/CryPhysics/CryPhysics.cpp
+	Code/CryPhysics/CryPhysics.h
+	Code/CryPhysics/CylinderGeom.cpp
+	Code/CryPhysics/CylinderGeom.h
+	Code/CryPhysics/Geometry.cpp
+	Code/CryPhysics/Geometry.h
+	Code/CryPhysics/GeomManager.cpp
+	Code/CryPhysics/GeomManager.h
+	Code/CryPhysics/Heightfield.cpp
+	Code/CryPhysics/Heightfield.h
+	Code/CryPhysics/HeightfieldBV.cpp
+	Code/CryPhysics/HeightfieldBV.h
+	Code/CryPhysics/IntersectData.cpp
+	Code/CryPhysics/IntersectData.h
+	Code/CryPhysics/IntersectionChecker.cpp
+	Code/CryPhysics/IntersectionChecker.h
+	Code/CryPhysics/LivingEntity.cpp
+	Code/CryPhysics/LivingEntity.h
+	Code/CryPhysics/Matrix.h
+	Code/CryPhysics/OBBTree.cpp
+	Code/CryPhysics/OBBTree.h
+	Code/CryPhysics/OverlapChecker.cpp
+	Code/CryPhysics/OverlapChecker.h
+	Code/CryPhysics/ParticleEntity.cpp
+	Code/CryPhysics/ParticleEntity.h
+	Code/CryPhysics/PhysArea.cpp
+	Code/CryPhysics/PhysArea.h
+	Code/CryPhysics/PhysicalEntity.cpp
+	Code/CryPhysics/PhysicalEntity.h
+	Code/CryPhysics/PhysicalPlaceholder.cpp
+	Code/CryPhysics/PhysicalPlaceholder.h
+	Code/CryPhysics/PhysicalStub.cpp
+	Code/CryPhysics/PhysicalStub.h
+	Code/CryPhysics/PhysicalWorld.cpp
+	Code/CryPhysics/PhysicalWorld.h
+	Code/CryPhysics/Polynomial.h
+	Code/CryPhysics/Primitive.cpp
+	Code/CryPhysics/Primitive.h
+	Code/CryPhysics/Qhull.cpp
+	Code/CryPhysics/Qhull.h
+	Code/CryPhysics/Quotient.h
+	Code/CryPhysics/RayBV.cpp
+	Code/CryPhysics/RayBV.h
+	Code/CryPhysics/RayGeom.cpp
+	Code/CryPhysics/RayGeom.h
+	Code/CryPhysics/RigidBody.cpp
+	Code/CryPhysics/RigidBody.h
+	Code/CryPhysics/RigidEntity.cpp
+	Code/CryPhysics/RigidEntity.h
+	Code/CryPhysics/RopeEntity.cpp
+	Code/CryPhysics/RopeEntity.h
+	Code/CryPhysics/SingleBoxTree.cpp
+	Code/CryPhysics/SingleBoxTree.h
+	Code/CryPhysics/SoftEntity.cpp
+	Code/CryPhysics/SoftEntity.h
+	Code/CryPhysics/SphereGeom.cpp
+	Code/CryPhysics/SphereGeom.h
+	Code/CryPhysics/TetrLattice.cpp
+	Code/CryPhysics/TetrLattice.h
+	Code/CryPhysics/TriMesh.cpp
+	Code/CryPhysics/TriMesh.h
+	Code/CryPhysics/UnprojectionChecker.cpp
+	Code/CryPhysics/UnprojectionChecker.h
+	Code/CryPhysics/Utils.cpp
+	Code/CryPhysics/Utils.h
+	Code/CryPhysics/Vector.h
+	Code/CryPhysics/VoxelBV.cpp
+	Code/CryPhysics/VoxelBV.h
+	Code/CryPhysics/VoxelGeom.cpp
+	Code/CryPhysics/VoxelGeom.h
+	Code/CryPhysics/WaterMan.cpp
+	Code/CryPhysics/WaterMan.h
+	Code/CryPhysics/WheeledVehicleEntity.cpp
+	Code/CryPhysics/WheeledVehicleEntity.h
 	Code/CryScriptSystem/LuaLibs/bitlib.c
 	Code/CryScriptSystem/ScriptBindings/ScriptBindings.cpp
 	Code/CryScriptSystem/ScriptBindings/ScriptBindings.h
@@ -689,6 +786,11 @@ add_library(Base OBJECT
 	ThirdParty/Lua/src/lvm.h
 	ThirdParty/Lua/src/lzio.c
 	ThirdParty/Lua/src/lzio.h
+	ThirdParty/mimalloc/include/mimalloc-new-delete.h
+	ThirdParty/mimalloc/include/mimalloc-override.h
+	ThirdParty/mimalloc/include/mimalloc-stats.h
+	ThirdParty/mimalloc/include/mimalloc.h
+	ThirdParty/mimalloc/src/static.c
 	ThirdParty/miniz/miniz.c
 	ThirdParty/miniz/miniz.h
 	ThirdParty/nlohmann/json.hpp
@@ -703,33 +805,18 @@ if(BUILD_BITS EQUAL 64)
 	target_compile_definitions(Base PUBLIC BUILD_64BIT)
 endif()
 
-if(CRYMP_USE_MIMALLOC)
-	target_sources(Base PRIVATE
-		ThirdParty/mimalloc/src/alloc.c
-		ThirdParty/mimalloc/src/alloc-aligned.c
-		ThirdParty/mimalloc/src/alloc-posix.c
-		ThirdParty/mimalloc/src/arena.c
-		ThirdParty/mimalloc/src/bitmap.c
-		ThirdParty/mimalloc/src/heap.c
-		ThirdParty/mimalloc/src/init.c
-		ThirdParty/mimalloc/src/options.c
-		ThirdParty/mimalloc/src/os.c
-		ThirdParty/mimalloc/src/page.c
-		ThirdParty/mimalloc/src/random.c
-		ThirdParty/mimalloc/src/segment.c
-		ThirdParty/mimalloc/src/segment-map.c
-		ThirdParty/mimalloc/src/stats.c
-		ThirdParty/mimalloc/src/prim/prim.c
-	)
-
-	target_include_directories(Base SYSTEM PUBLIC ThirdParty/mimalloc/include)
-endif()
-
 if(CRYMP_TRACY_ENABLED)
 	target_compile_definitions(Base PUBLIC TRACY_ENABLE)
 endif()
 
-target_compile_definitions(Base PUBLIC _CRT_SECURE_NO_WARNINGS)
+target_compile_definitions(Base PUBLIC _CRT_SECURE_NO_WARNINGS _WIN32_WINNT=0x0601)  # Win7+
+
+# mimalloc configuration
+target_compile_definitions(Base PUBLIC
+	MI_OPT_SIMD=1
+	MI_SECURE=3
+	MI_SKIP_COLLECT_ON_EXIT=1
+)
 
 target_compile_options(Base PUBLIC /W4
 	/wd4018  # Disable - 'token' : signed/unsigned mismatch
@@ -741,9 +828,12 @@ target_compile_options(Base PUBLIC /W4
 	/wd4245  # Disable - 'conversion' : conversion from 'type1' to 'type2', signed/unsigned mismatch
 	/wd4267  # Disable - 'var' : conversion from 'size_t' to 'type', possible loss of data
 	/wd4305  # Disable - 'conversion': truncation from 'type1' to 'type2'
+	/wd4324  # Disable - structure was padded due to alignment specifier
+	/wd4334  # Disable - '<<': result of 32-bit shift implicitly converted to 64 bits
 	/wd4456  # Disable - declaration of 'identifier' hides previous local declaration
 	/wd4458  # Disable - declaration of 'identifier' hides class member
 	/wd4702  # Disable - unreachable code
+	/wd4714  # Disable - marked as __forceinline not inlined
 	/wd5054  # Disable - operator 'operator-name': deprecated between enumerations of different types
 	/w15262  # Enable - implicit fall-through occurs here; are you missing a break statement?
 	/w45263  # Enable - calling 'std::move' on a temporary object prevents copy elision
@@ -753,11 +843,11 @@ target_include_directories(Base PUBLIC Code ${PROJECT_BINARY_DIR})
 target_include_directories(Base SYSTEM PUBLIC
 	ThirdParty
 	ThirdParty/Lua/src
-	ThirdParty/miniz
+	ThirdParty/mimalloc/include
 	ThirdParty/tracy/public
 )
 
-target_link_libraries(Base PUBLIC dbghelp ws2_32 winhttp)
+target_link_libraries(Base PUBLIC dbghelp ws2_32 winhttp winmm)
 
 # disable ASLR and unlock memory above 2 GB
 target_link_options(Base PUBLIC /DYNAMICBASE:NO /LARGEADDRESSAWARE)
@@ -992,7 +1082,6 @@ add_library(CryGame OBJECT
 	Code/CryGame/Items/Weapons/WeaponClientServer.cpp
 	Code/CryGame/Items/Weapons/WeaponEvent.cpp
 	Code/CryGame/Items/Weapons/WeaponInput.cpp
-	Code/CryGame/Items/Weapons/WeaponSystem_XMLData.cpp
 	Code/CryGame/Items/Weapons/WeaponSystem.cpp
 	Code/CryGame/Items/Weapons/WeaponSystem.h
 	Code/CryGame/Items/Weapons/ZoomModes/IronSight.cpp
@@ -1103,6 +1192,290 @@ target_link_libraries(CryGame PUBLIC Base)
 
 ################################################################################
 
+add_library(OpenAL OBJECT
+	ThirdParty/openal-soft/al/auxeffectslot.cpp
+	ThirdParty/openal-soft/al/auxeffectslot.h
+	ThirdParty/openal-soft/al/buffer.cpp
+	ThirdParty/openal-soft/al/buffer.h
+	ThirdParty/openal-soft/al/debug.cpp
+	ThirdParty/openal-soft/al/debug.h
+	ThirdParty/openal-soft/al/direct_defs.h
+	ThirdParty/openal-soft/al/eax/api.cpp
+	ThirdParty/openal-soft/al/eax/api.h
+	ThirdParty/openal-soft/al/eax/call.cpp
+	ThirdParty/openal-soft/al/eax/call.h
+	ThirdParty/openal-soft/al/eax/effect.h
+	ThirdParty/openal-soft/al/eax/exception.cpp
+	ThirdParty/openal-soft/al/eax/exception.h
+	ThirdParty/openal-soft/al/eax/fx_slot_index.cpp
+	ThirdParty/openal-soft/al/eax/fx_slot_index.h
+	ThirdParty/openal-soft/al/eax/fx_slots.cpp
+	ThirdParty/openal-soft/al/eax/fx_slots.h
+	ThirdParty/openal-soft/al/eax/globals.h
+	ThirdParty/openal-soft/al/eax/utils.cpp
+	ThirdParty/openal-soft/al/eax/utils.h
+	ThirdParty/openal-soft/al/eax/x_ram.h
+	ThirdParty/openal-soft/al/effect.cpp
+	ThirdParty/openal-soft/al/effect.h
+	ThirdParty/openal-soft/al/effects/autowah.cpp
+	ThirdParty/openal-soft/al/effects/chorus.cpp
+	ThirdParty/openal-soft/al/effects/compressor.cpp
+	ThirdParty/openal-soft/al/effects/convolution.cpp
+	ThirdParty/openal-soft/al/effects/dedicated.cpp
+	ThirdParty/openal-soft/al/effects/distortion.cpp
+	ThirdParty/openal-soft/al/effects/echo.cpp
+	ThirdParty/openal-soft/al/effects/effects.cpp
+	ThirdParty/openal-soft/al/effects/effects.h
+	ThirdParty/openal-soft/al/effects/equalizer.cpp
+	ThirdParty/openal-soft/al/effects/fshifter.cpp
+	ThirdParty/openal-soft/al/effects/modulator.cpp
+	ThirdParty/openal-soft/al/effects/null.cpp
+	ThirdParty/openal-soft/al/effects/pshifter.cpp
+	ThirdParty/openal-soft/al/effects/reverb.cpp
+	ThirdParty/openal-soft/al/effects/vmorpher.cpp
+	ThirdParty/openal-soft/al/error.cpp
+	ThirdParty/openal-soft/al/event.cpp
+	ThirdParty/openal-soft/al/event.h
+	ThirdParty/openal-soft/al/extension.cpp
+	ThirdParty/openal-soft/al/filter.cpp
+	ThirdParty/openal-soft/al/filter.h
+	ThirdParty/openal-soft/al/listener.cpp
+	ThirdParty/openal-soft/al/listener.h
+	ThirdParty/openal-soft/al/source.cpp
+	ThirdParty/openal-soft/al/source.h
+	ThirdParty/openal-soft/al/state.cpp
+	ThirdParty/openal-soft/alc/alc.cpp
+	ThirdParty/openal-soft/alc/alconfig.cpp
+	ThirdParty/openal-soft/alc/alconfig.h
+	ThirdParty/openal-soft/alc/alu.cpp
+	ThirdParty/openal-soft/alc/alu.h
+	ThirdParty/openal-soft/alc/backends/base.cpp
+	ThirdParty/openal-soft/alc/backends/base.h
+	ThirdParty/openal-soft/alc/backends/dsound.cpp
+	ThirdParty/openal-soft/alc/backends/dsound.h
+	ThirdParty/openal-soft/alc/backends/loopback.cpp
+	ThirdParty/openal-soft/alc/backends/loopback.h
+	ThirdParty/openal-soft/alc/backends/null.cpp
+	ThirdParty/openal-soft/alc/backends/null.h
+	ThirdParty/openal-soft/alc/backends/wasapi.cpp
+	ThirdParty/openal-soft/alc/backends/wasapi.h
+	ThirdParty/openal-soft/alc/backends/winmm.cpp
+	ThirdParty/openal-soft/alc/backends/winmm.h
+	ThirdParty/openal-soft/alc/context.cpp
+	ThirdParty/openal-soft/alc/context.h
+	ThirdParty/openal-soft/alc/device.cpp
+	ThirdParty/openal-soft/alc/device.h
+	ThirdParty/openal-soft/alc/effects/autowah.cpp
+	ThirdParty/openal-soft/alc/effects/base.h
+	ThirdParty/openal-soft/alc/effects/chorus.cpp
+	ThirdParty/openal-soft/alc/effects/compressor.cpp
+	ThirdParty/openal-soft/alc/effects/convolution.cpp
+	ThirdParty/openal-soft/alc/effects/dedicated.cpp
+	ThirdParty/openal-soft/alc/effects/distortion.cpp
+	ThirdParty/openal-soft/alc/effects/echo.cpp
+	ThirdParty/openal-soft/alc/effects/equalizer.cpp
+	ThirdParty/openal-soft/alc/effects/fshifter.cpp
+	ThirdParty/openal-soft/alc/effects/modulator.cpp
+	ThirdParty/openal-soft/alc/effects/null.cpp
+	ThirdParty/openal-soft/alc/effects/pshifter.cpp
+	ThirdParty/openal-soft/alc/effects/reverb.cpp
+	ThirdParty/openal-soft/alc/effects/vmorpher.cpp
+	ThirdParty/openal-soft/alc/events.cpp
+	ThirdParty/openal-soft/alc/events.h
+	ThirdParty/openal-soft/alc/export_list.h
+	ThirdParty/openal-soft/alc/inprogext.h
+	ThirdParty/openal-soft/alc/panning.cpp
+	ThirdParty/openal-soft/common/alassert.cpp
+	ThirdParty/openal-soft/common/alassert.h
+	ThirdParty/openal-soft/common/albit.h
+	ThirdParty/openal-soft/common/alcomplex.cpp
+	ThirdParty/openal-soft/common/alcomplex.h
+	ThirdParty/openal-soft/common/almalloc.h
+	ThirdParty/openal-soft/common/alnumeric.h
+	ThirdParty/openal-soft/common/alsem.cpp
+	ThirdParty/openal-soft/common/alsem.h
+	ThirdParty/openal-soft/common/alspan.h
+	ThirdParty/openal-soft/common/alstring.cpp
+	ThirdParty/openal-soft/common/alstring.h
+	ThirdParty/openal-soft/common/althrd_setname.cpp
+	ThirdParty/openal-soft/common/althrd_setname.h
+	ThirdParty/openal-soft/common/althreads.h
+	ThirdParty/openal-soft/common/atomic.h
+	ThirdParty/openal-soft/common/comptr.h
+	ThirdParty/openal-soft/common/dynload.cpp
+	ThirdParty/openal-soft/common/dynload.h
+	ThirdParty/openal-soft/common/filesystem.cpp
+	ThirdParty/openal-soft/common/filesystem.h
+	ThirdParty/openal-soft/common/flexarray.h
+	ThirdParty/openal-soft/common/ghc_filesystem.h
+	ThirdParty/openal-soft/common/intrusive_ptr.h
+	ThirdParty/openal-soft/common/opthelpers.h
+	ThirdParty/openal-soft/common/pffft.cpp
+	ThirdParty/openal-soft/common/pffft.h
+	ThirdParty/openal-soft/common/phase_shifter.h
+	ThirdParty/openal-soft/common/polyphase_resampler.cpp
+	ThirdParty/openal-soft/common/polyphase_resampler.h
+	ThirdParty/openal-soft/common/pragmadefs.h
+	ThirdParty/openal-soft/common/ringbuffer.cpp
+	ThirdParty/openal-soft/common/ringbuffer.h
+	ThirdParty/openal-soft/common/strutils.cpp
+	ThirdParty/openal-soft/common/strutils.h
+	ThirdParty/openal-soft/common/vecmat.h
+	ThirdParty/openal-soft/common/vector.h
+	ThirdParty/openal-soft/common/win_main_utf8.h
+	ThirdParty/openal-soft/config.h
+	ThirdParty/openal-soft/config_backends.h
+	ThirdParty/openal-soft/config_simd.h
+	ThirdParty/openal-soft/core/ambdec.cpp
+	ThirdParty/openal-soft/core/ambdec.h
+	ThirdParty/openal-soft/core/ambidefs.cpp
+	ThirdParty/openal-soft/core/ambidefs.h
+	ThirdParty/openal-soft/core/async_event.h
+	ThirdParty/openal-soft/core/bformatdec.cpp
+	ThirdParty/openal-soft/core/bformatdec.h
+	ThirdParty/openal-soft/core/bs2b.cpp
+	ThirdParty/openal-soft/core/bs2b.h
+	ThirdParty/openal-soft/core/bsinc_defs.h
+	ThirdParty/openal-soft/core/bsinc_tables.cpp
+	ThirdParty/openal-soft/core/bsinc_tables.h
+	ThirdParty/openal-soft/core/buffer_storage.cpp
+	ThirdParty/openal-soft/core/buffer_storage.h
+	ThirdParty/openal-soft/core/bufferline.h
+	ThirdParty/openal-soft/core/context.cpp
+	ThirdParty/openal-soft/core/context.h
+	ThirdParty/openal-soft/core/converter.cpp
+	ThirdParty/openal-soft/core/converter.h
+	ThirdParty/openal-soft/core/cpu_caps.cpp
+	ThirdParty/openal-soft/core/cpu_caps.h
+	ThirdParty/openal-soft/core/cubic_defs.h
+	ThirdParty/openal-soft/core/cubic_tables.cpp
+	ThirdParty/openal-soft/core/cubic_tables.h
+	ThirdParty/openal-soft/core/devformat.cpp
+	ThirdParty/openal-soft/core/devformat.h
+	ThirdParty/openal-soft/core/device.cpp
+	ThirdParty/openal-soft/core/device.h
+	ThirdParty/openal-soft/core/effects/base.h
+	ThirdParty/openal-soft/core/effectslot.cpp
+	ThirdParty/openal-soft/core/effectslot.h
+	ThirdParty/openal-soft/core/except.cpp
+	ThirdParty/openal-soft/core/except.h
+	ThirdParty/openal-soft/core/filters/biquad.cpp
+	ThirdParty/openal-soft/core/filters/biquad.h
+	ThirdParty/openal-soft/core/filters/nfc.cpp
+	ThirdParty/openal-soft/core/filters/nfc.h
+	ThirdParty/openal-soft/core/filters/splitter.cpp
+	ThirdParty/openal-soft/core/filters/splitter.h
+	ThirdParty/openal-soft/core/fmt_traits.h
+	ThirdParty/openal-soft/core/fpu_ctrl.cpp
+	ThirdParty/openal-soft/core/fpu_ctrl.h
+	ThirdParty/openal-soft/core/front_stablizer.h
+	ThirdParty/openal-soft/core/helpers.cpp
+	ThirdParty/openal-soft/core/helpers.h
+	ThirdParty/openal-soft/core/hrtf.cpp
+	ThirdParty/openal-soft/core/hrtf.h
+	ThirdParty/openal-soft/core/logging.cpp
+	ThirdParty/openal-soft/core/logging.h
+	ThirdParty/openal-soft/core/mastering.cpp
+	ThirdParty/openal-soft/core/mastering.h
+	ThirdParty/openal-soft/core/mixer.cpp
+	ThirdParty/openal-soft/core/mixer.h
+	ThirdParty/openal-soft/core/mixer/defs.h
+	ThirdParty/openal-soft/core/mixer/hrtfbase.h
+	ThirdParty/openal-soft/core/mixer/hrtfdefs.h
+	ThirdParty/openal-soft/core/mixer/mixer_c.cpp
+	ThirdParty/openal-soft/core/mixer/mixer_sse.cpp
+	ThirdParty/openal-soft/core/mixer/mixer_sse2.cpp
+	ThirdParty/openal-soft/core/mixer/mixer_sse3.cpp
+	ThirdParty/openal-soft/core/mixer/mixer_sse41.cpp
+	ThirdParty/openal-soft/core/resampler_limits.h
+	ThirdParty/openal-soft/core/storage_formats.cpp
+	ThirdParty/openal-soft/core/storage_formats.h
+	ThirdParty/openal-soft/core/uhjfilter.cpp
+	ThirdParty/openal-soft/core/uhjfilter.h
+	ThirdParty/openal-soft/core/uiddefs.cpp
+	ThirdParty/openal-soft/core/voice.cpp
+	ThirdParty/openal-soft/core/voice.h
+	ThirdParty/openal-soft/core/voice_change.h
+	ThirdParty/openal-soft/default_hrtf.h
+	ThirdParty/openal-soft/fmt-11.1.1/LICENSE
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/args.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/base.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/chrono.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/color.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/compile.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/core.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/format-inl.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/format.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/os.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/ostream.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/printf.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/ranges.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/std.h
+	ThirdParty/openal-soft/fmt-11.1.1/include/fmt/xchar.h
+	ThirdParty/openal-soft/fmt-11.1.1/src/format.cc
+	ThirdParty/openal-soft/fmt-11.1.1/src/os.cc
+	ThirdParty/openal-soft/include/AL/al.h
+	ThirdParty/openal-soft/include/AL/alc.h
+	ThirdParty/openal-soft/include/AL/alext.h
+	ThirdParty/openal-soft/include/AL/efx-creative.h
+	ThirdParty/openal-soft/include/AL/efx-presets.h
+	ThirdParty/openal-soft/include/AL/efx.h
+	ThirdParty/openal-soft/version.h
+)
+
+target_compile_definitions(OpenAL PRIVATE _CRT_SECURE_NO_WARNINGS _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR NOMINMAX)
+target_compile_definitions(OpenAL PUBLIC AL_ALEXT_PROTOTYPES AL_LIBTYPE_STATIC)
+
+target_compile_options(OpenAL PUBLIC /utf-8)
+
+target_include_directories(OpenAL PRIVATE
+	ThirdParty/openal-soft
+	ThirdParty/openal-soft/common
+	ThirdParty/openal-soft/fmt-11.1.1/include
+)
+
+target_include_directories(OpenAL PUBLIC
+	ThirdParty/openal-soft/include
+)
+
+target_link_libraries(OpenAL PUBLIC winmm avrt)
+
+################################################################################
+
+add_library(DSOAL OBJECT
+	ThirdParty/dsoal/src/buffer.cpp
+	ThirdParty/dsoal/src/buffer.h
+	ThirdParty/dsoal/src/capture.cpp
+	ThirdParty/dsoal/src/capture.h
+	ThirdParty/dsoal/src/comhelpers.h
+	ThirdParty/dsoal/src/comptr.h
+	ThirdParty/dsoal/src/dsoal.cpp
+	ThirdParty/dsoal/src/dsoal.h
+	ThirdParty/dsoal/src/dsoundoal.cpp
+	ThirdParty/dsoal/src/dsoundoal.h
+	ThirdParty/dsoal/src/eax.cpp
+	ThirdParty/dsoal/src/eax.h
+	ThirdParty/dsoal/src/enumerate.h
+	ThirdParty/dsoal/src/expected.h
+	ThirdParty/dsoal/src/factory.cpp
+	ThirdParty/dsoal/src/factory.h
+	ThirdParty/dsoal/src/fullduplex.cpp
+	ThirdParty/dsoal/src/fullduplex.h
+	ThirdParty/dsoal/src/guidprinter.h
+	ThirdParty/dsoal/src/logging.h
+	ThirdParty/dsoal/src/primarybuffer.cpp
+	ThirdParty/dsoal/src/primarybuffer.h
+	ThirdParty/dsoal/src/propset.cpp
+	ThirdParty/dsoal/src/propset.h
+	ThirdParty/dsoal/src/vmanager.h
+)
+
+target_compile_definitions(DSOAL PRIVATE _CRT_SECURE_NO_WARNINGS NOMINMAX)
+
+target_link_libraries(DSOAL PUBLIC OpenAL)
+
+################################################################################
+
 set(CRYMP_CLIENT_EXE "CryMP-Client${BUILD_BITS}")
 set(CRYMP_SERVER_EXE "CryMP-Server${BUILD_BITS}")
 
@@ -1110,6 +1483,8 @@ message(STATUS "Target client executable: ${CRYMP_CLIENT_EXE}.exe")
 message(STATUS "Target server executable: ${CRYMP_SERVER_EXE}.exe")
 
 add_executable(${CRYMP_CLIENT_EXE} WIN32
+	Code/Launcher/DsoalDeployer.cpp
+	Code/Launcher/DsoalDeployer.h
 	Code/Launcher/Launcher.cpp
 	Code/Launcher/Launcher.h
 	Code/Launcher/Main.cpp
@@ -1135,7 +1510,7 @@ add_executable(${CRYMP_SERVER_EXE} WIN32
 	Resources/Launcher.manifest
 )
 
-target_link_libraries(${CRYMP_CLIENT_EXE} PRIVATE Base CryGame)
+target_link_libraries(${CRYMP_CLIENT_EXE} PRIVATE Base CryGame OpenAL DSOAL)
 target_link_libraries(${CRYMP_SERVER_EXE} PRIVATE Base CryGame)
 
 # use these only in Launcher code to avoid recompiling everything for each exe
@@ -1174,7 +1549,6 @@ set(CRYMP_CLIENT_RESOURCES
 	${PROJECT_SOURCE_DIR}/Resources/CursorGreen.cur
 	${PROJECT_SOURCE_DIR}/Resources/CursorRed.cur
 	${PROJECT_SOURCE_DIR}/Resources/CursorWhite.cur
-	${PROJECT_SOURCE_DIR}/masters.txt
 	${PROJECT_BINARY_DIR}/config.h
 	${PROJECT_BINARY_DIR}/version.h
 	${CRYMP_INTERNAL_PAK_PATH}
@@ -1183,7 +1557,6 @@ set(CRYMP_CLIENT_RESOURCES
 set(CRYMP_SERVER_RESOURCES
 	${PROJECT_SOURCE_DIR}/Code/Launcher/Resources.h
 	${PROJECT_SOURCE_DIR}/Resources/ServerIcon.ico
-	${PROJECT_SOURCE_DIR}/masters.txt
 	${PROJECT_BINARY_DIR}/config.h
 	${PROJECT_BINARY_DIR}/version.h
 	${CRYMP_INTERNAL_PAK_PATH}

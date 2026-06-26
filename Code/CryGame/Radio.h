@@ -42,6 +42,19 @@ public:
 	void			CancelRadio();
 	void			SetTeam(const string& name);
 	void			GetMemoryStatistics(ICrySizer * s);
+
+	bool IsOpen() const
+	{
+		return m_currentGroup != -1;
+	}
+
+	bool IsPending() const
+	{
+		return m_waitForInputEvents;
+	}
+
+	void		CloseRadioMenu();
+
 private:
 	CGameRules	*m_pGameRules;
 	int			m_currentGroup;
@@ -55,8 +68,6 @@ private:
 	bool	m_inputEventConsumedKey;
 	bool	m_waitForInputEvents;
 	bool		UpdatePendingGroup();
-
-	void		CloseRadioMenu();
 
 	bool GetTeamRadioTable(const string& team_name, SmartScriptTable& out_table);
 	int GetExtendedRadioId(int keyId, int groupId);

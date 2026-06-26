@@ -1,0 +1,63 @@
+<item name="VehicleSingularity" class="VehicleWeapon" configuration="mp" >
+	<params>
+		<param name="equipeable"	value="1" />
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="1" />
+		<param name="arms"			 	value="0" />
+		<mount />		
+	</params>
+	<ammos>
+		<ammo name="Tank_singularityprojectile" extra="0" amount="0" />
+	</ammos>
+	<actions>	
+		<action name="spin_up">
+			<sound target="firstperson" name="Sounds/weapons:singularity_cannon:sing_cannon_charge" radius="100" static="1" />
+			<sound target="thirdperson" name="Sounds/weapons:singularity_cannon:sing_cannon_charge" radius="100" static="1" />
+		</action>		
+		<action name="blast">
+			<sound target="firstperson" name="Sounds/weapons:singularity_cannon:sing_cannon_fire_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="Sounds/weapons:singularity_cannon:sing_cannon_fire_fp" radius="100" static="1" />
+		</action>		
+		<action name="fire">			
+			<sound target="firstperson" name="Sounds/weapons:singularity_cannon:sing_cannon_fire_fp" radius="100" static="1" />
+			<sound target="thirdperson" name="Sounds/weapons:singularity_cannon:sing_cannon_fire_fp" radius="100" static="1" />
+		</action>
+	</actions>
+	<firemodes>		
+		<firemode name="Charge" type="Charge">
+			<fire>
+				<param name="spin_up_time" value="3.0" />
+				<param name="ammo_type" value="Tank_singularityprojectile" />
+				<param name="rate" value="3" />
+				<param name="damage" value="3000" />
+				<param name="offset" value="0" />
+				<param name="clip_size" value="-1" />
+			</fire>
+			<charge>
+				<param name="time" value="0.1" />
+				<param name="max_charges" value="1" />
+        <param name="reset_spinup" value="1" />
+			</charge>
+			<recoil>
+				<param name="impulse" value="80000" />
+			</recoil>					
+			<spread>
+				<param name="min" value="0" />
+				<param name="max" value="0" />
+				<param name="attack" value="0" />
+				<param name="decay" value="0" />
+			</spread>
+			<muzzleflash>
+				<firstperson effect="Alien_Weapons.singularity.Tank_Singularity_Muzzle" helper="" light_helper="" light_time="0.05" light_radius="10" light_color="1,1,0.8" light_diffuse_mult="8"  />
+				<thirdperson effect="Alien_Weapons.singularity.Tank_Singularity_Muzzle" helper="" light_helper="" light_time="0.05" light_radius="10" light_color="1,1,0.8" light_diffuse_mult="8"  />
+			</muzzleflash>			
+			<spinup>
+				<firstperson effect="Alien_weapons.singularity.Tank_Singularity_Spinup" helper="" light_radius="0" />
+				<thirdperson effect="Alien_weapons.singularity.Tank_Singularity_Spinup" helper="" light_radius="0" />	
+			</spinup>	
+		</firemode>
+	</firemodes>
+</item>

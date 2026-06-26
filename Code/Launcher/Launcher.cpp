@@ -14,6 +14,7 @@
 #include "CryCommon/CrySystem/ICryPak.h"
 #include "CryMP/Client/Client.h"
 #include "CryMP/Server/Server.h"
+#include "CryPhysics/CryPhysics.h"
 #include "CryScriptSystem/ScriptSystem.h"
 #include "CrySystem/CPUInfo.h"
 #include "CrySystem/CrashTest.h"
@@ -29,6 +30,7 @@
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
+#include "DsoalDeployer.h"
 #include "Launcher.h"
 #include "MemoryPatch.h"
 #include "Resources.h"
@@ -324,6 +326,48 @@ static void ReplaceStreamEngine(void* pCrySystem)
 #endif
 }
 
+static IPhysicalWorld* CreateNewPhysics(ISystem* pSystem)
+{
+	CryLogAlways("$3[CryMP] Initializing Physics");
+
+	return CreatePhysicalWorld(pSystem);
+}
+
+static void ReplacePhysics(void* pCrySystem)
+{
+	void* pFactory = CreateNewPhysics;
+
+#ifdef BUILD_64BIT
+	const std::size_t codeOffset = 0x43392;
+	const std::size_t codeMaxSize = 0x53;
+
+	unsigned char code[] = {
+		0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, 0x0
+		0x48, 0x8B, 0xCE,                                            // mov rcx, rsi
+		0xFF, 0xD0,                                                  // call rax
+	};
+
+	std::memcpy(&code[2], &pFactory, 8);
+#else
+	const std::size_t codeOffset = 0x556CF;
+	const std::size_t codeMaxSize = 0x49;
+
+	unsigned char code[] = {
+		0xB8, 0x00, 0x00, 0x00, 0x00,  // mov eax, 0x0
+		0x55,                          // push ebp
+		0xFF, 0xD0,                    // call eax
+		0x83, 0xC4, 0x04,              // add esp, 0x4
+	};
+
+	std::memcpy(&code[1], &pFactory, 4);
+#endif
+
+	static_assert(sizeof(code) <= codeMaxSize);
+
+	WinAPI::FillMem(WinAPI::RVA(pCrySystem, codeOffset), code, sizeof(code));
+	WinAPI::FillNOP(WinAPI::RVA(pCrySystem, codeOffset + sizeof(code)), codeMaxSize - sizeof(code));
+}
+
 static IScriptSystem* CreateNewScriptSystem(ISystem* pSystem, bool)
 {
 	CryLogAlways("$3[CryMP] Initializing Script System");
@@ -505,27 +549,6 @@ static std::string_view ChooseLanguage(std::string_view defaultLanguage, ICVar* 
 	return language;
 }
 
-static void PatchFlashFont()
-{
-	const std::string_view lang = LocalizationManager::GetInstance().GetCurrentLanguage().name;
-
-	// these languages have their own special font
-	if (lang != "japanese" && lang != "korean" && lang != "chinese" && lang != "thai")
-	{
-		CryPak& cryPak = CryPak::GetInstance();
-
-		// the same font for all other languages
-		cryPak.AddRedirect(
-			"Languages/HUD_Font_LocFont.gfx",
-			"Languages/HUD_Font_LocFont_override.gfx"
-		);
-		cryPak.AddRedirect(
-			"Languages/HUD_Font_LocFont_glyphs.gfx",
-			"Languages/HUD_Font_LocFont_glyphs_override.gfx"
-		);
-	}
-}
-
 static void ReplaceLocalizationManager(void* pCrySystem)
 {
 	struct DummyCSystem
@@ -550,8 +573,6 @@ static void ReplaceLocalizationManager(void* pCrySystem)
 			}
 
 			LocalizationManager::GetInstance().SetLanguage(language.data());
-
-			PatchFlashFont();
 		}
 	};
 
@@ -741,6 +762,71 @@ static void HookNetworkGetService(void* pCryNetwork)
 	WinAPI::FillMem(&pCNetworkVTable[7], &reinterpret_cast<void*&>(pNewGetService), sizeof(void*));
 }
 
+struct DummyCSystem
+{
+	void Warning(int subsys, int severity, int flags, const char* file, const char* format, ...)
+	{
+		std::string msg;
+
+		// severity is ignored because the message is always supposed to be a warning
+
+		switch (subsys)
+		{
+			case VALIDATOR_MODULE_UNKNOWN:      msg += "[Unknown] ";      break;
+			case VALIDATOR_MODULE_RENDERER:     msg += "[Renderer] ";     break;
+			case VALIDATOR_MODULE_3DENGINE:     msg += "[3DEngine] ";     break;
+			case VALIDATOR_MODULE_AI:           msg += "[AI] ";           break;
+			case VALIDATOR_MODULE_ANIMATION:    msg += "[Animation] ";    break;
+			case VALIDATOR_MODULE_ENTITYSYSTEM: msg += "[EntitySystem] "; break;
+			case VALIDATOR_MODULE_SCRIPTSYSTEM: msg += "[ScriptSystem] "; break;
+			case VALIDATOR_MODULE_SYSTEM:       msg += "[System] ";       break;
+			case VALIDATOR_MODULE_SOUNDSYSTEM:  msg += "[SoundSystem] ";  break;
+			case VALIDATOR_MODULE_GAME:         msg += "[Game] ";         break;
+			case VALIDATOR_MODULE_MOVIE:        msg += "[Movie] ";        break;
+			case VALIDATOR_MODULE_EDITOR:       msg += "[Editor] ";       break;
+			case VALIDATOR_MODULE_NETWORK:      msg += "[Network] ";      break;
+			case VALIDATOR_MODULE_PHYSICS:      msg += "[Physics] ";      break;
+			case VALIDATOR_MODULE_FLOWGRAPH:    msg += "[FlowGraph] ";    break;
+			default:                            msg += "[?] ";            break;
+		}
+
+		if (flags & VALIDATOR_FLAG_FILE)    msg += "[File] ";
+		if (flags & VALIDATOR_FLAG_TEXTURE) msg += "[Texture] ";
+		if (flags & VALIDATOR_FLAG_SCRIPT)  msg += "[Script] ";
+		if (flags & VALIDATOR_FLAG_SOUND)   msg += "[Sound] ";
+		if (flags & VALIDATOR_FLAG_AI)      msg += "[AI] ";
+
+		va_list args;
+		va_start(args, format);
+		StringTools::FormatToV(msg, format, args);
+		va_end(args);
+
+		if (file)
+		{
+			msg += " [";
+			msg += file;
+			msg += "]";
+		}
+
+		CryLogWarning("%s", msg.c_str());
+	}
+};
+
+static void HookSystemWarning(void* pCrySystem)
+{
+	void** pCSystemVTable = static_cast<void**>(WinAPI::RVA(pCrySystem,
+#ifdef BUILD_64BIT
+		0x26ACF8
+#else
+		0x1BC5F8
+#endif
+	));
+
+	// vtable hook
+	auto pNewWarning = &DummyCSystem::Warning;
+	WinAPI::FillMem(&pCSystemVTable[21], &reinterpret_cast<void*&>(pNewWarning), sizeof(void*));
+}
+
 static void LogRealWindowsBuild(Logger& logger)
 {
 	void* kernel32 = WinAPI::DLL::Get("kernel32.dll");
@@ -825,16 +911,24 @@ static std::FILE* ProvideLogFile()
 
 void Launcher::SetCmdLine()
 {
-	const std::string_view cmdLine = WinAPI::CmdLine::GetFull();
+	std::string cmdLine = WinAPI::CmdLine::GetFull();
+
+#ifdef SERVER_LAUNCHER
+	const std::filesystem::path defaultServerRoot = std::filesystem::absolute("CryMP-Server");
+	if (!WinAPI::CmdLine::HasArg("-root") && std::filesystem::is_directory(defaultServerRoot))
+	{
+		cmdLine += " -root \"";
+		cmdLine += defaultServerRoot.string();
+		cmdLine += "\" +exec server.cfg";
+	}
+#endif
 
 	if (cmdLine.length() >= sizeof(m_params.cmdLine))
 	{
 		throw StringTools::ErrorFormat("Command line is too long!");
 	}
 
-	std::memcpy(m_params.cmdLine, cmdLine.data(), cmdLine.length());
-
-	m_params.cmdLine[cmdLine.length()] = '\0';
+	std::memcpy(m_params.cmdLine, cmdLine.c_str(), cmdLine.length() + 1);
 }
 
 void Launcher::InitWorkingDirectory()
@@ -1050,6 +1144,7 @@ void Launcher::PatchEngine()
 	if (m_dlls.pCryAction)
 	{
 		MemoryPatch::CryAction::AllowDX9ImmersiveMultiplayer(m_dlls.pCryAction);
+		MemoryPatch::CryAction::AllowMultiplayerRegisterWithAI(m_dlls.pCryAction);
 		MemoryPatch::CryAction::DisableBreakLog(m_dlls.pCryAction);
 		MemoryPatch::CryAction::DisableTimeOfDayLengthLowerLimit(m_dlls.pCryAction);
 		MemoryPatch::CryAction::HookCryWarning(m_dlls.pCryAction, &OnCryWarning);
@@ -1086,26 +1181,30 @@ void Launcher::PatchEngine()
 		//MemoryPatch::CrySystem::MakeDX9Default(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::RemoveSecuROM(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::UnhandledExceptions(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::EnableServerPhysicsThread(m_dlls.pCrySystem);
+		//MemoryPatch::CrySystem::EnableServerPhysicsThread(m_dlls.pCrySystem);
 		MemoryPatch::CrySystem::HookCryWarning(m_dlls.pCrySystem, &OnCryWarning);
 
 		InstallEarlyEngineInitHook(m_dlls.pCrySystem);
+		HookSystemWarning(m_dlls.pCrySystem);
 
 		ReplaceCryPak(m_dlls.pCrySystem);
 		ReplaceStreamEngine(m_dlls.pCrySystem);
 		ReplaceScriptSystem(m_dlls.pCrySystem);
 		ReplaceHardwareMouse(m_dlls.pCrySystem);
 		ReplaceLocalizationManager(m_dlls.pCrySystem);
+
+		if (!WinAPI::CmdLine::HasArg("-oldphysics"))
+		{
+			ReplacePhysics(m_dlls.pCrySystem);
+		}
 	}
 
 	if (m_dlls.pCry3DEngine)
 	{
+		MemoryPatch::Cry3DEngine::EnableBigDecalsOnDynamicObjects(m_dlls.pCry3DEngine);
 		MemoryPatch::Cry3DEngine::FixGetObjectsByType(m_dlls.pCry3DEngine);
 
-		if (!WinAPI::CmdLine::HasArg("-oldtod"))
-		{
-			ReplaceTimeOfDay(m_dlls.pCry3DEngine);
-		}
+		ReplaceTimeOfDay(m_dlls.pCry3DEngine);
 	}
 
 	const char* GAME_WINDOW_NAME = "CryMP Client " CRYMP_VERSION_STRING;
@@ -1133,16 +1232,19 @@ void Launcher::PatchEngine()
 	if (m_dlls.pFmodEx)
 	{
 		MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(m_dlls.pFmodEx);
+
+#ifdef CLIENT_LAUNCHER
+		if (WinAPI::CmdLine::HasArg("-dsoal"))
+		{
+			DsoalDeployer::Init(m_dlls.pFmodEx);
+		}
+#endif
 	}
 }
 
 void Launcher::StartEngine()
 {
-	#ifdef SERVER_LAUNCHER
-	const bool oldAction = true;
-	#else
 	const bool oldAction = WinAPI::CmdLine::HasArg("-oldaction");
-	#endif
 
 	IGameFramework* pGameFramework = nullptr;
 
@@ -1218,6 +1320,7 @@ void Launcher::StartEngine()
 
 	StartupTime::Finish();
 	CryLogAlways("Startup finished in %.3f seconds", StartupTime::GetSeconds());
+
 #ifdef SERVER_LAUNCHER
 	if (oldAction) {
 		CryLogAlways("[CryMP] Using old CryAction");
@@ -1287,7 +1390,7 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 	logger.LogAlways("%s", banner);
 	logger.LogAlways("Compiled by " CRYMP_COMPILER);
 	logger.LogAlways("Copyright (C) 2001-2008 Crytek GmbH");
-	logger.LogAlways("Copyright (C) 2014-2025 CryMP");
+	logger.LogAlways("Copyright (C) 2014-2026 CryMP");
 	logger.LogAlways("");
 
 	logger.SetPrefix(logPrefix);
@@ -1298,6 +1401,10 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 
 	gEnv->pConsole->AddCommand("CryPakInfo", [](IConsoleCmdArgs* args) {
 		CryPak::GetInstance().LogInfo();
+	});
+
+	gEnv->pConsole->AddCommand("LocalizationManagerInfo", [](IConsoleCmdArgs* args) {
+		LocalizationManager::GetInstance().LogInfo();
 	});
 }
 
@@ -1331,8 +1438,6 @@ void Launcher::Run()
 		m_params.isDedicatedServer = true;
 	}
 
-	this->SetCmdLine();
-
 	if (WinAPI::GetApplicationPath().filename().string().find("CryMP") != 0)
 	{
 		throw StringTools::ErrorFormat("Invalid name of the executable!");
@@ -1344,6 +1449,7 @@ void Launcher::Run()
 	}
 
 	this->InitWorkingDirectory();
+	this->SetCmdLine();
 
 	this->LoadEngine();
 	this->PatchEngine();

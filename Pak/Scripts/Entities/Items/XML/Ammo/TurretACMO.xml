@@ -1,0 +1,31 @@
+<ammo name="turretacmo" class="Bullet">
+	<geometry>
+	</geometry>
+	<flags>
+		<param name="clientonly" value="1" />
+	</flags>
+	<whiz>
+		<param name="sound" value="sounds/physics:bullet_whiz:moac_whiz" />
+	</whiz>
+	<physics type="particle">
+		<param name="mass" value="0.225" />
+		<param name="speed" value="100" />
+		
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0" />
+		<param name="gravity" value="0, 0, 0" />
+		<param name="water_gravity" value="0, 0, 0" />
+	</physics>
+	<params>
+		<param name="lifetime" value="15" />
+		<!--<param name="showtime" value="0.015" />-->
+	</params>
+	<collision>
+		<param name="effect" value="Alien_Weapons.Moac.Warrior_Turret_Impact" />
+		<param name="scale" value="0.33" />
+	</collision>
+	<trail>		
+		<param name="effect" value="Alien_Weapons.Moac.Tracer_warrior" />
+		<param name="scale" value="3.0" />
+	</trail>
+</ammo>

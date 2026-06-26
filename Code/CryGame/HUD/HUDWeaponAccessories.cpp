@@ -7,6 +7,7 @@
 #include "HUD.h"
 #include "CryGame/Items/Weapons/Weapon.h"
 #include "CryGame/HUD/GameFlashLogic.h"
+#include "CryGame/GameCVars.h"
 
 //-----------------------------------------------------------------------------------------------------
 
@@ -88,8 +89,8 @@ void CHUD::WeaponAccessoriesInterface(bool visible, bool force)
 		m_bIgnoreMiddleClick = false;
 		if (WeaponHasAttachments())
 		{
-			m_animWeaponAccessories.Invoke("showWeaponAccessories");
-			m_animWeaponAccessories.SetVisible(true);
+			m_animWeaponAccessories.Invoke("showWeaponAccessories"); //CryMP: makes the menu appear
+			//m_animWeaponAccessories.SetVisible(true); //already set to visible when pressing C
 		}
 	}
 	else
@@ -149,6 +150,8 @@ bool CHUD::ShowWeaponAccessories(bool enable)
 			{
 				if (UpdateWeaponAccessoriesScreen())
 				{
+					m_animWeaponAccessories.SetVisible(true); //CryMP: adds the buttons for fast switch, but doesn't show the menu untill later
+
 					//CryMP: Changed to false, showing mouse pointer only when menu available
 					SwitchToModalHUD(&m_animWeaponAccessories, false); 
 
@@ -307,19 +310,37 @@ void CHUD::UpdateWeaponModify()
 	const bool thirdPerson = m_pClientActor->IsThirdPerson();
 	const auto& helpers = pCurrentWeapon->GetAttachmentHelpers();
 
-	float scaleX = 0.0f, scaleY = 0.0f, halfUselessSize = 0.0f;
+	float scaleX = 0.0f;
+	float scaleY = 0.0f;
+	float halfUselessSize = 0.0f;
+
 	GetProjectionScale(&m_animWeaponAccessories, &scaleX, &scaleY, &halfUselessSize);
 
+	IFlashPlayer* pPlayer = m_animWeaponAccessories.GetFlashPlayer();
+	if (pPlayer)
+	{
+		if (thirdPerson)
+		{
+			//CryMP: 70% scale for TP to avoid button overlap as much as possible
+			pPlayer->SetVariable("WSAccessoryScale", SFlashVarValue(0.7f));
+		}
+		else
+		{
+			pPlayer->SetVariable("WSAccessoryScale", SFlashVarValue(g_pGameCVars->hud_scale));
+		}
+	}
+	
 	for (const auto& helper : helpers)
 	{
 		if (helper.slot != CItem::eIGS_FirstPerson)
 			continue;
 
-		Vec3 worldPos = Vec3(ZERO);
+		Vec3 worldPos;
 
 		if (thirdPerson)
 		{
-			if (SEntitySlotInfo info; pCurrentWeapon->GetEntity()->GetSlotInfo(CItem::eIGS_ThirdPerson, info))
+			SEntitySlotInfo info;
+			if (pCurrentWeapon->GetEntity()->GetSlotInfo(CItem::eIGS_ThirdPerson, info))
 			{
 				if (info.pStatObj)
 				{
@@ -338,7 +359,7 @@ void CHUD::UpdateWeaponModify()
 			worldPos = pCurrentWeapon->GetSlotHelperPos(CItem::eIGS_FirstPerson, helper.bone.c_str(), true);
 		}
 
-		Vec3 screenSpace = Vec3(ZERO);
+		Vec3 screenSpace;
 		m_pRenderer->ProjectToScreen(worldPos.x, worldPos.y, worldPos.z, &screenSpace.x, &screenSpace.y, &screenSpace.z);
 
 		screenSpace.x = screenSpace.x * scaleX + halfUselessSize;

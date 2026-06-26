@@ -865,8 +865,8 @@ struct GoalParameters
 
 	GoalParameters():
 	m_pTarget(NULL),
-		m_vPosition(ZERO),
-		m_vPositionAux(ZERO),
+		m_vPosition(),
+		m_vPositionAux(),
 		fValue(0),
 		fValueAux(0),
 		nValue(0),
@@ -987,7 +987,7 @@ struct SAIEVENT
 	EntityId targetId;
 
 	SAIEVENT():bFuzzySight(false),nDeltaHealth(0),fThreat(0.f),nType(0),
-		pSeen(NULL),bPathFound(false),vForcedNavigation(ZERO),targetId(0){}
+		pSeen(NULL),bPathFound(false),vForcedNavigation(),targetId(0){}
 
 };
 
@@ -1033,13 +1033,13 @@ protected:
 	{
 		struct 
 		{
-			int _fastcast_CAIActor : 1;
-			int _fastcast_CAIAttribute : 1;
-			int _fastcast_CAIPlayer : 1;
-			int _fastcast_CLeader : 1;
-			int _fastcast_CPipeUser : 1;
-			int _fastcast_CPuppet : 1;
-			int _fastcast_CAIVehicle : 1;
+			unsigned int _fastcast_CAIActor : 1;
+			unsigned int _fastcast_CAIAttribute : 1;
+			unsigned int _fastcast_CAIPlayer : 1;
+			unsigned int _fastcast_CLeader : 1;
+			unsigned int _fastcast_CPipeUser : 1;
+			unsigned int _fastcast_CPuppet : 1;
+			unsigned int _fastcast_CAIVehicle : 1;
 		};
 		int _fastcast_any;
 	};
@@ -1102,7 +1102,7 @@ public:
 	virtual IUnknownProxy* GetProxy() const = 0;
 	virtual bool IsMoving() const = 0;
 	virtual bool IsHostile(const IAIObject* pOther, bool bUsingAIIgnorePlayer=true) const = 0;
-	virtual bool CreateFormation(const char *szName, Vec3 vTargetPos=ZERO)=0;
+	virtual bool CreateFormation(const char *szName, Vec3 vTargetPos = {}) = 0;
 	virtual bool ReleaseFormation()=0;
 
 	/// Sets params used when following a predefined path
@@ -1450,7 +1450,7 @@ struct PATHPOINT
 {
 	Vec3 vPos;
 	Vec3 vDir;
-	PATHPOINT(const Vec3& pos=ZERO,const Vec3& dir=ZERO):vPos(pos),vDir(dir){}
+	PATHPOINT(const Vec3& pos = {}, const Vec3& dir = {}) : vPos(pos), vDir(dir) {}
 };
 typedef DynArray<PATHPOINT>	PATHPOINTVECTOR;
 
@@ -1689,14 +1689,14 @@ struct SAIBodyInfo
 	IEntity *linkedVehicleEntity;
 	IEntity *linkedDriverEntity;
 
-	SAIBodyInfo() : vEyePos(ZERO), vEyeDir(ZERO), vEyeDirAnim(ZERO), vBodyDir(ZERO), vMoveDir(ZERO), vUpDir(ZERO), vFireDir(ZERO),
+	SAIBodyInfo() : vEyePos(), vEyeDir(), vEyeDirAnim(), vBodyDir(), vMoveDir(), vUpDir(), vFireDir(),
 		maxSpeed(0), normalSpeed(0), minSpeed(0), stance(STANCE_NULL),
 		isAiming(false), isFiring(false), linkedVehicleEntity(0), linkedDriverEntity(0), lean(0.0f), slopeAngle(0.0f)
 	{
-		stanceSize.min=Vec3(ZERO);
-		stanceSize.max=Vec3(ZERO);
-		colliderSize.min=Vec3(ZERO);
-		colliderSize.max=Vec3(ZERO);
+		stanceSize.min = {};
+		stanceSize.max = {};
+		colliderSize.min = {};
+		colliderSize.max = {};
 	}
 };
 

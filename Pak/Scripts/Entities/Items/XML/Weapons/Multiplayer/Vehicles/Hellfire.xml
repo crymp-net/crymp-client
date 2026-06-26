@@ -1,0 +1,39 @@
+<item name="Hellfire" class="VehicleWeapon" invisible="1" configuration="mp" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ammos>
+		<ammo name="helicoptermissile" extra="28" amount="0" />
+	</ammos>
+	<actions>
+  	<action name="fire">
+  		<sound target="firstperson" name="sounds/weapons:vehicle_asian_helicopter:fire_missile_fp" static="1"/>
+  		<sound target="thirdperson" name="sounds/weapons:vehicle_asian_helicopter:fire_missile" static="1"/>
+  	</action>
+  </actions>
+	<firemodes>
+		<firemode name="Automatic" type="Automatic">
+			<fire>
+			  <param name="ammo_type" value="helicoptermissile" />
+				<param name="clip_size" value="0" />
+				<param name="rate" value="130" />
+				<param name="damage" value="500" />
+				<param name="camshake_rotate" value="0,0.08,0" />
+				<param name="camshake_shift" value="0.05,0,0" />
+				<param name="barrel_count" value="4" />
+			</fire>
+			<recoil>
+				<param name="impulse" value="8000" />
+			</recoil>	
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Rocketlauncher.Hellfire" helper="" light_helper="" light_radius="10" time="0.100" />
+				<thirdperson effect="muzzleflash.Rocketlauncher.Hellfire_tp" helper="" light_helper="" light_radius="10" time="0.100" />
+			</muzzleflash>
+		</firemode>
+	</firemodes>
+</item>

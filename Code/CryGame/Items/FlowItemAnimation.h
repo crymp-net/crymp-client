@@ -150,8 +150,8 @@ public:
 			{
 				if (pOffHand->GetEntity()->GetClass()==CItem::sOffHandClass)
 				{
-					if (COffHand *pCOffHand=static_cast<COffHand *>(pOffHand))
-						pCOffHand->CancelAction();
+					COffHand* pCOffHand = static_cast<COffHand*>(pOffHand);
+					pCOffHand->CancelAction();
 
 					if (CActor *pOwner=pOffHand->GetOwnerActor())
 					{
@@ -176,8 +176,8 @@ public:
  		{
 			if (pOffHand->GetEntity()->GetClass()==CItem::sOffHandClass)
 			{
-				if (COffHand *pCOffHand=static_cast<COffHand *>(pOffHand))
-					pCOffHand->PreExecuteAction(eOHA_THROW_GRENADE, eAAM_OnPress);
+				COffHand* pCOffHand = static_cast<COffHand*>(pOffHand);
+				pCOffHand->PreExecuteAction(eOHA_THROW_GRENADE, eAAM_OnPress);
 			}
 
 			pOffHand->PlayAnimation(anim.c_str());

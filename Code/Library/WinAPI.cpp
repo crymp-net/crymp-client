@@ -767,6 +767,28 @@ int WinAPI::HTTPRequest(
 		throw StringTools::SysErrorFormat("WinHttpOpen");
 	}
 
+	if (urlComponents.nScheme == INTERNET_SCHEME_HTTPS)
+	{
+		// try to enable TLS 1.2 and 1.3
+		DWORD tlsFlags = WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 | WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
+
+		if (!WinHttpSetOption(hSession, WINHTTP_OPTION_SECURE_PROTOCOLS, &tlsFlags, sizeof(tlsFlags)))
+		{
+			// try only TLS 1.2 because TLS 1.3 is not supported on older Windows
+			tlsFlags = WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
+
+			if (!WinHttpSetOption(hSession, WINHTTP_OPTION_SECURE_PROTOCOLS, &tlsFlags, sizeof(tlsFlags)))
+			{
+				// we cannot continue without TLS 1.2
+				throw StringTools::SysErrorFormat("Failed to enable TLS 1.2");
+			}
+		}
+	}
+
+	if (!urlComponents.lpszHostName) {
+		throw StringTools::SysErrorFormat("Invalid Hostname");
+	}
+
 	const std::wstring serverNameW(urlComponents.lpszHostName, urlComponents.dwHostNameLength);
 
 	HTTPHandleGuard hConnect = WinHttpConnect(hSession, serverNameW.c_str(), urlComponents.nPort, 0);
@@ -845,6 +867,7 @@ int WinAPI::HTTPRequest(
 		}
 		else
 		{
+			contentLengthString[31] = 0;
 			contentLength = _wcstoui64(contentLengthString, nullptr, 10);
 		}
 
@@ -998,4 +1021,98 @@ std::string WinAPI::GetIP(const std::string& hostName) {
 		iaddr.s_addr=*(unsigned long*)result->h_addr;
 		return inet_ntoa(iaddr);
 	}
+}
+
+void WinAPI::Wait(double seconds) {
+	if (seconds <= 0.0) return;
+
+	LARGE_INTEGER frequency, start, current;
+	QueryPerformanceFrequency(&frequency);
+	QueryPerformanceCounter(&start);
+
+	// 1. Tell Windows we need higher timer resolution (1ms)
+	// This makes Sleep(1) much more reliable.
+	timeBeginPeriod(1);
+
+	double targetTime = seconds;
+	double elapsed = 0;
+
+	// 2. The "Lazy" Phase: Sleep until we are within 2ms of the target
+	while (true) {
+		QueryPerformanceCounter(&current);
+		elapsed = (double)(current.QuadPart - start.QuadPart) / (double)frequency.QuadPart;
+
+		double remaining = targetTime - elapsed;
+		if (remaining <= 0.002) break; // If less than 2ms left, stop sleeping
+
+		Sleep(1); // Give the CPU a break
+	}
+
+	// 3. The "Precision" Phase: Busy-wait for the final microseconds
+	do {
+		YieldProcessor(); // Low-power hint for the CPU
+		QueryPerformanceCounter(&current);
+		elapsed = (double)(current.QuadPart - start.QuadPart) / (double)frequency.QuadPart;
+	} while (elapsed < targetTime);
+
+	// 4. Restore system timer resolution
+	timeEndPeriod(1);
+}
+
+/////////////
+// Threads //
+/////////////
+
+static void SetCurrentThreadNameLegacy(const char* name)
+{
+	// http://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx
+#pragma pack(push,8)
+	struct THREADNAME_INFO
+	{
+		DWORD dwType; // Must be 0x1000.
+		LPCSTR szName; // Pointer to name (in user addr space).
+		DWORD dwThreadID; // Thread ID (-1=caller thread).
+		DWORD dwFlags; // Reserved for future use, must be zero.
+	};
+#pragma pack(pop)
+
+	THREADNAME_INFO info{};
+	info.dwType = 0x1000;
+	info.szName = name;
+	info.dwThreadID = static_cast<DWORD>(-1);
+	info.dwFlags = 0;
+
+	__try
+	{
+		RaiseException(0x406D1388, 0, sizeof(info) / sizeof(ULONG_PTR), reinterpret_cast<ULONG_PTR*>(&info));
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+	}
+}
+
+static void SetCurrentThreadNameModern(const char* name)
+{
+	using TSetThreadDescription = HRESULT (WINAPI*)(HANDLE, PCWSTR);
+
+	static const TSetThreadDescription pSetThreadDescription = reinterpret_cast<TSetThreadDescription>(
+		GetProcAddress(GetModuleHandleA("kernel32.dll"), "SetThreadDescription")
+	);
+
+	if (pSetThreadDescription)
+	{
+		wchar_t wideName[128]{};
+		MultiByteToWideChar(CP_UTF8, 0, name, -1, wideName, 128);
+		wideName[127] = L'\0';
+		pSetThreadDescription(GetCurrentThread(), wideName);
+	}
+}
+
+void WinAPI::SetCurrentThreadName(const char* name)
+{
+	// the legacy approach first
+	SetCurrentThreadNameLegacy(name);
+
+	// now the modern approach (Win10+), if available
+	SetCurrentThreadNameModern(name);
 }

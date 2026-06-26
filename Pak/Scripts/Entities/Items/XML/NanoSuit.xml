@@ -1,0 +1,15 @@
+<item name="NanoSuit" class="PlayerFeature">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="unique" value="1" />
+		<param name="mass" value="10" />				
+	</params>
+	<features>
+		<feature name="nanosuit" />
+	</features>
+	<geometry>
+		<thirdperson name="objects/default.cgf" />
+	</geometry>	
+</item>

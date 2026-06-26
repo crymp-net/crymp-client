@@ -26,6 +26,7 @@ History:
 #include "GameFlashAnimation.h"
 #include "HUDCommon.h"
 #include "CryGame/Actors/Actor.h"
+#include "Library/StringTools.h"
 
 CHUDScore::ScoreEntry::ScoreEntry(EntityId id, int kills, int deaths, int ping, int teamKills, int playerScore, bool prioTeamKills)
 {
@@ -397,12 +398,13 @@ void CHUDScore::Render()
 		string strRank;
 		strRank.Format("@ui_short_rank_%d", currentRank);
 
-		SUIWideString name(pPlayer->GetName());
+		const char* playerName = pPlayer->GetName();
+		std::wstring name = StringTools::ToWide(playerName ? playerName : "(null)");
 		if (player.m_spectating)
 		{
-			name.m_string.append(L" (");
-			name.m_string.append(m_pHUD->LocalizeWithParams("@ui_SPECTATE"));
-			name.m_string.append(L")");
+			name += L" (";
+			name += m_pHUD->LocalizeWithParams("@ui_SPECTATE");
+			name += L")";
 		}
 
 		SFlashVarValue pp(0);
@@ -434,22 +436,36 @@ void CHUDScore::Render()
 		{
 			int playerScore = player.m_score;
 			SFlashVarValue args[12] = { name.c_str(),
-																	team,
-																	(player.m_entityId == pClientActor->GetEntityId()) ? true : false,
-																	playerScore,
-																	player.m_kills,
-																	player.m_teamKills,
-																	player.m_deaths,
-																	player.m_ping,
-																	player.m_entityId,
-																	player.m_alive ? 0 : 1,
-																	selected,
-																	muted };
+										team,
+										(player.m_entityId == pClientActor->GetEntityId()) ? true : false,
+										playerScore,
+										player.m_kills,
+										player.m_teamKills,
+										player.m_deaths,
+										player.m_ping,
+										player.m_entityId,
+										player.m_alive ? 0 : 1,
+										selected,
+										muted
+			};
 			m_pFlashBoard->Invoke("addEntry", args, 12);
 		}
 		else
 		{
-			SFlashVarValue args[12] = { name.c_str(), team, (player.m_entityId == pClientActor->GetEntityId()) ? true : false, pp, player.m_kills, player.m_deaths, player.m_ping, player.m_entityId, strRank.c_str(), player.m_alive ? 0 : 1,selected, muted };
+			SFlashVarValue args[12] = { 
+				name.c_str(), 														// strName
+				team,																// iTeamID
+				(player.m_entityId == pClientActor->GetEntityId()) ? true : false,	// bSelf
+				pp,																	// iPoints
+				player.m_kills,														// iKills
+				player.m_deaths,													// iDeaths
+				player.m_ping,														// iPing
+				player.m_entityId,													// iID
+				strRank.c_str(),													// iRank (although this is string...)
+				player.m_alive ? 0 : 1,												// iPlayerDeath
+				selected, 															// iSelected
+				muted																// isMuted
+			};
 			m_pFlashBoard->Invoke("addEntry", args, 12);
 		}
 	}

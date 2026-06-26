@@ -1,0 +1,47 @@
+<ammo name="smokegrenade" class="Projectile">
+	<geometry>
+		<firstperson name="objects/weapons/us/flashbang/flashbang.cgf" />
+		<thirdperson name="objects/weapons/us/flashbang/flashbang.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="0.35" />
+		<param name="speed" value="22" />
+		<param name="radius" value="0.125" />
+		
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, -9.8" />
+		<param name="water_gravity" value="0, 0, -9.8" />
+		
+		<param name="thrust" value="0" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="8" />
+		<param name="material" value="mat_grenade" />
+		<param name="spin_random" value="720, 720, 720" />
+		
+		<param name="single_contact" value="0" />
+		<param name="traceable" value="1" />
+	</physics>
+	<params>
+		<param name="lifetime" value="35.0" />
+		<param name="showtime" value="0.05" />
+		<param name="aitype"	value="grenade" />
+	</params>
+	<trail>
+		<param name="effect" value="explosions.Smoke_grenade.smoke" />
+		<param name="prime" value="false" />
+	</trail>
+	<scaledeffect>
+		<param name="postEffect" value="FilterBlurring_Amount" />
+		<param name="maxvalue" value="1" />
+		<param name="radius" value="5" />
+		<param name="delay" value="2" />
+		<param name="fadeintime" value="6" />
+		<param name="fadeouttime" value="10" />
+		<param name="AIObstructionRadius" value="5" />
+	</scaledeffect>
+</ammo>

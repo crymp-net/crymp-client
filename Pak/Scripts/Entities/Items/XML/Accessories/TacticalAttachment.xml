@@ -1,0 +1,22 @@
+<item name="TacticalAttachment" class="Item" priority="122">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/attachments/Tactical_Attachment/tactical_attachment_fp.chr"/>
+		<thirdperson name="objects/Weapons/attachments/Tactical_Attachment/tactical_attachment_tp.cgf"/>
+	</geometry>
+	<actions>
+		<action name="idle">
+			<animation target="firstperson" name="idle_right_01" />
+		</action>
+		<action name="fire_tac">
+			<animation target="firstperson" name="fire_tactical_right_01" />
+		</action>		
+		<action name="reload_tac">
+			<animation target="firstperson" name="reload_tactical_right_01" />
+		</action>
+	</actions>
+</item>

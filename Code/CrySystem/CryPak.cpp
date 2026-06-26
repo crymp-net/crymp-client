@@ -14,6 +14,8 @@
 #include "Pak/ZipPak.h"
 #include "ResourceList.h"
 
+#include "config.h"
+
 class CryPakWildcardMatcher
 {
 	enum class Wildcard
@@ -99,6 +101,29 @@ static SlotVectorHandle FromDirtyHandle(FILE* handle)
 {
 	return SlotVectorHandle(static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(handle)));
 }
+
+#ifdef CRYMP_PAK_HOT_RELOADING_PATH
+static std::string TryDevPakFolder(std::string_view path)
+{
+	std::string result;
+
+	if (StringTools::StartsWithNoCase(path, "Game/"))
+	{
+		result = path;
+		// replace "Game" prefix with the path
+		result.replace(0, 4, CRYMP_PAK_HOT_RELOADING_PATH);
+
+		std::error_code ec;
+		if (!std::filesystem::exists(result, ec))
+		{
+			// not found
+			result.clear();
+		}
+	}
+
+	return result;
+}
+#endif
 
 CryPak::CryPak()
 {
@@ -382,25 +407,29 @@ ICryPak::PakInfo* CryPak::GetPakInfo()
 	const unsigned int pakCount = m_paks.GetActiveCount();
 
 	PakInfo* info = static_cast<PakInfo*>(std::calloc(1, sizeof(PakInfo) + (sizeof(PakInfo::Pak) * pakCount)));
-	info->numOpenPaks = pakCount;
+	if (info) {
+		info->numOpenPaks = pakCount;
 
-	const auto my_strdup = [](std::string_view str) -> char*
-	{
-		char* res = static_cast<char*>(std::malloc(str.length() + 1));
-		std::memcpy(res, str.data(), str.length());
-		res[str.length()] = '\0';
-		return res;
-	};
+		const auto my_strdup = [](std::string_view str) -> char*
+			{
+				char* res = static_cast<char*>(std::malloc(str.length() + 1));
+				if (res) {
+					std::memcpy(res, str.data(), str.length());
+					res[str.length()] = '\0';
+				}
+				return res;
+			};
 
-	PakSlot* pak = m_paks.GetFirstActive();
+		PakSlot* pak = m_paks.GetFirstActive();
 
-	for (unsigned int i = 0; i < pakCount; ++i)
-	{
-		info->arrPaks[i].szFilePath = my_strdup(pak->path);
-		info->arrPaks[i].szBindRoot = my_strdup(pak->root);
-		info->arrPaks[i].nUsedMem = pak->impl->GetCachedDataSize();
+		for (unsigned int i = 0; i < pakCount; ++i)
+		{
+			info->arrPaks[i].szFilePath = my_strdup(pak->path);
+			info->arrPaks[i].szBindRoot = my_strdup(pak->root);
+			info->arrPaks[i].nUsedMem = pak->impl->GetCachedDataSize();
 
-		pak = m_paks.GetNextActive(pak);
+			pak = m_paks.GetNextActive(pak);
+		}
 	}
 
 	return info;
@@ -862,6 +891,15 @@ bool CryPak::IsFileExist(const char* name)
 
 	const std::string adjustedName = this->AdjustFileNameImpl(StringTools::SafeView(name), 0);
 
+#ifdef CRYMP_PAK_HOT_RELOADING_PATH
+	const std::string inDevPak = TryDevPakFolder(adjustedName);
+	if (!inDevPak.empty())
+	{
+		CryLogComment("%s(\"%s\"): Found outside \"%s\"", __FUNCTION__, name, inDevPak.c_str());
+		return true;
+	}
+#endif
+
 	FileTreeNode* fileNode = m_tree.FindNode(adjustedName);
 	if (fileNode)
 	{
@@ -1015,6 +1053,10 @@ const char* CryPak::GetModDir() const
 
 bool CryPak::LoadClientPak(const void* data, std::size_t size)
 {
+#ifdef CRYMP_PAK_HOT_RELOADING_PATH
+	return true;
+#endif
+
 	std::lock_guard lock(m_mutex);
 
 	SlotGuard<PakSlot> pak = this->GetFreePakSlot();
@@ -1273,6 +1315,15 @@ CryPak::SlotGuard<CryPak::PakSlot> CryPak::GetFreePakSlot()
 
 bool CryPak::OpenFileImpl(SlotGuard<FileSlot>& file)
 {
+#ifdef CRYMP_PAK_HOT_RELOADING_PATH
+	const std::string inDevPak = TryDevPakFolder(file->path);
+	if (!inDevPak.empty())
+	{
+		file->path = inDevPak;
+		return this->OpenFileOutsideImpl(file);
+	}
+#endif
+
 	if (this->OpenFileInPakImpl(file))
 	{
 		return true;
@@ -1517,7 +1568,40 @@ std::vector<CryPak::FindSlot::Entry> CryPak::SearchWildcardPath(std::string_view
 	const auto [dirPath, wildcardName] = PathTools::SplitPathIntoDirAndFile(wildcardPath);
 	const CryPakWildcardMatcher matcher(wildcardName);
 
-	std::vector<FindSlot::Entry> entries;
+	std::map<std::string, FindSlot::Entry, StringTools::ComparatorNoCase> entryMap;
+
+	const auto searchOutside = [&matcher, &entryMap](std::string_view path)
+	{
+		std::error_code ec;
+		for (const auto& fsEntry : std::filesystem::directory_iterator(path, ec))
+		{
+			std::string name = fsEntry.path().filename().generic_string();
+
+			if (!matcher(name))
+			{
+				continue;
+			}
+
+			std::uint64_t size = 0;
+			bool isDirectory = true;
+
+			if (!fsEntry.is_directory(ec))
+			{
+				isDirectory = false;
+				size = fsEntry.file_size(ec);
+			}
+
+			entryMap.try_emplace(name, name, size, isDirectory, false);
+		}
+	};
+
+#ifdef CRYMP_PAK_HOT_RELOADING_PATH
+	const std::string inDevPak = TryDevPakFolder(dirPath);
+	if (!inDevPak.empty())
+	{
+		searchOutside(inDevPak);
+	}
+#endif
 
 	Tree::DirectoryNode* dirNode = m_tree.FindDirectoryNode(dirPath);
 	if (dirNode)
@@ -1538,37 +1622,17 @@ std::vector<CryPak::FindSlot::Entry> CryPak::SearchWildcardPath(std::string_view
 				size = fileNode->current.fileSize;
 			}
 
-			entries.emplace_back(name, size, isDirectory, true);
+			entryMap.try_emplace(name, name, size, isDirectory, true);
 		}
 	}
 
-	const auto isDuplicate = [&entries](std::string_view name) -> bool
+	searchOutside(dirPath);
+
+	std::vector<FindSlot::Entry> entries;
+	entries.reserve(entryMap.size());
+	for (auto& [name, entry] : entryMap)
 	{
-		return std::any_of(entries.begin(), entries.end(),
-			[name](const auto& entry) { return StringTools::IsEqualNoCase(entry.name, name); }
-		);
-	};
-
-	std::error_code ec;
-	for (const auto& fsEntry : std::filesystem::directory_iterator(dirPath, ec))
-	{
-		std::string name = fsEntry.path().filename().generic_string();
-
-		if (!matcher(name) || isDuplicate(name))
-		{
-			continue;
-		}
-
-		std::uint64_t size = 0;
-		bool isDirectory = true;
-
-		if (!fsEntry.is_directory(ec))
-		{
-			isDirectory = false;
-			size = fsEntry.file_size(ec);
-		}
-
-		entries.emplace_back(std::move(name), size, isDirectory, false);
+		entries.emplace_back(std::move(entry));
 	}
 
 	return entries;

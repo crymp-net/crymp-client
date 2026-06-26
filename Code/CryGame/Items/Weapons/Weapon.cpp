@@ -57,17 +57,12 @@ CWeapon::CWeapon()
 	m_fire_alternation(false),
 	m_destination(0, 0, 0),
 	m_forcedHitMaterial(-1),
-	m_dofSpeed(0.0f),
-	m_dofValue(0.0f),
-	m_focusValue(0.0f),
 	m_currentViewMode(0),
 	m_useViewMode(false),
 	m_restartZoom(false),
 	m_restartZoomStep(0),
 	m_targetOn(false),
 	m_silencerAttached(false),
-	m_weaponRaised(false),
-	m_weaponLowered(false),
 	m_switchingFireMode(false),
 	m_switchLeverLayers(false),
 	m_firedRockets(0),
@@ -223,7 +218,7 @@ void CWeapon::InitFireModes(const IItemParamsNode* firemodes)
 		const IItemParamsNode* fm = firemodes->GetChild(k);
 		const char* typ = fm->GetAttribute("type");
 
-		if (typ && !strcmpi(typ, "default"))
+		if (typ && !_stricmp(typ, "default"))
 		{
 			m_fmDefaults = fm;
 			m_fmDefaults->AddRef();
@@ -246,7 +241,7 @@ void CWeapon::InitFireModes(const IItemParamsNode* firemodes)
 			continue;
 		}
 
-		if (!strcmpi(typ, "default"))
+		if (!_stricmp(typ, "default"))
 			continue;
 
 		if (!name || !name[0])
@@ -299,7 +294,7 @@ void CWeapon::InitZoomModes(const IItemParamsNode* zoommodes)
 		const IItemParamsNode* zm = zoommodes->GetChild(k);
 		const char* typ = zm->GetAttribute("type");
 
-		if (typ && !strcmpi(typ, "default"))
+		if (typ && !_stricmp(typ, "default"))
 		{
 			m_zmDefaults = zm;
 			m_zmDefaults->AddRef();
@@ -322,7 +317,7 @@ void CWeapon::InitZoomModes(const IItemParamsNode* zoommodes)
 			continue;
 		}
 
-		if (!strcmpi(typ, "default"))
+		if (!_stricmp(typ, "default"))
 			continue;
 
 		if (!name || !name[0])
@@ -390,7 +385,7 @@ void CWeapon::InitAmmos(const IItemParamsNode* ammos)
 	for (int i = 0; i < ammos->GetChildCount(); i++)
 	{
 		const IItemParamsNode* ammo = ammos->GetChild(i);
-		if (!strcmpi(ammo->GetName(), "ammo"))
+		if (!_stricmp(ammo->GetName(), "ammo"))
 		{
 			int extra = 0;
 			int amount = 0;
@@ -836,9 +831,13 @@ void CWeapon::Update(SEntityUpdateContext& ctx, int update)
 	{
 	case eIUS_FireMode:
 		if (m_fm)
+		{
 			m_fm->Update(ctx.fFrameTime, ctx.nFrameID);
+		}
 		if (m_melee)
+		{
 			m_melee->Update(ctx.fFrameTime, ctx.nFrameID);
+		}
 		break;
 
 	case eIUS_Zooming:
@@ -848,24 +847,6 @@ void CWeapon::Update(SEntityUpdateContext& ctx, int update)
 	}
 
 	CItem::Update(ctx, update);
-
-
-	if (update == eIUS_General)
-	{
-		if (fabsf(m_dofSpeed) > 0.001f)
-		{
-			m_dofValue += m_dofSpeed * ctx.fFrameTime;
-			m_dofValue = CLAMP(m_dofValue, 0, 1);
-
-			//CryLogWarning("Actual DOF value = %f",m_dofValue);
-			if (m_dofSpeed < 0.0f)
-			{
-				m_focusValue -= m_dofSpeed * ctx.fFrameTime * 150.0f;
-				gEnv->p3DEngine->SetPostEffectParam("Dof_FocusLimit", 20.0f + m_focusValue);
-			}
-			gEnv->p3DEngine->SetPostEffectParam("Dof_BlurAmount", m_dofValue);
-		}
-	}
 }
 
 void CWeapon::PostUpdate(float frameTime)
@@ -1036,7 +1017,12 @@ bool CWeapon::CanMeleeAttack() const
 				return false;
 		}
 	}
-	return m_melee && m_melee->CanFire();
+	bool isFistPunching = false;
+	if (GetEntity()->GetClass() == sFistsClass)
+	{
+		isFistPunching = m_fm && m_fm->IsFiring();
+	}
+	return m_melee && m_melee->CanFire() && !isFistPunching;
 }
 
 //------------------------------------------------------------------------
@@ -1263,30 +1249,33 @@ Vec3 CWeapon::GetFiringDir(const Vec3& probableHit, const Vec3& firingPos) const
 //------------------------------------------------------------------------
 void CWeapon::StartFire()
 {
-	CActor* pOwner = GetOwnerActor();
-	if (IsDestroyed())
-		return;
-
-	if (pOwner)
+	if (GetEntity()->GetClass() != CItem::sOffHandClass) //CryMP: Skip this for Offhand..
 	{
-		bool isPlayer = pOwner->IsPlayer();
-		if ((pOwner->GetHealth() <= 0) || (!pOwner->CanFire()))
-			return;
-		//Dual socoms for AI
-		if (!gEnv->bMultiplayer && !isPlayer && IsDualWieldMaster() && FireSlave(GetOwnerId(), true))
+		CActor* pOwner = GetOwnerActor();
+		if (IsDestroyed())
 			return;
 
-		// lets stop upper-body animations (reloading, etc) - the animation length might be more than reload time
-		// to fix bug shooting with reload animation in 3rd per
-		if (!IsOwnerFP() && IsReloading())
+		if (pOwner)
 		{
-			ICharacterInstance* pCharacter = pOwner->GetEntity()->GetCharacter(0);
-			ISkeletonAnim* pSkeletonAnim = (pCharacter != NULL) ? pCharacter->GetISkeletonAnim() : NULL;
-			if (pSkeletonAnim)
+			bool isPlayer = pOwner->IsPlayer();
+			if ((pOwner->GetHealth() <= 0) || (!pOwner->CanFire()))
+				return;
+			//Dual socoms for AI
+			if (!gEnv->bMultiplayer && !isPlayer && IsDualWieldMaster() && FireSlave(GetOwnerId(), true))
+				return;
+
+			// lets stop upper-body animations (reloading, etc) - the animation length might be more than reload time
+			// to fix bug shooting with reload animation in 3rd per
+			if (!IsOwnerFP() && IsReloading())
 			{
-				pSkeletonAnim->StopAnimationInLayer(1, .1f);
-				//if (static_cast<CPlayer*>(pOwner)->IsSprinting())
-				//	pSkeletonAnim->StopAnimationInLayer(0, .1f);
+				ICharacterInstance* pCharacter = pOwner->GetEntity()->GetCharacter(0);
+				ISkeletonAnim* pSkeletonAnim = (pCharacter != NULL) ? pCharacter->GetISkeletonAnim() : NULL;
+				if (pSkeletonAnim)
+				{
+					pSkeletonAnim->StopAnimationInLayer(1, .1f);
+					//if (static_cast<CPlayer*>(pOwner)->IsSprinting())
+					//	pSkeletonAnim->StopAnimationInLayer(0, .1f);
+				}
 			}
 		}
 	}
@@ -1697,8 +1686,28 @@ void CWeapon::SetCurrentFireMode(int idx)
 {
 	if (m_firemodes.empty())
 		return;
-
+	
 	GetGameObject()->SetAspectProfile(ASPECT_FIREMODE, idx);
+}
+
+//------------------------------------------------------------------------
+void CWeapon::SetCurrentFireModeLocal(int idx)
+{
+	if (m_firemodes.empty())
+		return;
+
+	if (m_fm)
+		m_fm->Activate(false);
+
+	if (idx >= m_firemodes.size())
+		m_fm = 0;
+	else
+		m_fm = m_firemodes[idx];
+
+	if (m_fm)
+	{
+		m_fm->Activate(true);
+	}
 }
 
 //------------------------------------------------------------------------
@@ -2701,7 +2710,7 @@ void CWeapon::RaiseWeapon(bool raise, bool faster /* = false */)
 			CActor* owner = GetOwnerActor();
 			if (CNanoSuit* pNanoSuit = CPlayer::GetNanoSuit(owner))
 			{
-				if (pPlayer->GetNanoSuit()->GetMode() == NANOMODE_SPEED)
+				if (pPlayer && pPlayer->GetNanoSuit()->GetMode() == NANOMODE_SPEED)
 				{
 					speedOverride = 1.75f;
 				}
@@ -3250,7 +3259,7 @@ void CWeapon::UpdateWeaponLowering(float frameTime)
 	}
 
 	//If not, check entity in front
-	if (IsFriendlyEntity(pLookAtEntity, pActorAI, pPlayer))
+	if (pLookAtEntity && IsFriendlyEntity(pLookAtEntity, pActorAI, pPlayer))
 	{
 		LowerWeapon(true);
 		if (GetEntity()->GetClass() != CItem::sOffHandClass)

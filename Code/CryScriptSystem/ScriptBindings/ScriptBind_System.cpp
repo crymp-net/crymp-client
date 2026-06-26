@@ -1433,7 +1433,7 @@ int ScriptBind_System::SetWind(IFunctionHandler *pH)
 
 int ScriptBind_System::GetWind(IFunctionHandler *pH)
 {
-	return pH->EndFunction(gEnv->p3DEngine->GetWind(AABB(ZERO), false));
+	return pH->EndFunction(gEnv->p3DEngine->GetWind(AABB(AABB::RESET), false));
 }
 
 int ScriptBind_System::GetSurfaceTypeIdByName(IFunctionHandler *pH, const char *surfaceName)
@@ -1898,7 +1898,7 @@ int ScriptBind_System::GetCountOfClass(IFunctionHandler* pH, const char* EntityC
 
 	pIIt->MoveFirst();
 
-	while (pEntity = pIIt->Next())
+	while ((pEntity = pIIt->Next()))
 	{
 		IEntityClass* entClass = pEntity->GetClass();
 		if (entClass == pClass)
@@ -1933,7 +1933,7 @@ int ScriptBind_System::RemoveEntitiesByClass(IFunctionHandler* pH, const char* E
 
 	pIIt->MoveFirst();
 
-	while (pEntity = pIIt->Next())
+	while ((pEntity = pIIt->Next()))
 	{
 		auto* entClass = pEntity->GetClass();
 		if (entClass == pClass)

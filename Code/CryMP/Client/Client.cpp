@@ -7,27 +7,28 @@
 #include "CryCommon/CryNetwork/INetwork.h"
 #include "CryCommon/CryScriptSystem/IScriptSystem.h"
 #include "CryCommon/Cry3DEngine/I3DEngine.h"
+#include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryGame/Game.h"
 #include "CryMP/Common/Executor.h"
 #include "CryMP/Common/GSMasterHook.h"
 #include "CryMP/Common/ScriptBind_CPPAPI.h"
+#include "CryMP/Common/ServerPAK.h"
 #include "CrySystem/GameWindow.h"
 #include "CrySystem/Logger.h"
 #include "CrySystem/RandomGenerator.h"
 #include "Launcher/Resources.h"
-#include "Library/StdFile.h"
 #include "Library/Util.h"
 #include "Library/WinAPI.h"
 
 #include "Client.h"
 #include "FileDownloader.h"
 #include "FileCache.h"
+#include "HandGripRegistry.h"
 #include "MapDownloader.h"
 #include "ScriptCommands.h"
 #include "ScriptCallbacks.h"
 #include "ServerBrowser.h"
 #include "ServerConnector.h"
-#include "ServerPAK.h"
 #include "EngineCache.h"
 #include "ParticleManager.h"
 #include "DrawTools.h"
@@ -38,27 +39,23 @@
 
 void Client::InitMasters()
 {
-	std::string content;
+	m_masters.clear();
 
-	if (StdFile file("masters.txt", "r"); file.IsOpen())  // Crysis main directory
+	if (const std::string_view mastersArg(WinAPI::CmdLine::GetArgValue("-masters")); !mastersArg.empty())
 	{
-		CryLogAlways("$6[CryMP] Using local masters.txt as the master server list provider");
-
-		content = file.ReadAll();
-	}
-	else
-	{
-		content = WinAPI::GetDataResource(nullptr, RESOURCE_MASTERS_TXT);
-	}
-
-	for (const std::string_view & master : Util::SplitWhitespace(content))
-	{
-		m_masters.emplace_back(master);
+		for (const std::string_view& master : Util::Split(mastersArg, ","))
+		{
+			m_masters.emplace_back(master);
+		}
 	}
 
 	if (m_masters.empty())
 	{
-		m_masters.emplace_back("crymp.org");
+		std::string defaultMaster{ "crymp.org" };
+		if (WinAPI::GetLocale() == "ru-RU") {
+			defaultMaster = "proxy.crymp.org";
+		}
+		m_masters.emplace_back(defaultMaster);
 	}
 
 	m_pScriptCallbacks->OnMasterResolved();
@@ -208,6 +205,7 @@ void Client::Init(IGameFramework *pGameFramework)
 	m_pHTTPClient        = std::make_unique<HTTPClient>(*m_pExecutor);
 	m_pFileDownloader    = std::make_unique<FileDownloader>();
 	m_pFileCache         = std::make_unique<FileCache>();
+	m_pHandGripRegistry  = std::make_unique<HandGripRegistry>();
 	m_pMapDownloader     = std::make_unique<MapDownloader>();
 	m_pGSMasterHook      = std::make_unique<GSMasterHook>();
 	m_pScriptCommands    = std::make_unique<ScriptCommands>();
@@ -270,7 +268,9 @@ void Client::Init(IGameFramework *pGameFramework)
 	pScriptSystem->ExecuteFile("CryMP/Scripts/JSON.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/RPC.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/Client.lua", true, true);
-	pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true);
+	pScriptSystem->ExecuteFile("CryMP/Scripts/HandGripData.lua", true, true);
+
+	ReloadLocalizationLua();
 
 	InitMasters();
 
@@ -280,6 +280,10 @@ void Client::Init(IGameFramework *pGameFramework)
 	// mods are not supported
 	m_pGame = new CGame();
 	m_pGame->Init(pGameFramework);
+
+	m_pFileCache->Cleanup(14 * 86400);
+
+	WarmupRendererTextPath();
 }
 
 void Client::UpdateLoop()
@@ -391,6 +395,37 @@ void Client::AddKeyBind(const std::string_view& key, HSCRIPTFUNCTION function)
 
 void Client::OnKeyPress(const std::string_view& key)
 {
+	if (key == "lalt")
+	{
+		m_hudScaleModifierDown = true;
+		return;
+	}
+
+	if (m_hudScaleModifierDown)
+	{
+		if (key == "up")
+		{
+			m_hudScaleDirection = 1;
+			return;
+		}
+
+		if (key == "down")
+		{
+			m_hudScaleDirection = -1;
+			return;
+		}
+
+		if (key == "right")
+		{
+			ICVar* pHudScale = gEnv->pConsole->GetCVar("hud_scale");
+			if (pHudScale)
+				pHudScale->Set(1.0f);
+
+			m_hudScaleDirection = 0;
+			return;
+		}
+	}
+
 	for (const KeyBind& bind : m_keyBinds)
 	{
 		if (bind.key == key)
@@ -414,6 +449,21 @@ void Client::OnKeyPress(const std::string_view& key)
 
 void Client::OnKeyRelease(const std::string_view& key)
 {
+	if (key == "lalt")
+	{
+		m_hudScaleModifierDown = false;
+		m_hudScaleDirection = 0;
+		return;
+	}
+
+	if (key == "up" || key == "down" || key == "right")
+	{
+		m_hudScaleDirection = 0;
+
+		if (m_hudScaleModifierDown)
+			return;
+	}
+
 	for (const KeyBind& bind : m_keyBinds)
 	{
 		if (bind.key == key)
@@ -449,6 +499,8 @@ void Client::OnPostUpdate(float deltaTime)
 	m_pExecutor->OnUpdate();
 	m_pScriptCallbacks->OnUpdate(deltaTime);
 	m_pDrawTools->OnUpdate();
+
+	UpdateHudScale(deltaTime);
 }
 
 void Client::OnSaveGame(ISaveGame *pSaveGame)
@@ -492,6 +544,11 @@ void Client::OnActionEvent(const SActionEvent & event)
 			m_pScriptCallbacks->OnLoadingStart();
 			break;
 		}
+		case eAE_languageChanged:
+		{
+			ReloadLocalizationLua();
+			break;
+		}
 		case eAE_channelCreated:
 		case eAE_channelDestroyed:
 		case eAE_connectFailed:
@@ -517,14 +574,8 @@ void Client::OnLevelNotFound(const char *levelName)
 
 void Client::OnLoadingStart(ILevelInfo *pLevel)
 {
-	ICVar* pLodMin = gEnv->pConsole->GetCVar("e_lod_min");
-	if (pLodMin && pLodMin->GetIVal())
-	{
-		//CryMP: Temporary fix for invisible objects
-		pLodMin->Set(0);
-		CryLogAlways("$3[CryMP] Setting Min LOD to zero");
-	}
-	
+	this->FixCVars();
+
 	gEnv->pScriptSystem->ForceGarbageCollection();
 
 	m_pServerPAK->OnLoadingStart(pLevel);
@@ -644,4 +695,114 @@ void Client::SynchWithPhysicsPosition(IEntity* pEntity)
 			pPhysEnt->Action(&awake);
 		}
 	}
+}
+
+template<int Value>
+static void LockCVarValueTo(const char* cvar)
+{
+	ICVar* pCVar = gEnv->pConsole->GetCVar(cvar);
+	if (pCVar)
+	{
+		if (gEnv->bMultiplayer)
+		{
+			pCVar->Set(Value);
+		}
+
+		pCVar->SetOnChangeCallback([](ICVar* pCVar) {
+			if (gEnv->bMultiplayer)
+			{
+				pCVar->Set(Value);
+			}
+		});
+	}
+}
+
+static void LimitDetailMaterialsViewDistMinValue(const char* cvar)
+{
+	constexpr float MIN_VALUE = 64.f;  // low spec
+
+	ICVar* pCVar = gEnv->pConsole->GetCVar(cvar);
+	if (pCVar)
+	{
+		if (gEnv->bMultiplayer && pCVar->GetFVal() < MIN_VALUE)
+		{
+			pCVar->Set(MIN_VALUE);
+		}
+
+		// can't be net-synced because the value is not the same in all specs:
+		// ... e_detail_materials_view_dist_xy = 64/2048/2048/2048/2048
+		// ... e_detail_materials_view_dist_z = 64/128/128/128/128
+		pCVar->SetOnChangeCallback([](ICVar* pCVar) {
+			if (gEnv->bMultiplayer && pCVar->GetFVal() < MIN_VALUE)
+			{
+				pCVar->Set(MIN_VALUE);
+			}
+		});
+	}
+}
+
+void Client::FixCVars()
+{
+	ICVar* pLodMin = gEnv->pConsole->GetCVar("e_lod_min");
+	if (pLodMin && pLodMin->GetIVal())
+	{
+		// CryMP: Temporary fix for invisible objects
+		pLodMin->Set(0);
+		CryLogAlways("$3[CryMP] Setting Min LOD to zero");
+	}
+
+	// CryMP: problematic cvars that aren't net-synced
+	LockCVarValueTo<0>("r_ATOC");  // non-zero value hides vegetation
+	LockCVarValueTo<1>("e_decals");  // zero value hides roads and stuff
+	LockCVarValueTo<1>("r_WaterReflections");  // zero value makes the ocean black
+
+	// CryMP: these cvars are not net-synced and break terrain textures when set too low (zero)
+	LimitDetailMaterialsViewDistMinValue("e_detail_materials_view_dist_xy");
+	LimitDetailMaterialsViewDistMinValue("e_detail_materials_view_dist_z");
+}
+
+void Client::ReloadLocalizationLua()
+{
+	if (!gEnv->pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true))
+	{
+		CryLogAlways("$4[CryMP] Failed to load Localization.lua");
+	}
+}
+
+void Client::WarmupRendererTextPath()
+{
+	// TEMP WORKAROUND for black console bug (mainly DX10).
+	//
+	// Queues one 2D text draw so the renderer/CryFont text path is initialized
+	// early. Without this, the console can render black on some maps
+	// (for example Poolday) because the text pipeline was not touched yet.
+	//
+	// Note:
+	// - The string must not be empty, otherwise fix won't work
+	// - This draw only happens for one frame and is effectively not visible.
+	//
+	// Proper fix belongs in the renderer / CryFont initialization path.
+
+	float color[] = { 1.f, 1.f, 1.f, 0.f };
+	gEnv->pRenderer->Draw2dLabel(1.f, 1.f, 1.f, color, false, ".");
+}
+
+void Client::UpdateHudScale(float deltaTime)
+{
+	if (!m_hudScaleDirection)
+		return;
+
+	ICVar* pHudScale = gEnv->pConsole->GetCVar("hud_scale");
+	if (!pHudScale)
+		return;
+
+	constexpr float minScale = 0.4f;
+	constexpr float maxScale = 1.2f;
+	constexpr float speed = 0.45f;
+
+	float scale = pHudScale->GetFVal();
+	scale += speed * deltaTime * static_cast<float>(m_hudScaleDirection);
+	scale = clamp_tpl(scale, minScale, maxScale);
+
+	pHudScale->Set(scale);
 }

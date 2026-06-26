@@ -777,21 +777,10 @@ void CSingle::PatchParams(const IItemParamsNode* patch)
 
 void CSingle::PatchParamsCryMP()
 {
-	//CryMP hack: enable tracers on AAA.. TOOD: move to CryAction params
 	const IEntityClass* pWClass = m_pWeapon->GetEntity()->GetClass();
-	if (pWClass == gEnv->pEntitySystem->GetClassRegistry()->FindClass("AACannon"))
+	if (pWClass == gEnv->pEntitySystem->GetClassRegistry()->FindClass("AARocketLauncher"))
 	{
-		m_tracerparams.effectFP = "";
-		m_tracerparams.effect = "";
-		m_tracerparams.geometryFP = "objects/effects/tracer_standard_red_new.cgf";
-		m_tracerparams.geometry = "objects/effects/tracer_standard_red_new.cgf";
-		m_tracerparams.frequency = 1;
-		m_tracerparams.speed = 230;
-		m_tracerparams.speedFP = 300;
-	}
-	//CryMP hack: enable lockon missiles.. TOOD: move to CryAction params
-	else if (pWClass == gEnv->pEntitySystem->GetClassRegistry()->FindClass("AARocketLauncher"))
-	{
+		//CryMP: enable lockon missiles for AARocketLauncher if mp_aaLockOn '1'
 		if (g_pGameCVars->mp_aaLockOn)
 		{
 			m_fireparams.autoaim = true;
@@ -804,6 +793,7 @@ void CSingle::PatchParamsCryMP()
 
 	else if (pWClass == CItem::sRocketLauncherClass)
 	{
+		//CryMP: enable lockon missiles for RocketLauncher if mp_rpgMod '1'
 		if (g_pGameCVars->mp_rpgMod)
 		{
 			m_fireparams.autoaim = true;
@@ -1429,7 +1419,7 @@ bool CSingle::Shoot(bool resetAnimation, bool autoreload, bool noSound)
 		g_shoots.push_back(shoot);*/
 
 
-	Vec3 tracerhit(ZERO);
+	Vec3 tracerhit;
 	static IPhysicalEntity* pSkipEnts[10];
 	int nSkip = GetSkipEntities(m_pWeapon, pSkipEnts, 10);
 	int intersect = gEnv->pPhysicalWorld->RayWorldIntersection(pos, dir * WEAPON_HIT_RANGE, ent_all,
@@ -1600,7 +1590,7 @@ Vec3 CSingle::GetFireHelperPos() const
 		return m_pWeapon->GetSlotHelperPos(slot, m_fireparams.helper[id].c_str(), true);
 	}
 
-	return Vec3(ZERO);
+	return {};
 }
 
 //------------------------------------------------------------------------
@@ -1731,8 +1721,8 @@ Vec3 CSingle::GetProbableHit(float range, bool* pbHit, ray_hit* pHit) const
 	else
 	{
 		// fallback    
-		pos = GetFiringPos(Vec3Constants<float>::fVec3_Zero);
-		dir = range * GetFiringDir(Vec3Constants<float>::fVec3_Zero, pos);
+		pos = GetFiringPos(Vec3());
+		dir = range * GetFiringDir(Vec3(), pos);
 	}
 
 	static ray_hit hit;
@@ -2068,21 +2058,35 @@ void CSingle::SetupEmitters(bool attach)
 	if (attach)
 	{
 		const int id = m_pWeapon->GetStats().fp ? 0 : 1;
-		Vec3 offset(ZERO);
 
-		if (m_muzzleflash.helper[id].empty())
+		//XML offset/dir
+		Vec3 offset = m_muzzleflash.offset[id];
+		Vec3 dir = m_muzzleflash.dir[id];
+
+		//If no helper specified, try getting pos from firing locator
+		if (m_muzzleflash.helper[id].empty() && offset.GetLengthSquared() < 1e-6f)
 		{
-			// if no helper specified, try getting pos from firing locator
 			IWeaponFiringLocator* pLocator = m_pWeapon->GetFiringLocator();
+			Vec3 locatorOffset;
 
-			if (pLocator && pLocator->GetFiringPos(m_pWeapon->GetEntityId(), this, offset))
-				offset = m_pWeapon->GetEntity()->GetWorldTM().GetInvertedFast() * offset;
+			if (pLocator && pLocator->GetFiringPos(m_pWeapon->GetEntityId(), this, locatorOffset))
+			{
+				locatorOffset = m_pWeapon->GetEntity()->GetWorldTM().GetInvertedFast() * locatorOffset;
+				offset = locatorOffset;
+			}
 		}
 
 		if (!m_muzzleflash.effect[id].empty())
 		{
-			m_mfIds[m_barrelId].mfId[id] = m_pWeapon->AttachEffect(id, -1, true, m_muzzleflash.effect[id].c_str(),
-				m_muzzleflash.helper[id].c_str(), offset, Vec3Constants<float>::fVec3_OneY, 1.0f, false);
+			m_mfIds[m_barrelId].mfId[id] = m_pWeapon->AttachEffect(
+				id, -1, true,
+				m_muzzleflash.effect[id].c_str(),
+				m_muzzleflash.helper[id].c_str(),
+				offset,
+				dir,
+				1.0f,
+				false
+			);
 		}
 	}
 	else
@@ -2094,7 +2098,6 @@ void CSingle::SetupEmitters(bool attach)
 		}
 	}
 }
-
 
 //------------------------------------------------------------------------
 void CSingle::MuzzleFlashEffect(bool attach, bool light, bool effect)
@@ -2125,7 +2128,7 @@ void CSingle::MuzzleFlashEffect(bool attach, bool light, bool effect)
 			{
 				m_mflightId[id] = m_pWeapon->AttachLight(slot, 0, true, m_muzzleflash.light_radius[id],
 					m_muzzleflash.light_color[id], 1.0f, 0, 0, m_muzzleflash.light_helper[id].c_str());
-				//m_muzzleflash.light_color[id], Vec3Constants<float>::fVec3_One, 0, 0, m_muzzleflash.light_helper[id].c_str());
+				//m_muzzleflash.light_color[id], Vec3(1, 1, 1), 0, 0, m_muzzleflash.light_helper[id].c_str());
 			}
 
 			m_pWeapon->EnableLight(true, m_mflightId[id]);
@@ -2269,7 +2272,7 @@ void CSingle::SpinUpEffect(bool attach)
 			//CryLog("[%s] spinup effect (true)", m_pWeapon->GetEntity()->GetName());
 
 			m_suId = m_pWeapon->AttachEffect(slot, 0, true, m_spinup.effect[id].c_str(),
-				m_spinup.helper[id].c_str(), Vec3Constants<float>::fVec3_Zero, Vec3Constants<float>::fVec3_OneY, 1.0f, false);
+				m_spinup.helper[id].c_str(), Vec3(), Vec3(0, 1, 0), 1.0f, false);
 
 			//m_sulightId = m_pWeapon->AttachLight(slot, 0, true, m_spinup.light_radius[id], m_spinup.light_color[id], Vec3(1,1,1), 0, 0,
 			m_sulightId = m_pWeapon->AttachLight(slot, 0, true, m_spinup.light_radius[id], m_spinup.light_color[id], 1, 0, 0,
@@ -2319,7 +2322,7 @@ void CSingle::RejectEffect()
 				return; // too far, do not spawn physicalized empty shells and make sounds 
 		}
 
-		Vec3 offset = m_reject.offset;
+		Vec3 offset = m_reject.offset[id];
 		Vec3 dir = front.Cross(up);
 		if (m_pWeapon->IsZoomed())
 			offset += ((front * 0.1f) + (dir * 0.04f));

@@ -1,0 +1,58 @@
+<item name="Claymore" class="Claymore" category="explosive" priority="31">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="1" />
+		<param name="pose" 		value="claymore" />
+		<param name="droppable" 	value="0" />
+		<param name="two_hand"				value="1" />
+		<param name="select_on_pickup" value="true" />
+	</params>
+	<ammos>
+		<ammo name="claymoreexplosive" extra="1" 	amount="0" />
+	</ammos>
+	<geometry>
+		<firstperson name="objects/weapons/us/claymore/claymore_fp.chr" angles="0,0,0" position="0,0,0" />
+		<thirdperson name="objects/weapons/us/claymore/claymore.cgf" />
+	</geometry>
+	<actions>
+		<action name="select">
+			<animation target="firstperson" name="select_claymore_left_01" />
+			<animation target="owner" name="select" />
+			<sound target="thirdperson" name="sounds/weapons:c4:select" radius="2" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_claymore_left_01" />
+			<animation target="owner" name="deselect" />
+			<sound target="thirdperson" name="sounds/weapons:c4:deselect" radius="2" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_claymore_left_01" />
+			<animation target="owner" name="idle" />
+		</action>
+
+		<action name="plant">
+			<animation target="firstperson" name="place_claymore_left_01" />
+			<animation target="owner" name="shoot" />
+			<sound target="thirdperson" name="sounds/weapons:at_mine:at_mine_place" radius="2" />
+		</action>
+
+		<action name="pickedup">
+			<sound target="firstperson" name="sounds/weapons:at_mine:at_mine_grab" radius="5" />
+			<sound target="thirdperson" name="sounds/weapons:at_mine:at_mine_grab" radius="5" />
+		</action>
+	</actions>
+
+	<firemodes>
+		<firemode type="Plant" name="Plant">
+			<plant>
+				<param name="ammo_type" value="claymoreexplosive" />
+				<param name="clip_size" value="0" />
+				<param name="damage" value="290" />
+				<param name="delay" value="0.6" />
+				<param name="simple" value="1" />
+				<param name="place_on_ground" value="1" />
+				<param name="need_to_crouch" value="1" />	
+			</plant>
+		</firemode>
+	</firemodes>
+</item>

@@ -122,32 +122,6 @@ static bool		m_merciTimeStarted = false;
 static bool		m_merciHealthUpdated = false;	//client only mercy time
 static float	m_merciTimeLastHit = 0.0f;
 
-//--------------------
-//this function will be called from the engine at the right time, since bones editing must be placed at the right time.
-int PlayerProcessBones(ICharacterInstance* pCharacter, void* player)
-{
-	//	return 1; //freezing and bone processing is not working very well.
-	CPlayer* pPlayer = static_cast<CPlayer*>(player);
-	const uint8 profile = pPlayer->GetPhysicsProfile();
-	if (pPlayer->GetEntity()->IsHidden() || profile == eAP_Ragdoll) //CryMP: IK not working with ragdolls, can be skipped
-	{
-		return 1;
-	}
-
-	const float timeFrame = gEnv->pTimer->GetFrameTime();
-
-	ISkeletonAnim* pISkeletonAnim = pCharacter->GetISkeletonAnim();
-	const uint32 numAnim = pISkeletonAnim->GetNumAnimsInFIFO(0);
-	if (numAnim)
-	{
-		//process bones specific stuff (IK, torso rotation, etc)
-		pPlayer->ProcessBonesRotation(pCharacter, timeFrame);
-	}
-
-	return 1;
-}
-//--------------------
-
 CPlayer::TAlienInterferenceParams CPlayer::m_interferenceParams;
 unsigned int CPlayer::s_ladderMaterial = 0;
 
@@ -243,7 +217,7 @@ CPlayer::~CPlayer()
 
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(0);
 	if (pCharacter)
-		pCharacter->GetISkeletonPose()->SetPostProcessCallback0(0, 0);
+		pCharacter->GetISkeletonPose()->SetPostProcessCallback0(nullptr, nullptr);
 
 	if (m_pNanoSuit)
 		delete m_pNanoSuit;
@@ -666,7 +640,22 @@ void CPlayer::UpdateFirstPersonEffects(float frameTime)
 
 				// deselect it
 				if (currentItem)
-					currentItem->PlayAction(g_pItemStrings->deselect, CItem::eIPAF_FirstPerson, false, CItem::eIPAF_Default | CItem::eIPAF_RepeatLastFrame);
+				{
+					// CryMP: Parachute forcibly switches to fists immediately.
+					// Do not leave the previous weapon blending/frozen in its FP deselect pose,
+					// because animation state is preserved across FP/TP switches.
+					currentItem->PlayAction(
+						g_pItemStrings->deselect,
+						CItem::eIPAF_FirstPerson,
+						false,
+						CItem::eIPAF_Default
+					);
+
+					if (ICharacterInstance* pChar = currentItem->GetEntity()->GetCharacter(CItem::eIGS_FirstPerson))
+					{
+						pChar->GetISkeletonAnim()->StopAnimationsAllLayers();
+					}
+				}
 				// schedule to start swimming after deselection is finished
 				pFists->EnableAnimations(false);
 				SelectItem(pFists->GetEntityId(), true);
@@ -745,6 +734,7 @@ void CPlayer::Update(SEntityUpdateContext& ctx, int updateSlot)
 		UpdateScreenFrost();
 		UpdateDraw();
 		UpdateModelChangeInVehicle();
+		UpdateReachBend(frameTime);
 	}
 
 	if (gEnv->bServer && !IsClient() && IsPlayer())
@@ -1186,6 +1176,77 @@ void CPlayer::UpdateParachuteIK()
 	}
 }
 
+void CPlayer::UpdateHeldObjectIK()
+{
+	const EntityId objectId = GetHeldObjectId();
+	IEntity* pObject = objectId ? gEnv->pEntitySystem->GetEntity(objectId) : nullptr;
+	if (!pObject)
+		return;
+
+	COffHand* pOffHand = static_cast<COffHand*>(GetWeaponByClass(CItem::sOffHandClass));
+	if (!pOffHand)
+		return;
+
+	IPhysicalEntity* pent = pObject->GetPhysics();
+	if (!pent)
+		return;
+
+	// Quick one-hand path
+	pe_status_dynamics dyn;
+	Vec3 objectPos;
+	if (pent->GetStatus(&dyn))
+		objectPos = dyn.centerOfMass;
+	else
+		objectPos = pObject->GetWorldPos();
+
+	const bool twoHand = pOffHand->IsTwoHandMode();
+
+	if (!twoHand)
+	{
+		if (IActor* pActor = m_pGameFramework->GetIActorSystem()->GetActor(objectId))
+		{
+			Vec3 neckPos;
+			if (pOffHand->GetGrabbedActorNeckWorldPos(pObject, neckPos))
+			{
+				SetIKPos("leftArm", neckPos, 1.0f);
+				return;
+			}
+		}
+	}
+
+	if (!m_handGripsValid)
+		return;
+
+	Matrix34 objW = pObject->GetWorldTM(); 
+	Matrix34 attW = objW;              
+
+	if (!IsRemote())
+	{
+		if (ICharacterInstance* ch = GetEntity()->GetCharacter(0))
+		{
+			if (IAttachmentManager* am = ch->GetIAttachmentManager())
+			{
+				if (IAttachment* a = am->GetInterfaceByName("held_object_attachment"))
+				{
+					const QuatT attMR = a->GetAttModelRelative(); 
+					const Matrix34 ownerW = GetEntity()->GetWorldTM();
+					attW = ownerW * Matrix34(attMR);
+					objW = attW;
+				}
+			}
+		}
+	}
+
+	Vec3 leftWorld = objW.TransformPoint(m_lefthandGrip);
+	Vec3 rightWorld = objW.TransformPoint(m_righthandGrip);
+
+	SetIKPos("leftArm", leftWorld, 1.0f);
+	if (twoHand)
+	{
+		SetIKPos("rightArm", rightWorld, 1.0f);
+	}
+}
+
 void CPlayer::UpdateParachuteMorph(float frameTime)
 {
 	const bool open = m_stats.inFreefall.Value() == 2;
@@ -1592,18 +1653,19 @@ void CPlayer::PrePhysicsUpdate()
 					else
 						SetStance(frameMovementParams.stance);
 				}
-
 			}
 			else
 			{
-				frameMovementParams.desiredVelocity = ZERO;
+				frameMovementParams.desiredVelocity = {};
 				CPlayerMovement playerMovement(*this, frameMovementParams, frameTime);
 				playerMovement.Process(*this);
 				playerMovement.Commit(*this);
 			}
 
 			if (m_linkStats.CanDoIK() || (gEnv->bMultiplayer && GetLinkedVehicle()))
+			{
 				SetIK(frameMovementParams);
+			}
 		}
 	}
 
@@ -1682,7 +1744,7 @@ void CPlayer::SetIK(const SActorFrameMovementParams& frameMovementParams)
 				lookIKBlends[3] = 0.10f;		// neck
 				lookIKBlends[4] = 0.85f;		// head   // 0.60f
 
-				pSkeletonPose->SetLookIK(true, /*gf_PI*0.7f*/ DEG2RAD(80), frameMovementParams.lookTarget, 0);
+				pSkeletonPose->SetLookIK(true, /*gf_PI*0.7f*/ DEG2RAD(120), frameMovementParams.lookTarget, 0);
 			}
 			else
 			{
@@ -1706,11 +1768,15 @@ void CPlayer::SetIK(const SActorFrameMovementParams& frameMovementParams)
 					}
 				}
 				else
+				{
 					pSkeletonPose->SetLookIK(true, DEG2RAD(120), frameMovementParams.lookTarget, 0);
+				}
 			}
 		}
 		else
+		{
 			pSkeletonPose->SetLookIK(false, 0, frameMovementParams.lookTarget);
+		}
 
 		Vec3 aimTarget = frameMovementParams.aimTarget;
 		bool aimEnabled = frameMovementParams.aimIK && (!GetAnimatedCharacter() || GetAnimatedCharacter()->IsLookIkAllowed());
@@ -1997,7 +2063,7 @@ void CPlayer::PostUpdateView(SViewParams& viewParams)
 		return;
 
 	Vec3 shakeVec(viewParams.currentShakeShift * 0.85f);
-	m_stats.FPWeaponPos = viewParams.position + m_stats.FPWeaponPosOffset + shakeVec;;
+	m_stats.FPWeaponPos = viewParams.position + m_stats.FPWeaponPosOffset + shakeVec;
 
 	Quat wQuat(viewParams.rotation * Quat::CreateRotationXYZ(m_stats.FPWeaponAnglesOffset * gf_PI / 180.0f));
 	wQuat *= Quat::CreateSlerp(viewParams.currentShakeQuat, IDENTITY, 0.5f);
@@ -2211,7 +2277,7 @@ void CPlayer::EnableFpSpectatorTarget(bool activate)
 		pPlayer->SetFpSpectator(activate);
 	}
 
-	m_stats.spectatorTargetType = activate ? SpectatorTargetType::FIRST_PERSON : SpectatorTargetType::NONE;
+	SetSpectatorTargetType(activate ? SpectatorTargetType::FIRST_PERSON : SpectatorTargetType::THIRD_PERSON);
 
 	EnableThirdPerson(!activate);
 
@@ -2245,24 +2311,15 @@ void CPlayer::EnableFpSpectatorTarget(bool activate)
 		if (activate)
 		{
 			const float zoomFov = GetActorParams()->zoomFoV;
-			int currentZoomStep = pWeapon->GetZoomStepFromFoV(zoomFov);
-			if (!currentZoomStep)
-				return;
+			const int currentZoomStep = pWeapon->GetZoomStepFromFoV(zoomFov);
 
-			const bool zoomed = pZoomMode->IsZoomed();
-			if (zoomed)
-				pZoomMode->ExitZoom();
-
-			pWeapon->StartZoom(GetEntityId(), 1);
-
-			//Weapons with more than 1 step
 			if (currentZoomStep > 0)
 			{
-				//are we zooming in or out
-				for (int i = 0, n = currentZoomStep; i < n; ++i)
-				{
-					pZoomMode->ZoomIn();
-				}
+				pZoomMode->NetSetZoomStep(currentZoomStep);
+			}
+			else
+			{
+				pWeapon->ExitZoom();
 			}
 		}
 		else
@@ -2738,7 +2795,7 @@ void CPlayer::UpdateSwimStats(float frameTime)
 {
 	bool isClient(IsClient());
 
-	Vec3 localReferencePos = ZERO;
+	Vec3 localReferencePos;
 	int spineID = GetBoneID(BONE_SPINE3);
 	if (spineID > -1)
 	{
@@ -2750,9 +2807,9 @@ void CPlayer::UpdateSwimStats(float frameTime)
 			localReferencePos.x = 0.0f;
 			localReferencePos.y = 0.0f;
 			if (!localReferencePos.IsValid())
-				localReferencePos = ZERO;
+				localReferencePos = {};
 			if (localReferencePos.GetLengthSquared() > (2.0f * 2.0f))
-				localReferencePos = ZERO;
+				localReferencePos = {};
 		}
 	}
 
@@ -2968,7 +3025,7 @@ void CPlayer::UpdateUWBreathing(float frameTime, Vec3 worldBreathPos)
 				damage += m_pNanoSuit->GetHealthRegenRate() * drownEffectDelay;
 				if (gEnv->bServer)
 				{
-					HitInfo hitInfo(GetEntityId(), GetEntityId(), GetEntityId(), -1, 0, 0, -1, 0, ZERO, ZERO, ZERO);
+					HitInfo hitInfo(GetEntityId(), GetEntityId(), GetEntityId(), -1, 0, 0, -1, 0, {}, {}, {});
 					hitInfo.SetDamage(damage);
 
 					if (CGameRules* pGameRules = g_pGame->GetGameRules())
@@ -3850,20 +3907,32 @@ void CPlayer::Revive(ReasonForRevive reason)
 	m_stats.spectatorMode = spectator;
 	m_stats.fpSpectator = fpSpectator;
 
-	if (reason == ReasonForRevive::SCRIPT_BIND)
+	if (IsClient())
 	{
-		EnableThirdPerson(thirdPerson);
-	}
-
-	if (spectatorTargetType != SpectatorTargetType::NONE)
-	{
-		if (spectatorTargetType == SpectatorTargetType::FIRST_PERSON)
+		if (reason == ReasonForRevive::SCRIPT_BIND)
 		{
-			EnableFpSpectatorTarget(true);
+			EnableThirdPerson(thirdPerson);
+		}
+	}
+	else
+	{
+		if (reason != ReasonForRevive::SCRIPT_BIND && reason != ReasonForRevive::SPAWN)
+		{
+			SetSpectatorTargetType(SpectatorTargetType::NONE);
 		}
 		else
 		{
-			SetSpectatorTargetType(spectatorTargetType);
+			if (spectatorTargetType != SpectatorTargetType::NONE)
+			{
+				if (spectatorTargetType == SpectatorTargetType::FIRST_PERSON)
+				{
+					EnableFpSpectatorTarget(true);
+				}
+				else
+				{
+					SetSpectatorTargetType(spectatorTargetType);
+				}
+			}
 		}
 	}
 
@@ -3901,7 +3970,7 @@ void CPlayer::Revive(ReasonForRevive reason)
 	m_FPWeaponAngleOffset.Set(0, 0, 0);
 	m_FPWeaponLastDirVec.Set(0, 0, 0);
 
-	m_lastAnimContPos = ZERO;
+	m_lastAnimContPos = {};
 
 	m_angleOffset.Set(0, 0, 0);
 
@@ -4015,6 +4084,11 @@ void CPlayer::Revive(ReasonForRevive reason)
 	{
 		ResetFPView();
 	}
+
+	if (COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass)))
+	{
+		pOffHand->OnPlayerRevive(this);
+	}
 }
 
 void CPlayer::Kill()
@@ -4035,6 +4109,11 @@ void CPlayer::Kill()
 	RemoveAllExplosives(g_pGameCVars->mp_explosiveRemovalTime * 1000.0f);
 
 	CActor::Kill();
+
+	if (COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass)))
+	{
+		pOffHand->OnPlayerDied(this);
+	}
 }
 
 #if 0 // AlexL 14.03.2007: no more bootable materials for now. and scriptable doesn't provide custom params anyway (after optimization)
@@ -4210,7 +4289,35 @@ void CPlayer::PostPhysicalize()
 	if (!pCharacter)
 		return;
 
-	pCharacter->GetISkeletonPose()->SetPostProcessCallback0(PlayerProcessBones, this);
+	//--------------------
+	//this function will be called from the engine at the right time, since bones editing must be placed at the right time.
+	pCharacter->GetISkeletonPose()->SetPostProcessCallback0(
+		[](ICharacterInstance* pCharacter, void* player) -> int
+		{
+			CPlayer* pPlayer = static_cast<CPlayer*>(player);
+			const uint8 profile = pPlayer->GetPhysicsProfile();
+
+			//CryMP: IK not working with ragdolls / frozen, can be skipped
+			if (pPlayer->GetEntity()->IsHidden() || profile == eAP_Ragdoll || profile == eAP_Frozen) 
+			{
+				return 1;
+			}
+
+			const float timeFrame = gEnv->pTimer->GetFrameTime();
+
+			ISkeletonAnim* pISkeletonAnim = pCharacter->GetISkeletonAnim();
+			const uint32 numAnim = pISkeletonAnim->GetNumAnimsInFIFO(0);
+			if (numAnim)
+			{
+				//process bones specific stuff (IK, torso rotation, etc)
+				pPlayer->ProcessBonesRotation(pCharacter, timeFrame);
+			}
+
+			return 1;
+		},
+		this
+	);
+
 	pe_simulation_params sim;
 	sim.maxLoggedCollisions = 5;
 	pe_params_flags flags;
@@ -4362,7 +4469,7 @@ void CPlayer::ResetAnimations()
 				pCharacter->GetISkeleton()->SetPlusRotation(boneID, IDENTITY);*/
 		}
 
-		pCharacter->GetISkeletonPose()->SetLookIK(false, 0, ZERO);
+		pCharacter->GetISkeletonPose()->SetLookIK(false, 0, {});
 	}
 }
 
@@ -4569,8 +4676,8 @@ void CPlayer::Freeze(bool freeze)
 		if (m_stats.isOnLadder.Value())
 		{
 			pe_simulation_params sp;
-			sp.gravity = ZERO;
-			sp.gravityFreefall = ZERO;
+			sp.gravity = {};
+			sp.gravityFreefall = {};
 
 			pPhysicalEntity->SetParams(&sp);
 		}
@@ -4877,18 +4984,32 @@ bool CPlayer::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile,
 		ser.Value("frozen", isFrozen, 'bool');
 		ser.Value("frozenAmount", m_frozenAmount, 'frzn');
 	}
+
 	if (aspect == ASPECT_CURRENT_ITEM)
 	{
-		bool reading = ser.IsReading();
-		bool hasWeapon = false;
-		if (!reading)
-			hasWeapon = NetGetCurrentItem() != 0;
+		bool bReading = ser.IsReading();
+		EntityId currentItemId = 0;
 
-		ser.Value("hasWeapon", hasWeapon, 'bool');
-		ser.Value("currentItemId", static_cast<CActor*>(this), &CActor::NetGetCurrentItem, &CActor::NetSetCurrentItem, /* 'eid' */0x00656964);
+		if (!bReading)
+		{
+			currentItemId = NetGetCurrentItem();
+		}
 
-		if (reading && hasWeapon && NetGetCurrentItem() == 0) // fix the case where this guy's weapon might not have been bound on this client yet
-			ser.FlagPartialRead();
+		bool isCurrentItemValid = currentItemId ? true : false;
+
+		ser.Value("hasWeapon", isCurrentItemValid, 'bool');
+		ser.Value("currentItemId", currentItemId, 'eid');
+
+		if (bReading)
+		{
+			//CryMP: Supports net-synched holstered items
+			NetSetCurrentItem(currentItemId, isCurrentItemValid);
+
+			if (isCurrentItemValid && NetGetCurrentItem() == 0) // fix the case where this guy's weapon might not have been bound on this client yet
+			{
+				ser.FlagPartialRead();
+			}
+		}
 	}
 
 	if (m_pNanoSuit)													// nanosuit needs to be serialized before input
@@ -5192,12 +5313,49 @@ bool CPlayer::CreateCodeEvent(SmartScriptTable& rTable)
 		return CActor::CreateCodeEvent(rTable);
 }
 
+void CPlayer::SetExtension(const char* extension)
+{
+	if (extension == nullptr || strcmp(extension, "ignore") != 0)
+	{
+		if (extension && extension[0])
+		{
+			strncpy(m_params.animationAppendix, extension, 32);
+			m_params.animationAppendix[32 - 1] = '\0';
+		}
+		else
+		{
+			strcpy(m_params.animationAppendix, "nw");
+		}
+
+		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput(m_inputItem, m_params.animationAppendix);
+	}
+}
+
+void CPlayer::SetInput(const char* action, bool looping)
+{
+	if (looping)
+	{
+		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput("Action", action);
+	}
+	else
+	{
+		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput("Signal", action);
+	}
+}
+
 void CPlayer::PlayAction(const char* action, const char* extension, bool looping)
 {
 	if (!m_pAnimatedCharacter)
 		return;
 
-	if (strcmp(action, "use_lockpick") && !strcmp(extension, "lockpick")) //CryMP: A bit hacky, but use lockpick pose only when actually using it
+	bool skipAction = false;
+	const ObjectHoldType holdType = GetHeldObjectType();
+
+	if (holdType != ObjectHoldType::None)
+	{
+		return;
+	}
+	else if (strcmp(action, "use_lockpick") && !strcmp(extension, "lockpick")) //CryMP: A bit hacky, but use lockpick pose only when actually using it
 	{
 		extension = "claymore";
 	}
@@ -5205,12 +5363,20 @@ void CPlayer::PlayAction(const char* action, const char* extension, bool looping
 	if (extension == NULL || strcmp(extension, "ignore") != 0)
 	{
 		if (extension && extension[0])
+		{
 			strncpy(m_params.animationAppendix, extension, 32);
+			m_params.animationAppendix[32 - 1] = '\0';
+		}
 		else
+		{
 			strcpy(m_params.animationAppendix, "nw");
+		}
 
 		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput(m_inputItem, m_params.animationAppendix);
 	}
+
+	if (skipAction)
+		return;
 
 	if (looping)
 		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput("Action", action);
@@ -5369,7 +5535,10 @@ float CPlayer::GetActorStrength() const
 
 void CPlayer::ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTime)
 {
-	CWeapon *pWeapon = GetCurrentWeapon(true);
+	if (m_stats.isFrozen.Value() || m_stats.isRagDoll || !pCharacter)
+		return;
+
+	CWeapon* pWeapon = GetCurrentWeapon(true);
 	if (pWeapon && pWeapon->IsMounted())
 	{
 		//CryMP: Fetch the IK pos data at the ideal time
@@ -5377,10 +5546,194 @@ void CPlayer::ProcessBonesRotation(ICharacterInstance* pCharacter, float frameTi
 	}
 	else
 	{
-		UpdateParachuteIK();
+		if (gEnv->bClient && !m_linkStats.GetLinked())
+		{
+			UpdateParachuteIK();
+			UpdateHeldObjectIK();
+
+			if (m_reachState != ReachState::Idle && m_reachAmount > 0.0001f)
+			{
+				ApplyReachToSpine(pCharacter, GetReachDesiredPitch(), m_reachAmount);
+			}
+		}
 	}
 
 	CActor::ProcessBonesRotation(pCharacter, frameTime);
+}
+
+bool CPlayer::SetGrabTarget(EntityId targetId)
+{
+	if (!gEnv->bClient)
+		return false;
+
+	m_reachNotified = false;
+
+	if (targetId == 0)
+	{
+		m_grabTargetId = 0;
+		m_reachState = ReachState::Idle;
+		return false;
+	}
+
+	IEntity* pEnt = gEnv->pEntitySystem->GetEntity(targetId);
+	if (!pEnt)
+	{
+		m_grabTargetId = 0;
+		m_reachState = ReachState::Idle;
+		return false;
+	}
+
+	m_grabTargetId = targetId;
+	m_reachState = ReachState::Reaching;
+
+	return true;
+}
+
+bool CPlayer::StartThrowPrep()
+{
+	if (!gEnv->bClient)
+		return false;
+
+	m_grabTargetId = 0;
+	m_reachState = ReachState::ThrowPrep;
+	m_reachNotified = false;
+	return true;
+}
+
+void CPlayer::CommitThrow()
+{
+	if (!gEnv->bClient)
+		return;
+
+	if (m_reachState == ReachState::ThrowPrep)
+	{
+		m_reachState = ReachState::Throwing; 
+		m_reachNotified = false;
+	}
+}
+
+void CPlayer::CancelThrowPrep()
+{
+	if (m_reachState == ReachState::ThrowPrep)
+	{
+		m_reachState = ReachState::Returning;
+		m_reachNotified = false;
+	}
+}
+
+void CPlayer::CancelGrabTarget()
+{
+	m_grabTargetId = 0;
+	m_reachState = ReachState::Returning; 
+}
+
+float CPlayer::GetReachDesiredPitch() const
+{
+	const float fwdDeg = DEG2RAD(25.0f);
+	const float backDeg = DEG2RAD(10.0f);
+	float desiredPitch = fwdDeg;
+	switch (m_reachState)
+	{
+	case ReachState::Reaching:   desiredPitch = fwdDeg;   break;
+	case ReachState::ThrowPrep:  desiredPitch = -backDeg;  break;
+	case ReachState::Throwing:   desiredPitch = -backDeg;  break;
+	case ReachState::Returning:  desiredPitch = fwdDeg;   break;
+	default: break;
+	}
+	return desiredPitch;
+}
+
+void CPlayer::UpdateReachBend(float frameTime)
+{
+	if (m_reachState == ReachState::Idle && m_reachAmount <= 0.001f)
+		return;
+
+	const float inSpeed = 4.0f;
+	const float outSpeed = 2.0f;
+
+	const float desiredPitch = GetReachDesiredPitch();
+
+	float targetAmount = 0.0f;
+	float speed = outSpeed;
+
+	if (m_reachState == ReachState::Reaching || m_reachState == ReachState::ThrowPrep)
+	{
+		targetAmount = 1.0f;
+		speed = inSpeed;
+	}
+	else if (m_reachState == ReachState::Throwing || m_reachState == ReachState::Returning)
+	{
+		targetAmount = 0.0f;
+		speed = outSpeed;
+	}
+
+	const bool holdAtPeak = (m_reachState == ReachState::ThrowPrep && m_reachNotified);
+
+	if (!holdAtPeak)
+	{
+		const float delta = targetAmount - m_reachAmount;
+		const float step = speed * frameTime;
+		m_reachAmount += std::clamp(delta, -step, step);
+		m_reachAmount = std::clamp(m_reachAmount, 0.0f, 1.0f);
+	}
+	else
+	{
+		m_reachAmount = 1.0f;
+	}
+
+	// notifications + state transitions stay here
+	if (!m_reachNotified && m_reachAmount >= 0.999f)
+	{
+		m_reachNotified = true;
+
+		if (COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass)))
+		{
+			pOffHand->OnThirdPersonBendReady(m_grabTargetId, m_reachState == ReachState::Reaching);
+		}
+
+		if (m_reachState == ReachState::Reaching)
+		{
+			m_reachState = ReachState::Returning;
+		}
+	}
+
+	if ((m_reachState == ReachState::Throwing || m_reachState == ReachState::Returning) &&
+		m_reachAmount <= 0.0001f)
+	{
+		m_reachState = ReachState::Idle;
+		m_grabTargetId = 0;
+		m_reachNotified = false;
+	}
+}
+
+void CPlayer::ApplyReachToSpine(ICharacterInstance* pCharacter, float bendAngle, float amount)
+{
+	if (!pCharacter) return;
+
+	ISkeletonPose* pPose = pCharacter->GetISkeletonPose();
+	if (!pPose) return;
+
+	const int spineIds[4] = {
+		GetBoneID(BONE_SPINE),
+		GetBoneID(BONE_SPINE2),
+		GetBoneID(BONE_SPINE3),
+		GetBoneID(BONE_HEAD)
+	};
+	const float w[4] = { 1.0f, 0.35f, 0.2f, 0.05f };
+
+	const float a = bendAngle * std::clamp(amount, 0.0f, 1.0f);
+	const Vec3 axis = Vec3(0.0f, -0.5f, 1.0f).GetNormalized();
+
+	for (int i = 0; i < 4; ++i)
+	{
+		const int j = spineIds[i];
+		if (j < 0)
+			continue;
+
+		QuatT q = pPose->GetRelJointByID(j);
+		q.q *= Quat::CreateRotationAA(a * w[i], axis);
+		pPose->SetPostProcessQuat(j, q);
+	}
 }
 
 void CPlayer::ProcessIKLegs(ICharacterInstance* pCharacter, float frameTime)
@@ -5748,7 +6101,7 @@ void CPlayer::UpdateFootSteps(float frameTime)
 					gearSearchEffectId = pMaterialEffects->GetEffectIdByName("footsteps", "gear_search");
 		}
 
-		Vec3 proxyOffset = Vec3(ZERO);
+		Vec3 proxyOffset;
 		Matrix34 tm = GetEntity()->GetWorldTM();
 		tm.Invert();
 		params.soundProxyOffset = tm.TransformVector(params.pos - GetEntity()->GetWorldPos());
@@ -7966,55 +8319,67 @@ void CPlayer::SetDofFxAmount(float amount, float speed)
 		m_dof_amount_speed = 0.0f;
 		m_current_dof_amount = amount;
 		m_target_dof_amount = amount;
-	}
 
+		ApplyDofFxAmount(amount);
+	}
+}
+
+void CPlayer::ApplyDofFxAmount(float amount)
+{
 	gEnv->p3DEngine->SetPostEffectParam("Dof_BlurAmount", amount);
 
 	if (amount <= 0.075f)
-	{
 		gEnv->p3DEngine->SetPostEffectParam("Dof_Active", 0);
-	}
 	else
-	{
 		gEnv->p3DEngine->SetPostEffectParam("Dof_Active", 1);
-	}
+}
+
+void CPlayer::ApplyDofFxLimits(float focusmin, float focusmax, float focuslim)
+{
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusRange", -1);
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMin", focusmin);
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMax", focusmax);
+	gEnv->p3DEngine->SetPostEffectParam("Dof_FocusLimit", focuslim);
 }
 
 void CPlayer::ResetDofFx(float speed)
 {
-	if (speed)
+	if (speed > 0.0f)
 	{
 		m_dof_amount_speed = speed;
 		m_dof_distance_speed = speed;
+
 		m_target_dof_min = 0.0f;
-		m_target_dof_max = 2000.f;
-		m_target_dof_lim = 2500.f;
+		m_target_dof_max = 2000.0f;
+		m_target_dof_lim = 2500.0f;
 		m_target_dof_amount = 0.0f;
 	}
 	else
 	{
 		m_dof_amount_speed = 0.0f;
 		m_dof_distance_speed = 0.0f;
+
 		m_target_dof_min = 0.0f;
-		m_target_dof_max = 2000.f;
-		m_target_dof_lim = 2500.f;
+		m_target_dof_max = 2000.0f;
+		m_target_dof_lim = 2500.0f;
 		m_target_dof_amount = 0.0f;
+
 		m_current_dof_min = 0.0f;
-		m_current_dof_max = 2000.f;
-		m_current_dof_lim = 2500.f;
+		m_current_dof_max = 2000.0f;
+		m_current_dof_lim = 2500.0f;
 		m_current_dof_amount = 0.0f;
 
-		SetDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
-		SetDofFxAmount(0.0f);
+		ApplyDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
+		ApplyDofFxAmount(0.0f);
 	}
 }
 
 void CPlayer::UpdateDofFx(float frameTime)
 {
-	if (m_dof_amount_speed <= 0.0f)
-	{
-		ResetDofFx();
-	}
+	//if (m_dof_amount_speed <= 0.0f)
+	//{
+	//	ResetDofFx();
+	//}
 
 	// Update dof amount
 	float curr_dof_amt = m_current_dof_amount;
@@ -8023,7 +8388,7 @@ void CPlayer::UpdateDofFx(float frameTime)
 	if (curr_dof_amt != target_dof_amt)
 	{
 		m_current_dof_amount = DofInterpolate(curr_dof_amt, target_dof_amt, m_dof_amount_speed, frameTime);
-		SetDofFxAmount(m_current_dof_amount);
+		ApplyDofFxAmount(m_current_dof_amount);
 	}
 
 	// Update dof distances
@@ -8058,7 +8423,7 @@ void CPlayer::UpdateDofFx(float frameTime)
 
 	if (changelimits)
 	{
-		SetDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
+		ApplyDofFxLimits(m_current_dof_min, m_current_dof_max, m_current_dof_lim);
 	}
 }
 
@@ -8217,4 +8582,63 @@ void CPlayer::UpdateModelChangeInVehicle()
 
 		SetVehicleRelinkUpdateId(0);
 	}
+}
+
+void CPlayer::OnObjectEvent(ObjectEvent evnt, const EntityId objectId)
+{
+	if (evnt == ObjectEvent::GRAB)
+	{
+		COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass));
+		if (pOffHand)
+		{
+			pOffHand->PickUpObject_MP(this, objectId);
+		}
+	}
+	else if (evnt == ObjectEvent::THROW)
+	{
+		COffHand* pOffHand = static_cast<COffHand*>(GetItemByClass(CItem::sOffHandClass));
+		if (pOffHand)
+		{
+			pOffHand->ThrowObject_MP(this, objectId);
+		}
+	}
+}
+
+void CPlayer::PlayAnimation(const char* animationName, float speed /*= 1.0f*/, bool loop /*= false*/, bool noBlend /*= false*/, int layerID /*= 0*/)
+{
+	ICharacterInstance* pCharInstance = GetEntity()->GetCharacter(0);
+	if (!pCharInstance)
+	{
+		return;
+	}
+
+	ISkeletonAnim* pSkeletonAnim = pCharInstance->GetISkeletonAnim();
+	if (!pSkeletonAnim)
+	{
+		return;
+	}
+
+	// Prepare animation parameters
+	CryCharAnimationParams params;
+	float blend = noBlend ? 0.0f : 0.125f; // Default blend time
+	params.m_fTransTime = blend;
+	params.m_fLayerBlendIn = 0.0f; // No layer blending for simplicity
+	params.m_nLayerID = layerID; // Layer ID for this animation
+	params.m_nFlags = loop ? CA_LOOP_ANIMATION : 0; // Set looping if needed
+
+	const char* fixedResourceName = animationName;
+	if (!fixedResourceName || !*fixedResourceName)
+	{
+		return;
+	}
+
+	// Start the animation
+	pSkeletonAnim->StartAnimation(fixedResourceName, nullptr, nullptr, nullptr, params);
+}
+
+bool CPlayer::IsStanceInputValid(int stance) const
+{
+	// Valid actionable stance range: STANCE_STAND (0) .. STANCE_LAST-1
+	return (stance >= static_cast<int>(STANCE_STAND) &&
+		stance < static_cast<int>(STANCE_LAST));
 }

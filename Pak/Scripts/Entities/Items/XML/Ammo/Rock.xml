@@ -1,0 +1,7 @@
+<ammo name="rock" class="Rock">
+	<flags>
+		<param name="clientonly" value="1" />
+	</flags>
+<physics type="rigid">
+	</physics>
+</ammo>

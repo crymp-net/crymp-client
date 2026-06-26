@@ -1,0 +1,200 @@
+<item name="Fists" class="Fists" category="small" priority="1" invisible="1" >
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="1" />
+		<param name="droppable" value="0" />
+		<param name="pose" 				value="nw" />
+		<param name="mass"				value="1" />
+		<param name="melee_attack_firemode"	value="melee" />
+		<param name="raiseable" value="true" />
+		<param name="raise_distance" value="0.50" />
+		<dualwield>
+			<suffix value="akimbo_" />
+		</dualwield>
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/us/nw/nw_arms_fp.chr" angles="0,0,0" />
+	</geometry>
+	<actions>
+		<action name="select">
+			<animation target="firstperson" name="select_fist_01" />
+			<animation target="owner" name="select_fist" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="idle_to_walk_right_01" blendTime=".5" />
+			<animation target="owner" name="deselect" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_fist_%hand%_%suffix%01" />
+    </action>
+
+		<action name="punch">
+			<animation target="firstperson" name="punch_left_%suffix%01" camera_helper="camera_helper" />
+			<animation target="owner" name="melee_punch_left" />
+			<animation target="firstperson" name="punch_right_%suffix%01" camera_helper="camera_helper" />
+			<animation target="owner" name="melee_punch_right" />
+			<animation target="firstperson" name="swing_left_%suffix%01" camera_helper="camera_helper" />
+			<animation target="owner" name="melee_swing_left" />
+			<animation target="firstperson" name="swing_right_%suffix%01" camera_helper="camera_helper" />
+			<animation target="owner" name="melee_swing_right" />
+			<animation target="firstperson" name="upper_cut_left_%suffix%01" camera_helper="camera_helper" />
+			<animation target="owner" name="melee_upper_cut_left" />
+			<animation target="firstperson" name="upper_cut_right_%suffix%01" camera_helper="camera_helper" />
+			<animation target="owner" name="melee_upper_cut_right" />
+			<animation target="firstperson" name="lower_cut_left_%suffix%01" camera_helper="camera_helper" />
+			<animation target="owner" name="melee_lower_cut_left" />
+			<animation target="firstperson" name="lower_cut_right_%suffix%01" camera_helper="camera_helper" />
+			<animation target="owner" name="melee_lower_cut_right" />
+      <!--<sound target="firstperson" name="sounds/weapons:punch:fire_fp" radius="5" static="0" />-->
+			<sound target="thirdperson" name="sounds/weapons:punch:fire" radius="5" static="0" />
+		</action>
+		
+		<action name="melee">
+			<animation target="firstperson" name="punch_left_%suffix%01" camera_helper="camera_helper" />
+			<animation target="owner" name="melee_punch_left" />
+			<animation target="firstperson" name="punch_right_%suffix%01" camera_helper="camera_helper" />
+			<animation target="owner" name="melee_punch_right" />
+      <!--<sound target="firstperson" name="sounds/weapons:punch:fire" radius="5" static="0" />-->
+			<sound target="thirdperson" name="sounds/weapons:punch:fire" radius="5" static="0" />
+		</action>
+		
+		<action name="hit">
+			<sound target="firstperson" name="sounds/physics:bullet_impact:melee_impact_sw" radius="5" />
+			<sound target="thirdperson" name="sounds/physics:bullet_impact:melee_impact_sw" radius="5" />
+		</action>
+		
+		<action name="pickup_beam">
+			<animation target="firstperson" name="pick_up_beam_01" />
+			<animation target="owner" name="punch" />
+		</action>
+
+		<action name="idle_beam">
+			<animation target="firstperson" name="beam_idle_01" />
+			<animation target="owner" name="punch" />
+		</action>
+
+		<action name="throw_beam">
+			<animation target="firstperson" name="throw_beam_01" />
+			<animation target="owner" name="punch" />
+		</action>
+		
+		<action name="offhand_on">
+			<animation target="firstperson" name="remove_fist_left_01" speed="4.0" />
+		</action>
+
+		<action name="offhand_off">
+			<animation target="firstperson" name="select_fist_left_01" />
+		</action>
+		
+		<action name="offhand_on_akimbo">
+			<animation target="firstperson" name="remove_fist_left_akimbo_01" speed="4.0" />
+		</action>
+
+		<action name="offhand_off_akimbo">
+			<animation target="firstperson" name="select_fist_left_akimbo_01" />
+		</action>
+		
+		<action name="swim_forward_underwater">
+			<animation target="firstperson" name="swim_underwater_nw_forward_01" blendTime=".5"/>
+		</action>
+
+		<action name="swim_forward">
+			<animation target="firstperson" name="swim_nw_forward_01" blendTime=".5"  />
+		</action>
+		
+		<action name="speed_swim">
+			<animation target="firstperson" name="speed_swim_01" blendTime=".5"/>
+		</action>
+		
+		<action name="swim_backward">
+			<animation target="firstperson" name="swim_underwater_nw_backward_01" blendTime=".5"/>
+		</action>
+		
+
+		<action name="swim_idle">
+			<animation target="firstperson" name="swim_idle_nw_01" blendTime=".5" />
+		</action>
+
+		<action name="swim_idle_underwater">
+			<animation target="firstperson" name="swim_idleUnderwater_nw_01" blendTime=".5"/>
+		</action>
+		
+		<action name="freefall_idle">
+			<animation target="firstperson" name="parachute_float_idle_01" blendTime=".5" />
+		</action>
+		
+		<action name="freefall_start">
+			<animation target="firstperson" name="parachute_start_01" blendTime=".5" />
+		</action>
+		
+		<action name="parachute_idle">
+			<animation target="firstperson" name="parachute_glide_idle_01" blendTime=".5" />
+		</action>
+		
+		<action name="parachute_start">
+			<animation target="firstperson" name="parachute_open_01" blendTime=".5" />
+		</action>
+		
+		<action name="run_forward">
+			<animation target="firstperson" name="run_forward_nw_01" />
+		</action>
+		
+		<action name="crawl">
+			<animation target="firstperson" name="crawl_01"/>
+		</action>
+		
+		<action name="jump">
+			<animation target="firstperson" name="jump_right_01" camera_helper="camera_helper"/>
+		</action>
+		
+		<action name="jump_start">
+			<animation target="firstperson" name="jump_start_right_01" camera_helper="camera_helper"/>
+		</action>
+		
+		<action name="jump_idle">
+			<animation target="firstperson" name="jump_loop_right_01" camera_helper="camera_helper"/>
+		</action>
+		
+		<action name="jump_end">
+			<animation target="firstperson" name="jump_end_right_01" speed="2.0" camera_helper="camera_helper"/>
+		</action>
+		
+		<action name="idle_relaxed">
+			<animation target="firstperson" name="relaxed_idle_right_01" />
+		</action>
+		
+		<action name="raise">
+			<animation target="firstperson" name="hands_up_01" speed="1.0" camera_helper="camera_helper" />
+		</action>
+		
+
+	</actions>
+	<firemodes>
+		<firemode name="punch" type="Melee">
+			<melee>
+				<param name="helper" value="Collision" />
+				<param name="damage" value="80" />
+				<param name="impulse" value="60" />
+				<param name="delay" value="0.15" />
+				<param name="duration" value="0.055" />
+			</melee>
+			<actions>
+				<param name="attack" value="punch" />
+			</actions>
+		</firemode>
+		<firemode name="melee" type="Melee">
+			<melee>
+				<param name="helper" value="collision" />
+				<param name="damage" value="80" />
+				<param name="impulse" value="60" />
+				<param name="delay" value="0.10" />
+				<param name="duration" value="0.45" />
+			</melee>
+			<actions>
+				<param name="attack" value="melee" />
+			</actions>
+		</firemode>
+	</firemodes>
+	<zoommodes>
+	</zoommodes>
+</item>

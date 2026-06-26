@@ -40,6 +40,9 @@ struct AIObjectParameters;
 struct SFogVolumeProperties;
 struct IParticleEffect;
 struct SpawnParams;
+struct IStatObj;
+struct IParticleEmitter;
+struct ICharacterInstance;
 
 //////////////////////////////////////////////////////////////////////////
 

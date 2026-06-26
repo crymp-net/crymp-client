@@ -8,6 +8,7 @@
 #include "CryCommon/CrySystem/IHardwareMouse.h"
 #include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryCommon/CryInput/IInput.h"
+#include "CryCommon/CrySoundSystem/IMusicSystem.h"
 #include "CryGame/Game.h"
 #include "CryGame/Menus/OptionsManager.h"
 #include "Launcher/Resources.h"
@@ -72,8 +73,7 @@ static LRESULT CALLBACK WindowProc(HWND window, UINT msg, WPARAM wParam, LPARAM 
 				event.timestamp = keyCodeWide[0];
 
 				// MB_CUR_MAX should be here, but it's slow
-				char keyName[4] = {};
-
+				char keyName[5] = {};
 				if (wctomb(keyName, static_cast<wchar_t>(wParam)) >= 0)
 				{
 					if (keyName[1] == 0 && static_cast<unsigned char>(keyName[0]) >= 32)
@@ -205,19 +205,45 @@ static LRESULT CALLBACK WindowProc(HWND window, UINT msg, WPARAM wParam, LPARAM 
 		}
 		case WM_ACTIVATE:
 		{
-			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS,
-				LOWORD(wParam) != WA_INACTIVE, 0);
+			const bool active = (LOWORD(wParam) != WA_INACTIVE);
+
+			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS, active, 0);
 
 			return 0;
 		}
 		case WM_SETFOCUS:
 		{
+			//CryMP: Fix scratching noises in MusicSystem after Alt-Tab back into the game
+			if (gEnv->pMusicSystem)
+			{
+				gEnv->pMusicSystem->Pause(true);
+				gEnv->pMusicSystem->Pause(false);
+			}
+      
+			//CryMP: Fixes scoreboard opening on Win11 after Alt-tab
+			if (gEnv->pInput)
+			{
+				gEnv->pInput->EnableEventPosting(false);
+				gEnv->pInput->Update(false);
+				gEnv->pInput->ClearKeyState();
+				gEnv->pInput->EnableEventPosting(true);
+			}
+
 			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS, 1, 0);
 
 			break;
 		}
 		case WM_KILLFOCUS:
 		{
+			//CryMP: Fixes scoreboard opening on Win11 after Alt-tab
+			if (gEnv->pInput)
+			{
+				gEnv->pInput->EnableEventPosting(false);
+				gEnv->pInput->Update(false);
+				gEnv->pInput->ClearKeyState();
+				gEnv->pInput->EnableEventPosting(true);
+			}
+
 			gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS, 0, 0);
 
 			break;

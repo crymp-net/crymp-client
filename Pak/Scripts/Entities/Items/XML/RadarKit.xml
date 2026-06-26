@@ -1,0 +1,59 @@
+<item name="RadarKit" class="Weapon" category="utility" priority="42" uniqueId="1">
+	<params>
+		<param name="giveable" 		value="1" />
+		<param name="selectable" 	value="1" />
+		<param name="droppable" 	value="1" />
+		<param name="pose" 				value="pistol" />
+		<param name="mass"				value="2" />
+		<param name="two_hand"				value="1" />
+		<param name="uniqueId" value="1" />
+		<param name="display_name"	value="@mp_eRadar" />		
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/equipment/Portable_Radar/portable_radar_fp.chr" angles="0,0,0" />
+		<thirdperson name="objects/weapons/equipment/Portable_Radar/portable_radar_tp.cgf" angles="0,0,0" />
+	</geometry>
+	<actions>
+	
+		<action name="select">
+			<animation target="firstperson" name="select_01" />
+			<animation target="owner" name="select" />
+			<sound target="thirdperson" name="sounds/weapons:moar_small:select" radius="5" />
+		</action>
+		<action name="deselect">
+			<animation target="firstperson" name="deselect_01" />
+			<animation target="owner" name="deselect" />
+			<sound target="thirdperson" name="sounds/weapons:moar_small:deselect" radius="5" />
+		</action>
+		<action name="idle">
+			<animation target="firstperson" name="idle_01" />
+			<animation target="owner" name="idle" />
+		</action>
+	
+		<action name="scan">
+			<animation target="firstperson" name="scan_loop_01" />	
+			<sound target="firstperson" name="Sounds/weapons:portable_radar:radar_fire_fp" radius="5" />	
+			<sound target="thirdperson" name="Sounds/weapons:portable_radar:radar_fire" radius="5" />				
+		</action>
+	
+		<action name="spin_up">
+			<animation target="firstperson" name="pre_scan_01" />
+			<animation target="owner" name="shoot" />
+		</action>
+		<action name="spin_down">
+			<animation target="firstperson" name="post_scan_01" />
+		</action>
+	</actions>
+	<firemodes>
+		<firemode name="Scan" type="Scan">
+			<scan>
+				<param name="delay" 		value="0.85" />
+				<param name="duration" 	value="5.5" />
+				<param name="range"	 		value="75" />
+				<param name="tagDelay" value="4.8" />
+			</scan>
+		</firemode>
+	</firemodes>
+	<zoommodes>
+	</zoommodes>
+</item>

@@ -24,8 +24,6 @@ History:
 
 class CThrow : public CSingle
 {
-	struct StartThrowAction;
-	struct ThrowAction;
 		
 protected:
 	struct SThrowActions
@@ -120,11 +118,17 @@ public:
 	void ThrowingGrenade(bool throwing) { m_usingGrenade = throwing; }
 	void ThrowingObject(bool throwing) { m_usingObject = throwing; }
 
+	bool CheckForIntersections(IPhysicalEntity* heldEntity, Vec3& dir);
+
+	bool IsHoldingEntity() const;
+	IEntity *GetHeldEntity();
+
+
 protected:
 
 	virtual void CheckAmmo();
-	virtual void DoThrow();
-	virtual void DoDrop();
+	virtual void DoThrow(bool netPlayer);
+	virtual void DoDrop(bool netPlayer);
 
 private:
 
@@ -132,21 +136,18 @@ private:
 	void   ThrowObject(IEntity* pEntity, IPhysicalEntity* pPE);
 	void   ThrowLivingEntity(IEntity* pEntity, IPhysicalEntity* pPE);
 
-	bool   CheckForIntersections(IPhysicalEntity* heldEntity, Vec3 &dir);
-
-	bool    m_usingGrenade;
+	bool    m_usingGrenade = true;
 	bool    m_usingObject = false;
-	bool	m_thrown;
-	bool	m_pulling;
-	bool	m_throwing;
-	bool	m_netfiring;
-	float	m_throw_time;
-	bool    m_forceNextThrow;
-	
-	float	m_hold_timer;
+	bool	m_thrown = false;
+	bool	m_pulling = false;
+	bool	m_throwing = false;
+	bool	m_netfiring = false;
+	float	m_throw_time = 0.0f;
+	float	m_hold_timer = 0.0f;
+	bool    m_forceNextThrow = false;
 
-	EntityId					m_throwableId;
-	ISchedulerAction	*m_throwableAction;
+	EntityId m_throwableId = 0;
+	ISchedulerAction* m_throwableAction = nullptr;
 
 	SThrowActions m_throwactions;
 	SThrowParams	m_throwparams;

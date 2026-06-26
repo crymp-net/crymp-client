@@ -20,6 +20,8 @@ History:
 
 //-----------------------------------------------------------------------------------------------------
 
+#include <array>
+
 #include "HUDEnums.h"
 #include "HUDCommon.h"
 #include "CryCommon/CrySystem/IFlashPlayer.h"
@@ -112,6 +114,7 @@ public:
 
 	//HUD initialisation
 	bool Init(IActor* pActor);
+	void Reload();
 	//setting local actor / player id
 	void ResetPostSerElements();
 	void PlayerIdSet(EntityId playerId);
@@ -397,7 +400,7 @@ public:
 	EntityId GetOnScreenObjective() {return m_iOnScreenObjective; }
 	bool IsUnderAttack(IEntity *pEntity);
 	ILINE CHUDMissionObjectiveSystem& GetMissionObjectiveSystem() { return m_missionObjectiveSystem; }
-	const wchar_t* LocalizeWithParams(const char* label, bool bAdjustActions=true, const char* param1 = 0, const char* param2 = 0, const char* param3 = 0, const char* param4 = 0);
+	std::wstring LocalizeWithParams(const char* label, bool bAdjustActions = true, const char* param1 = 0, const char* param2 = 0, const char* param3 = 0, const char* param4 = 0);
 	//~mission objectives
 
 	//BattleStatus code : consult Marco C.
@@ -716,8 +719,6 @@ private:
 
   EHUDGAMERULES m_currentGameRules;
 
-	CGameFlashAnimation	m_animFriendlyProjectileTracker;
-	CGameFlashAnimation	m_animHostileProjectileTracker;
 	CGameFlashAnimation	m_animMissionObjective;
 	CGameFlashAnimation	m_animPDA;
 	CGameFlashAnimation	m_animQuickMenu;
@@ -766,6 +767,11 @@ private:
 	CGameFlashAnimation m_animHitIndicatorPlayer;
 	CGameFlashAnimation m_animHitIndicatorVehicle;
 	CGameFlashAnimation m_animTrackedRadioMessage;
+
+	static constexpr int kMaxGrenadeTrackers = 8;
+
+	std::array<CGameFlashAnimation, kMaxGrenadeTrackers> m_animFriendlyProjectileTrackers;
+	std::array<CGameFlashAnimation, kMaxGrenadeTrackers> m_animHostileProjectileTrackers;
 
 	std::optional<float> m_nanosuitMenuOpenTime;
 	uint8_t              m_nanosuitOpenMode = 0;
@@ -917,8 +923,8 @@ private:
 
 	std::vector<STrackedRadioMessage> m_trackedRadioMessages;
 	
-	uint8 m_friendlyTrackerStatus;
-	uint8 m_hostileTrackerStatus;
+	std::array<uint8, kMaxGrenadeTrackers> m_friendlyTrackerStatus = {};
+	std::array<uint8, kMaxGrenadeTrackers> m_hostileTrackerStatus = {};
 
 	uint8_t m_radioTrackerStatus;
 
@@ -938,6 +944,7 @@ protected:
 	float m_hitIndicatorPlayerTimer = 0.0f;
 	float m_hitIndicatorVehicleTimer = 0.0f;
 	std::list<string> m_listBoughtItems;
+	float m_lastHudScale = -1.0f;
 
 public:
 
@@ -947,6 +954,9 @@ public:
 	}
 
 	bool m_bWeaponModifyOpen = false;
+
+	void UpdateTextScale();
+	void OnMaxGrenadeIndicatorsChanged();
 };
 
 //-----------------------------------------------------------------------------------------------------

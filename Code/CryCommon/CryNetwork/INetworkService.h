@@ -514,16 +514,15 @@ struct IStatsDeleter : public IStatsAccessor
 struct SRegisterDayOfBirth
 {
 	SRegisterDayOfBirth(){}
-	SRegisterDayOfBirth(type_zero):day(0),month(0),year(0){}
 	SRegisterDayOfBirth(uint8_t d, uint8_t m, uint16_t y):day(d),month(m),year(y){}
 
 	//hm...
 	SRegisterDayOfBirth(uint32_t i):day(i&0xFF),month((i>>8)&0xFF),year(i>>16){}
 	operator uint32_t()const{return (uint32_t(year)<<16) + (uint32_t(month)<<8) + day;}
 
-	uint8_t day;
-	uint8_t month;
-	uint16_t year;
+	uint8_t day = 0;
+	uint8_t month = 0;
+	uint16_t year = 0;
 };
 
 struct INetworkProfile : public INetworkInterface

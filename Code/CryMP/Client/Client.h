@@ -16,6 +16,7 @@ class CGame;
 class Executor;
 class FileDownloader;
 class FileCache;
+class HandGripRegistry;
 class MapDownloader;
 class GSMasterHook;
 class ScriptCommands;
@@ -37,6 +38,7 @@ class Client : public IGameFrameworkListener, public ILevelSystemListener, publi
 	std::unique_ptr<HTTPClient> m_pHTTPClient;
 	std::unique_ptr<FileDownloader> m_pFileDownloader;
 	std::unique_ptr<FileCache> m_pFileCache;
+	std::unique_ptr<HandGripRegistry> m_pHandGripRegistry;
 	std::unique_ptr<MapDownloader> m_pMapDownloader;
 	std::unique_ptr<GSMasterHook> m_pGSMasterHook;
 	std::unique_ptr<ScriptCommands> m_pScriptCommands;
@@ -143,6 +145,11 @@ public:
 		return m_pFileCache.get();
 	}
 
+	HandGripRegistry *GetHandGripRegistry()
+	{
+		return m_pHandGripRegistry.get();
+	}
+
 	MapDownloader *GetMapDownloader()
 	{
 		return m_pMapDownloader.get();
@@ -203,6 +210,9 @@ public:
 		return m_lastSpawnId;
 	}
 
+	void ReloadLocalizationLua();
+	void WarmupRendererTextPath();
+
 private:
 
 	enum Timers
@@ -211,6 +221,11 @@ private:
 	};
 
 	void SynchWithPhysicsPosition(IEntity* pEntity);
+	void FixCVars();
+	void UpdateHudScale(float deltaTime);
+
+	bool m_hudScaleModifierDown = false;
+	int m_hudScaleDirection = 0;
 };
 
 ///////////////////////

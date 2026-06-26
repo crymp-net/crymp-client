@@ -242,12 +242,12 @@ void CPlayerMovement::ProcessFlyingZeroG()
 	float dashRechargeDuration = 0.5f;
 	float dashEnergyConsumption = g_pGameCVars->pl_zeroGDashEnergyConsumption * NANOSUIT_ENERGY;
 
-	Vec3 acceleration(ZERO);
+	Vec3 acceleration;
 
 	// Apply desired movement
-	Vec3 desiredLocalNormalizedVelocity(ZERO);
-	Vec3 desiredLocalVelocity(ZERO);
-	Vec3 desiredWorldVelocity(ZERO);
+	Vec3 desiredLocalNormalizedVelocity;
+	Vec3 desiredLocalVelocity;
+	Vec3 desiredWorldVelocity;
 
 	// Calculate desired acceleration (user input)		
 	{
@@ -260,7 +260,7 @@ void CPlayerMovement::ProcessFlyingZeroG()
 		else if (m_actions & ACTION_CROUCH)
 			desiredLocalNormalizedVelocity.z -= 1.0f;
 
-		desiredLocalNormalizedVelocity.NormalizeSafe(ZERO);
+		desiredLocalNormalizedVelocity.NormalizeSafe();
 
 		float backwardMultiplier = (m_movement.desiredVelocity.y < 0.0f) ? m_params.backwardMultiplier : 1.0f;
 		desiredLocalNormalizedVelocity.x *= m_params.strafeMultiplier;
@@ -324,7 +324,7 @@ void CPlayerMovement::ProcessFlyingZeroG()
 		if (debug)
 			gEnv->pRenderer->DrawLabel(entityPos - vRight * 1.5f + Vec3(0, 0, 0.2f), 1.5f, "Move[%1.3f, %1.3f, %1.3f]", desiredWorldVelocity.x, desiredWorldVelocity.y, desiredWorldVelocity.z);
 
-		float desiredAlignment = m_velocity.GetNormalizedSafe(ZERO) * desiredWorldVelocity.GetNormalizedSafe(ZERO);
+		float desiredAlignment = m_velocity.GetNormalizedSafe(Vec3()) * desiredWorldVelocity.GetNormalizedSafe(Vec3());
 
 		int sound = 0;
 		float thrusters = desiredWorldVelocity.GetLength();
@@ -418,7 +418,7 @@ void CPlayerMovement::ProcessFlyingZeroG()
 	//--------------------
 
 	// Apply velocity dampening (framerate independent)
-	Vec3 damping(ZERO);
+	Vec3 damping;
 	{
 		damping.x = abs(m_velocity.x);
 		damping.y = abs(m_velocity.y);
@@ -705,7 +705,7 @@ void CPlayerMovement::ProcessSwimming()
 			m_velocity += buoyancy.waterFlow * m_frameTime;
 	}
 
-	Vec3 acceleration(ZERO);
+	Vec3 acceleration;
 
 	//--------------------
 
@@ -779,9 +779,9 @@ void CPlayerMovement::ProcessSwimming()
 //--------------------
 
 // Apply desired movement
-	Vec3 desiredLocalNormalizedVelocity(ZERO);
-	Vec3 desiredLocalVelocity(ZERO);
-	Vec3 desiredWorldVelocity(ZERO);
+	Vec3 desiredLocalNormalizedVelocity;
+	Vec3 desiredLocalVelocity;
+	Vec3 desiredWorldVelocity;
 
 	// Less control when jumping or otherwise above surface
 	// (where bottom ray miss geometry that still keeps the collider up).
@@ -871,7 +871,7 @@ void CPlayerMovement::ProcessSwimming()
 	m_velocity += acceleration * (m_frameTime / accelerateDelay);
 
 	// Apply velocity dampening (framerate independent)
-	Vec3 damping(ZERO);
+	Vec3 damping;
 	{
 		if (!m_swimJumping)
 		{
@@ -1087,7 +1087,7 @@ void CPlayerMovement::ProcessOnGroundOrJumping(CPlayer& player)
 		}
 		else
 		{
-			move *= 1.0f - min(1.0f, m_params.slopeSlowdown * slopeRatio * max(0.0f, -(terrainTangent * move.GetNormalizedSafe(ZERO))));
+			move *= 1.0f - min(1.0f, m_params.slopeSlowdown * slopeRatio * max(0.0f, -(terrainTangent * move.GetNormalizedSafe(Vec3()))));
 			//
 			move += terrainTangent * slopeRatio * m_player.GetStanceMaxSpeed(m_player.GetStance());
 		}
@@ -1288,12 +1288,12 @@ void CPlayerMovement::ProcessOnGroundOrJumping(CPlayer& player)
 			}
 		}
 	}
-	else if (move.len2() > 0.01f)//"passive" air control, the player can air control as long as it is to decelerate
+	else if (move.len2() > 0.01f && g_pGameCVars->mp_strafeJump)//"passive" air control, the player can air control as long as it is to decelerate
 	{
 		Vec3 currVelFlat(m_stats.velocity - m_stats.velocity * baseMtxZ);
 		Vec3 moveFlat(move - move * baseMtxZ);
 
-		float dot(currVelFlat.GetNormalizedSafe(ZERO) * moveFlat.GetNormalizedSafe(ZERO));
+		float dot(currVelFlat.GetNormalizedSafe(Vec3()) * moveFlat.GetNormalizedSafe(Vec3()));
 
 		if (dot < -0.001f)
 		{

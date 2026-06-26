@@ -21,10 +21,18 @@ struct SFlashVarValue;
 
 enum EFlashDock
 {
-	eFD_Stretch	= (1 << 0),
-	eFD_Center	= (1 << 1),
-	eFD_Left		= (1 << 3),
-	eFD_Right		= (1 << 4)
+	eFD_Stretch = BIT(0),
+	eFD_Center = BIT(1),
+	eFD_Left = BIT(3),
+	eFD_Right = BIT(4),
+
+	eFD_Top = BIT(5),
+	eFD_Bottom = BIT(6),
+
+	eFD_CenteredFit = BIT(9),
+	eFD_Scaling = BIT(10),
+	eFD_BottomFit = BIT(11),
+	eFD_AnchorFitScale = BIT(12),
 };
 
 class CFlashAnimation
@@ -36,6 +44,10 @@ public:
 	IFlashPlayer*	GetFlashPlayer() const;
 
 	void SetDock(uint32 eFDock);
+	uint32 GetDock() const
+	{
+		return m_dock;
+	}
 
 	bool	LoadAnimation(const char* name);
 	virtual void	Unload();
@@ -68,6 +80,60 @@ public:
 		return CheckedInvoke(pMethodName, &arg, 1, pResult);
 	}
 
+	void ApplyScale(float hudScale);
+	bool NeedsHUDScaleApply() const;
+	void ForceHUDScaleApply();
+
+	void SetIgnoreHUDScale(bool ignore)
+	{
+		m_ignoreHUDScale = ignore;
+	}
+
+	bool GetIgnoreHUDScale() const
+	{
+		return m_ignoreHUDScale;
+	}
+
+	void SetFixedScale(float scale)
+	{
+		m_fixedScale = scale;
+	}
+
+	void SetMaxScale(float scale)
+	{
+		m_maxScale = scale;
+	}
+
+	void SetMinScale(float scale)
+	{
+		m_minScale = scale;
+	}
+
+	float GetMaxScale() const
+	{
+		return m_maxScale;
+	}
+
+	float GetMinScale() const
+	{
+		return m_minScale;
+	}
+
+	float GetFixedScale() const
+	{
+		return m_fixedScale;
+	}
+
+	void EnableFixedScale(bool enable)
+	{
+		m_useFixedScale = enable;
+	}
+
+	bool IsFixedScaleEnabled() const
+	{
+		return m_useFixedScale;
+	}
+
 private:
 
 	IFlashPlayer*	m_pFlashPlayer;
@@ -75,16 +141,13 @@ private:
 
 	// shared null player
 	static IFlashPlayer*	s_pFlashPlayerNull;
-};
 
-// SUIWideString should be used when we pass sASCII+ISO Latin1 strings to Scaleform
-// Scalefrom expects characters as UTF8 or wchar_t
-struct SUIWideString
-{
-	SUIWideString(const char* sASCIIISOLatin1) { m_string.Format(L"%S", sASCIIISOLatin1); }
-	const wchar_t* c_str() const { return m_string.c_str(); }
-	CryFixedWStringT<128> m_string;
+	bool m_ignoreHUDScale = false;
+	bool m_useFixedScale = false;
+	float m_fixedScale = 1.0f;
+	float m_maxScale = 1.2f;
+	float m_minScale = 0.4f;
+	bool m_needsHUDScaleApply = true;
 };
 
 #endif //__FLASHANIMATION_H__
-

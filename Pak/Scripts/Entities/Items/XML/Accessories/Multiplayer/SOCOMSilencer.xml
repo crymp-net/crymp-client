@@ -1,0 +1,12 @@
+<item name="SOCOMSilencer" class="Item" configuration="mp">
+	<params>
+		<param name="giveable" value="1" />
+		<param name="selectable" value="0" />
+		<param name="droppable" value="0" />
+		<param name="display_name" value="@mp_ePSilencer" />
+	</params>
+	<geometry>
+		<firstperson name="objects/weapons/attachments/silencer_pistol/silencer_pistol_fp.cgf"/>
+		<thirdperson name="objects/weapons/attachments/silencer_pistol/silencer_pistol_tp.cgf" />
+	</geometry>
+</item>

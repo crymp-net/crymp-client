@@ -1,0 +1,60 @@
+<item name="APCCannon_AscMod" class="VehicleWeapon" invisible="1" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+		<ammos>
+		<ammo name="vtol20" extra="0" amount="0" />
+	</ammos>
+	<actions>
+  	<action name="automatic_fire">			
+			<sound target="firstperson" name="sounds/weapons:vehicle_us_vtol:fire_atgun_fp" radius="250" static="1" synched="1"/>			
+			<sound target="thirdperson" name="sounds/weapons:vehicle_us_vtol:fire_atgun" radius="250" static="1" synched="1"/>			
+  	</action>
+  </actions>
+	<firemodes>
+		<firemode name="Automatic" type="Automatic">
+			<fire>
+				<param name="ammo_type" value="vtol20" />
+				<param name="clip_size" value="-1" />
+				<param name="rate" value="700" />
+				<param name="damage" value="150" />
+				<param name="advanced_AAim" value="0" />
+				<param name="advanced_AAim_Range" value="25" />
+			</fire>
+			<heating>
+				<param name="overheat_time" value="6.0" /> 
+				<param name="duration" value="2.0" />
+				<param name="cooldown_time" value="3.0" />
+			</heating>
+			<spread>
+				<param name="min" value="0.1" />
+				<param name="max" value="2.0" />
+			</spread>
+			<recoil>
+				<param name="impulse" value="0" />
+			</recoil>		
+			<tracer>
+				<param name="geometryFP" 	value="objects/effects/tracer_standard_red_new.cgf" />
+				<param name="geometry" 	value="objects/effects/tracer_standard_red_new.cgf" />
+				<param name="speed" 		value="350" />
+				<param name="speedFP"   value="350" />
+				<param name="frequency" value="1" />
+				<param name="helper_fp" value="dummy" />
+				<param name="helper_tp" value="dummy" />
+			</tracer>				
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Tank.APCCannon" helper="" light_helper="" light_radius="10" light_time="0.06" light_color="1,1,0.8" light_diffuse_mult="8" time="0.100" />
+				<thirdperson effect="muzzleflash.Tank.APCCannon_tp" helper="" light_helper="" light_radius="10" light_time="0.06" light_color="1,1,0.8" light_diffuse_mult="8" />
+			</muzzleflash>
+			<reject>
+				<firstperson effect="weapon_fx.shells.apccannon" helper="shells" />
+				<thirdperson effect="weapon_fx.shells.apccannon" helper="shells" />
+			</reject>			
+		</firemode>
+	</firemodes>
+</item>

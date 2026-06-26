@@ -1,0 +1,48 @@
+<ammo name="tank30" class="Rocket">
+	<geometry>
+		<firstperson name="objects/effects/tracer_standard_new.cgf" />
+		<thirdperson name="objects/effects/tracer_standard_new.cgf" />
+	</geometry>
+	<flags>
+		<param name="serverspawn" value="1" />
+		<param name="predictspawn" value="1" />
+	</flags>
+	<physics type="particle">
+		<param name="mass" value="0.25" />
+		<param name="speed" value="200" />
+		<param name="radius" value="0.2" />
+		
+		<param name="air_resistance" value="0" />
+		<param name="water_resistance" value="0.5" />
+		<param name="gravity" value="0, 0, -0.5" />
+		<param name="water_gravity" value="0, 0, -0.5" />
+		
+		<param name="thrust" value="0" />
+		<param name="lift" value="0" />
+		<param name="min_bounce_speed" value="8" />
+		<param name="material" value="mat_metal" />
+		<param name="pierceability" value="8" />
+	
+		<param name="single_contact" value="1" />
+	</physics>
+	<explosion>
+		<param name="pressure" value="1000" />
+		<param name="min_radius" value="1" />
+		<param name="max_radius" value="5" />
+		<param name="min_phys_radius" value="1.2" />
+		<param name="max_phys_radius" value="2" />
+		<param name="hole_size" value="1.5" />
+		<param name="terrain_hole_size" value="4" />				
+		<param name="effect_scale" value="1" />
+		<param name="effect" value="explosions.tank30.explosion" />
+		<param name="type" value="frag" />
+	</explosion>
+	<params>
+		<param name="lifetime" value="5" />
+		<param name="showtime" value="0.1" />
+	</params>	
+	<trail>
+		<param name="effect" value="smoke_and_fire.Tank_round.apc30" />
+		<param name="scale" value="1" />
+	</trail>		
+</ammo>

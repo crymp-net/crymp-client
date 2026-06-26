@@ -156,6 +156,7 @@ SAmmoParams::SAmmoParams(const IItemParamsNode* pItemParams_, const IEntityClass
 	: flags(0)
 	, serverSpawn(0)
 	, predictSpawn(0)
+	, clexplosion_mfx(0)
 	, lifetime(0.0f)
 	, showtime(0.0f)
 	, aiType(AIOBJECT_NONE)
@@ -168,8 +169,8 @@ SAmmoParams::SAmmoParams(const IItemParamsNode* pItemParams_, const IEntityClass
 	, speed(0.0f)
 	, maxLoggedCollisions(1)
 	, traceable(0)
-	, spin(ZERO)
-	, spinRandom(ZERO)
+	, spin()
+	, spinRandom()
 	, pSurfaceType(0)
 	, pParticleParams(0)
 	, fpGeometry(0)
@@ -245,14 +246,14 @@ void SAmmoParams::LoadFlagsAndParams()
 		int flag = 0;
 		CItemParamReader reader(flagsNode);
 		reader.Read("ClientOnly", flag);
-		if (pEntityClass == gEnv->pEntitySystem->GetClassRegistry()->FindClass("tankaa")) //CryMP hack : fix Anti-Air FPS bug (TankAA.xml)
-			flag = 1;
 
 		flags |= flag ? ENTITY_FLAG_CLIENT_ONLY : 0; flag = 0;
 		reader.Read("ServerOnly", flag); flags |= flag ? ENTITY_FLAG_SERVER_ONLY : 0; flag = 0;
 		reader.Read("ServerSpawn", serverSpawn);
 		if (serverSpawn)
 			reader.Read("PredictSpawn", predictSpawn);
+
+		reader.Read("clexplosion_mfx", clexplosion_mfx);
 	}
 
 	const IItemParamsNode* paramsNode = pItemParams->GetChild("params");
@@ -290,15 +291,15 @@ void SAmmoParams::LoadPhysics()
 	const char* typ = physics->GetAttribute("type");
 	if (typ)
 	{
-		if (!strcmpi(typ, "particle"))
+		if (!_stricmp(typ, "particle"))
 		{
 			physicalizationType = ePT_Particle;
 		}
-		else if (!strcmpi(typ, "rigid"))
+		else if (!_stricmp(typ, "rigid"))
 		{
 			physicalizationType = ePT_Rigid;
 		}
-		else if (!strcmpi(typ, "static"))
+		else if (!_stricmp(typ, "static"))
 		{
 			physicalizationType = ePT_Static;
 		}

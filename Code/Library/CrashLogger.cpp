@@ -23,6 +23,8 @@ static CrashLogger::LogFileProvider g_logFileProvider;
 static CrashLogger::HeapInfoProvider g_heapInfoProvider;
 static const char* g_banner;
 
+void DumpLuaStackTrace(std::FILE *file);
+
 static void* ByteOffset(void* base, std::size_t offset)
 {
 	return static_cast<unsigned char*>(base) + offset;
@@ -80,23 +82,19 @@ static void DumpExceptionInfo(std::FILE* file, const EXCEPTION_RECORD* info)
 {
 	const unsigned int code = info->ExceptionCode;
 	const std::size_t address = reinterpret_cast<std::size_t>(info->ExceptionAddress);
+	std::size_t dataAddress = 0;
 
 	std::fprintf(file, "%s (0x%08X) at 0x" ADDR_FMT, ExceptionCodeToName(code), code, address);
 
 	if (code == EXCEPTION_ACCESS_VIOLATION || code == EXCEPTION_IN_PAGE_ERROR)
 	{
-		const std::size_t dataAddress = info->ExceptionInformation[1];
+		dataAddress = info->ExceptionInformation[1];
 
 		switch (info->ExceptionInformation[0])
 		{
 			case 0: std::fprintf(file, ": Read from 0x"  ADDR_FMT " failed", dataAddress); break;
 			case 1: std::fprintf(file, ": Write to 0x"   ADDR_FMT " failed", dataAddress); break;
 			case 8: std::fprintf(file, ": Execute at 0x" ADDR_FMT " failed", dataAddress); break;
-		}
-
-		if (g_heapInfoProvider)
-		{
-			g_heapInfoProvider(file, reinterpret_cast<void*>(dataAddress));
 		}
 	}
 	else if (code == CRASH_LOGGER_ENGINE_ERROR)
@@ -105,13 +103,15 @@ static void DumpExceptionInfo(std::FILE* file, const EXCEPTION_RECORD* info)
 
 		std::fprintf(file, ": %s", message);
 	}
-	else if (g_heapInfoProvider)
-	{
-		// let debug allocator log its error message
-		g_heapInfoProvider(file, nullptr);
-	}
 
 	std::fprintf(file, "\n");
+
+	if (g_heapInfoProvider)
+	{
+		// let debug allocator log its error message
+		g_heapInfoProvider(file, reinterpret_cast<void*>(dataAddress));
+	}
+
 	std::fflush(file);
 }
 
@@ -434,6 +434,8 @@ static void WriteCrashDump(std::FILE* file, EXCEPTION_POINTERS* exception)
 	DumpCallStack(file, exception->ContextRecord);
 	DumpLoadedModules(file);
 	DumpCommandLine(file);
+
+	DumpLuaStackTrace(file);
 
 	WriteDumpFooter(file);
 }

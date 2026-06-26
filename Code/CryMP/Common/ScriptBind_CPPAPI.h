@@ -8,6 +8,7 @@
 struct SProfileInfo {
 	std::string id;
 	std::string token;
+	float playedTime;
 };
 
 class ScriptBind_CPPAPI : public CScriptableBase
@@ -43,8 +44,9 @@ public:
 	int GetLP(IFunctionHandler* pH);
 	int GetNumVars(IFunctionHandler* pH);
 	int GetVars(IFunctionHandler* pH);
+	int HasNetworkConnectivity(IFunctionHandler* pH);
 
-	int SetProfile(IFunctionHandler* pH, const char *type, const char* profileId, const char *token);
+	int SetProfile(IFunctionHandler* pH, const char *type, const char* profileId, const char *token, float playedTime);
 	std::optional<SProfileInfo> GetProfile(const std::string& type);
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -85,4 +87,8 @@ public:
 	int GetLocalIP(IFunctionHandler* pH);
 	int GetIP(IFunctionHandler* pH, const char* host);
 	int GetTime(IFunctionHandler *pH, int future=0);
+	////////////////////////////////////////////////////////////////////////////////
+	// HandGripData
+	////////////////////////////////////////////////////////////////////////////////
+	int CreateHandGripData(IFunctionHandler* pH);
 };

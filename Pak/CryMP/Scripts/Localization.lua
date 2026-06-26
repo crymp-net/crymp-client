@@ -1394,47 +1394,273 @@ CPPAPI.AddLocalizedLabel("use_vehicle_full", {
     },
 })
 
-CPPAPI.AddLocalizedLabel("ui_A", {
-	english_text = "A",
+--------------------------------------------------------------------------------
+-- Map coordinates
+--------------------------------------------------------------------------------
+
+CPPAPI.AddLocalizedLabel("ui_A", { english_text = "A", localized_text = "A" })
+CPPAPI.AddLocalizedLabel("ui_B", { english_text = "B", localized_text = "B" })
+CPPAPI.AddLocalizedLabel("ui_C", { english_text = "C", localized_text = "C" })
+CPPAPI.AddLocalizedLabel("ui_D", { english_text = "D", localized_text = "D" })
+CPPAPI.AddLocalizedLabel("ui_E", { english_text = "E", localized_text = "E" })  -- by default East, but unused (?)
+CPPAPI.AddLocalizedLabel("ui_F", { english_text = "F", localized_text = "F" })
+CPPAPI.AddLocalizedLabel("ui_G", { english_text = "G", localized_text = "G" })
+CPPAPI.AddLocalizedLabel("ui_H", { english_text = "H", localized_text = "H" })
+
+CPPAPI.AddLocalizedLabel("ui_radar_SE", {
+	english_text = "SE",
 	languages = {
+		czech     = { localized_text = "JV"  }, -- JIHOVÝCHOD
+		french    = { localized_text = "SE"  }, -- SUD-EST
+		german    = { localized_text = "SO"  }, -- SÜDOST
+		hungarian = { localized_text = "DK"  }, -- DÉLKELET
+		italian   = { localized_text = "SE"  }, -- SUD-EST
+		polish    = { localized_text = "SE"  }, -- POŁUDNIOWY WSCHÓD
+		russian   = { localized_text = "ЮВ"  }, -- ЮГО-ВОСТОК
+		spanish   = { localized_text = "SE"  }, -- SURESTE
+		turkish   = { localized_text = "GD"  }, -- GÜNEYDOĞU
 	},
 })
 
-CPPAPI.AddLocalizedLabel("ui_B", {
-	english_text = "B",
+CPPAPI.AddLocalizedLabel("ui_radar_S", {
+	english_text = "S",
 	languages = {
+		czech     = { localized_text = "J"   }, -- JIH
+		french    = { localized_text = "S"   }, -- SUD
+		german    = { localized_text = "S"   }, -- SÜD
+		hungarian = { localized_text = "D"   }, -- DÉL
+		italian   = { localized_text = "S"   }, -- SUD
+		polish    = { localized_text = "S"   }, -- POŁUDNIE
+		russian   = { localized_text = "Ю"   }, -- ЮГ
+		spanish   = { localized_text = "S"   }, -- SUR
+		turkish   = { localized_text = "G"   }, -- GÜNEY
 	},
 })
 
-CPPAPI.AddLocalizedLabel("ui_C", {
-	english_text = "C",
+CPPAPI.AddLocalizedLabel("ui_radar_SW", {
+	english_text = "SW",
 	languages = {
+		czech     = { localized_text = "JZ"  }, -- JIHOZÁPAD
+		french    = { localized_text = "SO"  }, -- SUD-OUEST
+		german    = { localized_text = "SW"  }, -- SÜDWEST
+		hungarian = { localized_text = "DNY" }, -- DÉLNYUGAT
+		italian   = { localized_text = "SO"  }, -- SUD-OVEST
+		polish    = { localized_text = "SW"  }, -- POŁUDNIOWY ZACHÓD
+		russian   = { localized_text = "ЮЗ"  }, -- ЮГО-ЗАПАД
+		spanish   = { localized_text = "SO"  }, -- SUROESTE
+		turkish   = { localized_text = "GB"  }, -- GÜNEYBATI
 	},
 })
 
-CPPAPI.AddLocalizedLabel("ui_D", {
-	english_text = "D",
+CPPAPI.AddLocalizedLabel("ui_radar_NW", {
+	english_text = "NW",
 	languages = {
+		czech     = { localized_text = "SZ"  }, -- SEVEROZÁPAD
+		french    = { localized_text = "NO"  }, -- NORD-OUEST
+		german    = { localized_text = "NW"  }, -- NORDWEST
+		hungarian = { localized_text = "ÉNY" }, -- ÉSZAKNYUGAT
+		italian   = { localized_text = "NO"  }, -- NORD-OVEST
+		polish    = { localized_text = "NW"  }, -- PÓŁNOCNY ZACHÓD
+		russian   = { localized_text = "СЗ"  }, -- СЕВЕРО-ЗАПАД
+		spanish   = { localized_text = "NO"  }, -- NOROESTE
+		turkish   = { localized_text = "KB"  }, -- KUZEYBATI
 	},
 })
 
-CPPAPI.AddLocalizedLabel("ui_F", {
-	english_text = "F",
+CPPAPI.AddLocalizedLabel("ui_radar_N", {
+	english_text = "N",
 	languages = {
+		czech     = { localized_text = "S"   }, -- SEVER
+		french    = { localized_text = "N"   }, -- NORD
+		german    = { localized_text = "N"   }, -- NORD
+		hungarian = { localized_text = "É"   }, -- ÉSZAK
+		italian   = { localized_text = "N"   }, -- NORD
+		polish    = { localized_text = "N"   }, -- PÓŁNOC
+		russian   = { localized_text = "С"   }, -- СЕВЕР
+		spanish   = { localized_text = "N"   }, -- NORTE
+		turkish   = { localized_text = "K"   }, -- KUZEY
 	},
 })
 
-CPPAPI.AddLocalizedLabel("ui_G", {
-	english_text = "G",
+CPPAPI.AddLocalizedLabel("ui_radar_NE", {
+	english_text = "NE",
 	languages = {
+		czech     = { localized_text = "SV"  }, -- SEVEROVÝCHOD
+		french    = { localized_text = "NE"  }, -- NORD-EST
+		german    = { localized_text = "NO"  }, -- NORDOST
+		hungarian = { localized_text = "ÉK"  }, -- ÉSZAKKELET
+		italian   = { localized_text = "NE"  }, -- NORD-EST
+		polish    = { localized_text = "NE"  }, -- PÓŁNOCNY WSCHÓD
+		russian   = { localized_text = "СВ"  }, -- СЕВЕРО-ВОСТОК
+		spanish   = { localized_text = "NE"  }, -- NORESTE
+		turkish   = { localized_text = "KD"  }, -- KUZEYDOĞU
 	},
 })
 
-CPPAPI.AddLocalizedLabel("ui_H", {
-	english_text = "H",
+CPPAPI.AddLocalizedLabel("ui_radar_E", {
+	english_text = "E",
 	languages = {
+		czech     = { localized_text = "V"   }, -- VÝCHOD
+		french    = { localized_text = "E"   }, -- EST
+		german    = { localized_text = "O"   }, -- OST
+		hungarian = { localized_text = "K"   }, -- KELET
+		italian   = { localized_text = "E"   }, -- EST
+		polish    = { localized_text = "E"   }, -- WSCHÓD
+		russian   = { localized_text = "В"   }, -- ВОСТОК
+		spanish   = { localized_text = "E"   }, -- ESTE
+		turkish   = { localized_text = "D"   }, -- DOĞU
 	},
 })
+
+CPPAPI.AddLocalizedLabel("ui_radar_W", {
+	english_text = "W",
+	languages = {
+		czech     = { localized_text = "Z"   }, -- ZÁPAD
+		french    = { localized_text = "O"   }, -- OUEST
+		german    = { localized_text = "W"   }, -- WEST
+		hungarian = { localized_text = "NY"  }, -- NYUGAT
+		italian   = { localized_text = "O"   }, -- OVEST
+		polish    = { localized_text = "W"   }, -- ZACHÓD
+		russian   = { localized_text = "З"   }, -- ЗАПАД
+		spanish   = { localized_text = "O"   }, -- OESTE
+		turkish   = { localized_text = "B"   }, -- BATI
+	},
+})
+
+CPPAPI.AddLocalizedLabel("object_too_heavy", {
+    english_text = "This object is too heavy to pick up!",
+    languages = {
+        czech = {
+            localized_text = "Tento objekt je příliš těžký na zvednutí!",
+        },
+        french = {
+            localized_text = "Cet objet est trop lourd à ramasser !",
+        },
+        german = {
+            localized_text = "Dieses Objekt ist zu schwer zum Aufheben!",
+        },
+        hungarian = {
+            localized_text = "Ez a tárgy túl nehéz ahhoz, hogy felemeld!",
+        },
+        italian = {
+            localized_text = "Questo oggetto è troppo pesante da sollevare!",
+        },
+        polish = {
+            localized_text = "Ten przedmiot jest zbyt ciężki, aby go podnieść!",
+        },
+        russian = {
+            localized_text = "Этот предмет слишком тяжёл, чтобы его поднять!",
+        },
+        spanish = {
+            localized_text = "¡Este objeto es demasiado pesado para levantar!",
+        },
+        turkish = {
+            localized_text = "Bu nesne kaldırmak için çok ağır!",
+        },
+    },
+})
+
+CPPAPI.AddLocalizedLabel("object_collision_vehicle_drop", {
+    english_text = "Watch it — collisions make you drop carried vehicles.",
+    languages = {
+        czech = {
+            localized_text = "Pozor — kolize způsobí, že upustíte nesené vozidlo.",
+        },
+        french = {
+            localized_text = "Attention — les collisions vous font lâcher les véhicules transportés.",
+        },
+        german = {
+            localized_text = "Achtung — Kollisionen lassen dich getragene Fahrzeuge fallen lassen.",
+        },
+        hungarian = {
+            localized_text = "Vigyázz — az ütközések miatt elejted a szállított járművet.",
+        },
+        italian = {
+            localized_text = "Attento — le collisioni ti fanno cadere i veicoli trasportati.",
+        },
+        polish = {
+            localized_text = "Uważaj — kolizje powodują upuszczenie przenoszonych pojazdów.",
+        },
+        russian = {
+            localized_text = "Осторожно — при столкновениях вы роняете переносимые транспортные средства.",
+        },
+        spanish = {
+            localized_text = "¡Cuidado! — Las colisiones te hacen soltar los vehículos que llevas.",
+        },
+        turkish = {
+            localized_text = "Dikkat et — çarpmalar taşıdığın araçları düşürmene neden olur.",
+        },
+    },
+})
+
+CPPAPI.AddLocalizedLabel("object_cant_throw_here", {
+    english_text = "You cannot drop the object here!",
+    languages = {
+        czech = {
+            localized_text = "Zde nemůžete objekt upustit!",
+        },
+        french = {
+            localized_text = "Vous ne pouvez pas déposer l’objet ici !",
+        },
+        german = {
+            localized_text = "Du kannst das Objekt hier nicht ablegen!",
+        },
+        hungarian = {
+            localized_text = "Itt nem ejtheted le a tárgyat!",
+        },
+        italian = {
+            localized_text = "Non puoi lasciare l’oggetto qui!",
+        },
+        polish = {
+            localized_text = "Nie możesz upuścić przedmiotu w tym miejscu!",
+        },
+        russian = {
+            localized_text = "Вы не можете бросить этот объект здесь!",
+        },
+        spanish = {
+            localized_text = "¡No puedes soltar el objeto aquí!",
+        },
+        turkish = {
+            localized_text = "Bu nesneyi burada bırakamazsın!",
+        },
+    },
+})
+
+CPPAPI.AddLocalizedLabel("object_lost_destroyed", {
+    english_text = "The carried object was destroyed...",
+    languages = {
+        czech = {
+            localized_text = "Nesený objekt byl zničen...",
+        },
+        french = {
+            localized_text = "L’objet transporté a été détruit...",
+        },
+        german = {
+            localized_text = "Das getragene Objekt wurde zerstört...",
+        },
+        hungarian = {
+            localized_text = "A szállított tárgy megsemmisült...",
+        },
+        italian = {
+            localized_text = "L’oggetto trasportato è stato distrutto...",
+        },
+        polish = {
+            localized_text = "Przenoszony przedmiot został zniszczony...",
+        },
+        russian = {
+            localized_text = "Переносимый объект был уничтожен...",
+        },
+        spanish = {
+            localized_text = "El objeto transportado fue destruido...",
+        },
+        turkish = {
+            localized_text = "Taşınan nesne yok edildi...",
+        },
+    },
+})
+
+
+
 
 --[[
 CPPAPI.AddLocalizedLabel("template", {

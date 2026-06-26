@@ -1,0 +1,39 @@
+<Material MtlFlags="256">
+ <SubMaterials>
+  <Material Name="Helmet" MtlFlags="128" Shader="Cloth" GenMask="268468496" SurfaceType="mat_kevlar" Diffuse="0.50196081,0.50196081,0.50196081" Specular="1,1,1" Emissive="0,0,0" Shininess="14.9" Opacity="1">
+   <Textures>
+    <Texture Map="Diffuse" File="objects/characters/human/us/nanosuit/nanosuit_helm _mask.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Specular" File="objects/characters/human/us/nanosuit/nanosuit_helm _mask_spec.tif" Filter="7">
+     <TexMod />
+    </Texture>
+    <Texture Map="Normalmap" File="objects/characters/human/us/nanosuit/nanosuit_helm _mask_ddn.tif" Filter="7" Amount="50">
+     <TexMod />
+    </Texture>
+    <Texture Map="Environment" File="textures/cubemaps/camera_river_cubemap.dds" TexType="3">
+     <TexMod />
+    </Texture>
+   </Textures>
+   <PublicParams AnisotropicShape="0.25" DiffuseExponent="0.109" FuzzynessSmoothness="2.75" FuzzynessStrength="1.35" FuzzynessSpread="0.99000001" FuzzynessSaturation="1" SpecularMultiplier="0.31400001" MetallicAmount="0" ReflectionAmount="3" FresnelBias="0.465" FresnelScale="27.870001" FresnelScaleShadowBias="1" SparksPow="9.5799999" SparksMultiplier="3" SparksPhase="8.20000" SparksFrequency="5" SparksColor="0.451,0.608,0.902"/>
+   <MaterialLayers />
+  </Material>
+  <Material Name="Glasses" MtlFlags="128" Shader="Metal" GenMask="268435472" SurfaceType="" Diffuse="0.086274512,0.086274512,0.086274512" Specular="0.050980397,0.050980397,0.043137256" Emissive="0,0,0" Shininess="10" Opacity="1" GlowAmount="10">
+   <Textures>
+    <Texture Map="Diffuse" File="objects/characters/human/us/nanosuit/nanosuit_helm _glasses_mask.tif">
+     <TexMod />
+    </Texture>
+    <Texture Map="Normalmap" File="objects/characters/human/us/nanosuit/nanosuit_helm _glasses_mask_ddn.tif">
+     <TexMod />
+    </Texture>
+    <Texture Map="Environment" File="textures/cubemaps/camera_river_cubemap.dds" Filter="1" TexType="3">
+     <TexMod />
+    </Texture>
+   </Textures>
+   <PublicParams SpecularMultiplier="0.1" Glossiness="0.94999999" ReflectionAmount="10" FresnelBias="0.34999999" FresnelScale="3"/>
+   <MaterialLayers />
+  </Material>
+ </SubMaterials>
+ <PublicParams Displacement="0.025" AmbientMultiplier="1"/>
+ <MaterialLayers />
+</Material>

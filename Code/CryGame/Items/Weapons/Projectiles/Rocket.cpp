@@ -15,7 +15,6 @@ History:
 #include "CryGame/Game.h"
 #include "Bullet.h"
 
-
 //------------------------------------------------------------------------
 CRocket::CRocket()
 	: m_launchLoc(0, 0, 0),
@@ -90,9 +89,12 @@ void CRocket::HandleEvent(const SGameObjectEvent& event)
 
 		}
 
-		IEntity* pTarget = pCollision->iForeignData[1] == PHYS_FOREIGN_ID_ENTITY ? (IEntity*)pCollision->pForeignData[1] : 0;
+		if (pCollision)
+		{
+			IEntity* pTarget = pCollision->iForeignData[1] == PHYS_FOREIGN_ID_ENTITY ? (IEntity*)pCollision->pForeignData[1] : 0;
 
-		Explode(true, true, pCollision->pt, pCollision->n, pCollision->vloc[0], pTarget ? pTarget->GetId() : 0);
+			Explode(true, true, pCollision->pt, pCollision->n, pCollision->vloc[0], pTarget ? pTarget->GetId() : 0);
+		}
 	}
 }
 

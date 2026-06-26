@@ -341,7 +341,7 @@ namespace NConfigurableVariantHelpers
 	public:
 		static ILINE Vec3 ConstructedValue()
 		{
-			return Vec3(ZERO);
+			return {};
 		}
 	};
 

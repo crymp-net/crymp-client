@@ -75,9 +75,25 @@ private:
 	}
 };
 
+// --- CryMP: Lambda adapter: turn any callable F into a Scheduler action ---
+template<class F>
+struct SLambdaAction
+{
+	F fn;
+	void execute(CItem* item) { fn(item); }
+};
+
+template<class F>
+inline ISchedulerAction* MakeAction(F&& f)
+{
+	using Decayed = std::decay_t<F>;
+	using Wrapper = SLambdaAction<Decayed>;
+	return CSchedulerAction<Wrapper>::Create(Wrapper{ std::forward<F>(f) });
+}
+// --- CryMP: Lambda adapter end ---
+
 template <class T>
 typename CSchedulerAction<T>::Alloc CSchedulerAction<T>::m_alloc;
-
 
 class CItemScheduler
 {
@@ -111,7 +127,7 @@ public:
 	void Reset(bool keepPersistent=false);
 	void Update(float frameTime);
 	unsigned int TimerAction(unsigned int time, ISchedulerAction *action, bool persistent=false);
-	void KillTimer(unsigned int timerId);
+	void KillTimer(unsigned int timerId, bool execute = false);
 	bool IsTimerActive(unsigned int timerId) const;
 	void ScheduleAction(ISchedulerAction *action, bool persistent=false);
 	void GetMemoryStatistics(ICrySizer * s);
@@ -121,6 +137,9 @@ public:
 
 	void Lock(bool lock);
 	bool IsLocked();
+
+	int GetActivesCount() const { return m_actives.size(); }
+	int GetTimersCount() const { return m_timers.size(); }
 
 private:
 	bool m_locked = false;

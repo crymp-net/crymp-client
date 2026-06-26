@@ -32,6 +32,7 @@ class CWeatherSystem {
 	};
 
 	bool                          m_enabled = false;
+	string                        m_lastTodXmlPath;
 	std::map<int, float[3]>       m_originalWeatherValues;
 	std::optional<Vec3>           m_originalWind;
 	std::map<int, IStatInstGroup> m_originalGroups;
@@ -47,6 +48,10 @@ class CWeatherSystem {
 	static bool tod_hooked;
 	static constexpr int WEATHER_NAMESPACE = 2000;
 	static constexpr int WEATHER_ENV_NAMESPACE = 2100;
+	static constexpr int WEATHER_TOD_PATH_ID = 2300;
+	static constexpr int WEATHER_TOD_BLEND_DURATION_SECONDS_ID = 2301;
+	static constexpr int WEATHER_TOD_SHOW_CLOCK_BAR_ID = 2302;
+	static constexpr int WEATHER_TOD_SHOW_BLEND_BAR_ID = 2303;
 
 	static constexpr std::array<EERType, 1> static_entities = {
 		eERType_Brush,
@@ -59,7 +64,9 @@ public:
 
 	bool IsFrozen() const;
 	bool IsWet() const;
+	void PostUpdate();
 private:
+
 	bool SetWeatherVariable(int variableId, float value, bool interpolate = true, bool update = false);
 	bool SetWeatherVariable(int variableId, float x, float y, float z, bool update = false);
 	std::optional<WeatherVariable> GetWeatherVariable(int variableId);
@@ -83,4 +90,10 @@ private:
 	std::string GetFrozenGrassName(std::string_view path);
 	std::string GetNormalGrassName(std::string_view path);
 	SEffectInfo GetEffectInfo(std::string_view effect);
+
+	std::string m_cachedTodXmlPath;
+	std::string m_cachedTodXmlName;
+
+	void UpdateTodXmlNameCache(const string& xmlPath);
+	std::string_view GetTodXmlName(std::string_view path) const;
 };

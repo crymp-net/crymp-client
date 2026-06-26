@@ -1,0 +1,45 @@
+<item name="TankCannon" class="VehicleWeapon" invisible="1" configuration="mp" >
+	<params>
+		<param name="giveable" 		value="0" />
+		<param name="selectable" 	value="0" />
+		<param name="pickable" 		value="0" />
+		<param name="mountable" 	value="1" />
+		<param name="usable"		 	value="0" />
+		<param name="arms"			 	value="0" />
+	</params>
+	<ammos>
+		<ammo name="tank125" extra="30" amount="0" />		
+	</ammos>
+	<actions>
+  	<action name="fire">			
+			<sound target="firstperson" name="sounds/weapons:vehicle_asian_tank:fire_fp" radius="500" static="1" />
+			<sound target="thirdperson" name="sounds/weapons:vehicle_asian_tank:fire" radius="500" static="1" />
+  	</action>
+  	<action name="reload">			
+  		<sound target="firstperson" name="sounds/weapons:vehicle_asian_tank:reload_fp" radius="50" static="1" />  		
+  	</action>
+  </actions>
+	<firemodes>
+		<firemode name="Automatic" type="Automatic">
+			<fire>
+				<param name="ammo_type" value="tank125" />
+				<param name="clip_size" value="0" />
+				<param name="rate" value="10" />
+				<param name="damage" value="300" />				
+				<param name="reload_time" value="3.33" />
+			</fire>
+			<recoil>
+				<param name="impulse" value="50000" />
+			</recoil>					
+			<muzzleflash>
+				<firstperson effect="muzzleflash.Tank.Cannon" helper="" light_helper="" light_radius="6" light_time="0.06" light_color="1,1,0.8" light_diffuse_mult="10" />
+				<thirdperson effect="muzzleflash.Tank.Cannon_tp" helper="" light_helper="" light_radius="6" light_time="0.06" light_color="1,1,0.8" light_diffuse_mult="10" />
+			</muzzleflash>
+			<dust>
+			  <param name="mfxtag" value="dust_tankcannon" />
+			  <param name="maxheight" value="10" />			  
+			  <param name="maxheightscale" value="0.5" />
+			</dust>
+		</firemode>		
+	</firemodes>
+</item>
