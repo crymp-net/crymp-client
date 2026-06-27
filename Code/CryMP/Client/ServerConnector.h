@@ -29,6 +29,7 @@ public:
 	void Connect(const ServerInfo& server);
 	void Reconnect();
 	void Disconnect();
+    void OnDisconnect();
 
 	const ServerInfo& GetLastServer() const
 	{

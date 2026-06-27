@@ -103,11 +103,11 @@ void ServerConnector::ResetCVars()
 	pGameCVars->mp_wallJump = 1.0f;
 	pGameCVars->mp_flyMode = 0;
 	pGameCVars->mp_pickupObjects = 0;
+	pGameCVars->mp_thirdPerson = 0;
 	pGameCVars->mp_pickupVehicles = 0;
 	pGameCVars->mp_pickupMassLimit = 0;
 	pGameCVars->mp_pickupThrowMult = 1.0f;
 	pGameCVars->mp_pickupMaxVehicleCollisions = 0;
-	pGameCVars->mp_thirdPerson = 1;
 	pGameCVars->mp_rpgMod = 0;
 	pGameCVars->mp_radioTagging = 0;
 	pGameCVars->mp_healthBars = 0;
@@ -325,4 +325,12 @@ void ServerConnector::Disconnect()
 	}
 
 	gClient->GetGameFramework()->EndGameContext();
+}
+
+void ServerConnector::OnDisconnect()
+{
+    if (SCVars* pGameCVars = g_pGame->GetCVars())
+    {
+        pGameCVars->mp_thirdPerson = 1;
+    }
 }
