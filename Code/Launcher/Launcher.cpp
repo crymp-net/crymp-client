@@ -49,6 +49,7 @@ void* g_pCryRenderD3D9 = nullptr;
 void* g_pCryRenderD3D10 = nullptr;
 void* g_pCryRenderNULL = nullptr;
 void* g_pFmodEx = nullptr;
+bool g_hasOldFmod = false;
 
 static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
 {
@@ -1146,6 +1147,14 @@ void Launcher::LoadEngine()
 			throw StringTools::SysErrorFormat("Failed to load the fmodex DLL!");
 #endif
 		}
+
+		WinAPI::VersionResource fmodVer;
+		if (!WinAPI::GetVersionResource(g_pFmodEx, fmodVer))
+		{
+			throw StringTools::SysErrorFormat("Failed to get FMOD version!");
+		}
+
+		g_hasOldFmod = (fmodVer.major == 0 && fmodVer.minor == 4 && fmodVer.patch == 7 && fmodVer.tweak == 23);
 	}
 }
 
@@ -1241,12 +1250,16 @@ void Launcher::PatchEngine()
 
 	if (g_pFmodEx)
 	{
-		MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(g_pFmodEx);
+		if (g_hasOldFmod)
+		{
+			// only C1 FMOD is affected
+			MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(g_pFmodEx);
+		}
 
 #ifdef CLIENT_LAUNCHER
 		if (WinAPI::CmdLine::HasArg("-dsoal"))
 		{
-			DsoalDeployer::Init(g_pFmodEx);
+			DsoalDeployer::Init(g_pFmodEx, g_hasOldFmod);
 		}
 #endif
 	}
