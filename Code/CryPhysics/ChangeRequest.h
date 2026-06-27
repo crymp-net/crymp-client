@@ -103,57 +103,73 @@ struct ChangeRequest
 	T* m_pQueued = nullptr;
 
 	ChangeRequest(CPhysicalPlaceholder* pent, CPhysicalWorld* pWorld, T* params, int bInactive,
-	              void* ptrAux = nullptr, int iAux = 0)
-	    : m_pWorld(pWorld)
+		void* ptrAux = nullptr, int iAux = 0)
+		: m_pWorld(pWorld)
 	{
+		// CryMP: Some callers can still issue requests while the physical entity/world
+		// is already detached or being destroyed.
+		if (!pent || !pWorld)
+		{
+			return;
+		}
+
 		if (bInactive <= 0 && pent->m_iSimClass != 7)
 		{
 			if (m_pWorld->m_lockStep || m_pWorld->m_lockTPR || pent->m_bProcessed >= PENT_QUEUED ||
-			    bInactive < 0)
+				bInactive < 0)
 			{
 				subref* psubref;
 				int szSubref, szTot;
 				WriteLock lock(m_pWorld->m_lockQueue);
 				AtomicAdd(&pent->m_bProcessed, PENT_QUEUED);
+
 				for (psubref = GetSubref(params), szSubref = 0; psubref; psubref = psubref->next)
 				{
 					if (*(char**)((char*)params + psubref->iPtrOffs) &&
-					    !is_unused(*(char**)((char*)params + psubref->iPtrOffs)))
+						!is_unused(*(char**)((char*)params + psubref->iPtrOffs)))
 					{
 						szSubref += ((*(int*)((char*)params + max(0, psubref->iSzOffs)) &
-						              -psubref->iSzOffs >> 31) +
-						             psubref->iSzFixed) *
-						            psubref->iSzUnit;
+							-psubref->iSzOffs >> 31) +
+							psubref->iSzFixed) *
+							psubref->iSzUnit;
 					}
 				}
+
 				szTot = (sizeof(int) * 2) + sizeof(void*) + GetStructSize(params) + szSubref;
+
 				if (StructUsesAuxData(params))
 				{
 					szTot += sizeof(void*) + sizeof(int);
 				}
+
 				m_pWorld->AllocRequestsQueue(szTot);
 				m_pWorld->QueueData(GetStructId(params));
 				m_pWorld->QueueData(szTot);
 				m_pWorld->QueueData(pent);
+
 				if (StructUsesAuxData(params))
 				{
 					m_pWorld->QueueData(ptrAux);
 					m_pWorld->QueueData(iAux);
 				}
+
 				m_pQueued = (T*)m_pWorld->QueueData(params, GetStructSize(params));
+
 				for (psubref = GetSubref(params); psubref; psubref = psubref->next)
 				{
 					szSubref = ((*(int*)((char*)params + max(0, psubref->iSzOffs)) &
-					             -psubref->iSzOffs >> 31) +
-					            psubref->iSzFixed) *
-					           psubref->iSzUnit;
+						-psubref->iSzOffs >> 31) +
+						psubref->iSzFixed) *
+						psubref->iSzUnit;
+
 					if (*(char**)((char*)params + psubref->iPtrOffs) &&
-					    !is_unused(*(char**)((char*)params + psubref->iPtrOffs)))
+						!is_unused(*(char**)((char*)params + psubref->iPtrOffs)))
 					{
-						*(void**)((char*)m_pQueued + psubref->iPtrOffs) = m_pWorld->QueueData(
-						    *(char**)((char*)params + psubref->iPtrOffs), szSubref);
+						*(void**)((char*)m_pQueued + psubref->iPtrOffs) =
+							m_pWorld->QueueData(*(char**)((char*)params + psubref->iPtrOffs), szSubref);
 					}
 				}
+
 				OnStructQueued(params, pWorld, ptrAux, iAux);
 				m_bQueued = 1;
 			}
@@ -170,7 +186,14 @@ struct ChangeRequest
 		}
 	}
 
-	~ChangeRequest() { AtomicAdd(&m_pWorld->m_lockStep, -m_bLocked); }
+	~ChangeRequest()
+	{
+		// CryMP: Constructor can return early, so only unlock if a lock was actually taken.
+		if (m_pWorld && m_bLocked)
+		{
+			AtomicAdd(&m_pWorld->m_lockStep, -m_bLocked);
+		}
+	}
 
 	int IsQueued() { return m_bQueued; }
 
