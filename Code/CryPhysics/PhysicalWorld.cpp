@@ -3019,7 +3019,7 @@ void CPhysicalWorld::ChangeEntitySimClass(CPhysicalEntity* pent)
 	{
 		const int list = actualOldList;
 
-		if ((unsigned int)list >= 8u)
+		if (list < 0 || list > 7)
 		{
 			CryLogAlways(
 				"[PhysicalWorld] ChangeEntitySimClass: invalid actualOldList=%d pent=%p",
