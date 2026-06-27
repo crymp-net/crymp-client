@@ -16,6 +16,7 @@
 #include "CryMP/Server/Server.h"
 #include "CryPhysics/CryPhysics.h"
 #include "CryScriptSystem/ScriptSystem.h"
+#include "CrySoundSystem/CrySoundSystem.h"
 #include "CrySystem/CPUInfo.h"
 #include "CrySystem/CrashTest.h"
 #include "CrySystem/CryMemoryManager.h"
@@ -49,7 +50,10 @@ void* g_pCryRenderD3D9 = nullptr;
 void* g_pCryRenderD3D10 = nullptr;
 void* g_pCryRenderNULL = nullptr;
 void* g_pFmodEx = nullptr;
-bool g_hasOldFmod = false;
+void* g_pFmodEvent = nullptr;
+void* g_pFmodEventNet = nullptr;
+bool g_hasC1Fmod = false;
+bool g_hasWarheadWarsFmod = false;
 
 static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
 {
@@ -378,6 +382,70 @@ static void ReplacePhysics(void* pCrySystem)
 	WinAPI::FillMem(WinAPI::RVA(pCrySystem, codeOffset), code, sizeof(code));
 	WinAPI::FillNOP(WinAPI::RVA(pCrySystem, codeOffset + sizeof(code)), codeMaxSize - sizeof(code));
 }
+
+#ifdef CLIENT_LAUNCHER
+
+static void InitNewSoundSystem(ISystem* pSystem, void* hWnd)
+{
+	CryLogAlways("$3[CryMP] Initializing Sound System");
+
+	if (g_hasC1Fmod)
+	{
+		CryLogAlways("$3[CryMP] Using C1 FMOD");
+	}
+	else if (g_hasWarheadWarsFmod)
+	{
+		CryLogAlways("$3[CryMP] Using Warhead/Wars FMOD");
+	}
+	else
+	{
+		CryLogAlways("$3[CryMP] Using unknown FMOD");
+	}
+
+	ISoundSystem* pSoundSystem = CreateSoundSystem(pSystem, hWnd);
+	gEnv->pSoundSystem = pSoundSystem;
+	gEnv->pMusicSystem = pSoundSystem->CreateMusicSystem();
+}
+
+static void ReplaceSoundSystem(void* pCrySystem)
+{
+	void* pInitFunc = InitNewSoundSystem;
+
+#ifdef BUILD_64BIT
+	const std::size_t codeOffset = 0x42E29;
+	const std::size_t codeMaxSize = 0xD4;
+
+	unsigned char code[] = {
+		0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, 0x0
+		0x48, 0x8B, 0xCB,                                            // mov rcx, rbx
+		0x48, 0x8B, 0xD7,                                            // mov rdx, rdi
+		0xFF, 0xD0,                                                  // call rax
+	};
+
+	std::memcpy(&code[2], &pInitFunc, 8);
+#else
+	const std::size_t codeOffset = 0x55229;
+	const std::size_t codeMaxSize = 0xA6;
+
+	unsigned char code[] = {
+		0xB8, 0x00, 0x00, 0x00, 0x00,  // mov eax, 0x0
+		0x8B, 0x54, 0x24, 0x08,        // mov edx, dword ptr ss:[esp+0x8]
+		0x52,                          // push edx
+		0x56,                          // push esi
+		0xFF, 0xD0,                    // call eax
+		0x83, 0xC4, 0x08,              // add esp, 0x8
+	};
+
+	std::memcpy(&code[1], &pInitFunc, 4);
+#endif
+
+	static_assert(sizeof(code) <= codeMaxSize);
+
+	WinAPI::FillMem(WinAPI::RVA(pCrySystem, codeOffset), code, sizeof(code));
+	WinAPI::FillNOP(WinAPI::RVA(pCrySystem, codeOffset + sizeof(code)), codeMaxSize - sizeof(code));
+}
+
+#endif // CLIENT_LAUNCHER
 
 static IScriptSystem* CreateNewScriptSystem(ISystem* pSystem, bool)
 {
@@ -1148,13 +1216,52 @@ void Launcher::LoadEngine()
 #endif
 		}
 
+#ifdef BUILD_64BIT
+		g_pFmodEvent = WinAPI::DLL::Load("fmod_event64.dll");
+#else
+		g_pFmodEvent = WinAPI::DLL::Load("fmod_event.dll");
+#endif
+		if (!g_pFmodEvent)
+		{
+#ifdef BUILD_64BIT
+			throw StringTools::SysErrorFormat("Failed to load the fmod_event64 DLL!");
+#else
+			throw StringTools::SysErrorFormat("Failed to load the fmod_event DLL!");
+#endif
+		}
+
+#ifdef BUILD_64BIT
+		g_pFmodEventNet = WinAPI::DLL::Load("fmod_event_net64.dll");
+#else
+		g_pFmodEventNet = WinAPI::DLL::Load("fmod_event_net.dll");
+#endif
+		if (!g_pFmodEventNet)
+		{
+#ifdef BUILD_64BIT
+			throw StringTools::SysErrorFormat("Failed to load the fmod_event_net64 DLL!");
+#else
+			throw StringTools::SysErrorFormat("Failed to load the fmod_event_net DLL!");
+#endif
+		}
+
 		WinAPI::VersionResource fmodVer;
 		if (!WinAPI::GetVersionResource(g_pFmodEx, fmodVer))
 		{
 			throw StringTools::SysErrorFormat("Failed to get FMOD version!");
 		}
 
-		g_hasOldFmod = (fmodVer.major == 0 && fmodVer.minor == 4 && fmodVer.patch == 7 && fmodVer.tweak == 23);
+		g_hasC1Fmod = (
+			fmodVer.major == 0 &&
+			fmodVer.minor == 4 &&
+			fmodVer.patch == 7 &&
+			fmodVer.tweak == 23
+		);
+		g_hasWarheadWarsFmod = (!g_hasC1Fmod &&
+			fmodVer.major == 0 &&
+			fmodVer.minor == 4 &&
+			fmodVer.patch == 14 &&
+			fmodVer.tweak == 3
+		);
 	}
 }
 
@@ -1216,6 +1323,13 @@ void Launcher::PatchEngine()
 		{
 			ReplacePhysics(g_pCrySystem);
 		}
+
+#ifdef CLIENT_LAUNCHER
+		if (!WinAPI::CmdLine::HasArg("-oldsound"))
+		{
+			ReplaceSoundSystem(g_pCrySystem);
+		}
+#endif
 	}
 
 	if (g_pCry3DEngine)
@@ -1250,16 +1364,16 @@ void Launcher::PatchEngine()
 
 	if (g_pFmodEx)
 	{
-		if (g_hasOldFmod)
+		if (g_hasC1Fmod)
 		{
 			// only C1 FMOD is affected
 			MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(g_pFmodEx);
 		}
 
 #ifdef CLIENT_LAUNCHER
-		if (WinAPI::CmdLine::HasArg("-dsoal"))
+		if (WinAPI::CmdLine::HasArg("-dsoal") && (g_hasC1Fmod || g_hasWarheadWarsFmod))
 		{
-			DsoalDeployer::Init(g_pFmodEx, g_hasOldFmod);
+			DsoalDeployer::Init(g_pFmodEx, g_hasC1Fmod);
 		}
 #endif
 	}
