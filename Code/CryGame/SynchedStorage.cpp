@@ -46,6 +46,14 @@ void CSynchedStorage::Reset()
 
 	m_globalStorage.clear();
 	m_entityStorage.clear();
+
+	for (ISynchedStorageListener* pListener : m_listeners)
+	{
+		if (pListener)
+		{
+			pListener->OnSynchedStorageReset();
+		}
+	}
 }
 
 void CSynchedStorage::Dump()

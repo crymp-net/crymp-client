@@ -539,6 +539,16 @@ public:
 		}
 		return ok;
 	}
+	template <class T>
+	bool Get(T& value) const
+	{
+		const T* pValue = GetPtr<T>();
+		if (!pValue)
+			return false;
+
+		value = *pValue;
+		return true;
+	}
 
 	// "Visit" the value of this variant... the Visit() function will be called
 	// on the passed in class, and this is expected to have an override that

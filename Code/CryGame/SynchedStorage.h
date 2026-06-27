@@ -2,6 +2,9 @@
 
 #include <map>
 #include <mutex>
+#include <algorithm>
+#include <vector>
+
 
 #include "CryCommon/CryNetwork/INetwork.h"
 #include "CryCommon/CryAction/IGameFramework.h"
@@ -22,6 +25,16 @@ enum ESynchedValueTypes
 using TSynchedKey = uint16;
 using TSynchedValue = CConfigurableVariant<TSynchedValueTypes, sizeof (void*)>;
 
+class ISynchedStorageListener
+{
+public:
+	virtual ~ISynchedStorageListener() = default;
+
+	virtual void OnSynchedStorageReset() {}
+	virtual void OnSynchedGlobalChanged(TSynchedKey key, const TSynchedValue& value) {}
+	virtual void OnSynchedEntityChanged(EntityId id, TSynchedKey key, const TSynchedValue& value) {}
+};
+
 class CSynchedStorage : public INetMessageSink
 {
 public:
@@ -37,10 +50,32 @@ protected:
 
 	std::recursive_mutex m_mutex;
 
+	std::vector<ISynchedStorageListener*> m_listeners;
+
 	CSynchedStorage() = default;
 
 public:
 	virtual ~CSynchedStorage() = default;
+
+	void AddListener(ISynchedStorageListener* pListener)
+	{
+		if (!pListener)
+			return;
+
+		std::lock_guard lock(m_mutex);
+
+		if (std::find(m_listeners.begin(), m_listeners.end(), pListener) == m_listeners.end())
+		{
+			m_listeners.push_back(pListener);
+		}
+	}
+
+	void RemoveListener(ISynchedStorageListener* pListener)
+	{
+		std::lock_guard lock(m_mutex);
+
+		std::erase(m_listeners, pListener);
+	}
 
 	template<typename ValueType>
 	void SetGlobalValue(TSynchedKey key, const ValueType & value)
@@ -255,9 +290,23 @@ public:
 protected:
 	virtual void OnGlobalChanged(TSynchedKey key, const TSynchedValue & value)
 	{
+		for (ISynchedStorageListener* pListener : m_listeners)
+		{
+			if (pListener)
+			{
+				pListener->OnSynchedGlobalChanged(key, value);
+			}
+		}
 	}
 
 	virtual void OnEntityChanged(EntityId id, TSynchedKey key, const TSynchedValue & value)
 	{
+		for (ISynchedStorageListener* pListener : m_listeners)
+		{
+			if (pListener)
+			{
+				pListener->OnSynchedEntityChanged(id, key, value);
+			}
+		}
 	}
 };
