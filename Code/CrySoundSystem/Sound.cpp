@@ -1707,10 +1707,7 @@ void CSound::Stop(ESoundStopMode eStopMode)
 	if (eStopMode == ESoundStopMode_OnSyncPoint)
 	{
 		m_pPlatformSound->StopSound();
-		m_fSyncTimeout =
-		    (m_fSyncTimeout > 0.0f)
-			? m_fSyncTimeout
-			: 0.1f; // half a second of hard-coded timeout in the case no syncpoints ever arrives
+		m_fSyncTimeout = (m_fSyncTimeout > 0.0f) ? m_fSyncTimeout : 0.1f;
 	}
 	else
 	{
