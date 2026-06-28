@@ -1710,7 +1710,7 @@ void CSound::Stop(ESoundStopMode eStopMode)
 		m_fSyncTimeout =
 		    (m_fSyncTimeout > 0.0f)
 			? m_fSyncTimeout
-			: 0.5f; // half a second of hard-coded timeout in the case no syncpoints ever arrives
+			: 0.1f; // half a second of hard-coded timeout in the case no syncpoints ever arrives
 	}
 	else
 	{
