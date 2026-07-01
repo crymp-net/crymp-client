@@ -332,5 +332,6 @@ void ServerConnector::OnDisconnect()
     if (SCVars* pGameCVars = g_pGame->GetCVars())
     {
         pGameCVars->mp_thirdPerson = 1;
+		pGameCVars->mp_ogCloakEffect = 1;
     }
 }
