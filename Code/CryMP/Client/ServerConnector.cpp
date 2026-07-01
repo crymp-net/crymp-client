@@ -104,6 +104,7 @@ void ServerConnector::ResetCVars()
 	pGameCVars->mp_flyMode = 0;
 	pGameCVars->mp_pickupObjects = 0;
 	pGameCVars->mp_thirdPerson = 0;
+	pGameCVars->mp_ogCloakEffect = 1;
 	pGameCVars->mp_pickupVehicles = 0;
 	pGameCVars->mp_pickupMassLimit = 0;
 	pGameCVars->mp_pickupThrowMult = 1.0f;
