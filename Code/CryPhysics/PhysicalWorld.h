@@ -156,6 +156,7 @@ public:
 	                      CPhysicalEntity* pPetitioner = 0, int szListPrealoc = 0, int iCaller = 0);
 	void ChangeEntitySimClass(CPhysicalEntity* pent);
 	int RepositionEntity(CPhysicalPlaceholder* pobj, int flags = 3, Vec3* BBox = 0, int bQueued = 0);
+	int FindTypedListOwner(CPhysicalEntity* pent);
 	void DetachEntityGridThunks(CPhysicalPlaceholder* pobj);
 	void ScheduleForStep(CPhysicalEntity* pent);
 	CPhysicalEntity* CheckColliderListsIntegrity();
