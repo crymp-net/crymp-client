@@ -1,0 +1,498 @@
+
+
+#define INST_STREAM_CUSTOM                        \
+#if %_RT_INSTANCING_ATTR                          \
+  float4 InstAmbientOp  : TEXCOORDN;              \
+  float4 InstCloakParams : TEXCOORDN;             \
+#endif                                            \  
+
+#include "Common.cfi"
+#include "ShadeLib.cfi"
+#include "ModificatorVT.cfi"
+#include "ModificatorTC.cfi"
+
+
+// Shader global descriptions
+float Script : STANDARDSGLOBAL
+<
+  string Script =
+           "Public;"
+           "NoPreview;"
+           "ShaderDrawType = General;"
+           "ShaderType = FX;"
+>;
+
+// Tweakables /////////////////
+
+float RefrBumpScale
+<
+  vsregister = VS_REG_PM_5.x;
+  string UIName = "Refraction Bump Scale";    
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 4.0;
+  float UIStep = 0.1;
+> = 1;
+
+float SparksTilling
+<
+  vsregister = VS_REG_PM_5.y;
+  string UIName = "Sparks tilling";    
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 4.0;
+  float UIStep = 0.1;
+> = 1.0;
+
+float4 SparksColor
+<  
+  psregister = PS_REG_PM_4;
+  string UIName = "Sparks color";    
+  string UIWidget = "color";
+> = {0.3, 0.3, 1.0, 1};
+
+/// Un-Tweakables //////////////////////
+
+float4 ScrSize : PB_ScreenSize;
+float4 CloakParams : PI_CloakParams; //x and y unuzed, z = light amount, w = cloak blend amount
+float AnimGenParams = { PB_time 0.4 };
+
+float4 RandomVals :PB_RandomParams;
+float4x4 mComposite  : PI_Composite; // View*Projection
+
+float3x4 MotionBlurData : PI_CloakMotionData;
+float4x4 mProjection : PB_ProjMatrix;
+
+// Samplers /////////////////
+
+sampler2D envMapSamplerRefr 
+{
+  Texture = $SceneTarget;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = NONE;
+  AddressU = Clamp;
+  AddressV = Clamp;   
+};
+
+sampler2D depthMapSampler = sampler_state
+{
+  Texture = $ZTarget;
+  MinFilter = POINT;
+  MagFilter = POINT;
+  MipFilter = POINT; 
+  AddressU = Clamp;
+  AddressV = Clamp;	
+};
+
+sampler2D cloakPaletteMapSampler = sampler_state
+{
+  Texture = textures/defaults/palette/cloak_palette.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR; 
+  AddressU = Clamp;
+  AddressV = Clamp;	
+};
+
+sampler2D cloakInterlationMapSampler = sampler_state
+{
+  Texture = textures/defaults/palette/cloak_interlation.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR; 
+  AddressU = Wrap;
+  AddressV = Clamp;	
+};
+
+sampler2D cloakTransitionMapSampler = sampler_state
+{
+  Texture = textures/defaults/palette/cloak_transition.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR; 
+  AddressU = Clamp;
+  AddressV = Clamp;	
+};
+
+sampler2D cloakSparksMapSampler = sampler_state
+{
+  Texture = textures/defaults/palette/cloak_sparks.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR; 
+  AddressU = Wrap;
+  AddressV = Clamp;	
+};
+
+sampler3D volumeNoiseSampler = sampler_state
+{  
+  Texture = textures/defaults/Noise3D.dds;
+  MinFilter = LINEAR;
+  MagFilter = LINEAR;
+  MipFilter = LINEAR; 
+  AddressU = Wrap;
+  AddressV = Wrap;
+  AddressW = Wrap;
+};
+
+///////////////// vertex input/output //////////////////
+
+struct vtxOUT
+{
+  OUT_P    
+  float4 baseTC    : TEXCOORDN;    
+  float4 viewVec   : TEXCOORDN;    
+  float4 screenPos : TEXCOORDN;
+  float4 vTangent  : TEXCOORDN;    
+  float4 vBinormal : TEXCOORDN;    
+  float4 vNormal   : TEXCOORDN; 
+  float4 vPosWS    : TEXCOORDN;    
+  float4 vRefrScreenPos : TEXCOORDN;    
+};
+
+struct vtxOUTSparks
+{
+  OUT_P  
+  float4 baseTC     : TEXCOORDN;    
+  float4 screenPos  : TEXCOORDN;
+  float4 vPosOS     : TEXCOORDN;    //w: distance to world origin
+  float3 vConstants : TEXCOORDN;
+};
+
+///////////////// vertex shader //////////////////
+
+void Matrix_Inst_General_Prev(inout streamPos IN)
+{   
+  // Instancing support
+ #if %_RT_INSTANCING_ATTR
+  IN.InstMatrix[0] = IN.InstMotionBlurData[0];
+  IN.InstMatrix[1] = IN.InstMotionBlurData[1];
+  IN.InstMatrix[2] = IN.InstMotionBlurData[2];
+  IN.InstMatrix[3] = float4(0, 0, 0, 1);
+ #else
+  IN.InstMatrix[0] = MotionBlurData[0];
+  IN.InstMatrix[1] = MotionBlurData[1];
+  IN.InstMatrix[2] = MotionBlurData[2];
+  IN.InstMatrix[3] = float4(0, 0, 0, 1);
+#endif
+
+  // Compose matrixes
+  IN.InstMatrix = mul(mProjection, IN.InstMatrix);
+}
+
+// Output previous view space position (If skinning used, position is skinned). Used for motion blur
+float4 Pos_Prev_VS_General(float4x4 VPMatrix, inout streamPos IN)
+{
+  float4 HPosition;
+
+#if %_RT_SKELETON_SSD
+  #if MESH_SHORT_POS
+    IN.Position.xyz *= MeshScale.xyz;
+  #endif
+#endif
+  
+  // Get instanced matrix
+  Matrix_Inst_General_Prev(IN);
+  
+  float4x4 MatrixIdentity;
+  MatrixIdentity[0] = float4(1,0,0,0);
+  MatrixIdentity[1] = float4(0,1,0,0);
+  MatrixIdentity[2] = float4(0,0,1,0);
+  MatrixIdentity[3] = float4(0,0,0,1);
+
+  HPosition = _pos_Modificators(IN.InstMatrix, MatrixIdentity, IN, true, false);
+
+  return HPosition;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+vtxOUT CloakVS(app2vertGeneral IN)
+{
+  vtxOUT OUT = (vtxOUT)0; 
+
+  // Position in screen space.
+  streamPos vertPassPos = (streamPos)0;
+  streamPos_FromGeneral(IN, vertPassPos);
+
+  _TCModify(IN.baseTC, OUT.baseTC, vertPassPos.Position, vertPassPos.ObjToTangentSpace[2], TS_DIFFUSE);
+  #if %_RT_INSTANCING_ATTR
+    OUT.baseTC.zw = IN.InstCloakParams.wz;
+  #else
+    OUT.baseTC.zw = CloakParams.wz;
+  #endif
+
+  // Output position
+  OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+
+  // Output tangent to world space matrix
+  float3 worldTangentS = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[0]) );
+  float3 worldTangentT = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[1]) );
+  float3 worldTangentN = normalize(cross(worldTangentS, worldTangentT)) * IN.Tangent.w;
+
+  OUT.vTangent.xyz = worldTangentS; 
+  OUT.vBinormal.xyz = worldTangentT;
+  OUT.vNormal.xyz = worldTangentN;
+
+	// Output the screen-space texture coordinates
+  OUT.screenPos = HPosToScreenTC(OUT.HPosition);
+
+  // Store light amount
+  OUT.screenPos.z = OUT.baseTC.w * 0.2; // only use 20%
+
+  // output world position and view vector
+  OUT.viewVec.xyz = vertPassPos.WorldPos.xyz;
+  OUT.vPosWS.xyz = vertPassPos.WorldPos.xyz+g_VS_WorldViewPos.xyz;
+
+  // output distance to world origin for frac/noise variation stuff
+  OUT.vPosWS.w = length(  OUT.vPosWS.xyz   );
+
+  // Output some constants
+  OUT.baseTC.w = (0.25 + 0.25 * (1-OUT.baseTC.z)*10 ) * RefrBumpScale;
+  OUT.baseTC.z = saturate( OUT.baseTC.z ) * 0.8;
+
+  /////////////////////////////////////////////////////////////////////
+  OUT.vRefrScreenPos = 0;
+  
+  int nQuality = GetShaderQuality(); 
+  if( nQuality == QUALITY_LOW )
+  {
+    float3 eyeVec = normalize(-OUT.viewVec.xyz);
+
+    // Put in world space
+    float3 vNormal = worldTangentN;                                   // 6 alu
+    float NdotE = saturate(dot(eyeVec.xyz, vNormal.xyz)); 
+
+    // "aproximate" refraction vector (using 1 for IOR)
+    float3 vRefr =  - 2.0 * NdotE * vNormal + eyeVec;
+
+    // Project refraction into screen space
+    float4 vRefrPos = mul(mComposite, float4(vertPassPos.WorldPos.xyz+g_VS_WorldViewPos.xyz+ vRefr*0.05*OUT.baseTC.w, 1));                           // 4 alu
+    
+    OUT.vRefrScreenPos = vRefrPos;  
+  }
+  
+
+  return OUT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pixout CloakRefrationPS(vtxOUT IN)
+{
+  pixout OUT;;
+  int nQuality = GetShaderQuality(); 
+
+  half fLightAmount =  min(0.9f, IN.screenPos.z); //it reduces the intensity of the light
+  half2 vRefrCloakAmount = IN.baseTC.wz;
+
+  half2 refrTC = (IN.screenPos.xy/IN.screenPos.w) ;
+  float3x3 mTangentToWS = float3x3(IN.vTangent.xyz, IN.vBinormal.xyz, IN.vNormal.xyz);  
+
+  half3 normalVec= GetNormalMap(bumpMapSampler, IN.baseTC.xy);
+  half3 eyeVec = normalize(-IN.viewVec.xyz);
+
+  // Put in world space
+  half3 vNormal = normalize(mul(normalVec, mTangentToWS).xyz);                                   // 6 alu
+  half NdotE = saturate(dot(eyeVec.xyz, vNormal.xyz)); 
+
+  // cloakInterlationMapSampler= abs(frac((refrTC.y+RandomVals.x)*PS_ScreenSize.y*0.25)*2-1)*0.1+0.9;
+  half2 vInterlation  = tex2D(cloakInterlationMapSampler, (refrTC.y+RandomVals.x)*PS_ScreenSize.y*0.25 ).xy;
+
+  
+  float2 vRefrVS = 0.0f;
+  if( nQuality > QUALITY_LOW )
+  {
+    // "aproximate" refraction vector (using 1 for IOR)
+    half3 vRefr =  - 2.0 * NdotE * vNormal + eyeVec;
+
+    // Project refraction into screen space
+    float4 vRefrPos = mul(mComposite, float4(IN.vPosWS.xyz + vRefr*0.05 * vRefrCloakAmount.x * vInterlation.x , 1));                           // 4 alu
+    vRefrVS = 0.5 + ScrSize.zw + (vRefrPos.xy * float2( 0.5 , -0.5 ) / vRefrPos.w);
+  }
+  else
+  {
+    vRefrVS = 0.5 + normalVec.xy*0.025* vRefrCloakAmount.x * vInterlation.x + ScrSize.zw + (IN.vRefrScreenPos.xy * float2( 0.5 , -0.5 ) / IN.vRefrScreenPos.w);
+  }
+
+  // Fetch refraction map - use offset on red component for achromatic aberration aproximation
+  half3 refrColor = tex2D(envMapSamplerRefr, ((vRefrVS.xy)-0.5)*1.01 +0.5).x;
+  refrColor.yz = tex2D(envMapSamplerRefr, vRefrVS.xy).yz;
+
+  // Fetch color lookup map
+  half fCloakColorLookup = vInterlation.y * saturate(1- NdotE);
+  half3 cCloak = tex2D(cloakPaletteMapSampler, fCloakColorLookup).xyz * fLightAmount; // * 0.2; //0.15; //4.0 * 
+
+  // Output final color and blending amount
+  OUT.Color = half4(refrColor + clamp( dot(refrColor.xyz, 0.33), 0.2, 0.8) * cCloak * saturate(1-NdotE),
+                    vRefrCloakAmount.y );
+
+  // 54 instructions total (4 tex, 50 aritmetic)
+
+  return OUT;  
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+vtxOUTSparks CloakSparksVS(app2vertMotionBlur IN)
+{
+  vtxOUTSparks OUT = (vtxOUTSparks)0; 
+
+  // Position in screen space.
+  streamPos vertPassPos = (streamPos)0;
+
+  vertPassPos.ObjToTangentSpace[0] = IN.Tangent.xyz;
+  vertPassPos.ObjToTangentSpace[1] = IN.Binormal.xyz;
+  vertPassPos.ObjToTangentSpace[2] = normalize(cross(IN.Tangent, IN.Binormal)) * IN.Tangent.w;
+  
+  // Displace vertex position for more interesting sparks animation
+  IN.Position.xyz += vertPassPos.ObjToTangentSpace[2] * (0.0025 + 0.01*sin(g_VS_AnimGenParams.x*4+20*length(IN.Position.xyz)));//*OUT.baseTC.z;
+
+  streamPos_FromMotionBlur(IN, vertPassPos);
+  streamPos vertPassPosPrev = vertPassPos;
+
+  _TCModify(IN.baseTC, OUT.baseTC, vertPassPos.Position, vertPassPos.ObjToTangentSpace[2], TS_DIFFUSE);
+    #if %_RT_INSTANCING_ATTR
+    OUT.baseTC.zw = IN.InstCloakParams.wz;
+  #else
+    OUT.baseTC.zw = CloakParams.wz;
+  #endif
+
+  OUT.vPosOS.xyz = vertPassPos.Position.xyz * SparksTilling;
+  
+  OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // Compute and output speed scale
+
+  float4 HPositionPrev = Pos_Prev_VS_General(g_VS_ViewProjZeroMatr, vertPassPosPrev);
+
+  float4 vVelocity = HPosToScreenTC( OUT.HPosition );
+  float4 vVelocityPrev = HPosToScreenTC( HPositionPrev );    
+
+  vVelocityPrev.xy = (vVelocityPrev.xy/vVelocityPrev.w);
+  vVelocity.xy = (vVelocity.xy/vVelocity.w);
+  float2 vVelocityLerp = vVelocityPrev.xy - vVelocity.xy;
+
+  // todo: make special case for non NEAREST rendering 
+  float fSpeedScale = saturate(length(vVelocityLerp.xy)*100);
+  OUT.vConstants.z = fSpeedScale;
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // Output distance to world origin
+  float3 vWorldPos = vertPassPos.WorldPos.xyz+g_VS_WorldViewPos.xyz;
+  OUT.vPosOS.w = length(  vWorldPos.xyz   );
+
+	// Output the screen-space texture coordinates
+  OUT.screenPos = HPosToScreenTC(OUT.HPosition);
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  // Output commonly used constants
+  OUT.screenPos.z = OUT.screenPos.w* g_VS_NearFarClipDist.w;
+#if %_RT_NEAREST
+  OUT.screenPos.z *= g_VS_NearFarClipDist.z;
+#endif
+
+  float fCloakAmount = OUT.baseTC.z;
+  float fCloakAmountBump = max(1 - fCloakAmount, 0.0);
+  OUT.vConstants.xy = half2(frac(AnimGenParams)*2,  1 ) * 0.1 * half2( 1-fCloakAmount+max(0,-1+fSpeedScale*0.1), max((1-fCloakAmount)*0.2, 0.1));
+
+  return OUT;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pixout CloakSparksPS(vtxOUTSparks IN)
+{
+  pixout OUT;  
+
+  int nQuality = GetShaderQuality(); 
+
+  half fSpeedScale = IN.vConstants.z;
+  half fCloakAmount = IN.baseTC.z;
+  half fLightAmount = min(1.0f, IN.baseTC.w); //it reduces the intensity of the spark
+
+  half2 refrTC = (IN.screenPos.xy/IN.screenPos.ww) ;
+  half3 normalVec = GetNormalMap(bumpMapSampler, IN.baseTC.xy);
+
+  // cloakInterlationMapSampler.w = abs(frac((refrTC.y+RandomVals.x)*PS_ScreenSize.y*0.25)*2-1);
+  half fInterlation  = tex2D(cloakInterlationMapSampler, (refrTC.y+RandomVals.x)*PS_ScreenSize.y*0.25 ).w;
+
+  half2 vCloakTransition = IN.vConstants.xy;
+  half3 vSparksVariation = vCloakTransition.x + normalVec.xyz * vCloakTransition.y; // 1 inst
+
+  half fSparks = tex3D(volumeNoiseSampler, IN.vPosOS.xyz + vSparksVariation).w; // 1 inst
+  fSparks = tex3D(volumeNoiseSampler, IN.vPosOS.xyz + fSparks*0.2 + vSparksVariation).w;;  // 2 inst
+
+  if( nQuality > QUALITY_LOW )
+  {
+#ifndef PS20Only 
+    // shader model 2.0 has restritions regarding to texture fetch dependency chain complexity
+    fSparks = tex3D(volumeNoiseSampler, IN.vPosOS.xyz + fSparks*0.4 + vSparksVariation).w; // 2 inst
+#endif
+  }
+
+  half fCloakTransition = tex2D(cloakTransitionMapSampler, fCloakAmount).w;
+  fCloakTransition *= fCloakTransition ;
+
+//  half3 fSparksFinal =  8 * SparksColor *((pow( abs( frac(fSparks + AnimGenParams + 0.1)*2-1), 64*4)+
+//                                           pow( abs( frac(fSparks*1.53 + AnimGenParams*2 + 0.4+  IN.vPosOS.w*0.1)*2-1), 64*2) )+
+//                                           pow( abs( frac(fSparks*1.7 + AnimGenParams*1.4 + 0.2)*2-1), 64*2) );
+//fSparksFinal *= fSparksFinal;
+
+   half3 fSparksFinal =  half3(tex2D(cloakSparksMapSampler,  fSparks + AnimGenParams + 0.1).x, // 1 inst
+                               tex2D(cloakSparksMapSampler,  fSparks*1.53 + AnimGenParams*2 + 0.4+  IN.vPosOS.w*0.1).y, // 4 inst
+                               tex2D(cloakSparksMapSampler,  fSparks*1.7 + AnimGenParams*1.4 + 0.2).z ); // 2 inst
+  fSparksFinal = SparksColor * dot(fSparksFinal.xyz, 2); // 2 inst
+  fSparksFinal *= fSparksFinal; // 1 inst
+
+  half4 finalColor = 0;
+  finalColor.xyz = fInterlation * fSparksFinal * max(fSpeedScale, fCloakTransition); // 3 inst
+
+  float fDepth = tex2Dproj(depthMapSampler, IN.screenPos).x ;  
+  finalColor.xyz *=  saturate( (fDepth  - IN.screenPos.z )*10000); // soft-ztest // 3 inst
+
+  OUT.Color =finalColor *fLightAmount;
+
+  return OUT;  
+}
+
+//////////////////////////////// technique ////////////////
+
+technique General
+{
+  pass p0
+  {
+    VertexShader = compile vs_Auto CloakVS() GeneralVS;
+    PixelShader = compile ps_Auto CloakRefrationPS() GeneralPS;
+    
+    ZEnable = true;
+    ZWriteEnable = true;
+    CullMode = Back;
+    ZFunc = LEqual;
+
+    SrcBlend = SRC_ALPHA;
+    DestBlend = ONE_MINUS_SRC_ALPHA;
+    AlphaBlendEnable = true;     
+  }
+
+  pass p1
+  {
+    VertexShader = compile vs_Auto CloakSparksVS() GeneralVS;
+    PixelShader = compile ps_Auto CloakSparksPS() GeneralPS;
+    
+    ZEnable = false;
+    ZWriteEnable = false;
+    CullMode = Back;
+    ZFunc = LEqual;
+
+    SrcBlend = ONE;
+    DestBlend = ONE;
+    AlphaBlendEnable = true;
+  }
+}
