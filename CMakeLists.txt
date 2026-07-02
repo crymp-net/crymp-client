@@ -396,6 +396,7 @@ add_library(Base OBJECT
 	Code/CryCommon/CryAnimation/ICryAnimation.h
 	Code/CryCommon/CryAnimation/IFacialAnimation.h
 	Code/CryCommon/CryAnimation/IJoystick.h
+	Code/CryCommon/CryCore/BitFiddling.h
 	Code/CryCommon/CryCore/ConfigurableVariant.h
 	Code/CryCommon/CryCore/CryArray.h
 	Code/CryCommon/CryCore/CryFixedString.h
@@ -411,6 +412,7 @@ add_library(Base OBJECT
 	Code/CryCommon/CryCore/MultiThread.h
 	Code/CryCommon/CryCore/PoolAllocator.h
 	Code/CryCommon/CryCore/PoolAllocatorSynchronization.h
+	Code/CryCommon/CryCore/STLPoolAllocator.h
 	Code/CryCommon/CryCore/StlUtils.h
 	Code/CryCommon/CryCore/StringUtils.h
 	Code/CryCommon/CryCore/TArray.h
@@ -1192,6 +1194,133 @@ target_link_libraries(CryGame PUBLIC Base)
 
 ################################################################################
 
+add_library(libogg OBJECT
+	ThirdParty/libogg/src/bitwise.c
+	ThirdParty/libogg/src/framing.c
+)
+
+target_include_directories(libogg SYSTEM PUBLIC
+	ThirdParty/libogg/include
+)
+
+################################################################################
+
+add_library(libvorbis OBJECT
+	ThirdParty/libvorbis/lib/analysis.c
+	ThirdParty/libvorbis/lib/bitrate.c
+	ThirdParty/libvorbis/lib/block.c
+	ThirdParty/libvorbis/lib/codebook.c
+	ThirdParty/libvorbis/lib/envelope.c
+	ThirdParty/libvorbis/lib/floor0.c
+	ThirdParty/libvorbis/lib/floor1.c
+	ThirdParty/libvorbis/lib/info.c
+	ThirdParty/libvorbis/lib/lookup.c
+	ThirdParty/libvorbis/lib/lpc.c
+	ThirdParty/libvorbis/lib/lsp.c
+	ThirdParty/libvorbis/lib/mapping0.c
+	ThirdParty/libvorbis/lib/mdct.c
+	ThirdParty/libvorbis/lib/psy.c
+	ThirdParty/libvorbis/lib/registry.c
+	ThirdParty/libvorbis/lib/res0.c
+	ThirdParty/libvorbis/lib/sharedbook.c
+	ThirdParty/libvorbis/lib/smallft.c
+	ThirdParty/libvorbis/lib/synthesis.c
+	ThirdParty/libvorbis/lib/vorbisenc.c
+	ThirdParty/libvorbis/lib/vorbisfile.c
+	ThirdParty/libvorbis/lib/window.c
+)
+
+target_include_directories(libvorbis SYSTEM PUBLIC
+	ThirdParty/libvorbis/include
+)
+
+target_link_libraries(libvorbis PUBLIC libogg)
+
+################################################################################
+
+add_library(CrySoundSystem OBJECT
+	Code/CrySoundSystem/ADPCMDecoder.cpp
+	Code/CrySoundSystem/ADPCMDecoder.h
+	Code/CrySoundSystem/AudioDeviceFmodEx400.cpp
+	Code/CrySoundSystem/AudioDeviceFmodEx400.h
+	Code/CrySoundSystem/CrySoundSystem.cpp
+	Code/CrySoundSystem/CrySoundSystem.h
+	Code/CrySoundSystem/DummyMusic.h
+	Code/CrySoundSystem/DummySound.cpp
+	Code/CrySoundSystem/DummySound.h
+	Code/CrySoundSystem/eax.h
+	Code/CrySoundSystem/FMOD.cpp
+	Code/CrySoundSystem/FMOD.h
+	Code/CrySoundSystem/IAudioDevice.h
+	Code/CrySoundSystem/IPlatformSound.h
+	Code/CrySoundSystem/IReverbInstance.h
+	Code/CrySoundSystem/ISoundAssetManager.h
+	Code/CrySoundSystem/ISoundBuffer.h
+	Code/CrySoundSystem/Microphone.cpp
+	Code/CrySoundSystem/Microphone.h
+	Code/CrySoundSystem/MicrophoneStream.cpp
+	Code/CrySoundSystem/MicrophoneStream.h
+	Code/CrySoundSystem/MoodManager.cpp
+	Code/CrySoundSystem/MoodManager.h
+	Code/CrySoundSystem/MusicCVars.cpp
+	Code/CrySoundSystem/MusicCVars.h
+	Code/CrySoundSystem/MusicPattern.cpp
+	Code/CrySoundSystem/MusicPattern.h
+	Code/CrySoundSystem/MusicPatternInstance.cpp
+	Code/CrySoundSystem/MusicPatternInstance.h
+	Code/CrySoundSystem/MusicSystem.cpp
+	Code/CrySoundSystem/MusicSystem.h
+	Code/CrySoundSystem/OGGDecoder.cpp
+	Code/CrySoundSystem/OGGDecoder.h
+	Code/CrySoundSystem/PatternDecoder.h
+	Code/CrySoundSystem/PCMDecoder.cpp
+	Code/CrySoundSystem/PCMDecoder.h
+	Code/CrySoundSystem/PlatformSoundFmodEx400.cpp
+	Code/CrySoundSystem/PlatformSoundFmodEx400.h
+	Code/CrySoundSystem/PlatformSoundFmodEx400Event.cpp
+	Code/CrySoundSystem/PlatformSoundFmodEx400Event.h
+	Code/CrySoundSystem/RandGen.cpp
+	Code/CrySoundSystem/RandGen.h
+	Code/CrySoundSystem/ReverbInstance_Classic_Reverb.cpp
+	Code/CrySoundSystem/ReverbInstance_Classic_Reverb.h
+	Code/CrySoundSystem/ReverbInstance_FreeVerb.cpp
+	Code/CrySoundSystem/ReverbInstance_FreeVerb.h
+	Code/CrySoundSystem/ReverbInstance_Princeton2016.cpp
+	Code/CrySoundSystem/ReverbInstance_Princeton2016.h
+	Code/CrySoundSystem/ReverbInstance_RoomMachine844.cpp
+	Code/CrySoundSystem/ReverbInstance_RoomMachine844.h
+	Code/CrySoundSystem/ReverbManager.cpp
+	Code/CrySoundSystem/ReverbManager.h
+	Code/CrySoundSystem/ReverbManagerDSP.cpp
+	Code/CrySoundSystem/ReverbManagerDSP.h
+	Code/CrySoundSystem/ReverbManagerEAX.cpp
+	Code/CrySoundSystem/ReverbManagerEAX.h
+	Code/CrySoundSystem/SaltBufferArray.h
+	Code/CrySoundSystem/SaltHandle.h
+	Code/CrySoundSystem/Sound.cpp
+	Code/CrySoundSystem/Sound.h
+	Code/CrySoundSystem/SoundAssetManager.cpp
+	Code/CrySoundSystem/SoundAssetManager.h
+	Code/CrySoundSystem/SoundBuffer.cpp
+	Code/CrySoundSystem/SoundBuffer.h
+	Code/CrySoundSystem/SoundBufferFmodEx400.cpp
+	Code/CrySoundSystem/SoundBufferFmodEx400.h
+	Code/CrySoundSystem/SoundBufferFmodEx400Event.cpp
+	Code/CrySoundSystem/SoundBufferFmodEx400Event.h
+	Code/CrySoundSystem/SoundBufferFmodEx400Micro.cpp
+	Code/CrySoundSystem/SoundBufferFmodEx400Micro.h
+	Code/CrySoundSystem/SoundBufferFmodEx400Network.cpp
+	Code/CrySoundSystem/SoundBufferFmodEx400Network.h
+	Code/CrySoundSystem/SoundSystem.cpp
+	Code/CrySoundSystem/SoundSystem.h
+	Code/CrySoundSystem/SoundSystemCommon.cpp
+	Code/CrySoundSystem/SoundSystemCommon.h
+)
+
+target_link_libraries(CrySoundSystem PUBLIC Base libvorbis)
+
+################################################################################
+
 add_library(OpenAL OBJECT
 	ThirdParty/openal-soft/al/auxeffectslot.cpp
 	ThirdParty/openal-soft/al/auxeffectslot.h
@@ -1510,7 +1639,7 @@ add_executable(${CRYMP_SERVER_EXE} WIN32
 	Resources/Launcher.manifest
 )
 
-target_link_libraries(${CRYMP_CLIENT_EXE} PRIVATE Base CryGame OpenAL DSOAL)
+target_link_libraries(${CRYMP_CLIENT_EXE} PRIVATE Base CryGame libogg libvorbis CrySoundSystem OpenAL DSOAL)
 target_link_libraries(${CRYMP_SERVER_EXE} PRIVATE Base CryGame)
 
 # use these only in Launcher code to avoid recompiling everything for each exe

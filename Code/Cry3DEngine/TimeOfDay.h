@@ -144,7 +144,7 @@ private:
 	string m_activeCustomTodFile;
 
 public:
-	explicit TimeOfDay(void* pCry3DEngine);
+	TimeOfDay();
 	~TimeOfDay();
 
 	float GetHDRMultiplier() const { return m_HDRMultiplier; }

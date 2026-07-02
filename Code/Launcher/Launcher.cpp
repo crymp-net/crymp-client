@@ -16,6 +16,7 @@
 #include "CryMP/Server/Server.h"
 #include "CryPhysics/CryPhysics.h"
 #include "CryScriptSystem/ScriptSystem.h"
+#include "CrySoundSystem/CrySoundSystem.h"
 #include "CrySystem/CPUInfo.h"
 #include "CrySystem/CrashTest.h"
 #include "CrySystem/CryMemoryManager.h"
@@ -39,6 +40,20 @@
 #include "config.h"
 
 std::uintptr_t CRYACTION_BASE = 0;
+
+void* g_pCry3DEngine = nullptr;
+void* g_pCryAction = nullptr;
+void* g_pCryAISystem = nullptr;
+void* g_pCryNetwork = nullptr;
+void* g_pCrySystem = nullptr;
+void* g_pCryRenderD3D9 = nullptr;
+void* g_pCryRenderD3D10 = nullptr;
+void* g_pCryRenderNULL = nullptr;
+void* g_pFmodEx = nullptr;
+void* g_pFmodEvent = nullptr;
+void* g_pFmodEventNet = nullptr;
+bool g_hasC1Fmod = false;
+bool g_hasWarheadWarsFmod = false;
 
 static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
 {
@@ -125,7 +140,7 @@ static void EarlyEngineInitHook(ISystem* pSystem, IConsole* pConsole, ISystemUse
 		pUserCallback->OnInit(pSystem);
 	}
 
-	gLauncher->OnEarlyEngineInit(pSystem);
+	Launcher::OnEarlyEngineInit(pSystem);
 }
 
 static void InstallEarlyEngineInitHook(void* pCrySystem)
@@ -367,6 +382,70 @@ static void ReplacePhysics(void* pCrySystem)
 	WinAPI::FillMem(WinAPI::RVA(pCrySystem, codeOffset), code, sizeof(code));
 	WinAPI::FillNOP(WinAPI::RVA(pCrySystem, codeOffset + sizeof(code)), codeMaxSize - sizeof(code));
 }
+
+#ifdef CLIENT_LAUNCHER
+
+static void InitNewSoundSystem(ISystem* pSystem, void* hWnd)
+{
+	CryLogAlways("$3[CryMP] Initializing Sound System");
+
+	if (g_hasC1Fmod)
+	{
+		CryLogAlways("$3[CryMP] Using C1 FMOD");
+	}
+	else if (g_hasWarheadWarsFmod)
+	{
+		CryLogAlways("$3[CryMP] Using Warhead/Wars FMOD");
+	}
+	else
+	{
+		CryLogAlways("$3[CryMP] Using unknown FMOD");
+	}
+
+	ISoundSystem* pSoundSystem = CreateSoundSystem(pSystem, hWnd);
+	gEnv->pSoundSystem = pSoundSystem;
+	gEnv->pMusicSystem = pSoundSystem->CreateMusicSystem();
+}
+
+static void ReplaceSoundSystem(void* pCrySystem)
+{
+	void* pInitFunc = InitNewSoundSystem;
+
+#ifdef BUILD_64BIT
+	const std::size_t codeOffset = 0x42E29;
+	const std::size_t codeMaxSize = 0xD4;
+
+	unsigned char code[] = {
+		0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, 0x0
+		0x48, 0x8B, 0xCB,                                            // mov rcx, rbx
+		0x48, 0x8B, 0xD7,                                            // mov rdx, rdi
+		0xFF, 0xD0,                                                  // call rax
+	};
+
+	std::memcpy(&code[2], &pInitFunc, 8);
+#else
+	const std::size_t codeOffset = 0x55229;
+	const std::size_t codeMaxSize = 0xA6;
+
+	unsigned char code[] = {
+		0xB8, 0x00, 0x00, 0x00, 0x00,  // mov eax, 0x0
+		0x8B, 0x54, 0x24, 0x08,        // mov edx, dword ptr ss:[esp+0x8]
+		0x52,                          // push edx
+		0x56,                          // push esi
+		0xFF, 0xD0,                    // call eax
+		0x83, 0xC4, 0x08,              // add esp, 0x8
+	};
+
+	std::memcpy(&code[1], &pInitFunc, 4);
+#endif
+
+	static_assert(sizeof(code) <= codeMaxSize);
+
+	WinAPI::FillMem(WinAPI::RVA(pCrySystem, codeOffset), code, sizeof(code));
+	WinAPI::FillNOP(WinAPI::RVA(pCrySystem, codeOffset + sizeof(code)), codeMaxSize - sizeof(code));
+}
+
+#endif // CLIENT_LAUNCHER
 
 static IScriptSystem* CreateNewScriptSystem(ISystem* pSystem, bool)
 {
@@ -621,7 +700,7 @@ static ITimeOfDay* CreateTimeOfDay()
 {
 	CryLogAlways("$3[CryMP] Initializing Time Of Day");
 
-	return new TimeOfDay(gLauncher->GetDLLs().pCry3DEngine);
+	return new TimeOfDay;
 }
 
 static void DestroyTimeOfDay(void* pTimeOfDay)
@@ -992,8 +1071,8 @@ void Launcher::LoadEngine()
 		}
 	}
 
-	m_dlls.pCrySystem = WinAPI::DLL::Load("CrySystem.dll");
-	if (!m_dlls.pCrySystem)
+	g_pCrySystem = WinAPI::DLL::Load("CrySystem.dll");
+	if (!g_pCrySystem)
 	{
 		if (WinAPI::GetCurrentErrorCode() == 193)  // ERROR_BAD_EXE_FORMAT
 		{
@@ -1012,7 +1091,7 @@ void Launcher::LoadEngine()
 	}
 
 	WinAPI::VersionResource version;
-	if (!WinAPI::GetVersionResource(m_dlls.pCrySystem, version))
+	if (!WinAPI::GetVersionResource(g_pCrySystem, version))
 	{
 		throw StringTools::SysErrorFormat("Failed to get the game version!");
 	}
@@ -1068,38 +1147,38 @@ void Launcher::LoadEngine()
 		}
 	}
 
-	CryMemoryManager::Init(m_dlls.pCrySystem);
+	CryMemoryManager::Init(g_pCrySystem);
 
-	m_dlls.pCryAction = WinAPI::DLL::Load("CryAction.dll");
-	if (!m_dlls.pCryAction)
+	g_pCryAction = WinAPI::DLL::Load("CryAction.dll");
+	if (!g_pCryAction)
 	{
 		throw StringTools::SysErrorFormat("Failed to load the CryAction DLL!");
 	}
 
-	CRYACTION_BASE = reinterpret_cast<std::uintptr_t>(m_dlls.pCryAction);
+	CRYACTION_BASE = reinterpret_cast<std::uintptr_t>(g_pCryAction);
 
-	m_dlls.pCryAISystem = WinAPI::DLL::Load("CryAISystem.dll");
-	if (!m_dlls.pCryAISystem)
+	g_pCryAISystem = WinAPI::DLL::Load("CryAISystem.dll");
+	if (!g_pCryAISystem)
 	{
 		throw StringTools::SysErrorFormat("Failed to load the CryAISystem DLL!");
 	}
 
-	m_dlls.pCryNetwork = WinAPI::DLL::Load("CryNetwork.dll");
-	if (!m_dlls.pCryNetwork)
+	g_pCryNetwork = WinAPI::DLL::Load("CryNetwork.dll");
+	if (!g_pCryNetwork)
 	{
 		throw StringTools::SysErrorFormat("Failed to load the CryNetwork DLL!");
 	}
 
-	m_dlls.pCry3DEngine = WinAPI::DLL::Load("Cry3DEngine.dll");
-	if (!m_dlls.pCry3DEngine)
+	g_pCry3DEngine = WinAPI::DLL::Load("Cry3DEngine.dll");
+	if (!g_pCry3DEngine)
 	{
 		throw StringTools::SysErrorFormat("Failed to load the Cry3DEngine DLL!");
 	}
 
 	if (m_params.isDedicatedServer)
 	{
-		m_dlls.pCryRenderNULL = WinAPI::DLL::Load("CryRenderNULL.dll");
-		if (!m_dlls.pCryRenderNULL)
+		g_pCryRenderNULL = WinAPI::DLL::Load("CryRenderNULL.dll");
+		if (!g_pCryRenderNULL)
 		{
 			throw StringTools::SysErrorFormat("Failed to load the CryRenderNULL DLL!");
 		}
@@ -1108,27 +1187,27 @@ void Launcher::LoadEngine()
 	{
 		if (!WinAPI::CmdLine::HasArg("-dx9") && (WinAPI::CmdLine::HasArg("-dx10") || WinAPI::IsVistaOrLater()))
 		{
-			m_dlls.pCryRenderD3D10 = WinAPI::DLL::Load("CryRenderD3D10.dll");
-			if (!m_dlls.pCryRenderD3D10)
+			g_pCryRenderD3D10 = WinAPI::DLL::Load("CryRenderD3D10.dll");
+			if (!g_pCryRenderD3D10)
 			{
 				throw StringTools::SysErrorFormat("Failed to load the CryRenderD3D10 DLL!");
 			}
 		}
 		else
 		{
-			m_dlls.pCryRenderD3D9 = WinAPI::DLL::Load("CryRenderD3D9.dll");
-			if (!m_dlls.pCryRenderD3D9)
+			g_pCryRenderD3D9 = WinAPI::DLL::Load("CryRenderD3D9.dll");
+			if (!g_pCryRenderD3D9)
 			{
 				throw StringTools::SysErrorFormat("Failed to load the CryRenderD3D9 DLL!");
 			}
 		}
 
 #ifdef BUILD_64BIT
-		m_dlls.pFmodEx = WinAPI::DLL::Load("fmodex64.dll");
+		g_pFmodEx = WinAPI::DLL::Load("fmodex64.dll");
 #else
-		m_dlls.pFmodEx = WinAPI::DLL::Load("fmodex.dll");
+		g_pFmodEx = WinAPI::DLL::Load("fmodex.dll");
 #endif
-		if (!m_dlls.pFmodEx)
+		if (!g_pFmodEx)
 		{
 #ifdef BUILD_64BIT
 			throw StringTools::SysErrorFormat("Failed to load the fmodex64 DLL!");
@@ -1136,107 +1215,165 @@ void Launcher::LoadEngine()
 			throw StringTools::SysErrorFormat("Failed to load the fmodex DLL!");
 #endif
 		}
+
+#ifdef BUILD_64BIT
+		g_pFmodEvent = WinAPI::DLL::Load("fmod_event64.dll");
+#else
+		g_pFmodEvent = WinAPI::DLL::Load("fmod_event.dll");
+#endif
+		if (!g_pFmodEvent)
+		{
+#ifdef BUILD_64BIT
+			throw StringTools::SysErrorFormat("Failed to load the fmod_event64 DLL!");
+#else
+			throw StringTools::SysErrorFormat("Failed to load the fmod_event DLL!");
+#endif
+		}
+
+#ifdef BUILD_64BIT
+		g_pFmodEventNet = WinAPI::DLL::Load("fmod_event_net64.dll");
+#else
+		g_pFmodEventNet = WinAPI::DLL::Load("fmod_event_net.dll");
+#endif
+		if (!g_pFmodEventNet)
+		{
+#ifdef BUILD_64BIT
+			throw StringTools::SysErrorFormat("Failed to load the fmod_event_net64 DLL!");
+#else
+			throw StringTools::SysErrorFormat("Failed to load the fmod_event_net DLL!");
+#endif
+		}
+
+		WinAPI::VersionResource fmodVer;
+		if (!WinAPI::GetVersionResource(g_pFmodEx, fmodVer))
+		{
+			throw StringTools::SysErrorFormat("Failed to get FMOD version!");
+		}
+
+		g_hasC1Fmod = (
+			fmodVer.major == 0 &&
+			fmodVer.minor == 4 &&
+			fmodVer.patch == 7 &&
+			fmodVer.tweak == 23
+		);
+		g_hasWarheadWarsFmod = (!g_hasC1Fmod &&
+			fmodVer.major == 0 &&
+			fmodVer.minor == 4 &&
+			fmodVer.patch == 14 &&
+			fmodVer.tweak == 3
+		);
 	}
 }
 
 void Launcher::PatchEngine()
 {
-	if (m_dlls.pCryAction)
+	if (g_pCryAction)
 	{
-		MemoryPatch::CryAction::AllowDX9ImmersiveMultiplayer(m_dlls.pCryAction);
-		MemoryPatch::CryAction::AllowMultiplayerRegisterWithAI(m_dlls.pCryAction);
-		MemoryPatch::CryAction::DisableBreakLog(m_dlls.pCryAction);
-		MemoryPatch::CryAction::DisableTimeOfDayLengthLowerLimit(m_dlls.pCryAction);
-		MemoryPatch::CryAction::HookCryWarning(m_dlls.pCryAction, &OnCryWarning);
-		MemoryPatch::CryAction::HookGameWarning(m_dlls.pCryAction, &OnGameWarning);
+		MemoryPatch::CryAction::AllowDX9ImmersiveMultiplayer(g_pCryAction);
+		MemoryPatch::CryAction::AllowMultiplayerRegisterWithAI(g_pCryAction);
+		MemoryPatch::CryAction::DisableBreakLog(g_pCryAction);
+		MemoryPatch::CryAction::DisableTimeOfDayLengthLowerLimit(g_pCryAction);
+		MemoryPatch::CryAction::HookCryWarning(g_pCryAction, &OnCryWarning);
+		MemoryPatch::CryAction::HookGameWarning(g_pCryAction, &OnGameWarning);
 	}
 
-	if (m_dlls.pCryAISystem)
+	if (g_pCryAISystem)
 	{
-		MemoryPatch::CryAISystem::AllowMultiplayerAI(m_dlls.pCryAISystem);
+		MemoryPatch::CryAISystem::AllowMultiplayerAI(g_pCryAISystem);
 	}
 
-	if (m_dlls.pCryNetwork)
+	if (g_pCryNetwork)
 	{
-		MemoryPatch::CryNetwork::AllowSameCDKeys(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::DisableServerProfile(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::EnablePreordered(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::FixFileCheckCrash(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::FixInternetConnect(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::FixLanServerBrowser(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::RemoveGameSpyAvailableCheck(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::HookCryWarning(m_dlls.pCryNetwork, &OnCryWarning);
+		MemoryPatch::CryNetwork::AllowSameCDKeys(g_pCryNetwork);
+		MemoryPatch::CryNetwork::DisableServerProfile(g_pCryNetwork);
+		MemoryPatch::CryNetwork::EnablePreordered(g_pCryNetwork);
+		MemoryPatch::CryNetwork::FixFileCheckCrash(g_pCryNetwork);
+		MemoryPatch::CryNetwork::FixInternetConnect(g_pCryNetwork);
+		MemoryPatch::CryNetwork::FixLanServerBrowser(g_pCryNetwork);
+		MemoryPatch::CryNetwork::RemoveGameSpyAvailableCheck(g_pCryNetwork);
+		MemoryPatch::CryNetwork::HookCryWarning(g_pCryNetwork, &OnCryWarning);
 
-		HookNetworkGetService(m_dlls.pCryNetwork);
+		HookNetworkGetService(g_pCryNetwork);
 	}
 
-	if (m_dlls.pCrySystem)
+	if (g_pCrySystem)
 	{
-		MemoryPatch::CrySystem::AllowDX9VeryHighSpec(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::AllowMultipleInstances(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::FixCPUInfoOverflow(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::FixFlashAllocatorUnderflow(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::HookCPUDetect(m_dlls.pCrySystem, &CPUInfo::Detect);
-		MemoryPatch::CrySystem::HookError(m_dlls.pCrySystem, &CrashLogger::OnEngineError);
-		//MemoryPatch::CrySystem::MakeDX9Default(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::RemoveSecuROM(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::UnhandledExceptions(m_dlls.pCrySystem);
-		//MemoryPatch::CrySystem::EnableServerPhysicsThread(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::HookCryWarning(m_dlls.pCrySystem, &OnCryWarning);
+		MemoryPatch::CrySystem::AllowDX9VeryHighSpec(g_pCrySystem);
+		MemoryPatch::CrySystem::AllowMultipleInstances(g_pCrySystem);
+		MemoryPatch::CrySystem::FixCPUInfoOverflow(g_pCrySystem);
+		MemoryPatch::CrySystem::FixFlashAllocatorUnderflow(g_pCrySystem);
+		MemoryPatch::CrySystem::HookCPUDetect(g_pCrySystem, &CPUInfo::Detect);
+		MemoryPatch::CrySystem::HookError(g_pCrySystem, &CrashLogger::OnEngineError);
+		//MemoryPatch::CrySystem::MakeDX9Default(g_pCrySystem);
+		MemoryPatch::CrySystem::RemoveSecuROM(g_pCrySystem);
+		MemoryPatch::CrySystem::UnhandledExceptions(g_pCrySystem);
+		//MemoryPatch::CrySystem::EnableServerPhysicsThread(g_pCrySystem);
+		MemoryPatch::CrySystem::HookCryWarning(g_pCrySystem, &OnCryWarning);
 
-		InstallEarlyEngineInitHook(m_dlls.pCrySystem);
-		HookSystemWarning(m_dlls.pCrySystem);
+		InstallEarlyEngineInitHook(g_pCrySystem);
+		HookSystemWarning(g_pCrySystem);
 
-		ReplaceCryPak(m_dlls.pCrySystem);
-		ReplaceStreamEngine(m_dlls.pCrySystem);
-		ReplaceScriptSystem(m_dlls.pCrySystem);
-		ReplaceHardwareMouse(m_dlls.pCrySystem);
-		ReplaceLocalizationManager(m_dlls.pCrySystem);
+		ReplaceCryPak(g_pCrySystem);
+		ReplaceStreamEngine(g_pCrySystem);
+		ReplaceScriptSystem(g_pCrySystem);
+		ReplaceHardwareMouse(g_pCrySystem);
+		ReplaceLocalizationManager(g_pCrySystem);
 
 		if (!WinAPI::CmdLine::HasArg("-oldphysics"))
 		{
-			ReplacePhysics(m_dlls.pCrySystem);
+			ReplacePhysics(g_pCrySystem);
 		}
+
+#ifdef CLIENT_LAUNCHER
+		if (!WinAPI::CmdLine::HasArg("-oldsound"))
+		{
+			ReplaceSoundSystem(g_pCrySystem);
+		}
+#endif
 	}
 
-	if (m_dlls.pCry3DEngine)
+	if (g_pCry3DEngine)
 	{
-		MemoryPatch::Cry3DEngine::EnableBigDecalsOnDynamicObjects(m_dlls.pCry3DEngine);
-		MemoryPatch::Cry3DEngine::FixGetObjectsByType(m_dlls.pCry3DEngine);
+		MemoryPatch::Cry3DEngine::EnableBigDecalsOnDynamicObjects(g_pCry3DEngine);
+		MemoryPatch::Cry3DEngine::FixGetObjectsByType(g_pCry3DEngine);
 
-		ReplaceTimeOfDay(m_dlls.pCry3DEngine);
+		ReplaceTimeOfDay(g_pCry3DEngine);
 	}
 
 	const char* GAME_WINDOW_NAME = "CryMP Client " CRYMP_VERSION_STRING;
 
-	if (m_dlls.pCryRenderD3D9)
+	if (g_pCryRenderD3D9)
 	{
-		MemoryPatch::CryRenderD3D9::FixUseAfterFreeInShaderParser(m_dlls.pCryRenderD3D9);
-		MemoryPatch::CryRenderD3D9::HookWindowNameD3D9(m_dlls.pCryRenderD3D9, GAME_WINDOW_NAME);
-		MemoryPatch::CryRenderD3D9::HookAdapterInfo(m_dlls.pCryRenderD3D9, &OnD3D9Info);
+		MemoryPatch::CryRenderD3D9::FixUseAfterFreeInShaderParser(g_pCryRenderD3D9);
+		MemoryPatch::CryRenderD3D9::HookWindowNameD3D9(g_pCryRenderD3D9, GAME_WINDOW_NAME);
+		MemoryPatch::CryRenderD3D9::HookAdapterInfo(g_pCryRenderD3D9, &OnD3D9Info);
 	}
 
-	if (m_dlls.pCryRenderD3D10)
+	if (g_pCryRenderD3D10)
 	{
-		MemoryPatch::CryRenderD3D10::FixLowRefreshRateBug(m_dlls.pCryRenderD3D10);
-		MemoryPatch::CryRenderD3D10::FixUseAfterFreeInShaderParser(m_dlls.pCryRenderD3D10);
-		MemoryPatch::CryRenderD3D10::HookWindowNameD3D10(m_dlls.pCryRenderD3D10, GAME_WINDOW_NAME);
-		MemoryPatch::CryRenderD3D10::HookAdapterInfo(m_dlls.pCryRenderD3D10, &OnD3D10Info);
+		MemoryPatch::CryRenderD3D10::FixLowRefreshRateBug(g_pCryRenderD3D10);
+		MemoryPatch::CryRenderD3D10::FixUseAfterFreeInShaderParser(g_pCryRenderD3D10);
+		MemoryPatch::CryRenderD3D10::HookWindowNameD3D10(g_pCryRenderD3D10, GAME_WINDOW_NAME);
+		MemoryPatch::CryRenderD3D10::HookAdapterInfo(g_pCryRenderD3D10, &OnD3D10Info);
 	}
 
-	if (m_dlls.pCryRenderNULL)
+	if (g_pCryRenderNULL)
 	{
-		MemoryPatch::CryRenderNULL::DisableDebugRenderer(m_dlls.pCryRenderNULL);
+		MemoryPatch::CryRenderNULL::DisableDebugRenderer(g_pCryRenderNULL);
 	}
 
-	if (m_dlls.pFmodEx)
+	if (g_pFmodEx)
 	{
-		MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(m_dlls.pFmodEx);
+		if (g_hasC1Fmod)
+		{
+			// only C1 FMOD is affected
+			MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(g_pFmodEx);
+		}
 
 #ifdef CLIENT_LAUNCHER
-		if (WinAPI::CmdLine::HasArg("-dsoal"))
+		if (WinAPI::CmdLine::HasArg("-dsoal") && (g_hasC1Fmod || g_hasWarheadWarsFmod))
 		{
-			DsoalDeployer::Init(m_dlls.pFmodEx);
+			DsoalDeployer::Init(g_pFmodEx, g_hasC1Fmod);
 		}
 #endif
 	}
@@ -1252,7 +1389,7 @@ void Launcher::StartEngine()
 	{
 		using CryActionEntry = IGameFramework::TEntryFunction;
 
-		auto entry = static_cast<CryActionEntry>(WinAPI::DLL::GetSymbol(m_dlls.pCryAction, "CreateGameFramework"));
+		auto entry = static_cast<CryActionEntry>(WinAPI::DLL::GetSymbol(g_pCryAction, "CreateGameFramework"));
 		if (!entry)
 		{
 			throw StringTools::ErrorFormat("The CryAction DLL is not valid!");
@@ -1286,7 +1423,7 @@ void Launcher::StartEngine()
 	{
 		// initialize CryEngine without CryAction
 		// Launcher::OnEarlyEngineInit is called here
-		InitCrySystem(m_dlls.pCrySystem, m_params);
+		InitCrySystem(g_pCrySystem, m_params);
 
 		// initialize our CryAction
 		if (!pGameFramework->Init(m_params))
@@ -1330,14 +1467,6 @@ void Launcher::StartEngine()
 #endif
 
 	gEnv->pSystem->ExecuteCommandLine();
-}
-
-Launcher::Launcher()
-{
-}
-
-Launcher::~Launcher()
-{
 }
 
 void Launcher::OnEarlyEngineInit(ISystem* pSystem)

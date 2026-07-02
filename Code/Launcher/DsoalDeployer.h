@@ -1,4 +1,4 @@
 namespace DsoalDeployer
 {
-	void Init(void* pFmodEx);
+	void Init(void* pFmodEx, bool isOldFmod);
 }

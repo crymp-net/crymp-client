@@ -1840,82 +1840,11 @@ inline CryStackStringT<T,S> CryStackStringT<T,S>::Tokenize( const_str charSet, i
 	return CryStackStringT<T,S>();
 }
 
-// a template specialization for char
-template<size_t S> class CryFixedStringT : public CryStackStringT<char, S>
-{
-public:
-	typedef CryStackStringT<char, S> _parentType;
-	typedef CryFixedStringT<S> _Self;
-	typedef size_t size_type;
-	typedef char value_type;
-	typedef const value_type* const_str;
-	typedef value_type* pointer;
-	typedef const value_type* const_pointer;
-	typedef value_type& reference;
-	typedef const value_type& const_reference;
-	typedef pointer iterator;
-	typedef const_pointer const_iterator;
-	static const size_type MAX_SIZE = S;
-	CryFixedStringT( ) : _parentType() {}
-	CryFixedStringT( const _parentType& str ) : _parentType(str) {}
-	CryFixedStringT( const _parentType& str,size_type nOff,size_type nCount ) : _parentType(str, nOff, nCount) {}
-	CryFixedStringT( const _Self& str ) : _parentType(str) {}
-	CryFixedStringT( const _Self& str,size_type nOff,size_type nCount ) : _parentType(str, nOff, nCount) {}
-	explicit CryFixedStringT( value_type ch, size_type nRepeat = 1 ) : _parentType(ch, nRepeat) {}
-	explicit CryFixedStringT( const_str str ) : _parentType (str) {}
-	CryFixedStringT( const_str str, size_type nLength ) : _parentType(str, nLength) {}
-	CryFixedStringT( const_iterator _First,const_iterator _Last ) : _parentType(_First, _Last) {}
+template<size_t S>
+using CryFixedStringT = CryStackStringT<char, S>;
 
-	template<size_t AnySize> _Self& operator=( const CryFixedStringT<AnySize>& str)
-	{
-		_parentType::operator = (str);
-		return *this;
-	}
-	template<size_t AnySize> _Self& operator=( const CryStackStringT<char, AnySize>& str)
-	{
-		_parentType::operator = (str);
-		return *this;
-	}
-};
-
-// a template specialization for wchar_t
-template<size_t S> class CryFixedWStringT : public CryStackStringT<wchar_t, S>
-{
-public:
-	typedef CryStackStringT<wchar_t, S> _parentType;
-	typedef CryFixedWStringT<S> _Self;
-	typedef size_t size_type;
-	typedef wchar_t value_type;
-	typedef const value_type* const_str;
-	typedef value_type* pointer;
-	typedef const value_type* const_pointer;
-	typedef value_type& reference;
-	typedef const value_type& const_reference;
-	typedef pointer iterator;
-	typedef const_pointer const_iterator;
-	static const size_type MAX_SIZE = S;
-	CryFixedWStringT( ) : _parentType() {}
-	CryFixedWStringT( const _parentType& str ) : _parentType(str) {}
-	CryFixedWStringT( const _parentType& str,size_type nOff,size_type nCount ) : _parentType(str, nOff, nCount) {}
-	CryFixedWStringT( const _Self& str ) : _parentType(str) {}
-	CryFixedWStringT( const _Self& str,size_type nOff,size_type nCount ) : _parentType(str, nOff, nCount) {}
-	explicit CryFixedWStringT( value_type ch, size_type nRepeat = 1 ) : _parentType(ch, nRepeat) {}
-	explicit CryFixedWStringT( const_str str ) : _parentType (str) {}
-	CryFixedWStringT( const_str str, size_type nLength ) : _parentType(str, nLength) {}
-	CryFixedWStringT( const_iterator _First,const_iterator _Last ) : _parentType(_First, _Last) {}
-
-	template<size_t AnySize> _Self& operator=( const CryFixedWStringT<AnySize>& str)
-	{
-		_parentType::operator = (str);
-		return *this;
-	}
-	template<size_t AnySize> _Self& operator=( const CryStackStringT<wchar_t, AnySize>& str)
-	{
-		_parentType::operator = (str);
-		return *this;
-	}
-};
-
+template<size_t S>
+using CryFixedWStringT = CryStackStringT<wchar_t, S>;
 
 #if defined(USER_alexl)
 struct SUnitTest_FixedString
