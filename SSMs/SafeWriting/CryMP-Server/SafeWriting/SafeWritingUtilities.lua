@@ -1118,7 +1118,8 @@ if not R then
 		ACCEPT_COMMAND = "Potvrd prikaz",
 		ITEM_LOCKED = "Tato polozka je zablokovana",
 		TRANSLATED_BY = "Prelozil",
-		DID_YOU_MEAN = "Mali ste na mysli"
+		DID_YOU_MEAN = "Mali ste na mysli",
+		IN_COMBAT = "In combat"
 	};
 	R = CompatEn;
 end
