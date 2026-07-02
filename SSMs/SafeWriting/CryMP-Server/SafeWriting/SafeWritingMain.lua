@@ -5,8 +5,8 @@ SafeWriting = SafeWriting or {
 	GlobalData = {},
 	-- FuncContainer={};
 	-- Schedule={};
-	Version = "3.0.1",
-	NumVersion = 301, -- format abc.d, 2.1.6 = 216, 2.1.6.1 = 216.1
+	Version = "3.0.2",
+	NumVersion = 302, -- format abc.d, 2.1.6 = 216, 2.1.6.1 = 216.1
 	GameVersion = "<unknown>",
 	NanosuitModes = {
 		["speed"] = 0,
@@ -212,7 +212,7 @@ function SafeWriting:OnTimerTick()
 							local name = v:GetName()
 							local k, d = GetPlayerScore(v)
 							local rank = 0
-							local team = "1"
+							local team = "0"
 							if g_gameRules.class == "PowerStruggle" and g_gameRules.GetPlayerRank and v and v.id then
 								rank = g_gameRules:GetPlayerRank(v.id) or 1
 								team = g_gameRules.game:GetTeam(v.id)
@@ -1280,8 +1280,16 @@ function EnableChatCommand(cmdname)
 	end
 end
 
-function IsCommandUsableForPlayer(cmdname, player, timeout, sendtext, health)
+function IsCommandUsableForPlayer(cmdname, player, timeout, sendtext, health, combat)
 	if (player) then
+		if type(timeout) == "table" and sendtext == nil and health == nil and combat == nil then
+			params = timeout
+			timeout = params.timeout
+			sendtext = params.warn
+			health = params.health
+			combat = params.combat
+			if sendtext == nil then sendtext = true end
+		end
 		if (player.CommandsInfo == nil) then
 			player.CommandsInfo = {}
 		end
@@ -1292,11 +1300,12 @@ function IsCommandUsableForPlayer(cmdname, player, timeout, sendtext, health)
 			lastuse = player.CommandsInfo[cmdname]
 		end
 		lastuse = tonumber(lastuse)
-		if health and player.actor then
+		if (health or combat) and player.actor then
 			local tgth = player.actor:GetHealth()
-			if tgth <= health then
+			local lastHit = player.lastCombat or (_time - 600)
+			if (health and tgth <= health) or (combat and (_time - lastHit) < combat) then
 				if sendtext then
-					Chat:SendToTarget(nil, player, "You can't use this command right now, you are being attacked")
+					Chat:SendToTarget(nil, player, "[[IN_COMBAT]]")
 				end
 				return false
 			end
@@ -2604,8 +2613,8 @@ function AddChatCommand(name, func, params, rights, desc, usage_gen)
 			end
 			args[i] = arg
 		end
-		self.IsUsable = function(self, player, timeout, tell, health)
-			return IsCommandUsableForPlayer(self.name, player, timeout, tell or true, health)
+		self.IsUsable = function(self, player, timeout, tell, health, combat)
+			return IsCommandUsableForPlayer(self.name, player, timeout, tell or true, health, combat)
 		end
 		self.OpenConsole = function(self, player)
 			Msg:SendToTarget(player, __qt(player.lang, R.OPEN_CONSOLE))

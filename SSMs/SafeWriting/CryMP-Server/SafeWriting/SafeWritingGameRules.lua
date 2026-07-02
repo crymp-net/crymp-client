@@ -421,7 +421,7 @@ if not SafeWritingGameRules.UpdatePings then
 		end
 		local ammo = self.buyList[name];
 		if (ammo and ammo.ammo) then
-			local price = self:GetPrice(name);
+			local price = self:GetPrice(name, player.id);
 			local vehicleId = player and player.actor:GetLinkedVehicleId();
 			if (vehicleId) then
 				if (alive) then
@@ -920,6 +920,9 @@ if not SafeWritingGameRules.UpdatePings then
 	end
 	SafeWritingGameRules.ProcessActorDamage = function(self, hit)
 		local target = hit.target;
+		if hit.target and hit.shooter and hit.shooter.id ~= hit.target.id then
+			hit.target.lastCombat = _time
+		end
 		local funcs = SafeWriting.FuncContainer:GetFuncs("ProcessActorDamage");
 		if (funcs) then
 			for i, v in pairs(funcs) do
@@ -1113,7 +1116,7 @@ if not SafeWritingGameRules.UpdatePings then
 			for i, factory in pairs(self.factories) do
 				factory:CancelJobForPlayer(playerId);
 			end
-			local price, energy = self:GetPrice(itemName);
+			local price, energy = self:GetPrice(itemName, playerId);
 			if (factory:Buy(playerId, itemName)) then
 				self:AwardPPCount(playerId, -price);
 				self:AwardCPCount(playerId, self.cpList.BUYVEHICLE);

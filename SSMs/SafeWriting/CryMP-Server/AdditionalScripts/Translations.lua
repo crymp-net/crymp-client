@@ -1502,13 +1502,16 @@ Translations={
         ["tempban_info"]="Tymczasowo banuje gracza na X godzin (domyślnie: 50), użycie: !tempban <gracz> <powód...>";
     }
 }; 
+
 local allLanguages="";
 for i,v in pairs(Translations) do
 	allLanguages=allLanguages.."/"..i;
 end
+
 if(allLanguages~="")then
 	allLanguages=allLanguages:sub(2);
 end
+
 for i,v in pairs(Translations) do
 	if(v[R.SPAWN_INFO_5])then
 		if(sfwstrfind(v[R.SPAWN_INFO_5],"%s")~=-1)then
@@ -1533,35 +1536,55 @@ function getCountryFromHost(player)
 	end
 	player.country=lang or "unknown";
 end
+
 function Translator_DetectLang(player,force)
-	if(not player)then return; end
-	local lang="";
-	if(player.host)then
-		if not player.country then
-			getCountryFromHost(player);
-		end
-		lang=player.country;
-		player.lang="en";
-		if(lang=="cz")then
-			lang="sk";
-		elseif(lang=="at" or lang=="ch")then
-			lang="de";
-		elseif(lang=="br")then
-			lang="pt";
-		elseif(lang=="hr")then
-			lang="ba";
-		elseif(lang=="by" or lang=="ua") then
-			lang="ru";
-		end
-		if(SafeWriting.Translator.__Languages[lang])then
-			player.lang=lang;
-		else player.lang="en"; end
-		if not force then
-			SfwLog(string.format("Detected language of player %s: %s, used: %s",player:GetName(),player.country,player.lang));
-		end
-	end
+        if(not player)then return; end
+        local lang="";
+        if(player.host)then
+                if not player.country then
+                        getCountryFromHost(player);
+                end
+                local source = "host"
+                lang=player.country;
+                if player.locale then
+                        source = "locale"
+                        lang = player.locale:sub(1, 2):lower()
+                end
+                player.lang="en";
+                if(lang=="cz" or lang == "cs")then
+                        lang="sk";
+                elseif(lang=="at" or lang=="ch")then
+                        lang="de";
+                elseif(lang=="br")then
+                        lang="pt";
+                elseif(lang=="hr")then
+                        lang="ba";
+                elseif(lang=="by" or lang=="ua") then
+                        lang="ru";
+                end
+                if lang == "en" or #lang > 2 then
+                        if player.host:find("turk.net") or player.host:find("superonline.net") then
+                                lang = "tr"
+                        end
+                end
+                if(SafeWriting.Translator.__Languages[lang])then
+                        player.lang=lang;
+                else player.lang="en"; end
+                if not force then
+                        SfwLog(string.format(
+                                "Detected language of player %s: %s, used: %s (source: %s, locale: %s)",
+                                player:GetName(),
+                                player.country,
+                                player.lang,
+                                source,
+                                player.locale or "<unknown>"
+                        ));
+                end
+        end
 end
+
 function GetStoragePath(file) return SafeWriting.GlobalStorageFolder..file; end
+
 function AddTranslation(lang,name,value)
 	if not Translations[lang] then Translations[lang]={}; end
 	Translations[lang][name]=value;
@@ -1571,21 +1594,66 @@ function AddTranslation(lang,name,value)
 		end
 	end
 end
+
+function AddTranslations(batch)
+        for i, v in pairs(batch) do
+                for j, w in pairs(v) do
+                        Translations[i][j] = w;
+                end
+        end
+end
+
 function FinishTranslations(lang)
 	for i,v in pairs(Translations) do
 		SafeWriting.Translator:AddLanguage(i,v);
 	end
 end
+
 function Translator_OnPlayerRevive(player)
 	if(not player.lang)then
 		Translator_DetectLang(player);
 	end
 end
+
 function Translator_OnGatherData(player)
 	Translator_DetectLang(player);
 end
+
 SafeWriting.FuncContainer:AddFunc(Translator_OnPlayerRevive,"OnPlayerRevive");
 SafeWriting.FuncContainer:AddFunc(Translator_OnGatherData,"CheckPlayer");
+
+AddTranslations({
+    en = {
+        [R.IN_COMBAT] = "You cannot use this command while in combat";
+    },
+    sk = {
+        [R.IN_COMBAT] = "Nemôžeš použiť tento príkaz, kým bojuješ";
+    },
+    pl = {
+        [R.IN_COMBAT] = "Nie możesz użyć tej komendy podczas walki";
+    },
+    de = {
+        [R.IN_COMBAT] = "Du kannst diesen Befehl nicht während des Kampfes benutzen";
+    },
+    tr = {
+        [R.IN_COMBAT] = "Savaş esnasında bu komutu kullanamazsın";
+    },
+    pt = {
+        [R.IN_COMBAT] = "Não podes usar este comando enquanto estás em combate";
+    },
+    nl = {
+        [R.IN_COMBAT] = "Je kunt dit commando niet gebruiken tijdens een gevecht";
+    },
+    ba = {
+        [R.IN_COMBAT] = "Ne možeš koristiti ovu komandu dok si u borbi";
+    },
+    ro = {
+        [R.IN_COMBAT] = "Nu poți folosi această comandă în timpul luptei";
+    },
+    ru = {
+        [R.IN_COMBAT] = "Ты не можешь использовать эту команду во время боя";
+    }
+})
 
 local try=loadfile(GetStoragePath("CustomTranslations.lua"));
 if try then
