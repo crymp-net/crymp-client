@@ -1305,7 +1305,7 @@ function IsCommandUsableForPlayer(cmdname, player, timeout, sendtext, health, co
 			local lastHit = player.lastCombat or (_time - 600)
 			if (health and tgth <= health) or (combat and (_time - lastHit) < combat) then
 				if sendtext then
-					Chat:SendToTarget(nil, player, "[[In combat]]")
+					Chat:SendToTarget(nil, player, "[[IN_COMBAT]]")
 				end
 				return false
 			end
