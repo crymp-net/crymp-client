@@ -97,6 +97,28 @@ void MemoryPatch::CryAction::DisableBreakLog(void* pCryAction)
 }
 
 /**
+ * Disables automatic creation of "gameplaystatsXXX.txt" files.
+ *
+ * The "dump_stats" console command can still be used to create these files manually.
+ */
+void MemoryPatch::CryAction::DisableGameplayStats(void* pCryAction)
+{
+#ifdef BUILD_64BIT
+	const unsigned char code[] = {
+		0xC3,  // ret
+		0x90,  // nop
+		0x90,  // nop
+		0x90,  // nop
+		0x90   // nop
+	};
+
+	FillMem(pCryAction, 0x2FA976, code, sizeof(code));
+#else
+	FillNop(pCryAction, 0x20605D, 0x7);
+#endif
+}
+
+/**
  * Disables the lower limit of ToD length.
  */
 void MemoryPatch::CryAction::DisableTimeOfDayLengthLowerLimit(void* pCryAction)

@@ -1272,6 +1272,7 @@ void Launcher::PatchEngine()
 		MemoryPatch::CryAction::AllowDX9ImmersiveMultiplayer(g_pCryAction);
 		MemoryPatch::CryAction::AllowMultiplayerRegisterWithAI(g_pCryAction);
 		MemoryPatch::CryAction::DisableBreakLog(g_pCryAction);
+		MemoryPatch::CryAction::DisableGameplayStats(g_pCryAction);
 		MemoryPatch::CryAction::DisableTimeOfDayLengthLowerLimit(g_pCryAction);
 		MemoryPatch::CryAction::HookCryWarning(g_pCryAction, &OnCryWarning);
 		MemoryPatch::CryAction::HookGameWarning(g_pCryAction, &OnGameWarning);

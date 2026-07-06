@@ -18,6 +18,7 @@ namespace MemoryPatch
 		void AllowDX9ImmersiveMultiplayer(void* pCryAction);
 		void AllowMultiplayerRegisterWithAI(void* pCryAction);
 		void DisableBreakLog(void* pCryAction);
+		void DisableGameplayStats(void* pCryAction);
 		void DisableTimeOfDayLengthLowerLimit(void* pCryAction);
 		void HookGameWarning(void* pCryAction, void (*handler)(const char* format, ...));
 		void HookCryWarning(void* pCryAction, void (*handler)(int, int, const char* format, ...));
