@@ -80,10 +80,28 @@ namespace MemoryPatch
 			// ...
 		};
 
+		struct SystemAPI
+		{
+			void* pDXGI;
+			void* pCreateDXGIFactory;
+			void* pD3D10;
+			void* pD3D10CreateStateBlock;              // unused
+			void* pD3D10CreateDevice;
+			void* pD3D10StateBlockMaskUnion;           // unused
+			void* pD3D10StateBlockMaskIntersect;       // unused
+			void* pD3D10StateBlockMaskDifference;      // unused
+			void* pD3D10StateBlockMaskEnableCapture;   // unused
+			void* pD3D10StateBlockMaskDisableCapture;  // unused
+			void* pD3D10StateBlockMaskEnableAll;       // unused
+			void* pD3D10StateBlockMaskDisableAll;      // unused
+			void* pD3D10StateBlockMaskGetSetting;      // unused
+		};
+
 		void FixLowRefreshRateBug(void* pCryRenderD3D10);
 		void FixUseAfterFreeInShaderParser(void* pCryRenderD3D10);
 		void HookWindowNameD3D10(void* pCryRenderD3D10, const char* name);
 		void HookAdapterInfo(void* pCryRenderD3D10, void (*handler)(AdapterInfo* info));
+		void HookInitAPI(void* pCryRenderD3D10, bool (*handler)(SystemAPI* api));
 	}
 
 	namespace CryRenderNULL

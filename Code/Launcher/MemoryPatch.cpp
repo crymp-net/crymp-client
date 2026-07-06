@@ -732,6 +732,50 @@ void MemoryPatch::CryRenderD3D10::HookAdapterInfo(void* pCryRenderD3D10, void (*
 #endif
 }
 
+/**
+ * Hooks D3D10 API initialization.
+ *
+ * CryRenderD3D10 loads d3d10.dll and dxgi.dll with absolute paths (GetSystemDirectoryW) for some reason.
+ * This patch is used to load these DLLs normally, so placing them next to CryRenderD3D10.dll works as expected.
+ */
+void MemoryPatch::CryRenderD3D10::HookInitAPI(void* pCryRenderD3D10, bool (*handler)(SystemAPI* api))
+{
+#ifdef BUILD_64BIT
+	unsigned char code[] = {
+		0x48, 0x8D, 0x0D, 0xF3, 0xFF, 0xFF, 0xFF,                    // lea rcx, qword ptr ds:[rip-0xD]
+		0x03, 0x0D, 0xE8, 0xFF, 0xFF, 0xFF,                          // add ecx, dword ptr ds:[rip-0x18]
+		0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, 0x0
+		0xFF, 0xD0,                                                  // call rax
+		0x48, 0x81, 0xC4, 0x38, 0x02, 0x00, 0x00,                    // add rsp, 0x238
+		0xC3,                                                        // ret
+		0x90,                                                        // nop
+		0x90,                                                        // nop
+	};
+
+	std::memcpy(&code[15], &handler, 8);
+#else
+	unsigned char code[] = {
+		0xE8, 0x12, 0x00, 0x00, 0x00,        // call get_pc -----------------------+
+		0x8B, 0x40, 0xF0,                    // mov eax, dword ptr ds:[eax-0x10]   |
+		0x50,                                // push eax                           |
+		0xB8, 0x00, 0x00, 0x00, 0x00,        // mov eax, 0x0                       |
+		0xFF, 0xD0,                          // call eax                           |
+		0x81, 0xC4, 0x10, 0x02, 0x00, 0x00,  // add esp, 0x210                     |
+		0xC3,                                // ret                                |
+		0x8B, 0x04, 0x24,                    // mov eax, dword ptr ss:[esp]  <-----+
+		0xC3,                                // ret
+	};
+
+	std::memcpy(&code[10], &handler, 4);
+#endif
+
+#ifdef BUILD_64BIT
+	FillMem(pCryRenderD3D10, 0x1C99D3, &code, sizeof(code));
+#else
+	FillMem(pCryRenderD3D10, 0x171080, &code, sizeof(code));
+#endif
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // CryRenderNULL
 ////////////////////////////////////////////////////////////////////////////////

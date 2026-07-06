@@ -103,6 +103,31 @@ static void OnD3D10Info(MemoryPatch::CryRenderD3D10::AdapterInfo* info)
 	LogBytes("D3D10 Adapter: Shared system memory = ", info->shared_system_memory);
 }
 
+static bool OnD3D10Init(MemoryPatch::CryRenderD3D10::SystemAPI* api)
+{
+	void* d3d10 = WinAPI::DLL::Load("d3d10.dll");
+	if (!d3d10)
+	{
+		WinAPI::ErrorBox(StringTools::SysErrorFormat("Failed to load the D3D10 DLL!").what());
+		return false;
+	}
+
+	api->pD3D10 = d3d10;
+	api->pD3D10CreateDevice = WinAPI::DLL::GetSymbol(d3d10, "D3D10CreateDevice");
+
+	void* dxgi = WinAPI::DLL::Load("dxgi.dll");
+	if (!dxgi)
+	{
+		WinAPI::ErrorBox(StringTools::SysErrorFormat("Failed to load the DXGI DLL!").what());
+		return false;
+	}
+
+	api->pDXGI = dxgi;
+	api->pCreateDXGIFactory = WinAPI::DLL::GetSymbol(dxgi, "CreateDXGIFactory");
+
+	return true;
+}
+
 static void OnCryWarning(int, int, const char* format, ...)
 {
 	// the original buffer size
@@ -1356,6 +1381,7 @@ void Launcher::PatchEngine()
 		MemoryPatch::CryRenderD3D10::FixUseAfterFreeInShaderParser(g_pCryRenderD3D10);
 		MemoryPatch::CryRenderD3D10::HookWindowNameD3D10(g_pCryRenderD3D10, GAME_WINDOW_NAME);
 		MemoryPatch::CryRenderD3D10::HookAdapterInfo(g_pCryRenderD3D10, &OnD3D10Info);
+		MemoryPatch::CryRenderD3D10::HookInitAPI(g_pCryRenderD3D10, &OnD3D10Init);
 	}
 
 	if (g_pCryRenderNULL)
