@@ -1172,8 +1172,6 @@ void Launcher::LoadEngine()
 		}
 	}
 
-	CryMemoryManager::Init(g_pCrySystem);
-
 	g_pCryAction = WinAPI::DLL::Load("CryAction.dll");
 	if (!g_pCryAction)
 	{
@@ -1562,6 +1560,10 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 	gEnv->pConsole->AddCommand("LocalizationManagerInfo", [](IConsoleCmdArgs* args) {
 		LocalizationManager::GetInstance().LogInfo();
 	});
+
+	gEnv->pConsole->AddCommand("CryMemoryManagerInfo", [](IConsoleCmdArgs* args) {
+		CryMemoryManager::LogInfo();
+	});
 }
 
 struct DummySystemCallback : public ISystemUserCallback
@@ -1606,6 +1608,8 @@ void Launcher::Run()
 
 	this->InitWorkingDirectory();
 	this->SetCmdLine();
+
+	CryMemoryManager::Init();
 
 	this->LoadEngine();
 	this->PatchEngine();

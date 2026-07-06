@@ -4,7 +4,9 @@
 
 namespace CryMemoryManager
 {
-	void Init(void* pCrySystem);
+	void Init();
 
 	void ProvideHeapInfo(std::FILE* file, void* address);
+
+	void LogInfo();
 }
