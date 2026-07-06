@@ -17,7 +17,6 @@
 
 #include "CryCommon/CryCore/CryMalloc.h"
 #include "CryCommon/CrySystem/ISystem.h"
-#include "Library/WinAPI.h"
 
 #include "CryMemoryManager.h"
 
@@ -450,9 +449,14 @@ STLport_Allocator* g_STLport_Allocator = nullptr;
 // Hooked functions
 ////////////////////////////////////////////////////////////////////////////////
 
-static void* CryMalloc_hook_internal(std::size_t size, std::size_t& allocatedSize)
+static void* CryMalloc_internal(std::size_t size, std::size_t& allocatedSize)
 {
 	allocatedSize = 0;
+
+	if (!size)
+	{
+		return nullptr;
+	}
 
 #ifdef BUILD_64BIT
 	if (g_STLport_Allocator && size == STLport_Allocator::BLOCK_SIZE)
@@ -484,25 +488,25 @@ static void* CryMalloc_hook_internal(std::size_t size, std::size_t& allocatedSiz
 	return ptr;
 }
 
-static void* CryMalloc_hook(std::size_t size, std::size_t& allocatedSize)
+CRYMALLOC_API void* CryMalloc(std::size_t size, std::size_t& allocatedSize)
 {
 	if (gEnv)
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SYSTEM);
 
-		return CryMalloc_hook_internal(size, allocatedSize);
+		return CryMalloc_internal(size, allocatedSize);
 	}
 	else
 	{
-		return CryMalloc_hook_internal(size, allocatedSize);
+		return CryMalloc_internal(size, allocatedSize);
 	}
 }
 
-static void* CryRealloc_hook_internal(void* oldPtr, std::size_t newSize, std::size_t& allocatedSize)
+static void* CryRealloc_internal(void* oldPtr, std::size_t newSize, std::size_t& allocatedSize)
 {
 	if (!oldPtr)
 	{
-		return CryMalloc_hook_internal(newSize, allocatedSize);
+		return CryMalloc_internal(newSize, allocatedSize);
 	}
 
 	std::size_t oldSize = 0;
@@ -524,9 +528,12 @@ static void* CryRealloc_hook_internal(void* oldPtr, std::size_t newSize, std::si
 #endif
 	}
 
-	void* newPtr = CryMalloc_hook_internal(newSize, allocatedSize);
+	void* newPtr = CryMalloc_internal(newSize, allocatedSize);
 
-	std::memcpy(newPtr, oldPtr, (oldSize <= newSize) ? oldSize : newSize);
+	if (newPtr)
+	{
+		std::memcpy(newPtr, oldPtr, (oldSize <= newSize) ? oldSize : newSize);
+	}
 
 #ifdef BUILD_64BIT
 	if (isSTLport)
@@ -548,22 +555,27 @@ static void* CryRealloc_hook_internal(void* oldPtr, std::size_t newSize, std::si
 	return newPtr;
 }
 
-static void* CryRealloc_hook(void* oldPtr, std::size_t newSize, std::size_t& allocatedSize)
+CRYMALLOC_API void* CryRealloc(void* oldPtr, std::size_t newSize, std::size_t& allocatedSize)
 {
 	if (gEnv)
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SYSTEM);
 
-		return CryRealloc_hook_internal(oldPtr, newSize, allocatedSize);
+		return CryRealloc_internal(oldPtr, newSize, allocatedSize);
 	}
 	else
 	{
-		return CryRealloc_hook_internal(oldPtr, newSize, allocatedSize);
+		return CryRealloc_internal(oldPtr, newSize, allocatedSize);
 	}
 }
 
-static std::size_t CryGetMemSize_hook_internal(void* ptr)
+static std::size_t CryGetMemSize_internal(void* ptr)
 {
+	if (!ptr)
+	{
+		return 0;
+	}
+
 #ifdef BUILD_64BIT
 	if (g_STLport_Allocator && g_STLport_Allocator->Contains(ptr))
 	{
@@ -578,21 +590,21 @@ static std::size_t CryGetMemSize_hook_internal(void* ptr)
 #endif
 }
 
-static std::size_t CryGetMemSize_hook(void* ptr, std::size_t)
+CRYMALLOC_API std::size_t CryGetMemSize(void* ptr, std::size_t)
 {
 	if (gEnv)
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SYSTEM);
 
-		return CryGetMemSize_hook_internal(ptr);
+		return CryGetMemSize_internal(ptr);
 	}
 	else
 	{
-		return CryGetMemSize_hook_internal(ptr);
+		return CryGetMemSize_internal(ptr);
 	}
 }
 
-static std::size_t CryFree_hook_internal(void* ptr)
+static std::size_t CryFree_internal(void* ptr)
 {
 	if (!ptr)
 	{
@@ -622,29 +634,29 @@ static std::size_t CryFree_hook_internal(void* ptr)
 	return size;
 }
 
-static std::size_t CryFree_hook(void* ptr)
+CRYMALLOC_API std::size_t CryFree(void* ptr)
 {
 	if (gEnv)
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SYSTEM);
 
-		return CryFree_hook_internal(ptr);
+		return CryFree_internal(ptr);
 	}
 	else
 	{
-		return CryFree_hook_internal(ptr);
+		return CryFree_internal(ptr);
 	}
 }
 
-static void* CrySystemCrtMalloc_hook(std::size_t size)
+CRYMALLOC_API void* CrySystemCrtMalloc(std::size_t size)
 {
 	std::size_t allocatedSize = 0;
-	return CryMalloc_hook(size, allocatedSize);
+	return CryMalloc(size, allocatedSize);
 }
 
-static void CrySystemCrtFree_hook(void* ptr)
+CRYMALLOC_API void CrySystemCrtFree(void* ptr)
 {
-	CryFree_hook(ptr);
+	CryFree(ptr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -656,13 +668,6 @@ void CryMemoryManager::Init(void* pCrySystem)
 #ifdef BUILD_64BIT
 	g_STLport_Allocator = new STLport_Allocator;
 #endif
-
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CryMalloc"), &CryMalloc_hook);
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CryRealloc"), &CryRealloc_hook);
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CryGetMemSize"), &CryGetMemSize_hook);
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CryFree"), &CryFree_hook);
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CrySystemCrtMalloc"), &CrySystemCrtMalloc_hook);
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CrySystemCrtFree"), &CrySystemCrtFree_hook);
 }
 
 void CryMemoryManager::ProvideHeapInfo(std::FILE* file, void* address)
@@ -670,25 +675,4 @@ void CryMemoryManager::ProvideHeapInfo(std::FILE* file, void* address)
 #ifdef CRYMP_DEBUG_ALLOCATOR_ENABLED
 	GetDebugAlloc().ProvideHeapInfo(file, address);
 #endif
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// CryCommon/CryCore/CryMalloc.h
-////////////////////////////////////////////////////////////////////////////////
-
-void* CryMalloc(std::size_t size)
-{
-	std::size_t allocatedSize = 0;
-	return CryMalloc_hook(size, allocatedSize);
-}
-
-void* CryRealloc(void* oldPtr, std::size_t newSize)
-{
-	std::size_t allocatedSize = 0;
-	return CryRealloc_hook(oldPtr, newSize, allocatedSize);
-}
-
-void CryFree(void* ptr)
-{
-	CryFree_hook(ptr);
 }
