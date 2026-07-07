@@ -18,8 +18,6 @@ extern "C" __declspec(dllexport) unsigned long NvOptimusEnablement = 1;
 extern "C" __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 #endif
 
-#define CODEWALL_DEBUG
-
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef CRYMP_CONSOLE_APP
@@ -28,12 +26,8 @@ int main()
 int __stdcall WinMain(void*, void*, char*, int)
 #endif
 {
-	Launcher launcher;
-	gLauncher = &launcher;
-
-
 #ifdef CODEWALL_DEBUG
-	launcher.Run();
+	Launcher().Run();
 #else
 	try
 	{
