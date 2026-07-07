@@ -114,13 +114,21 @@ function InitializeClient()
 	end
 
 	local function RemoveFlaws()
-		for i, v in pairs(io) do
-			io[i] = nil
-		end
-		for i, v in pairs(os) do
-			if not (i == "clock" or i == "time") then
-				os[i] = nil
+		if io ~= nil then
+			for i, v in pairs(io) do
+				io[i] = nil
 			end
+		else
+			io = {}
+		end
+		if os ~= nil then
+			for i, v in pairs(os) do
+				if not (i == "clock" or i == "time") then
+					os[i] = nil
+				end
+			end
+		else
+			os = {}
 		end
 		System.ScanDirectory = nil
 		System.BrowseURL = nil

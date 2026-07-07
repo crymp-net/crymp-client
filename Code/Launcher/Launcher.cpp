@@ -1551,6 +1551,7 @@ struct DummySystemCallback : public ISystemUserCallback
 
 void Launcher::Run()
 {
+	WinAPI::InitializeCodeWallExternal();
 	DummySystemCallback dummyCallback;
 
 	m_params.hInstance = WinAPI::DLL::Get(nullptr);  // EXE handle
@@ -1582,7 +1583,6 @@ void Launcher::Run()
 
 	this->LoadEngine();
 	this->PatchEngine();
-	WinAPI::InitializeCodeWallExternal();
 
 	RandomGenerator::Init();
 
@@ -1604,7 +1604,6 @@ void Launcher::Run()
 		this->StartEngine();
 
 		WinAPI::InitializeCodeWallInternal();
-		CryLogAlways("Codewall status: %d", WinAPI::GetCodeWall());
 		gClient->UpdateLoop();
 #endif
 	}
