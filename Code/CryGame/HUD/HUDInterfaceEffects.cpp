@@ -389,7 +389,13 @@ int CHUD::FillUpMOArray(std::vector<double> *doubleArray, double a, double b, do
 
 void CHUD::TrackProjectiles(CPlayer* pPlayerActor)
 {
-	//CryMP track projectiles in Fp Spec
+	struct SHudTrackedProjectile
+	{
+		IEntity* pEntity = nullptr;
+		float distSq = 0.0f;
+		bool lowPriority = false;
+	};
+
 	if (pPlayerActor && pPlayerActor->IsFpSpectator())
 	{
 		pPlayerActor = CPlayer::FromIActor(pPlayerActor->GetSpectatorTargetActor());
@@ -398,83 +404,126 @@ void CHUD::TrackProjectiles(CPlayer* pPlayerActor)
 	if (!pPlayerActor)
 		return;
 
-	if(m_trackedProjectiles.empty())
-	{
-		if (m_friendlyTrackerStatus)
-			UpdateProjectileTracker(m_animFriendlyProjectileTracker, 0, m_friendlyTrackerStatus, Vec3());
-		if (m_hostileTrackerStatus)
-			UpdateProjectileTracker(m_animHostileProjectileTracker, 0, m_hostileTrackerStatus, Vec3());
+	const int maxIndicators = CLAMP(g_pGameCVars->hud_maxGrenadeIndicators, 0, kMaxGrenadeTrackers);
 
+	if (m_trackedProjectiles.empty() || maxIndicators <= 0)
+	{
+		for (int i = 0; i < kMaxGrenadeTrackers; ++i)
+		{
+			UpdateProjectileTracker(m_animFriendlyProjectileTrackers[i], nullptr, m_friendlyTrackerStatus[i], Vec3());
+			UpdateProjectileTracker(m_animHostileProjectileTrackers[i], nullptr, m_hostileTrackerStatus[i], Vec3());
+		}
 		return;
 	}
 
 	if ((g_pGameCVars->g_difficultyLevel > 3) && !gEnv->bMultiplayer)
 		return;
 
-	if(!m_animFriendlyProjectileTracker.IsLoaded())
+	for (auto& anim : m_animFriendlyProjectileTrackers)
 	{
-		m_animFriendlyProjectileTracker.Reload();
-		if(!m_animFriendlyProjectileTracker.IsLoaded()) //asset missing so far ..
-			m_animFriendlyProjectileTracker.Load("Libs/UI/HUD_GrenadeDetect.gfx", eFD_Center, eFAF_Visible);
+		if (!anim.IsLoaded())
+		{
+			anim.Reload();
+		}
 	}
-	if(!m_animHostileProjectileTracker.IsLoaded())
-		m_animHostileProjectileTracker.Reload();
 
-	IEntity *pClosestFriendly=0;
-	IEntity *pClosestHostile=0;
+	for (auto& anim : m_animHostileProjectileTrackers)
+	{
+		if (!anim.IsLoaded())
+		{
+			anim.Reload();
+		}
+	}
 
-	float closestFriendly=999999.0;
-	float closestHostile=999999.0f;
+	std::vector<SHudTrackedProjectile> friendly;
+	std::vector<SHudTrackedProjectile> hostile;
+
+	friendly.reserve(kMaxGrenadeTrackers);
+	hostile.reserve(kMaxGrenadeTrackers);
 
 	const int teamId = m_pGameRules->GetTeam(pPlayerActor->GetEntityId());
+	CWeaponSystem* pWeaponSystem = g_pGame->GetWeaponSystem();
 
-	auto end = m_trackedProjectiles.end();
-	auto it = m_trackedProjectiles.begin();
-
-	CWeaponSystem *pWeaponSystem=g_pGame->GetWeaponSystem();
-
-	Vec3 player=pPlayerActor->GetEntity()->GetWorldPos();
+	const Vec3 player = pPlayerActor->GetEntity()->GetWorldPos();
 	Vec3 screen;
 
 	for (const auto projId : m_trackedProjectiles)
 	{
-		if (CProjectile *pProjectile=pWeaponSystem->GetProjectile(projId))
-		{
-			if (pProjectile->GetEntity()->IsHidden()) //CryMP: Skip ghost grenades
-				continue;
+		CProjectile* pProjectile = pWeaponSystem->GetProjectile(projId);
+		if (!pProjectile)
+			continue;
 
-			Vec3 proj=pProjectile->GetEntity()->GetWorldPos();
-			m_pRenderer->ProjectToScreen(	proj.x, proj.y,	proj.z, &screen.x,	&screen.y, &screen.z );
+		IEntity* pEntity = pProjectile->GetEntity();
+		if (pEntity->IsHidden()) //CryMP: Skip ghost grenades
+			continue;
 
-			if (screen.z > 1.0f)
-			{
-				continue; // ignore grenades behind the camera
-			}
+		const Vec3 proj = pEntity->GetWorldPos();
+		m_pRenderer->ProjectToScreen(proj.x, proj.y, proj.z, &screen.x, &screen.y, &screen.z);
 
-			const float distSq=(player-proj).len2();
-			const int projTeamId = m_pGameRules->GetTeam(pProjectile->GetOwnerId());
-			const bool bIsMyProjectile = pProjectile->GetOwnerId() == pPlayerActor->GetEntityId();
-			//CryMP: Own grenades visible all times
-			if (!bIsMyProjectile && distSq > 400.0f)
-				continue;
+		if (screen.z > 1.0f) // ignore grenades behind the camera
+			continue;
 
-			const bool hostile = (!teamId || teamId != projTeamId) && (pProjectile->GetOwnerId() != pPlayerActor->GetEntityId());
+		const float distSq = (player - proj).len2();
+		const bool bIsMyProjectile = pProjectile->GetOwnerId() == pPlayerActor->GetEntityId();
 
-			if (distSq<closestHostile && hostile)
-			{
-				pClosestHostile=pProjectile->GetEntity();
-				closestHostile=distSq;
-			}
-			else if (distSq<closestFriendly && !hostile)
-			{
-				pClosestFriendly=pProjectile->GetEntity();
-				closestFriendly=distSq;
-			}
-		}
+		// CryMP: Own grenades visible all times
+		if (!bIsMyProjectile && distSq > 400.0f)
+			continue;
+
+		const int projTeamId = m_pGameRules->GetTeam(pProjectile->GetOwnerId());
+		const bool bHostile = (!teamId || teamId != projTeamId) && !bIsMyProjectile;
+
+		const char* className = pEntity->GetClass()->GetName();
+		const bool lowPriority = className && !_stricmp(className, "smokegrenade");
+
+		if (bHostile)
+			hostile.push_back({ pEntity, distSq, lowPriority });
+		else
+			friendly.push_back({ pEntity, distSq, lowPriority });
 	}
 
-	UpdateProjectileTracker(m_animFriendlyProjectileTracker, pClosestFriendly, m_friendlyTrackerStatus, player);
-	UpdateProjectileTracker(m_animHostileProjectileTracker, pClosestHostile, m_hostileTrackerStatus, player);
+	const auto sortByPriority = [](const SHudTrackedProjectile& a, const SHudTrackedProjectile& b)
+		{
+			if (a.lowPriority != b.lowPriority)
+				return !a.lowPriority;
+
+			return a.distSq < b.distSq;
+		};
+
+	const auto partialSortClosest = [&](std::vector<SHudTrackedProjectile>& list)
+		{
+			const size_t count = std::min(list.size(), static_cast<size_t>(maxIndicators));
+
+			if (count > 0 && count < list.size())
+			{
+				std::partial_sort(list.begin(), list.begin() + count, list.end(), sortByPriority);
+			}
+			else
+			{
+				std::sort(list.begin(), list.end(), sortByPriority);
+			}
+		};
+
+	partialSortClosest(friendly);
+	partialSortClosest(hostile);
+
+	for (int i = 0; i < kMaxGrenadeTrackers; ++i)
+	{
+		IEntity* pFriendly = nullptr;
+		IEntity* pHostile = nullptr;
+
+		if (i < maxIndicators)
+		{
+			if (i < static_cast<int>(friendly.size()))
+				pFriendly = friendly[i].pEntity;
+
+			if (i < static_cast<int>(hostile.size()))
+				pHostile = hostile[i].pEntity;
+		}
+
+		UpdateProjectileTracker(m_animFriendlyProjectileTrackers[i], pFriendly, m_friendlyTrackerStatus[i], player);
+		UpdateProjectileTracker(m_animHostileProjectileTrackers[i], pHostile, m_hostileTrackerStatus[i], player);
+	}
 }
 
 bool CHUD::UseSilhouetteIndicator()
@@ -493,76 +542,74 @@ bool CHUD::UseSilhouetteIndicator()
 	return true;
 }
 
-void CHUD::UpdateProjectileTracker(CGameFlashAnimation &anim, IEntity *pProjectile, uint8 &status, const Vec3 &player)
+void CHUD::UpdateProjectileTracker(CGameFlashAnimation& anim, IEntity* pProjectile, uint8& status, const Vec3& player)
 {
-	if (pProjectile)
+	if (!pProjectile)
 	{
-		Vec3 screen;
-		Vec3 world=pProjectile->GetWorldPos();
-		m_pRenderer->ProjectToScreen(	world.x, world.y,	world.z, &screen.x,	&screen.y, &screen.z);
-
-		if (!status)
+		if (status)
 		{
-			anim.Invoke("showGrenadeDetector");
-			status=1;
+			anim.Invoke("hideGrenadeDetector");
+			status = 0;
 		}
-		else
-		{
-			if(screen.x<3.0f)
-			{
-				screen.x=3.0f;
-				anim.Invoke("morphLeft");
-				status=2;
-			}
-			else if(screen.x>97.0f)
-			{
-				screen.x=97.0f;
-				anim.Invoke("morphRight");
-				status=2;
-			}
-			else if(status>1)
-			{
-				anim.Invoke("morphNone");
-				status=1;
-			}
-		}
-
-		float sx=0.0f;
-		float sy=0.0f;
-		float useless=0.0f;
-
-		GetProjectionScale(&anim, &sx, &sy, &useless);
-
-		float mh	= (float) anim.GetFlashPlayer()->GetHeight();
-		float rh	= (float) m_pRenderer->GetHeight();
-
-		// Note: 18 is the size of the box (coming from Flash)
-		float boxX = 18.0f*mh/rh;
-		float boxY = 18.0f*mh/rh;
-
-		char strX[32];
-		char strY[32];
-		sprintf(strX,"%f", screen.x*sx-boxX+useless);
-		sprintf(strY,"%f", screen.y*sy-boxY);
-
-		anim.SetVariable("Root.GrenadeDetect._x", strX);
-		anim.SetVariable("Root.GrenadeDetect._y", strY);
-
-		char strDistance[32];
-		sprintf(strDistance, "%.2fM",(world-player).len());
-		anim.Invoke("setDistance", strDistance);
-
-		string grenadeName("@");
-		grenadeName.append(pProjectile->GetClass()->GetName());
-		anim.Invoke("setGrenadeType", grenadeName.c_str());
+		return;
 	}
-	else if (status)
+
+	Vec3 screen;
+	const Vec3 world = pProjectile->GetWorldPos();
+	m_pRenderer->ProjectToScreen(world.x, world.y, world.z, &screen.x, &screen.y, &screen.z);
+
+	if (!status)
 	{
-		anim.Invoke("hideGrenadeDetector");
-		status=0;
+		anim.Invoke("showGrenadeDetector");
+		status = 1;
 	}
+	else
+	{
+		if (screen.x < 3.0f)
+		{
+			screen.x = 3.0f;
+			anim.Invoke("morphLeft");
+			status = 2;
+		}
+		else if (screen.x > 97.0f)
+		{
+			screen.x = 97.0f;
+			anim.Invoke("morphRight");
+			status = 2;
+		}
+		else if (status > 1)
+		{
+			anim.Invoke("morphNone");
+			status = 1;
+		}
+	}
+
+	float sx = 0.0f;
+	float sy = 0.0f;
+	float useless = 0.0f;
+	GetProjectionScale(&anim, &sx, &sy, &useless);
+
+	const float dist = (world - player).len();
+
+	//CryMP: GrenadeDetect is scaled in Flash by setDistance(), so scale the
+	// anchor correction too, otherwise the marker drifts with distance.
+	const float flashScale = max(45.0f, 100.0f - dist * 1.5f) * 0.01f;
+
+	const float hudX = screen.x * sx + useless;
+	const float hudY = screen.y * sy;
+
+	const float anchorX = 16.0f * flashScale;
+	const float anchorY = 25.0f * flashScale;
+
+	const std::string grenadeName = StringTools::Format("@%s", pProjectile->GetClass()->GetName());
+	const std::string distanceText = StringTools::Format("%.2fM", dist);
+
+	anim.Invoke("setDistance", distanceText.c_str());
+	anim.Invoke("setGrenadeType", grenadeName.c_str());
+
+	anim.SetVariable("Root.GrenadeDetect._x", StringTools::Format("%f", hudX - anchorX).c_str());
+	anim.SetVariable("Root.GrenadeDetect._y", StringTools::Format("%f", hudY - anchorY).c_str());
 }
-
 
 void CHUD::TrackRadioMessages(CPlayer* pPlayerActor)
 {

@@ -496,6 +496,7 @@ struct SCVars
 	int			ads;
 
 	float       hud_scale;
+	int         hud_maxGrenadeIndicators;
 
 	SCVars();
 	~SCVars();

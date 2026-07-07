@@ -21,3 +21,28 @@ jobs:
     with:
       bits: 64
       type: RelWithDebInfo
+
+  build_32_debug:
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      bits: 32
+      type: Debug
+      suffix: -Debug
+
+  build_64_debug:
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      bits: 64
+      type: Debug
+      suffix: -Debug
+
+  server_zip:
+    uses: ./.github/workflows/server-zip.yml
+    needs:
+      - build_32
+      - build_64
+    with:
+      build_artifact_32: ${{ needs.build_32.outputs.artifact_name }}
+      build_artifact_64: ${{ needs.build_64.outputs.artifact_name }}

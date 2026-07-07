@@ -690,6 +690,21 @@ void SCVars::InitCVars(IConsole* pConsole)
 		}
 	);
 
+	pConsole->Register(
+		"hud_maxGrenadeIndicators",
+		&hud_maxGrenadeIndicators,
+		3,
+		VF_NOT_NET_SYNCED,
+		"Maximum grenade HUD indicators per side. 0 disables grenade indicators, 1 keeps vanilla behavior.",
+		[](ICVar* pVar)
+		{
+			if (CHUD* pHUD = g_pGame->GetHUD())
+			{
+				pHUD->OnMaxGrenadeIndicatorsChanged();
+			}
+		}
+	);
+
 	mp_language = pConsole->RegisterString("mp_language", "", VF_NOT_NET_SYNCED, "Change game language",
 		[](ICVar* pVar)
 		{

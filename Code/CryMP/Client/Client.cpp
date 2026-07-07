@@ -529,6 +529,7 @@ void Client::OnActionEvent(const SActionEvent & event)
 			m_pScriptCallbacks->OnDisconnect(reason, message);
 			m_pServerPAK->OnDisconnect(reason, message);
 			m_pDrawTools->OnDisconnect(reason, message);
+			m_pServerConnector->OnDisconnect();
 
 			// prevent evil servers from changing the client version
 			SetVersionInLua();

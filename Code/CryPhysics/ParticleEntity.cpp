@@ -712,6 +712,21 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 					event.pEntity[1] = hits[j].pCollider;
 					event.pForeignData[1] = pCollider->m_pForeignData;
 					event.iForeignData[1] = pCollider->m_iForeignData;
+
+					// CryMP start: Some collision/raycast paths can occasionally return an invalid part index
+					// (or collide with entities that currently have no parts). Validate before
+					// accessing m_parts[ipart] or calling functions that expect a valid part.
+					if (pCollider->m_nParts <= 0)
+					{
+						continue;
+					}
+
+					if ((unsigned int)hits[j].ipart >= (unsigned int)pCollider->m_nParts)
+					{
+						continue;
+					}
+					// CryMP end
+
 					RigidBody* pbody = pCollider->GetRigidBody(hits[j].ipart);
 					event.vloc[1] = pbody->v + (pbody->w ^ event.pt - pbody->pos);
 					event.mass[1] = pbody->M;

@@ -37,7 +37,7 @@ int __stdcall WinMain(void*, void*, char*, int)
 #else
 	try
 	{
-		launcher.Run();
+		Launcher().Run();
 	}
 	catch (const CryMP_Error& error)
 	{
