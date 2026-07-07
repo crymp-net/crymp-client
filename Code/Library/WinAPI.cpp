@@ -330,13 +330,20 @@ void WinAPI::FillNOP(void *address, size_t length)
  * @param data The data.
  * @param length Size of the data in bytes.
  */
-void WinAPI::FillMem(void *address, const void *data, size_t length)
+void WinAPI::FillMem(void *address, const void *data, size_t length, bool executable)
 {
 	DWORD oldProtection;
 
-	if (!VirtualProtect(address, length, PAGE_EXECUTE_READWRITE, &oldProtection))
-	{
-		throw StringTools::SysErrorFormat("VirtualProtect");
+	if (executable) {
+		if (!VirtualProtect(address, length, PAGE_EXECUTE_READWRITE, &oldProtection))
+		{
+			throw StringTools::SysErrorFormat("VirtualProtect");
+		}
+	} else {
+		if (!VirtualProtect(address, length, PAGE_READWRITE, &oldProtection))
+		{
+			throw StringTools::SysErrorFormat("VirtualProtect");
+		}
 	}
 
 	memcpy(address, data, length);
@@ -345,6 +352,7 @@ void WinAPI::FillMem(void *address, const void *data, size_t length)
 	{
 		throw StringTools::SysErrorFormat("VirtualProtect");
 	}
+
 }
 
 void WinAPI::HookWithJump(void* address, void* pNewFunc)

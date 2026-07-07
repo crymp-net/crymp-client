@@ -614,7 +614,7 @@ static void ReplaceLocalizationManager(void* pCrySystem)
 
 	// vtable hook
 	TGetLocalizationManager newFunc = &DummyCSystem::GetLocalizationManager;
-	WinAPI::FillMem(&vtable[105], &reinterpret_cast<void*&>(newFunc), sizeof(void*));
+	WinAPI::FillMem(&vtable[105], &reinterpret_cast<void*&>(newFunc), sizeof(void*), false);
 }
 
 static ITimeOfDay* CreateTimeOfDay()
@@ -759,7 +759,7 @@ static void HookNetworkGetService(void* pCryNetwork)
 
 	// vtable hook
 	auto pNewGetService = &DummyCNetwork::GetService;
-	WinAPI::FillMem(&pCNetworkVTable[7], &reinterpret_cast<void*&>(pNewGetService), sizeof(void*));
+	WinAPI::FillMem(&pCNetworkVTable[7], &reinterpret_cast<void*&>(pNewGetService), sizeof(void*), false);
 }
 
 struct DummyCSystem
@@ -824,7 +824,7 @@ static void HookSystemWarning(void* pCrySystem)
 
 	// vtable hook
 	auto pNewWarning = &DummyCSystem::Warning;
-	WinAPI::FillMem(&pCSystemVTable[21], &reinterpret_cast<void*&>(pNewWarning), sizeof(void*));
+	WinAPI::FillMem(&pCSystemVTable[21], &reinterpret_cast<void*&>(pNewWarning), sizeof(void*), false);
 }
 
 static void LogRealWindowsBuild(Logger& logger)

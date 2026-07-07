@@ -689,7 +689,7 @@ bool Vehicle::PatchVTable()
 	// use original IGameObjectExtension and IVehicle functions from CryAction DLL except the following
 	vtable[0] = current_vtable[0];  // Vehicle::Init
 
-	WinAPI::FillMem(current_vtable, vtable, sizeof(vtable));
+	WinAPI::FillMem(current_vtable, vtable, sizeof(vtable), false);
 
 	return true;
 }

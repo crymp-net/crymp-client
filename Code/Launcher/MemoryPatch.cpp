@@ -11,11 +11,11 @@ static void FillNop(void* base, std::size_t offset, std::size_t size)
 	WinAPI::FillNOP(address, size);
 }
 
-static void FillMem(void* base, std::size_t offset, const void* data, std::size_t dataSize)
+static void FillMem(void* base, std::size_t offset, const void* data, std::size_t dataSize, bool executable = true)
 {
 	void* address = static_cast<unsigned char*>(base) + offset;
 
-	WinAPI::FillMem(address, data, dataSize);
+	WinAPI::FillMem(address, data, dataSize, executable);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -779,7 +779,7 @@ void MemoryPatch::CryRenderNULL::DisableDebugRenderer(void* pCryRenderNULL)
 		}
 
 		// install the new vtable
-		FillMem(pCryRenderNULL, renderAuxGeomVTableOffset, newVTable, sizeof(newVTable));
+		FillMem(pCryRenderNULL, renderAuxGeomVTableOffset, newVTable, sizeof(newVTable), false);
 	}
 }
 

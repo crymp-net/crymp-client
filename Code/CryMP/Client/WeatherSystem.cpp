@@ -33,7 +33,7 @@ CWeatherSystem::CWeatherSystem() {
 		auto update = &CWeatherSystem::TODUpdate;
 		pTODUpdate = *reinterpret_cast<ITODUpdate*>(pTODVtable + 9);
 
-		WinAPI::FillMem(&pTODVtable[9], &reinterpret_cast<void*&>(update), sizeof(void*));
+		WinAPI::FillMem(&pTODVtable[9], &reinterpret_cast<void*&>(update), sizeof(void*), false);
 		tod_hooked = true;
 	}
 }
