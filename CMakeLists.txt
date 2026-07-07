@@ -716,6 +716,7 @@ add_library(Base OBJECT
 	Code/CrySystem/ResourceList.h
 	Code/CrySystem/StreamEngine.cpp
 	Code/CrySystem/StreamEngine.h
+	Code/Library/CodeWall.h
 	Code/Library/CPUID.cpp
 	Code/Library/CPUID.h
 	Code/Library/CrashLogger.cpp

@@ -387,6 +387,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 		m_pSoundMoods->Update();
 	}
 
+	g_pGameCVars->cl_codewall = WinAPI::GetCodeWall();
 	m_pFramework->PostUpdate(true, updateFlags);
 	m_pWeatherSystem->Update(frameTime);
 	m_pAdManager->Update(frameTime);

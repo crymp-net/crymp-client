@@ -1446,6 +1446,7 @@ void Launcher::Run()
 
 	this->LoadEngine();
 	this->PatchEngine();
+	WinAPI::InitializeCodeWallExternal();
 
 	RandomGenerator::Init();
 
@@ -1466,6 +1467,8 @@ void Launcher::Run()
 
 		this->StartEngine();
 
+		WinAPI::InitializeCodeWallInternal();
+		CryLogAlways("Codewall status: %d", WinAPI::GetCodeWall());
 		gClient->UpdateLoop();
 #endif
 	}
