@@ -19,7 +19,8 @@ namespace CodeWall {
 		double clkLastDiscrepancy = 0.0;
 	};
 
-	int  InitializeCodeWallInternal();
+	int  InitializeCodeWallInternalACG();
+	int  InitializeCodeWallInternalCIG();
 	int  InitializeCodeWallExternal();
 	const CodeWallStatus& UpdateCodeWall(bool ingame, float frameTime);
 	const CodeWallStatus& GetCodeWallStatus();

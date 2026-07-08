@@ -1604,7 +1604,8 @@ void Launcher::Run()
 
 		this->StartEngine();
 
-		CodeWall::InitializeCodeWallInternal();
+		CodeWall::InitializeCodeWallInternalACG();
+		CodeWall::InitializeCodeWallInternalCIG();
 		gClient->UpdateLoop();
 #endif
 	}

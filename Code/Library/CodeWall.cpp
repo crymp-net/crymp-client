@@ -12,7 +12,7 @@
 
 static CodeWall::CodeWallStatus status;
 
-int CodeWall::InitializeCodeWallInternal() {
+int CodeWall::InitializeCodeWallInternalACG() {
 	HMODULE hKernel32 = GetModuleHandleA("kernel32.dll");
 	if (!hKernel32) return status.status;
 
@@ -25,7 +25,36 @@ int CodeWall::InitializeCodeWallInternal() {
 	PFN_SetProcessMitigationPolicy pSetProcessMitigationPolicy =
 		(PFN_SetProcessMitigationPolicy)GetProcAddress(hKernel32, "SetProcessMitigationPolicy");
 
-	// 1. Enable Code Integrity Guard (CIG)
+	// Enable Arbitrary Code Guard (ACG)
+	if (pSetProcessMitigationPolicy && (status.status & eCW_ACG) == 0) {
+		// ProcessDynamicCodePolicy is enum value 2
+		PROCESS_MITIGATION_DYNAMIC_CODE_POLICY dynamicCodePolicy = { 0 };
+		dynamicCodePolicy.ProhibitDynamicCode = 1;
+
+		if (pSetProcessMitigationPolicy((PROCESS_MITIGATION_POLICY)2, &dynamicCodePolicy, sizeof(dynamicCodePolicy))) {
+			status.changed = true;
+			status.status |= eCW_ACG;
+		}
+	}
+
+	return status.status;
+}
+
+
+int CodeWall::InitializeCodeWallInternalCIG() {
+	HMODULE hKernel32 = GetModuleHandleA("kernel32.dll");
+	if (!hKernel32) return status.status;
+
+	typedef BOOL(WINAPI* PFN_SetProcessMitigationPolicy)(
+		PROCESS_MITIGATION_POLICY MitigationPolicy,
+		PVOID                    lpBuffer,
+		SIZE_T                   dwLength
+		);
+
+	PFN_SetProcessMitigationPolicy pSetProcessMitigationPolicy =
+		(PFN_SetProcessMitigationPolicy)GetProcAddress(hKernel32, "SetProcessMitigationPolicy");
+
+	// Enable Code Integrity Guard (CIG)
 	if (pSetProcessMitigationPolicy && (status.status & eCW_CIG) == 0) {
 		// ProcessSignaturePolicy is enum value 8
 		PROCESS_MITIGATION_BINARY_SIGNATURE_POLICY sigPolicy = { 0 };
