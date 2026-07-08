@@ -127,16 +127,16 @@ const CodeWall::CodeWallStatus& CodeWall::UpdateCodeWall(bool ingame, float fram
 
 	int before = status.status;
 	if (ingame) {
-		if (elapsed - lastCheckClock > 10.0f) {
+		if (elapsed - lastCheckClock >= 10.0f) {
 			time_t now = time(NULL);
 			time_t elapsedTime = now - lastCheckTime;
-			status.shLastDiscrepancy = elapsedTime - (elapsed - lastCheckClock);
+			status.clkLastDiscrepancy = elapsedTime - (elapsed - lastCheckClock);
 
-			if (std::abs(status.shLastDiscrepancy) > 0.5) {
-				status.shDiscrepancies++;
+			if (std::abs(status.clkLastDiscrepancy) > 0.5) {
+				status.clkDiscrepancies++;
 			}
 			else {
-				status.shDiscrepancies = 0;
+				status.clkDiscrepancies = 0;
 			}
 
 			lastCheckClock = elapsed;
@@ -144,18 +144,18 @@ const CodeWall::CodeWallStatus& CodeWall::UpdateCodeWall(bool ingame, float fram
 		}
 	} else {
 		time_t now = time(NULL);
-		status.shDiscrepancies = 0;
-		status.shLastDiscrepancy = 0.0;
+		status.clkDiscrepancies = 0;
+		status.clkLastDiscrepancy = 0.0;
 		lastCheckClock = elapsed;
 		lastCheckTime = now;
 	}
 
-	if (status.shDiscrepancies >= 3) {
-		status.status |= (int)eCW_SH;
+	if (status.clkDiscrepancies >= 3) {
+		status.status &= ~(int)eCW_CLK;
 	} else {
-		status.status &= ~(int)eCW_SH;
+		status.status |= (int)eCW_CLK;
 	}
-	status.changed = status.status != before;
 
+	status.changed = status.status != before;
 	return status;
 }

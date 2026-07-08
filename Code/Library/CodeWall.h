@@ -2,17 +2,20 @@
 
 namespace CodeWall {
 	enum ECodeWall {
-		eCW_CIG = 1,
-		eCW_ACG = 2,
-		eCW_DACL = 4,
-		eCW_SH = 8
+		eCW_CLK = 1,
+		eCW_CIG = 2,
+		eCW_ACG = 4,
+		eCW_DACL = 8,
+
+		eCW_Default = eCW_CLK
 	};
 
 	struct CodeWallStatus {
 		bool changed = true;
-		int status = 0;
-		int shDiscrepancies = 0;
-		double shLastDiscrepancy = 0.0;
+		int status = (int)eCW_Default;
+
+		int clkDiscrepancies = 0;
+		double clkLastDiscrepancy = 0.0;
 	};
 
 	int  InitializeCodeWallInternal();

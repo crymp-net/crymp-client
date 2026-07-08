@@ -391,7 +391,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 	if (expectedCW != 0) {
 		static bool okFirstTime = true;
 		static bool okInPast = true;
-		bool ok = expectedCW == cwStatus.status;
+		bool ok = (expectedCW & cwStatus.status) == cwStatus.status;
 		if (okFirstTime || (okInPast != ok)) {
 			if (gEnv->bMultiplayer) {
 				INetChannel* pClientChannel = m_pFramework->GetClientChannel();
