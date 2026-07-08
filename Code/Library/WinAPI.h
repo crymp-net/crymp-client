@@ -103,9 +103,6 @@ namespace WinAPI
 
 	bool HookIATByAddress(void *pDLL, void *pFunc, void *pNewFunc);
 	bool HookIATByName(void *pDLL, const char *dllName, const char *funcName, void *pNewFunc);
-	int  InitializeCodeWallInternal();
-	int  InitializeCodeWallExternal();
-	int  GetCodeWall();
 
 	//////////
 	// Time //

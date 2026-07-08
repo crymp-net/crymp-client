@@ -60,6 +60,7 @@
 #include "CryMP/Client/Advertising.h"
 #include "CryMP/Client/HealthManager.h"
 
+#include "Library/CodeWall.h"
 #include "Library/WinAPI.h"
 
 #if defined(CRYSIS_BETA)
@@ -377,9 +378,33 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 			WinAPI::Wait(target - elapsed);
 		}
 	}
-	float frameTime = gEnv->pTimer->GetFrameTime();
 
-	if (m_pFramework->IsGamePaused() == false)
+	bool paused = m_pFramework->IsGamePaused();
+	float frameTime = gEnv->pTimer->GetFrameTime();
+	const CodeWall::CodeWallStatus& cwStatus = CodeWall::UpdateCodeWall(
+		gEnv->bMultiplayer && !paused && m_pFramework->GetClientActor() != NULL,
+		frameTime
+	);
+	g_pGameCVars->cl_codewall = cwStatus.status;
+
+	int expectedCW = 7; // g_pGameCVars->sv_codewall
+	if (expectedCW != 0) {
+		static bool okFirstTime = true;
+		static bool okInPast = true;
+		bool ok = expectedCW == cwStatus.status;
+		if (okFirstTime || (okInPast != ok)) {
+			if (gEnv->bMultiplayer) {
+				INetChannel* pClientChannel = m_pFramework->GetClientChannel();
+				if (pClientChannel) {
+					pClientChannel->Disconnect(eDC_UserRequested, "User left the game");
+				}
+			}
+			okFirstTime = false;
+			okInPast = ok;
+		}
+	}
+
+	if (paused == false)
 	{
 		m_pWeaponSystem->Update(frameTime);
 
@@ -387,7 +412,6 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 		m_pSoundMoods->Update();
 	}
 
-	g_pGameCVars->cl_codewall = WinAPI::GetCodeWall();
 	m_pFramework->PostUpdate(true, updateFlags);
 	m_pWeatherSystem->Update(frameTime);
 	m_pAdManager->Update(frameTime);

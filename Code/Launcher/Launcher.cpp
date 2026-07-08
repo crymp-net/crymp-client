@@ -27,6 +27,7 @@
 #include "CrySystem/Logger.h"
 #include "CrySystem/RandomGenerator.h"
 #include "CrySystem/StreamEngine.h"
+#include "Library/CodeWall.h"
 #include "Library/CrashLogger.h"
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
@@ -1551,7 +1552,7 @@ struct DummySystemCallback : public ISystemUserCallback
 
 void Launcher::Run()
 {
-	WinAPI::InitializeCodeWallExternal();
+	CodeWall::InitializeCodeWallExternal();
 	DummySystemCallback dummyCallback;
 
 	m_params.hInstance = WinAPI::DLL::Get(nullptr);  // EXE handle
@@ -1603,7 +1604,7 @@ void Launcher::Run()
 
 		this->StartEngine();
 
-		WinAPI::InitializeCodeWallInternal();
+		CodeWall::InitializeCodeWallInternal();
 		gClient->UpdateLoop();
 #endif
 	}
