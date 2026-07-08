@@ -387,7 +387,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 	);
 	g_pGameCVars->cl_codewall = cwStatus.status;
 
-	int expectedCW = 7; // g_pGameCVars->sv_codewall
+	int expectedCW = g_pGameCVars->sv_codewall;
 	if (expectedCW != 0) {
 		static bool okFirstTime = true;
 		static bool okInPast = true;
