@@ -32,7 +32,6 @@
 #include "Menus/FlashMenuObject.h"
 #include "Menus/MPHub.h"
 
-#include "Library/WinAPI.h"
 
 static void OnChangeThirdPerson(ICVar* pCVar)
 {
