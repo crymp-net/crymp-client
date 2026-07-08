@@ -50,6 +50,13 @@ void* g_pCrySystem = nullptr;
 void* g_pCryRenderD3D9 = nullptr;
 void* g_pCryRenderD3D10 = nullptr;
 void* g_pCryRenderNULL = nullptr;
+void* g_pCryMovie = nullptr;
+void* g_pCryInput = nullptr;
+void* g_pCryFont = nullptr;
+void* g_pCryAnimation = nullptr;
+void* g_pCryEntitySystem = nullptr;
+void* g_pCrySoundSystem = nullptr;
+void* g_pCompressATI2 = nullptr;
 void* g_pFmodEx = nullptr;
 void* g_pFmodEvent = nullptr;
 void* g_pFmodEventNet = nullptr;
@@ -1176,6 +1183,42 @@ void Launcher::LoadEngine()
 		throw StringTools::SysErrorFormat("Failed to load the Cry3DEngine DLL!");
 	}
 
+	g_pCryMovie = WinAPI::DLL::Load("CryMovie.dll");
+	if (!g_pCryMovie)
+	{
+		throw StringTools::SysErrorFormat("Failed to load the CryMovie DLL!");
+	}
+
+	g_pCryInput = WinAPI::DLL::Load("CryInput.dll");
+	if (!g_pCryInput)
+	{
+		throw StringTools::SysErrorFormat("Failed to load the CryInput DLL!");
+	}
+
+	g_pCryFont = WinAPI::DLL::Load("CryFont.dll");
+	if (!g_pCryFont)
+	{
+		throw StringTools::SysErrorFormat("Failed to load the CryFont DLL!");
+	}
+
+	g_pCryAnimation = WinAPI::DLL::Load("CryAnimation.dll");
+	if (!g_pCryAnimation)
+	{
+		throw StringTools::SysErrorFormat("Failed to load the CryAnimation DLL!");
+	}
+
+	g_pCryEntitySystem = WinAPI::DLL::Load("CryEntitySystem.dll");
+	if (!g_pCryEntitySystem)
+	{
+		throw StringTools::SysErrorFormat("Failed to load the CryEntitySystem DLL!");
+	}
+
+	g_pCrySoundSystem = WinAPI::DLL::Load("CrySoundSystem.dll");
+	if (!g_pCrySoundSystem)
+	{
+		throw StringTools::SysErrorFormat("Failed to load the CrySoundSystem DLL!");
+	}
+
 	if (m_params.isDedicatedServer)
 	{
 		g_pCryRenderNULL = WinAPI::DLL::Load("CryRenderNULL.dll");
@@ -1201,6 +1244,11 @@ void Launcher::LoadEngine()
 			{
 				throw StringTools::SysErrorFormat("Failed to load the CryRenderD3D9 DLL!");
 			}
+		}
+
+		g_pCompressATI2 = WinAPI::DLL::Load("CompressATI2.dll");
+		if (!g_pCompressATI2) {
+			throw StringTools::SysErrorFormat("Failed to load the CompressATI2 DLL!");
 		}
 
 #ifdef BUILD_64BIT
@@ -1604,8 +1652,8 @@ void Launcher::Run()
 
 		this->StartEngine();
 
-		CodeWall::InitializeCodeWallInternalACG();
 		CodeWall::InitializeCodeWallInternalCIG();
+		CodeWall::InitializeCodeWallInternalACG();
 		gClient->UpdateLoop();
 #endif
 	}

@@ -58,7 +58,7 @@ int CodeWall::InitializeCodeWallInternalCIG() {
 	if (pSetProcessMitigationPolicy && (status.status & eCW_CIG) == 0) {
 		// ProcessSignaturePolicy is enum value 8
 		PROCESS_MITIGATION_BINARY_SIGNATURE_POLICY sigPolicy = { 0 };
-		sigPolicy.MicrosoftSignedOnly = 1;
+		sigPolicy.MitigationOptIn = 1;
 
 		if (pSetProcessMitigationPolicy((PROCESS_MITIGATION_POLICY)8, &sigPolicy, sizeof(sigPolicy))) {
 			status.changed = true;
