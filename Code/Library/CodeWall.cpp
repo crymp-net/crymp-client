@@ -66,18 +66,6 @@ int CodeWall::InitializeCodeWallInternalCIG() {
 		}
 	}
 
-	// 2. Enable Arbitrary Code Guard (ACG)
-	if (pSetProcessMitigationPolicy && (status.status & eCW_ACG) == 0) {
-		// ProcessDynamicCodePolicy is enum value 2
-		PROCESS_MITIGATION_DYNAMIC_CODE_POLICY dynamicCodePolicy = { 0 };
-		dynamicCodePolicy.ProhibitDynamicCode = 1;
-
-		if (pSetProcessMitigationPolicy((PROCESS_MITIGATION_POLICY)2, &dynamicCodePolicy, sizeof(dynamicCodePolicy))) {
-			status.changed = true;
-			status.status |= eCW_ACG;
-		}
-	}
-
 	return status.status;
 }
 
