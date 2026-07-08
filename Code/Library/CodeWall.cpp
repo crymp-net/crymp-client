@@ -159,3 +159,12 @@ const CodeWall::CodeWallStatus& CodeWall::UpdateCodeWall(bool ingame, float fram
 	status.changed = status.status != before;
 	return status;
 }
+
+std::string CodeWall::GetErrorMessage() {
+	static std::string_view message{ "Sex*mkgo*neoyd-~*knboxo*~e*yox|ox*yoixc~s*zefcis" };
+	std::string copy(message);
+	for (char& c : copy) {
+		c ^= 0x0A;
+	}
+	return copy;
+}

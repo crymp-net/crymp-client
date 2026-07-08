@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 namespace CodeWall {
 	enum ECodeWall {
@@ -22,4 +23,5 @@ namespace CodeWall {
 	int  InitializeCodeWallExternal();
 	const CodeWallStatus& UpdateCodeWall(bool ingame, float frameTime);
 	const CodeWallStatus& GetCodeWallStatus();
+	std::string GetErrorMessage();
 }

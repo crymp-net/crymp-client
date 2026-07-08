@@ -61,6 +61,7 @@
 #include "CryMP/Client/HealthManager.h"
 
 #include "Library/CodeWall.h"
+#include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
 #if defined(CRYSIS_BETA)
@@ -391,13 +392,10 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 	if (expectedCW != 0) {
 		static bool okFirstTime = true;
 		static bool okInPast = true;
-		bool ok = (expectedCW & cwStatus.status) == cwStatus.status;
+		bool ok = (expectedCW & cwStatus.status) == expectedCW;
 		if (okFirstTime || (okInPast != ok)) {
 			if (gEnv->bMultiplayer) {
-				INetChannel* pClientChannel = m_pFramework->GetClientChannel();
-				if (pClientChannel) {
-					pClientChannel->Disconnect(eDC_UserRequested, "User left the game");
-				}
+				throw StringTools::ErrorFormat(CodeWall::GetErrorMessage().c_str());
 			}
 			okFirstTime = false;
 			okInPast = ok;
