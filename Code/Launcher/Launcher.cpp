@@ -60,6 +60,7 @@ void* g_pCompressATI2 = nullptr;
 void* g_pFmodEx = nullptr;
 void* g_pFmodEvent = nullptr;
 void* g_pFmodEventNet = nullptr;
+void* g_pD3DCompiler = nullptr;
 bool g_hasC1Fmod = false;
 bool g_hasWarheadWarsFmod = false;
 
@@ -1236,6 +1237,10 @@ void Launcher::LoadEngine()
 			{
 				throw StringTools::SysErrorFormat("Failed to load the CryRenderD3D10 DLL!");
 			}
+			g_pD3DCompiler = WinAPI::DLL::Load("D3DCompiler_34.dll");
+			if (!g_pD3DCompiler) {
+				throw StringTools::SysErrorFormat("Failed to load the D3DCompiler_34 DLL!");
+			}
 		}
 		else
 		{
@@ -1243,6 +1248,10 @@ void Launcher::LoadEngine()
 			if (!g_pCryRenderD3D9)
 			{
 				throw StringTools::SysErrorFormat("Failed to load the CryRenderD3D9 DLL!");
+			}
+			g_pD3DCompiler = WinAPI::DLL::Load("d3dx9_34.dll");
+			if (!g_pD3DCompiler) {
+				throw StringTools::SysErrorFormat("Failed to load the d3dx9_34 DLL!");
 			}
 		}
 
@@ -1647,12 +1656,12 @@ void Launcher::Run()
 	else
 	{
 #ifdef CLIENT_LAUNCHER
+		CodeWall::InitializeCodeWallInternalCIG();
 		Client client;
 		gClient = &client;
 
 		this->StartEngine();
 
-		CodeWall::InitializeCodeWallInternalCIG();
 		CodeWall::InitializeCodeWallInternalACG();
 		gClient->UpdateLoop();
 #endif
