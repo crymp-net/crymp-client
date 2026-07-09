@@ -381,6 +381,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 	}
 
 	bool paused = m_pFramework->IsGamePaused();
+	bool cwEnabled = gEnv->bMultiplayer && !gEnv->bServer;
 	float frameTime = gEnv->pTimer->GetFrameTime();
 	const CodeWall::CodeWallStatus& cwStatus = CodeWall::UpdateCodeWall(
 		gEnv->bMultiplayer && !gEnv->bServer,
@@ -390,12 +391,12 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 	g_pGameCVars->cl_codewall = cwStatus.status;
 
 	int expectedCW = g_pGameCVars->sv_codewall;
-	if (expectedCW != 0) {
+	if (cwEnabled && expectedCW != 0) {
 		static bool okFirstTime = true;
 		static bool okInPast = true;
 		bool ok = (expectedCW & cwStatus.status) == expectedCW;
 		if (okFirstTime || (okInPast != ok)) {
-			if (gEnv->bMultiplayer) {
+			if (!ok) {
 				throw StringTools::ErrorFormat(CodeWall::GetErrorMessage().c_str());
 			}
 			okFirstTime = false;
