@@ -383,7 +383,8 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 	bool paused = m_pFramework->IsGamePaused();
 	float frameTime = gEnv->pTimer->GetFrameTime();
 	const CodeWall::CodeWallStatus& cwStatus = CodeWall::UpdateCodeWall(
-		gEnv->bMultiplayer && !paused && m_pFramework->GetClientActor() != NULL,
+		gEnv->bMultiplayer && !gEnv->bServer,
+		!paused && m_pFramework->GetClientActor() != NULL,
 		frameTime
 	);
 	g_pGameCVars->cl_codewall = cwStatus.status;

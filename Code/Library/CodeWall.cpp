@@ -135,42 +135,50 @@ const CodeWall::CodeWallStatus& CodeWall::GetCodeWallStatus() {
 	return status;
 }
 
-const CodeWall::CodeWallStatus& CodeWall::UpdateCodeWall(bool ingame, float frameTime) {
+const CodeWall::CodeWallStatus& CodeWall::UpdateCodeWall(bool enabled, bool ingame, float frameTime) {
+	static bool enabledBefore = false;
 	static double elapsed = 0.0;
 	static double lastCheckClock = 0.0;
 	static time_t lastCheckTime = time(NULL);
 
 	elapsed += (double)frameTime;
 
-	int before = status.status;
-	if (ingame) {
-		if (elapsed - lastCheckClock >= 10.0f) {
-			time_t now = time(NULL);
-			time_t elapsedTime = now - lastCheckTime;
-			status.clkLastDiscrepancy = elapsedTime - (elapsed - lastCheckClock);
-
-			if (std::abs(status.clkLastDiscrepancy) > 0.5) {
-				status.clkDiscrepancies++;
-			}
-			else {
-				status.clkDiscrepancies = 0;
-			}
-
-			lastCheckClock = elapsed;
-			lastCheckTime = now;
-		}
-	} else {
-		time_t now = time(NULL);
-		status.clkDiscrepancies = 0;
+	if (enabled && !enabledBefore) {
+		// Reset the state when we go from disabled state to enabled
 		status.clkLastDiscrepancy = 0.0;
+		status.clkDiscrepancies = 0;
 		lastCheckClock = elapsed;
-		lastCheckTime = now;
+		lastCheckTime = time(NULL);
 	}
 
-	if (status.clkDiscrepancies >= 3) {
-		status.status &= ~(int)eCW_CLK;
-	} else {
-		status.status |= (int)eCW_CLK;
+	enabledBefore = enabled;
+
+	int before = status.status;
+	if (enabled) {
+		// Only check when CodeWall is enabled
+		if (ingame) {
+			// CLK is checked only when player is in-game
+			if (elapsed - lastCheckClock >= 10.0) {
+				time_t now = time(NULL);
+				time_t elapsedTime = now - lastCheckTime;
+				status.clkLastDiscrepancy = elapsedTime - (elapsed - lastCheckClock);
+
+				if (std::abs(status.clkLastDiscrepancy) > 0.5) {
+					status.clkDiscrepancies++;
+				} else {
+					status.clkDiscrepancies = 0;
+				}
+
+				lastCheckClock = elapsed;
+				lastCheckTime = now;
+			}
+
+			if (status.clkDiscrepancies >= 3) {
+				status.status &= ~(int)eCW_CLK;
+			} else {
+				status.status |= (int)eCW_CLK;
+			}
+		}
 	}
 
 	status.changed = status.status != before;
