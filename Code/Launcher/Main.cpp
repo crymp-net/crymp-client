@@ -26,9 +26,6 @@ int main()
 int __stdcall WinMain(void*, void*, char*, int)
 #endif
 {
-#ifdef CODEWALL_DEBUG
-	Launcher().Run();
-#else
 	try
 	{
 		Launcher().Run();
@@ -42,7 +39,6 @@ int __stdcall WinMain(void*, void*, char*, int)
 #endif
 		return 1;
 	}
-#endif
 
 	return 0;
 }
