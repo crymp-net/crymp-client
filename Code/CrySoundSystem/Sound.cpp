@@ -14,6 +14,9 @@
 #include "Sound.h"
 #include "SoundSystem.h"
 
+#include "CryGame/Game.h"
+#include "CryGame/GameCVars.h"
+
 CSoundSystem* CSound::m_pSSys = NULL;
 
 CSound::CSound(CSoundSystem* pSSys)
@@ -728,9 +731,23 @@ void CSound::Update()
 	m_bLoopModeHasChanged = false;
 	m_bFlagsChanged = false;
 
+	auto timeNow = gEnv->pTimer->GetFrameStartTime();
+
 	// touch the sound
 	if (m_bPlaying && m_pSoundBuffer)
-		m_pSoundBuffer->UpdateTimer(gEnv->pTimer->GetFrameStartTime());
+		m_pSoundBuffer->UpdateTimer(timeNow);
+
+	if (m_pSoundBuffer->GetProps()->eBufferType == btEVENT && m_bStartPlaybackLater && timeNow >= m_tPlayTime) {
+		m_IsPaused = false;
+		m_bStartPlaybackLater = false;
+
+		Update();
+
+		OnEvent(SOUND_EVENT_ON_START);
+		m_pPlatformSound->PlaySound(false);
+
+		m_tPlayTime = timeNow;
+	}
 }
 
 void CSound::SetSoundBufferPtr(CSoundBuffer* pNewSoundBuffer)
@@ -1338,6 +1355,15 @@ void CSound::StartPlayback(CListener* pListener, float& fDistanceToListener, flo
 
 	bool bOldLoadData = false;
 	bool bCreated = false;
+	double delay = 0.0;
+	
+	if (CGame* pGame = static_cast<CGame*>(gEnv->pGame)) {
+		if (SCVars* pCVars = pGame->GetCVars()) {
+			if (pCVars->mp_soundSpeed >= 1.0f) {
+				delay = fDistanceToListener / pCVars->mp_soundSpeed;
+			}
+		}
+	}
 
 	switch (m_pSoundBuffer->GetProps()->eBufferType)
 	{
@@ -1366,7 +1392,16 @@ void CSound::StartPlayback(CListener* pListener, float& fDistanceToListener, flo
 
 			bCreated = m_pPlatformSound->CreateSound(m_pSoundBuffer->GetAssetHandle(), NewSoundSettings);
 			m_fRatio = GetRatioByDistance(fDistanceToListener); // reset the current distance
-			m_tPlayTime = currTime;
+
+			if (delay < 0.1) {
+				delay = 0.0;
+				m_bStartPlaybackLater = false;
+			} else {
+				CryLog("Sound %s, distance: %.2f, delay: %.2f", GetName(), fDistanceToListener, delay);
+				m_bStartPlaybackLater = true;
+				bStartPlaybackNow = false;
+			}
+			m_tPlayTime = currTime + CTimeValue(delay);
 			// SetFadeTime(200);
 			// bAllocatedChannel		= true;
 			// bStarted = true;
