@@ -176,6 +176,10 @@ function SafeWriting:OnTimerTick()
 			if mapver ~= 0 then
 				map = map .. "|" .. mapver
 			end
+			pakdl = ""
+			if se.ServerPakUrl then
+				pakdl = se.ServerPakUrl
+			end
 			local desc = se.ServerDescription or ""
 			local mappic = se.MapPictures and (se.MapPictures[GetMapName()] or "") or ""
 			local local_ip = se.LocalIP and se.LocalIP or (CPPAPI and CPPAPI.GetLocalIP() or "localhost")
@@ -184,8 +188,8 @@ function SafeWriting:OnTimerTick()
 			if not TOLD_EXISTENTION and (not MASTER_COOKIE) then
 				local rules = GetGameRules()
 				local page = urlfmt(
-					"/api/reg.php?port=%d&maxpl=%d&numpl=%d&name=%s&pass=%s&map=%s&timel=%d&mapdl=%s&ver=%d&ranked=%d&desc=%s&mappic=%s&local=%s&pak=%s&rules=%s&teams=%d",
-					port, maxpl, numpl, svn, svp, map, g_gameRules.game:GetRemainingGameTime(), mapdl, ver, rnk, desc,
+					"/api/reg.php?port=%d&maxpl=%d&numpl=%d&name=%s&pass=%s&map=%s&timel=%d&mapdl=%s&pak=%s&ver=%d&ranked=%d&desc=%s&mappic=%s&local=%s&pak=%s&rules=%s&teams=%d",
+					port, maxpl, numpl, svn, svp, map, g_gameRules.game:GetRemainingGameTime(), mapdl, pakdl, ver, rnk, desc,
 					mappic, local_ip, pak, rules.name, rules.teams)
 				AsyncConnectHTTP(se.MasterHost or "crymp.org", page, se.ForceGET and "GET" or "POST", 443, true, 15,
 					function(c)
@@ -226,8 +230,8 @@ function SafeWriting:OnTimerTick()
 				map = map or "unknown"
 				local rules = GetGameRules()
 				local page = urlfmt(
-					"/api/up.php?port=%d&numpl=%d&name=%s&pass=%s&cookie=%s&map=%s&timel=%d&mapdl=%s&ver=%d&ranked=%d&players=%s&desc=%s&mappic=%s&local=%s&pak=%s&rules=%s&teams=%d",
-					port, numpl, svn, svp, MASTER_COOKIE, map, g_gameRules.game:GetRemainingGameTime(), mapdl, ver, rnk,
+					"/api/up.php?port=%d&numpl=%d&name=%s&pass=%s&cookie=%s&map=%s&timel=%d&mapdl=%s&pak=%s&ver=%d&ranked=%d&players=%s&desc=%s&mappic=%s&local=%s&pak=%s&rules=%s&teams=%d",
+					port, numpl, svn, svp, MASTER_COOKIE, map, g_gameRules.game:GetRemainingGameTime(), mapdl, pakdl, ver, rnk,
 					plstring, desc, mappic, local_ip, pak, rules.name, rules.teams)
 				AsyncConnectHTTP(se.MasterHost or "crymp.org", page, se.ForceGET and "GET" or "POST", 443, true, 15,
 					function(c)

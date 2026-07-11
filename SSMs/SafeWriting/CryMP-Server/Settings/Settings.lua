@@ -19,6 +19,10 @@ SafeWriting.Settings={
 	ServerDescription="A new CryMP server";	--description for your server
 	APIKey=nil;	--leave this empty unless you are a trusted server
 	
+	--if set, clients will download and load the pak file when connecting to this server
+	--for example: ServerPakUrl="https://example.com/example.pak";
+	ServerPakUrl=nil;
+
 	OptimizeSpeed=false;	--makes server do less output (recommended for non-stop servers)
 	HomeCountry="unknown";	--set it to anything, for example: sk,cz,pl,ua,at,ru,de,uk,...
 	EnableSafeWritingExe=true;	--enables using SSMSafeWriting.exe for mod
