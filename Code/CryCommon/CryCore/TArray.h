@@ -92,7 +92,8 @@ public:
 	// puts the pointer to the actually allocated block before the aligned memory block
 	pointer allocate (size_type _Count)
 	{
-		pointer p = (pointer)CryMalloc(0x10+_Count*sizeof(T));
+		std::size_t allocatedSize = 0;
+		pointer p = (pointer)CryMalloc(0x10+_Count*sizeof(T), allocatedSize);
 		pointer pResult = (pointer)(((UINT_PTR)p+0x10)&~0xF);
 		// save the offset to the actual allocated address behind the useable aligned address
 		reinterpret_cast<int*>(pResult)[-1] = (char*)p - (char*)pResult;
@@ -224,7 +225,8 @@ public:
 			m_pElements = NULL;
 		else
 		{
-			m_pElements = (T *)CryRealloc(m_pElements, m_nAllocatedCount*sizeof(T));
+			std::size_t allocatedSize = 0;
+			m_pElements = (T *)CryRealloc(m_pElements, m_nAllocatedCount*sizeof(T), allocatedSize);
 			assert (m_pElements);
 		}
   }

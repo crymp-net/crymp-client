@@ -485,6 +485,7 @@ struct SCVars
 	float		mp_explosiveRemovalTime;
 	int         mp_explosion_mfx;
 	int			mp_fpsLimit;
+	float		mp_soundSpeed;
 	ICVar*      mp_language;
 
 	int			mp_chat;

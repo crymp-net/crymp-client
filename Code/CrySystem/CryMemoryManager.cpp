@@ -1,4 +1,5 @@
-#include <array>
+#include <atomic>
+#include <cinttypes>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -17,7 +18,6 @@
 
 #include "CryCommon/CryCore/CryMalloc.h"
 #include "CryCommon/CrySystem/ISystem.h"
-#include "Library/WinAPI.h"
 
 #include "CryMemoryManager.h"
 
@@ -38,6 +38,57 @@ static char g_fault_message[256];
 	// summon crash logger to pickup our message and log the callstack etc.
 	__debugbreak();
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Statistics
+////////////////////////////////////////////////////////////////////////////////
+
+struct Stats
+{
+	std::atomic_uint64_t mallocCalls{};
+	std::atomic_uint64_t reallocCalls{};
+	std::atomic_uint64_t freeCalls{};
+	std::atomic_uint64_t sizeCalls{};
+	std::atomic_uint64_t crtMallocCalls{};
+	std::atomic_uint64_t crtFreeCalls{};
+
+	std::atomic_uint64_t safePoolBlocks{};
+	std::atomic_uint64_t safePoolFreeBlocks{};
+	std::atomic_uint64_t safePoolAllocs{};
+	std::atomic_uint64_t safePoolFailedAllocs{};
+	std::atomic_uint64_t safePoolDeallocs{};
+
+	void Log()
+	{
+		CryLogAlways("------------------------------- CryMemoryManager -------------------------------");
+
+		CryLogAlways("Calls:");
+		CryLogAlways("- CryMalloc: $5%" PRIu64 "$o + $5%" PRIu64 "$o",
+			mallocCalls.load(std::memory_order_relaxed),
+			crtMallocCalls.load(std::memory_order_relaxed));
+		CryLogAlways("- CryRealloc: $5%" PRIu64 "$o",
+			reallocCalls.load(std::memory_order_relaxed));
+		CryLogAlways("- CryFree: $5%" PRIu64 "$o + $5%" PRIu64 "$o",
+			freeCalls.load(std::memory_order_relaxed),
+			crtFreeCalls.load(std::memory_order_relaxed));
+		CryLogAlways("- CryGetMemSize: $5%" PRIu64 "$o",
+			sizeCalls.load(std::memory_order_relaxed));
+
+		CryLogAlways("SafePool:");
+		CryLogAlways("- Blocks: $5%" PRIu64 "$o ($5%" PRIu64 "$o free)",
+			safePoolBlocks.load(std::memory_order_relaxed),
+			safePoolFreeBlocks.load(std::memory_order_relaxed));
+		CryLogAlways("- Allocs: $5%" PRIu64 "$o ($5%" PRIu64 "$o failed)",
+			safePoolAllocs.load(std::memory_order_relaxed),
+			safePoolFailedAllocs.load(std::memory_order_relaxed));
+		CryLogAlways("- Deallocs: $5%" PRIu64 "$o",
+			safePoolDeallocs.load(std::memory_order_relaxed));
+
+		CryLogAlways("--------------------------------------------------------------------------------");
+	}
+};
+
+static Stats g_stats;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Debug allocator
@@ -340,109 +391,137 @@ static DebugAllocator& GetDebugAlloc()
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// Workaround for pointer truncation in 64-bit STLport allocator
+// Workaround for pointer truncation in 64-bit CryMemoryAllocator allocator
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef BUILD_64BIT
 
-// TODO: fix and remove
-struct STLport_Allocator
+class SafePool
 {
+public:
 	static constexpr std::size_t BLOCK_SIZE = 0x80000;
-	static constexpr std::size_t BLOCK_COUNT = 2048;
+	static constexpr std::size_t BLOCK_COUNT = 2048;  // 0x80000 * 2048 = 1 GiB should be enough for anyone
 
 	static_assert(BLOCK_SIZE >= sizeof(void*));
 	static_assert(BLOCK_COUNT > 0);
 
-	void* freeList = nullptr;
-	void* freeListLast = nullptr;
-	std::mutex mutex;
-	std::array<void*, BLOCK_COUNT> blocks = {};
+private:
+	void* m_pool = nullptr;
+	std::size_t m_blockCount = 0;
+	void* m_freeList = nullptr;
+	void* m_freeListLast = nullptr;
+	std::mutex m_mutex;
 
-	STLport_Allocator()
+public:
+	SafePool()
 	{
-		for (std::size_t i = 0; i < BLOCK_COUNT; i++)
+		// use 0x80000000 .. 0xc0000000 for the pool to avoid interfering with DLL placement
+		void* hint = reinterpret_cast<void*>(0x80000000ULL);
+
+		void* pool = VirtualAlloc(hint, BLOCK_SIZE * BLOCK_COUNT, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+		if (!pool)
 		{
-			void* block = VirtualAlloc(nullptr, BLOCK_SIZE, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-			if (!block)
+			return;
+		}
+
+		if (pool != hint)
+		{
+			VirtualFree(pool, 0, MEM_RELEASE);
+			return;
+		}
+
+		m_pool = pool;
+
+		std::size_t i = 0;
+		for (; i < BLOCK_COUNT; i++)
+		{
+			const std::uintptr_t address = reinterpret_cast<std::uintptr_t>(pool) + (i * BLOCK_SIZE);
+
+			// make sure the whole block is below 4 GB
+			if ((address + BLOCK_SIZE) > 0x100000000ULL)
 			{
-				Die("%s: VirtualAlloc failed with error code %u", __FUNCTION__, GetLastError());
+				break;
 			}
 
-			if (!this->freeList)
+			void* block = reinterpret_cast<void*>(address);
+
+			if (!m_freeList)
 			{
-				this->freeList = block;
-				this->freeListLast = block;
+				m_freeList = block;
+				m_freeListLast = block;
 			}
 			else
 			{
-				*static_cast<void**>(this->freeListLast) = block;
-				this->freeListLast = block;
-			}
-
-			blocks[i] = block;
-
-			if ((reinterpret_cast<std::uintptr_t>(block) + BLOCK_SIZE) > 0x100000000UL)
-			{
-				Die("%s: End of %p beyond 4 GiB boundary", __FUNCTION__, block);
+				*static_cast<void**>(m_freeListLast) = block;
+				m_freeListLast = block;
 			}
 		}
+
+		m_blockCount = i;
+		g_stats.safePoolBlocks.store(i, std::memory_order_relaxed);
+		g_stats.safePoolFreeBlocks.store(i, std::memory_order_relaxed);
 	}
 
 	void* Allocate()
 	{
-		std::lock_guard lock(this->mutex);
+		g_stats.safePoolAllocs.fetch_add(1, std::memory_order_relaxed);
 
-		void* block = this->freeList;
+		std::lock_guard lock(m_mutex);
 
-		if (this->freeList == this->freeListLast)
+		if (!m_freeList)
 		{
-			this->freeList = nullptr;
-			this->freeListLast = nullptr;
+			g_stats.safePoolFailedAllocs.fetch_add(1, std::memory_order_relaxed);
+			return nullptr;
+		}
+
+		void* block = m_freeList;
+
+		if (m_freeList == m_freeListLast)
+		{
+			m_freeList = nullptr;
+			m_freeListLast = nullptr;
 		}
 		else
 		{
-			this->freeList = *static_cast<void**>(this->freeList);
+			m_freeList = *static_cast<void**>(m_freeList);
 		}
 
-		if (!block)
-		{
-			Die("%s: Out of memory", __FUNCTION__);
-		}
+		g_stats.safePoolFreeBlocks.fetch_sub(1, std::memory_order_relaxed);
 
 		return block;
 	}
 
 	void Deallocate(void* block)
 	{
-		std::lock_guard lock(this->mutex);
+		g_stats.safePoolDeallocs.fetch_add(1, std::memory_order_relaxed);
 
-		if (!this->freeList)
+		std::lock_guard lock(m_mutex);
+
+		if (!m_freeList)
 		{
-			this->freeList = block;
-			this->freeListLast = block;
+			m_freeList = block;
+			m_freeListLast = block;
 		}
 		else
 		{
-			*static_cast<void**>(this->freeListLast) = block;
-			this->freeListLast = block;
+			*static_cast<void**>(m_freeListLast) = block;
+			m_freeListLast = block;
 		}
+
+		g_stats.safePoolFreeBlocks.fetch_add(1, std::memory_order_relaxed);
 	}
 
 	bool Contains(void* ptr) const
 	{
-		bool result = false;
+		const std::uintptr_t address = reinterpret_cast<std::uintptr_t>(ptr);
+		const std::uintptr_t poolBegin = reinterpret_cast<std::uintptr_t>(m_pool);
+		const std::uintptr_t poolEnd = poolBegin + (m_blockCount * BLOCK_SIZE);
 
-		for (void* block : this->blocks)
-		{
-			result |= (block == ptr);
-		}
-
-		return result;
+		return address >= poolBegin && address < poolEnd && !(address % BLOCK_SIZE);
 	}
 };
 
-STLport_Allocator* g_STLport_Allocator = nullptr;
+static SafePool* g_safePool;
 
 #endif
 
@@ -450,18 +529,22 @@ STLport_Allocator* g_STLport_Allocator = nullptr;
 // Hooked functions
 ////////////////////////////////////////////////////////////////////////////////
 
-static void* CryMalloc_hook_internal(std::size_t size, std::size_t& allocatedSize)
+static void* CryMalloc_internal(std::size_t size, std::size_t& allocatedSize)
 {
 	allocatedSize = 0;
 
-#ifdef BUILD_64BIT
-	if (g_STLport_Allocator && size == STLport_Allocator::BLOCK_SIZE)
+	if (!size)
 	{
-		void* ptr = g_STLport_Allocator->Allocate();
+		return nullptr;
+	}
 
+#ifdef BUILD_64BIT
+	if (g_safePool && size == SafePool::BLOCK_SIZE)
+	{
+		void* ptr = g_safePool->Allocate();
 		if (ptr)
 		{
-			TracyAllocN(ptr, size, "STLport");
+			TracyAllocN(ptr, size, "SafePool");
 			allocatedSize = size;
 		}
 
@@ -484,35 +567,37 @@ static void* CryMalloc_hook_internal(std::size_t size, std::size_t& allocatedSiz
 	return ptr;
 }
 
-static void* CryMalloc_hook(std::size_t size, std::size_t& allocatedSize)
+CRYMALLOC_API void* CryMalloc(std::size_t size, std::size_t& allocatedSize)
 {
+	g_stats.mallocCalls.fetch_add(1, std::memory_order_relaxed);
+
 	if (gEnv)
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SYSTEM);
 
-		return CryMalloc_hook_internal(size, allocatedSize);
+		return CryMalloc_internal(size, allocatedSize);
 	}
 	else
 	{
-		return CryMalloc_hook_internal(size, allocatedSize);
+		return CryMalloc_internal(size, allocatedSize);
 	}
 }
 
-static void* CryRealloc_hook_internal(void* oldPtr, std::size_t newSize, std::size_t& allocatedSize)
+static void* CryRealloc_internal(void* oldPtr, std::size_t newSize, std::size_t& allocatedSize)
 {
 	if (!oldPtr)
 	{
-		return CryMalloc_hook_internal(newSize, allocatedSize);
+		return CryMalloc_internal(newSize, allocatedSize);
 	}
 
 	std::size_t oldSize = 0;
 
 #ifdef BUILD_64BIT
-	const bool isSTLport = g_STLport_Allocator && g_STLport_Allocator->Contains(oldPtr);
+	const bool isSafePool = g_safePool && g_safePool->Contains(oldPtr);
 
-	if (isSTLport)
+	if (isSafePool)
 	{
-		oldSize = STLport_Allocator::BLOCK_SIZE;
+		oldSize = SafePool::BLOCK_SIZE;
 	}
 	else
 #endif
@@ -524,15 +609,18 @@ static void* CryRealloc_hook_internal(void* oldPtr, std::size_t newSize, std::si
 #endif
 	}
 
-	void* newPtr = CryMalloc_hook_internal(newSize, allocatedSize);
+	void* newPtr = CryMalloc_internal(newSize, allocatedSize);
 
-	std::memcpy(newPtr, oldPtr, (oldSize <= newSize) ? oldSize : newSize);
+	if (newPtr)
+	{
+		std::memcpy(newPtr, oldPtr, (oldSize <= newSize) ? oldSize : newSize);
+	}
 
 #ifdef BUILD_64BIT
-	if (isSTLport)
+	if (isSafePool)
 	{
-		TracyFreeN(oldPtr, "STLport");
-		g_STLport_Allocator->Deallocate(oldPtr);
+		TracyFreeN(oldPtr, "SafePool");
+		g_safePool->Deallocate(oldPtr);
 	}
 	else
 #endif
@@ -548,26 +636,33 @@ static void* CryRealloc_hook_internal(void* oldPtr, std::size_t newSize, std::si
 	return newPtr;
 }
 
-static void* CryRealloc_hook(void* oldPtr, std::size_t newSize, std::size_t& allocatedSize)
+CRYMALLOC_API void* CryRealloc(void* oldPtr, std::size_t newSize, std::size_t& allocatedSize)
 {
+	g_stats.reallocCalls.fetch_add(1, std::memory_order_relaxed);
+
 	if (gEnv)
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SYSTEM);
 
-		return CryRealloc_hook_internal(oldPtr, newSize, allocatedSize);
+		return CryRealloc_internal(oldPtr, newSize, allocatedSize);
 	}
 	else
 	{
-		return CryRealloc_hook_internal(oldPtr, newSize, allocatedSize);
+		return CryRealloc_internal(oldPtr, newSize, allocatedSize);
 	}
 }
 
-static std::size_t CryGetMemSize_hook_internal(void* ptr)
+static std::size_t CryGetMemSize_internal(void* ptr)
 {
-#ifdef BUILD_64BIT
-	if (g_STLport_Allocator && g_STLport_Allocator->Contains(ptr))
+	if (!ptr)
 	{
-		return STLport_Allocator::BLOCK_SIZE;
+		return 0;
+	}
+
+#ifdef BUILD_64BIT
+	if (g_safePool && g_safePool->Contains(ptr))
+	{
+		return SafePool::BLOCK_SIZE;
 	}
 #endif
 
@@ -578,21 +673,23 @@ static std::size_t CryGetMemSize_hook_internal(void* ptr)
 #endif
 }
 
-static std::size_t CryGetMemSize_hook(void* ptr, std::size_t)
+CRYMALLOC_API std::size_t CryGetMemSize(void* ptr, std::size_t)
 {
+	g_stats.sizeCalls.fetch_add(1, std::memory_order_relaxed);
+
 	if (gEnv)
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SYSTEM);
 
-		return CryGetMemSize_hook_internal(ptr);
+		return CryGetMemSize_internal(ptr);
 	}
 	else
 	{
-		return CryGetMemSize_hook_internal(ptr);
+		return CryGetMemSize_internal(ptr);
 	}
 }
 
-static std::size_t CryFree_hook_internal(void* ptr)
+static std::size_t CryFree_internal(void* ptr)
 {
 	if (!ptr)
 	{
@@ -600,12 +697,12 @@ static std::size_t CryFree_hook_internal(void* ptr)
 	}
 
 #ifdef BUILD_64BIT
-	if (g_STLport_Allocator && g_STLport_Allocator->Contains(ptr))
+	if (g_safePool && g_safePool->Contains(ptr))
 	{
-		TracyFreeN(ptr, "STLport");
-		g_STLport_Allocator->Deallocate(ptr);
+		TracyFreeN(ptr, "SafePool");
+		g_safePool->Deallocate(ptr);
 
-		return STLport_Allocator::BLOCK_SIZE;
+		return SafePool::BLOCK_SIZE;
 	}
 #endif
 
@@ -622,47 +719,65 @@ static std::size_t CryFree_hook_internal(void* ptr)
 	return size;
 }
 
-static std::size_t CryFree_hook(void* ptr)
+CRYMALLOC_API std::size_t CryFree(void* ptr)
 {
+	g_stats.freeCalls.fetch_add(1, std::memory_order_relaxed);
+
 	if (gEnv)
 	{
 		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SYSTEM);
 
-		return CryFree_hook_internal(ptr);
+		return CryFree_internal(ptr);
 	}
 	else
 	{
-		return CryFree_hook_internal(ptr);
+		return CryFree_internal(ptr);
 	}
 }
 
-static void* CrySystemCrtMalloc_hook(std::size_t size)
+CRYMALLOC_API void* CrySystemCrtMalloc(std::size_t size)
 {
+	g_stats.crtMallocCalls.fetch_add(1, std::memory_order_relaxed);
+
 	std::size_t allocatedSize = 0;
-	return CryMalloc_hook(size, allocatedSize);
+
+	if (gEnv)
+	{
+		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SYSTEM);
+
+		return CryMalloc_internal(size, allocatedSize);
+	}
+	else
+	{
+		return CryMalloc_internal(size, allocatedSize);
+	}
 }
 
-static void CrySystemCrtFree_hook(void* ptr)
+CRYMALLOC_API void CrySystemCrtFree(void* ptr)
 {
-	CryFree_hook(ptr);
+	g_stats.crtFreeCalls.fetch_add(1, std::memory_order_relaxed);
+
+	if (gEnv)
+	{
+		FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SYSTEM);
+
+		CryFree_internal(ptr);
+	}
+	else
+	{
+		CryFree_internal(ptr);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // CryMemoryManager
 ////////////////////////////////////////////////////////////////////////////////
 
-void CryMemoryManager::Init(void* pCrySystem)
+void CryMemoryManager::Init()
 {
 #ifdef BUILD_64BIT
-	g_STLport_Allocator = new STLport_Allocator;
+	g_safePool = new SafePool;
 #endif
-
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CryMalloc"), &CryMalloc_hook);
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CryRealloc"), &CryRealloc_hook);
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CryGetMemSize"), &CryGetMemSize_hook);
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CryFree"), &CryFree_hook);
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CrySystemCrtMalloc"), &CrySystemCrtMalloc_hook);
-	WinAPI::HookWithJump(WinAPI::DLL::GetSymbol(pCrySystem, "CrySystemCrtFree"), &CrySystemCrtFree_hook);
 }
 
 void CryMemoryManager::ProvideHeapInfo(std::FILE* file, void* address)
@@ -672,23 +787,7 @@ void CryMemoryManager::ProvideHeapInfo(std::FILE* file, void* address)
 #endif
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// CryCommon/CryCore/CryMalloc.h
-////////////////////////////////////////////////////////////////////////////////
-
-void* CryMalloc(std::size_t size)
+void CryMemoryManager::LogInfo()
 {
-	std::size_t allocatedSize = 0;
-	return CryMalloc_hook(size, allocatedSize);
-}
-
-void* CryRealloc(void* oldPtr, std::size_t newSize)
-{
-	std::size_t allocatedSize = 0;
-	return CryRealloc_hook(oldPtr, newSize, allocatedSize);
-}
-
-void CryFree(void* ptr)
-{
-	CryFree_hook(ptr);
+	g_stats.Log();
 }

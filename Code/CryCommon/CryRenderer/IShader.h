@@ -495,7 +495,8 @@ public:
   // - and we need to store only the offset, not the actual pointer
   void* operator new( size_t Size )
   {
-    unsigned char *ptr = (unsigned char *)CryMalloc(Size+16+4);
+    std::size_t allocatedSize = 0;
+    unsigned char *ptr = (unsigned char *)CryMalloc(Size+16+4, allocatedSize);
     memset(ptr, 0, Size+16+4);
     unsigned char *bPtrRes = (unsigned char *)((INT_PTR)(ptr+4+16) & ~0xf);
     ((unsigned char**)bPtrRes)[-1] = ptr;
@@ -508,7 +509,8 @@ public:
   }
   void* operator new[](size_t Size)
   {
-    unsigned char *ptr = (unsigned char *)CryMalloc(Size+16+2*sizeof(INT_PTR));
+    std::size_t allocatedSize = 0;
+    unsigned char *ptr = (unsigned char *)CryMalloc(Size+16+2*sizeof(INT_PTR), allocatedSize);
     memset(ptr, 0, Size+16+2*sizeof(INT_PTR));
     unsigned char *bPtrRes = (unsigned char *)((INT_PTR)(ptr+16+2*sizeof(INT_PTR)) & ~0xf);
     ((unsigned char**)bPtrRes)[-2] = ptr;

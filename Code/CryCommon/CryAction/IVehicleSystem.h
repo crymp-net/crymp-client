@@ -1744,7 +1744,8 @@ public: \
 		{ \
 			static impl* Create() \
 			{ \
-				void* mem = CryMalloc(sizeof(T)); \
+				std::size_t allocatedSize = 0; \
+				void* mem = CryMalloc(sizeof(T), allocatedSize); \
 				return new (mem) T; \
 			} \
 		}; \

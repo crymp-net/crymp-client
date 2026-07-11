@@ -2973,38 +2973,75 @@ void CPhysicalWorld::ChangeEntitySimClass(CPhysicalEntity* pent)
 		return;
 	}
 
-	const int actualOldList = FindTypedListOwner(pent);
+	int actualOldList = -1;
 
-	if (actualOldList == newClass)
+	// CryMP: keep normal path fast, but oldClass can be stale.
+	// If the entity is already linked and oldClass == newClass, verify the real owner.
+	if ((unsigned int)oldClass < 8u)
 	{
-		IEntity* pEntity = 0;
-		const char* pName = "<none>";
-		const char* pClass = "<none>";
+		actualOldList = oldClass;
 
-		if (pent->m_iForeignData == PHYS_FOREIGN_ID_ENTITY && pent->m_pForeignData)
+		const bool appearsLinked = (pent->m_prev || pent->m_next || m_pTypedEnts[oldClass] == pent);
+
+		bool validLocalLinks = true;
+
+		if (appearsLinked)
 		{
-			pEntity = static_cast<IEntity*>(pent->m_pForeignData);
-			pName = pEntity->GetName();
-
-			if (pEntity->GetClass())
+			if (pent->m_prev)
 			{
-				pClass = pEntity->GetClass()->GetName();
+				validLocalLinks = (pent->m_prev->m_next == pent);
+			}
+			else
+			{
+				validLocalLinks = (m_pTypedEnts[oldClass] == pent);
+			}
+
+			if (validLocalLinks && pent->m_next)
+			{
+				validLocalLinks = (pent->m_next->m_prev == pent);
 			}
 		}
 
-		CryLogAlways(
-			"[PhysicalWorld] ChangeEntitySimClass: already in target list "
-			"ent=%s class=%s id=%d "
-			"pent=%p old=%d actual=%d new=%d perm=%d",
-			pName,
-			pClass,
-			pent->m_id,
-			pent,
-			oldClass,
-			actualOldList,
-			newClass,
-			pent->m_bPermanent);
+		if ((oldClass == newClass && appearsLinked) || (appearsLinked && !validLocalLinks))
+		{
+			actualOldList = FindTypedListOwner(pent);
 
+			if (actualOldList != oldClass)
+			{
+				IEntity* pEntity = 0;
+				const char* pName = "<none>";
+				const char* pClass = "<none>";
+
+				if (pent->m_iForeignData == PHYS_FOREIGN_ID_ENTITY && pent->m_pForeignData)
+				{
+					pEntity = static_cast<IEntity*>(pent->m_pForeignData);
+					pName = pEntity->GetName();
+
+					if (pEntity->GetClass())
+					{
+						pClass = pEntity->GetClass()->GetName();
+					}
+				}
+
+				CryLogAlways(
+					"[PhysicalWorld] ChangeEntitySimClass: corrected typed-list owner "
+					"ent=%s class=%s id=%d pent=%p old=%d actual=%d new=%d prev=%p next=%p perm=%d",
+					pName,
+					pClass,
+					pent->m_id,
+					pent,
+					oldClass,
+					actualOldList,
+					newClass,
+					pent->m_prev,
+					pent->m_next,
+					pent->m_bPermanent);
+			}
+		}
+	}
+
+	if (actualOldList == newClass)
+	{
 		pent->m_iPrevSimClass = newClass;
 
 		for (int ithunk = pent->m_iGThunk0; ithunk; ithunk = m_gthunks[ithunk].inextOwned)
@@ -3083,7 +3120,8 @@ void CPhysicalWorld::ChangeEntitySimClass(CPhysicalEntity* pent)
 			for (pent->m_prev = m_pTypedEnts[newClass];
 				pent->m_prev && pent->m_prev->m_next;
 				pent->m_prev = pent->m_prev->m_next)
-				;
+			{
+			}
 
 			pent->m_prev->m_next = pent;
 		}
