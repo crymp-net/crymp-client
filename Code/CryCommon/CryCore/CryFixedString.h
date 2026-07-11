@@ -597,7 +597,8 @@ inline void CryStackStringT<T,S>::_AllocData( size_type nLen )
 		value_type* pData = m_strBuf;
 		if (allocLen > MAX_SIZE)
 		{
-			pData = (value_type*) CryMalloc(allocLen);
+			std::size_t allocatedSize = 0;
+			pData = (value_type*) CryMalloc(allocLen, allocatedSize);
 			_usedMemory( allocLen ); // For statistics.
 			m_nAllocSize = nLen;
 		}

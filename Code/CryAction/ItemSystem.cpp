@@ -296,7 +296,8 @@ void ItemSystem::Scan(const char* folderName)
 IItemParamsNode* ItemSystem::CreateParams()
 {
 	// use CryMalloc to match CryFree used by the original ItemParamsNode destructor
-	void* mem = CryMalloc(sizeof(ItemParamsNode));
+	std::size_t allocatedSize = 0;
+	void* mem = CryMalloc(sizeof(ItemParamsNode), allocatedSize);
 	return new (mem) ItemParamsNode;
 }
 
