@@ -10,11 +10,11 @@
 
 #include "CodeWall.h"
 
-static CodeWall::CodeWallStatus status;
+static CodeWall::CodeWallStatus gStatus;
 
 int CodeWall::InitializeCodeWallInternalACG() {
 	HMODULE hKernel32 = GetModuleHandleA("kernel32.dll");
-	if (!hKernel32) return status.status;
+	if (!hKernel32) return gStatus.status;
 
 	typedef BOOL(WINAPI* PFN_SetProcessMitigationPolicy)(
 		PROCESS_MITIGATION_POLICY MitigationPolicy,
@@ -26,24 +26,24 @@ int CodeWall::InitializeCodeWallInternalACG() {
 		(PFN_SetProcessMitigationPolicy)GetProcAddress(hKernel32, "SetProcessMitigationPolicy");
 
 	// Enable Arbitrary Code Guard (ACG)
-	if (pSetProcessMitigationPolicy && (status.status & eCW_ACG) == 0) {
+	if (pSetProcessMitigationPolicy && (gStatus.status & eCW_ACG) == 0) {
 		// ProcessDynamicCodePolicy is enum value 2
 		PROCESS_MITIGATION_DYNAMIC_CODE_POLICY dynamicCodePolicy = { 0 };
 		dynamicCodePolicy.ProhibitDynamicCode = 1;
 
 		if (pSetProcessMitigationPolicy((PROCESS_MITIGATION_POLICY)2, &dynamicCodePolicy, sizeof(dynamicCodePolicy))) {
-			status.changed = true;
-			status.status |= eCW_ACG;
+			gStatus.changed = true;
+			gStatus.status |= eCW_ACG;
 		}
 	}
 
-	return status.status;
+	return gStatus.status;
 }
 
 
 int CodeWall::InitializeCodeWallInternalCIG() {
 	HMODULE hKernel32 = GetModuleHandleA("kernel32.dll");
-	if (!hKernel32) return status.status;
+	if (!hKernel32) return gStatus.status;
 
 	typedef BOOL(WINAPI* PFN_SetProcessMitigationPolicy)(
 		PROCESS_MITIGATION_POLICY MitigationPolicy,
@@ -55,18 +55,18 @@ int CodeWall::InitializeCodeWallInternalCIG() {
 		(PFN_SetProcessMitigationPolicy)GetProcAddress(hKernel32, "SetProcessMitigationPolicy");
 
 	// Enable Code Integrity Guard (CIG)
-	if (pSetProcessMitigationPolicy && (status.status & eCW_CIG) == 0) {
+	if (pSetProcessMitigationPolicy && (gStatus.status & eCW_CIG) == 0) {
 		// ProcessSignaturePolicy is enum value 8
 		PROCESS_MITIGATION_BINARY_SIGNATURE_POLICY sigPolicy = { 0 };
 		sigPolicy.MitigationOptIn = 1;
 
 		if (pSetProcessMitigationPolicy((PROCESS_MITIGATION_POLICY)8, &sigPolicy, sizeof(sigPolicy))) {
-			status.changed = true;
-			status.status |= eCW_CIG;
+			gStatus.changed = true;
+			gStatus.status |= eCW_CIG;
 		}
 	}
 
-	return status.status;
+	return gStatus.status;
 }
 
 int CodeWall::InitializeCodeWallExternal() {
@@ -86,7 +86,7 @@ int CodeWall::InitializeCodeWallExternal() {
 
 		PFN_SetSecurityInfo pSetSecurityInfo = (PFN_SetSecurityInfo)GetProcAddress(hAdvapi32, "SetSecurityInfo");
 
-		if (pSetSecurityInfo && (status.status & eCW_DACL) == 0) {
+		if (pSetSecurityInfo && (gStatus.status & eCW_DACL) == 0) {
 			// "D:" specifies a DACL. 
 			// "D;OICI;WD;;;WD)" format can be customized, but a highly effective approach 
 			// is building an empty or highly restrictive explicit ACL.
@@ -118,8 +118,8 @@ int CodeWall::InitializeCodeWallExternal() {
 					);
 
 					if (secResult == ERROR_SUCCESS) {
-						status.changed = true;
-						status.status |= eCW_DACL;
+						gStatus.changed = true;
+						gStatus.status |= eCW_DACL;
 					}
 					LocalFree(pNewDacl);
 				}
@@ -128,61 +128,57 @@ int CodeWall::InitializeCodeWallExternal() {
 		}
 		FreeLibrary(hAdvapi32);
 	}
-	return status.status;
+	return gStatus.status;
 }
 
 const CodeWall::CodeWallStatus& CodeWall::GetCodeWallStatus() {
-	return status;
+	return gStatus;
 }
 
 const CodeWall::CodeWallStatus& CodeWall::UpdateCodeWall(bool enabled, bool ingame, float frameTime) {
 	static bool enabledBefore = false;
-	static double elapsed = 0.0;
-	static double lastCheckClock = 0.0;
-	static time_t lastCheckTime = time(NULL);
-
-	elapsed += (double)frameTime;
+	gStatus.elapsed += (double)frameTime;
 
 	if (enabled && !enabledBefore) {
 		// Reset the state when we go from disabled state to enabled
-		status.clkLastDiscrepancy = 0.0;
-		status.clkDiscrepancies = 0;
-		lastCheckClock = elapsed;
-		lastCheckTime = time(NULL);
+		gStatus.clkLastDiscrepancy = 0.0;
+		gStatus.clkDiscrepancies = 0;
+		gStatus.clkLastClock = gStatus.elapsed;
+		gStatus.clkLastTime = time(NULL);
 	}
 
 	enabledBefore = enabled;
 
-	int before = status.status;
+	int before = gStatus.status;
 	if (enabled) {
 		// Only check when CodeWall is enabled
 		if (ingame) {
 			// CLK is checked only when player is in-game
-			if (elapsed - lastCheckClock >= 10.0) {
+			if (gStatus.elapsed - gStatus.clkLastClock >= 10.0) {
 				time_t now = time(NULL);
-				time_t elapsedTime = now - lastCheckTime;
-				status.clkLastDiscrepancy = elapsedTime - (elapsed - lastCheckClock);
+				time_t elapsedTime = now - gStatus.clkLastTime;
+				gStatus.clkLastDiscrepancy = elapsedTime - (gStatus.elapsed - gStatus.clkLastClock);
 
-				if (std::abs(status.clkLastDiscrepancy) > 0.5) {
-					status.clkDiscrepancies++;
+				if (std::abs(gStatus.clkLastDiscrepancy) > 0.5) {
+					gStatus.clkDiscrepancies++;
 				} else {
-					status.clkDiscrepancies = 0;
+					gStatus.clkDiscrepancies = 0;
 				}
 
-				lastCheckClock = elapsed;
-				lastCheckTime = now;
+				gStatus.clkLastClock = gStatus.elapsed;
+				gStatus.clkLastTime = now;
 			}
 
-			if (status.clkDiscrepancies >= 3) {
-				status.status &= ~(int)eCW_CLK;
+			if (gStatus.clkDiscrepancies >= 3) {
+				gStatus.status &= ~(int)eCW_CLK;
 			} else {
-				status.status |= (int)eCW_CLK;
+				gStatus.status |= (int)eCW_CLK;
 			}
 		}
 	}
 
-	status.changed = status.status != before;
-	return status;
+	gStatus.changed = gStatus.status != before;
+	return gStatus;
 }
 
 std::string CodeWall::GetErrorMessage() {

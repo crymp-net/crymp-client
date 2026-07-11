@@ -32,6 +32,8 @@
 #include "Menus/FlashMenuObject.h"
 #include "Menus/MPHub.h"
 
+#include "Library/CodeWall.h"
+
 
 static void OnChangeThirdPerson(ICVar* pCVar)
 {
@@ -783,6 +785,17 @@ void SCVars::InitCVars(IConsole* pConsole)
 			return &s_instance;
 		}()
 	);
+
+	pConsole->AddCommand("codewall_status", [](IConsoleCmdArgs* args) -> void {
+		auto status = CodeWall::GetCodeWallStatus();
+		CryLogAlways("Status: %2d", status.status);
+		CryLogAlways("Elapsed time: %.2f", status.elapsed);
+		CryLogAlways("");
+		CryLogAlways("CLK last clock: %.3f", status.clkLastClock);
+		CryLogAlways("CLK last time: %llu", (uint64_t)status.clkLastTime);
+		CryLogAlways("CLK discrepancies: %d", status.clkDiscrepancies);
+		CryLogAlways("CLK last discrepancy: %.3f", status.clkLastDiscrepancy);
+	});
 
 }
 
