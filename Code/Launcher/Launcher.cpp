@@ -56,6 +56,7 @@ void* g_pCryFont = nullptr;
 void* g_pCryAnimation = nullptr;
 void* g_pCryEntitySystem = nullptr;
 void* g_pCrySoundSystem = nullptr;
+void* g_pCryPhysics = nullptr;
 void* g_pCompressATI2 = nullptr;
 void* g_pFmodEx = nullptr;
 void* g_pFmodEvent = nullptr;
@@ -1218,6 +1219,14 @@ void Launcher::LoadEngine()
 	if (!g_pCrySoundSystem)
 	{
 		throw StringTools::SysErrorFormat("Failed to load the CrySoundSystem DLL!");
+	}
+
+	if (WinAPI::CmdLine::HasArg("-oldphysics")) {
+		g_pCryPhysics = WinAPI::DLL::Load("CryPhysics.dll");
+		if (!g_pCryPhysics)
+		{
+			throw StringTools::SysErrorFormat("Failed to load the CryPhysics DLL!");
+		}
 	}
 
 	if (m_params.isDedicatedServer)
