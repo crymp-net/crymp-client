@@ -418,4 +418,6 @@ private:
 	// typedef std::set<ISoundEventListener*> Listeners;
 	TEventListenerInfoVector m_listeners;
 	TEventListenerInfoVector m_listenersToBeRemoved;
+
+	bool m_bStartPlaybackLater;
 };

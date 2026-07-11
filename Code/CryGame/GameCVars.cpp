@@ -628,6 +628,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_chat", &mp_chat, 1, OPTIONAL_SYNC, "Sets chat features support (0: old chat, 1: new chat without server support, 2: new chat with partial server support, 3: new chat with full server support)");
 	pConsole->Register("mp_strafeJump", &mp_strafeJump, 1, OPTIONAL_SYNC, "Enables or disables strafe jumping");
 	pConsole->Register("mp_fpsLimit", &mp_fpsLimit, 0, OPTIONAL_SYNC, "Sets FPS upper boundary (0: disabled)");
+	pConsole->Register("mp_soundSpeed", &mp_soundSpeed, 0.0f, OPTIONAL_SYNC, "Speed of sound (0 = infinite)");
 
 	//CryMP CVars (un-synced)
 	pConsole->Register("mp_newSpectator", &mp_newSpectator, 1, VF_NOT_NET_SYNCED, "");
