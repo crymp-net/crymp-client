@@ -20,8 +20,8 @@ SafeWriting.Settings={
 	APIKey=nil;	--leave this empty unless you are a trusted server
 	
 	--if set, clients will download and load the pak file when connecting to this server
-	--for example: ServerPakUrl="https://example.com/example.pak";
-	ServerPakUrl=nil;
+	--for example: PAK="https://example.com/example.pak";
+	PAK=nil;
 
 	OptimizeSpeed=false;	--makes server do less output (recommended for non-stop servers)
 	HomeCountry="unknown";	--set it to anything, for example: sk,cz,pl,ua,at,ru,de,uk,...
