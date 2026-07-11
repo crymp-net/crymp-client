@@ -10,6 +10,9 @@
 #include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryCommon/CrySystem/IConsole.h"
 
+#include "CryGame/Game.h"
+#include "CryMP/Client/WeatherSystem.h"
+
 #include "TimeOfDay.h"
 
 extern void* g_pCry3DEngine;
@@ -634,6 +637,12 @@ void TimeOfDay::Update(bool interpolate, bool forceUpdate)
 
 	p3DEngine->SetPostEffectParam("Dof_Tod_FocusRange", vars[DOF_FOCUS_RANGE].value[0]);
 	p3DEngine->SetPostEffectParam("Dof_Tod_BlurAmount", vars[DOF_BLUR_AMOUNT].value[0]);
+
+	if (CGame* pGame = static_cast<CGame*>(gEnv->pGame)) {
+		if (CWeatherSystem* pWS = pGame->GetWeatherSystem()) {
+			pWS->OnTODUpdate(interpolate, forceUpdate);
+		}
+	}
 }
 
 void TimeOfDay::BeginEditMode()

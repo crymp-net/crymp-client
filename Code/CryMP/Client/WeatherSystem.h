@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "CryCommon/CryMath/Cry_Math.h"
+#include "CryCommon/Cry3DEngine/I3DEngine.h"
 
 struct WeatherVariable {
 	float value;
@@ -65,6 +66,8 @@ public:
 	bool IsFrozen() const;
 	bool IsWet() const;
 	void PostUpdate();
+
+	void OnTODUpdate(bool interpolate, bool force);
 private:
 
 	bool SetWeatherVariable(int variableId, float value, bool interpolate = true, bool update = false);
@@ -83,8 +86,6 @@ private:
 	void ApplyLayer(unsigned layer);
 	void RemoveLayer(unsigned layer);
 
-	// Hook functions
-	void TODUpdate(bool interpolate, bool force);
 
 	// Utility functions
 	std::string GetFrozenGrassName(std::string_view path);
