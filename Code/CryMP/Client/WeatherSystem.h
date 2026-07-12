@@ -46,6 +46,8 @@ class CWeatherSystem {
 	float m_time;
 	float m_lastUpdate;
 
+	int m_todCallbackId;
+
 	static bool tod_hooked;
 	static constexpr int WEATHER_NAMESPACE = 2000;
 	static constexpr int WEATHER_ENV_NAMESPACE = 2100;
@@ -60,6 +62,7 @@ class CWeatherSystem {
 
 public:
 	CWeatherSystem();
+	~CWeatherSystem();
 	void Update(float frameTime);
 	void Reset(bool deapply = true);
 

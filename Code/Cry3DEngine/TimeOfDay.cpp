@@ -10,9 +10,6 @@
 #include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryCommon/CrySystem/IConsole.h"
 
-#include "CryGame/Game.h"
-#include "CryMP/Client/WeatherSystem.h"
-
 #include "TimeOfDay.h"
 
 extern void* g_pCry3DEngine;
@@ -638,10 +635,8 @@ void TimeOfDay::Update(bool interpolate, bool forceUpdate)
 	p3DEngine->SetPostEffectParam("Dof_Tod_FocusRange", vars[DOF_FOCUS_RANGE].value[0]);
 	p3DEngine->SetPostEffectParam("Dof_Tod_BlurAmount", vars[DOF_BLUR_AMOUNT].value[0]);
 
-	if (CGame* pGame = static_cast<CGame*>(gEnv->pGame)) {
-		if (CWeatherSystem* pWS = pGame->GetWeatherSystem()) {
-			pWS->OnTODUpdate(interpolate, forceUpdate);
-		}
+	for (auto& callback : m_updateCallbacks) {
+		callback.second(interpolate, forceUpdate);
 	}
 }
 
@@ -1754,4 +1749,16 @@ void TimeOfDay::DebugDraw()
 
 	DrawModeHeader(y, "Unknown", Col_Orange);
 	DrawAlignedLabel(S(BAR_X), y, 1.2f, Col_White, false, "1=Overview 2=Atmosphere 3=Night 4=PostFX 5=WeatherSystem");
+}
+
+int TimeOfDay::AddUpdateCallback(std::function<void(bool, bool)> callback) {
+	int id = ++m_updateCallbackCounter;
+	m_updateCallbacks.push_back(std::make_pair(id, callback));
+	return id;
+}
+
+void TimeOfDay::RemoveUpdateCallback(int id) {
+	std::erase_if(m_updateCallbacks, [id](auto& entry) -> bool {
+		return entry.first == id;
+	});
 }

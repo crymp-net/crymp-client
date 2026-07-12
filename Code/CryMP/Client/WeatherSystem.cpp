@@ -21,6 +21,21 @@ CWeatherSystem::CWeatherSystem() {
 	m_originalWeatherValues.clear();
 	m_time = 0;
 	m_lastUpdate = -1000.0f;
+
+	m_todCallbackId = 0;
+
+	if (TimeOfDay* pTOD = static_cast<TimeOfDay*>(gEnv->p3DEngine->GetTimeOfDay())) {
+		m_todCallbackId = pTOD->AddUpdateCallback([this](bool interpolate, bool forceUpdate) {
+			OnTODUpdate(interpolate, forceUpdate);
+		});
+	}
+}
+
+CWeatherSystem::~CWeatherSystem() {
+	if (TimeOfDay* pTOD = static_cast<TimeOfDay*>(gEnv->p3DEngine->GetTimeOfDay())) {
+		pTOD->RemoveUpdateCallback(m_todCallbackId);
+		m_todCallbackId = 0;
+	}
 }
 
 void CWeatherSystem::Reset(bool deapply) {

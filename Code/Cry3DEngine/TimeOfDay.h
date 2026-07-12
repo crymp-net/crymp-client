@@ -4,6 +4,7 @@
 #include <variant>
 #include <vector>
 #include <string_view>
+#include <functional>
 
 #include "CryCommon/Cry3DEngine/I3DEngine.h"
 #include "CryCommon/Cry3DEngine/ISplines.h"
@@ -143,6 +144,9 @@ private:
 
 	string m_activeCustomTodFile;
 
+	int m_updateCallbackCounter = 0;
+	std::vector<std::pair<int, std::function<void(bool, bool)>>> m_updateCallbacks;
+
 public:
 	TimeOfDay();
 	~TimeOfDay();
@@ -207,6 +211,9 @@ public:
 
 	void RestoreLevelDefaults();
 	void RestoreLevelDefaults(float blendDuration);
+
+	int AddUpdateCallback(std::function<void(bool, bool)> callback);
+	void RemoveUpdateCallback(int id);
 
 private:
 	void InitVariables();
