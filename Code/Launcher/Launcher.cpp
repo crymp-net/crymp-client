@@ -1197,7 +1197,6 @@ void Launcher::LoadEngine()
 		{ "CryFont.dll",         &g_pCryFont },
 		{ "CryAnimation.dll",    &g_pCryAnimation },
 		{ "CryEntitySystem.dll", &g_pCryEntitySystem },
-		{ "CrySoundSystem.dll",  &g_pCrySoundSystem },
 	};
 
 	if (WinAPI::CmdLine::HasArg("-oldphysics"))
@@ -1213,6 +1212,9 @@ void Launcher::LoadEngine()
 	{
 		loadList.push_back({ "CryMovie.dll", &g_pCryMovie });
 		loadList.push_back({ "CryInput.dll", &g_pCryInput });
+		if (WinAPI::CmdLine::HasArg("-oldsound")) {
+			loadList.push_back({ "CrySoundSystem.dll", &g_pCrySoundSystem });
+		}
 		if (!WinAPI::CmdLine::HasArg("-dx9") &&
 			(WinAPI::CmdLine::HasArg("-dx10") || WinAPI::IsVistaOrLater()))
 		{
