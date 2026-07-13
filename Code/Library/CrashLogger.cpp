@@ -88,6 +88,7 @@ static void DumpExceptionInfo(std::FILE* file, const EXCEPTION_RECORD* info)
 	std::size_t dataAddress = 0;
 
 	std::fprintf(file, "%s (0x%08X) at 0x" ADDR_FMT, ExceptionCodeToName(code), code, address);
+	std::fflush(file);
 
 	if (code == EXCEPTION_ACCESS_VIOLATION || code == EXCEPTION_IN_PAGE_ERROR)
 	{
@@ -105,9 +106,20 @@ static void DumpExceptionInfo(std::FILE* file, const EXCEPTION_RECORD* info)
 		const char* message = reinterpret_cast<const char*>(info->ExceptionInformation[0]);
 
 		std::fprintf(file, ": %s", message);
+		std::fflush(file);
 	}
 
 	std::fprintf(file, "\n");
+	std::fflush(file);
+
+	std::fprintf(file, "[IP-16]:[IP+16]:");
+	std::fflush(file);
+	for (std::size_t start = address - 16; start < address + 16; start++) {
+		std::fprintf(file, " %02X", *reinterpret_cast<unsigned char*>(start));
+		std::fflush(file);
+	}
+	std::fprintf(file, "\n");
+	std::fflush(file);
 
 	if (g_heapInfoProvider)
 	{
