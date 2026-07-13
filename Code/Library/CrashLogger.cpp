@@ -221,6 +221,7 @@ static void DumpRegisters(std::FILE* file, const CONTEXT* context)
 static void DumpCallStack(std::FILE* file, const CONTEXT* context)
 {
 	std::fprintf(file, "Callstack:\n");
+	std::fflush(file);
 
 	HANDLE process = GetCurrentProcess();
 	HANDLE thread = GetCurrentThread();
@@ -285,6 +286,7 @@ static void DumpCallStack(std::FILE* file, const CONTEXT* context)
 			}
 
 			std::fprintf(file, ADDR_FMT " %s: %s", address, moduleName, symbolName);
+			std::fflush(file);
 
 			IMAGEHLP_LINE line = {};
 			line.SizeOfStruct = sizeof(line);
@@ -292,10 +294,12 @@ static void DumpCallStack(std::FILE* file, const CONTEXT* context)
 			if (SymGetLineFromAddr(process, address, &lineOffset, &line))
 			{
 				std::fprintf(file, " (%s:%u)\n", BaseName(line.FileName), line.LineNumber);
+				std::fflush(file);
 			}
 			else
 			{
 				std::fprintf(file, " ()\n");
+				std::fflush(file);
 			}
 		}
 
@@ -352,6 +356,7 @@ static void DumpLoadedModules(std::FILE* file)
 	}
 
 	std::fprintf(file, "Modules (%u):\n", modCount);
+	std::fflush(file);
 
 	for (LIST_ENTRY* mod = firstMod; mod != NULL;)
 	{
@@ -363,6 +368,7 @@ static void DumpLoadedModules(std::FILE* file)
 		WideCharToMultiByte(CP_UTF8, 0, wideName->Buffer, wideName->Length, name, sizeof(name), NULL, NULL);
 
 		std::fprintf(file, ADDR_FMT " - " ADDR_FMT " %s\n", base, base + size, name);
+		std::fflush(file);
 
 		LIST_ENTRY* nextMod = NULL;
 		std::size_t nextModBase = static_cast<std::size_t>(-1);
@@ -387,6 +393,7 @@ static void DumpLoadedModules(std::FILE* file)
 static void DumpCommandLine(std::FILE* file)
 {
 	std::fprintf(file, "Command line:\n");
+	std::fflush(file);
 
 	const char* cmdLine = GetCommandLineA();
 
@@ -405,6 +412,7 @@ static void DumpCommandLine(std::FILE* file)
 		for (; *end != ' ' && *end; end++) {}
 
 		std::fprintf(file, "%.*s <hidden> <hidden>", static_cast<int>(cmd - cmdLine), cmdLine);
+		std::fflush(file);
 
 		cmdLine = end;
 	}

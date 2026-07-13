@@ -1242,6 +1242,7 @@ void DumpLuaStackTrace(std::FILE* file) {
 		int level = 0;
 
 		std::fprintf(file, "Lua stack:\n");
+		std::fflush(file);
 
 		while (lua_getstack(g_L, level++, &ar) && lua_getinfo(g_L, "Sln", &ar))
 		{
@@ -1251,9 +1252,11 @@ void DumpLuaStackTrace(std::FILE* file) {
 				ar.what,
 				ar.namewhat,
 				ar.name);
+			std::fflush(file);
 		}
 		std::fflush(file);
 	} else {
 		std::fprintf(file, "Lua was already closed\n");
+		std::fflush(file);
 	}
 }
