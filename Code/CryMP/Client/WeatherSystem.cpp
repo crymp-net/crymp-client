@@ -11,7 +11,6 @@
 #include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryGame/Game.h"
 #include "CryGame/GameCVars.h"
-#include "Library/WinAPI.h"
 
 #include "WeatherSystem.h"
 #include "Cry3DEngine/TimeOfDay.h"

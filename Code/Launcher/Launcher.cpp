@@ -1194,8 +1194,6 @@ void Launcher::LoadEngine()
 		{ "CryAISystem.dll",     &g_pCryAISystem },
 		{ "CryNetwork.dll",      &g_pCryNetwork },
 		{ "Cry3DEngine.dll",     &g_pCry3DEngine },
-		{ "CryMovie.dll",        &g_pCryMovie },
-		{ "CryInput.dll",        &g_pCryInput },
 		{ "CryFont.dll",         &g_pCryFont },
 		{ "CryAnimation.dll",    &g_pCryAnimation },
 		{ "CryEntitySystem.dll", &g_pCryEntitySystem },
@@ -1213,6 +1211,8 @@ void Launcher::LoadEngine()
 	}
 	else
 	{
+		loadList.push_back({ "CryMovie.dll", &g_pCryMovie });
+		loadList.push_back({ "CryInput.dll", &g_pCryInput });
 		if (!WinAPI::CmdLine::HasArg("-dx9") &&
 			(WinAPI::CmdLine::HasArg("-dx10") || WinAPI::IsVistaOrLater()))
 		{
