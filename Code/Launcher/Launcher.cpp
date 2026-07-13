@@ -1562,7 +1562,9 @@ struct DummySystemCallback : public ISystemUserCallback
 
 void Launcher::Run()
 {
+#ifdef CLIENT_LAUNCHER
 	CodeWall::InitializeCodeWallExternal();
+#endif
 	DummySystemCallback dummyCallback;
 
 	m_params.hInstance = WinAPI::DLL::Get(nullptr);  // EXE handle
