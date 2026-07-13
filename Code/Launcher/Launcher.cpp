@@ -1252,24 +1252,26 @@ void Launcher::LoadEngine()
 
 	CRYACTION_BASE = reinterpret_cast<std::uintptr_t>(g_pCryAction);
 
-	WinAPI::VersionResource fmodVer;
-	if (!WinAPI::GetVersionResource(g_pFmodEx, fmodVer))
-	{
-		throw StringTools::SysErrorFormat("Failed to get FMOD version!");
-	}
+	if (!m_params.isDedicatedServer) {
+		WinAPI::VersionResource fmodVer;
+		if (!WinAPI::GetVersionResource(g_pFmodEx, fmodVer))
+		{
+			throw StringTools::SysErrorFormat("Failed to get FMOD version!");
+		}
 
-	g_hasC1Fmod = (
-		fmodVer.major == 0 &&
-		fmodVer.minor == 4 &&
-		fmodVer.patch == 7 &&
-		fmodVer.tweak == 23
-	);
-	g_hasWarheadWarsFmod = (!g_hasC1Fmod &&
-		fmodVer.major == 0 &&
-		fmodVer.minor == 4 &&
-		fmodVer.patch == 14 &&
-		fmodVer.tweak == 3
-	);
+		g_hasC1Fmod = (
+			fmodVer.major == 0 &&
+			fmodVer.minor == 4 &&
+			fmodVer.patch == 7 &&
+			fmodVer.tweak == 23
+			);
+		g_hasWarheadWarsFmod = (!g_hasC1Fmod &&
+			fmodVer.major == 0 &&
+			fmodVer.minor == 4 &&
+			fmodVer.patch == 14 &&
+			fmodVer.tweak == 3
+			);
+	}
 }
 
 void Launcher::PatchEngine()
