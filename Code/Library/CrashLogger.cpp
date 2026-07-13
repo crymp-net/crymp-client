@@ -454,8 +454,8 @@ static void WriteCrashDump(std::FILE* file, EXCEPTION_POINTERS* exception)
 	DumpGlobalMemoryUsage(file);
 	DumpProcessMemoryUsage(file);
 	DumpRegisters(file, exception->ContextRecord);
-	DumpCallStack(file, exception->ContextRecord);
 	DumpLoadedModules(file);
+	DumpCallStack(file, exception->ContextRecord);
 	DumpCommandLine(file);
 
 	DumpLuaStackTrace(file);
