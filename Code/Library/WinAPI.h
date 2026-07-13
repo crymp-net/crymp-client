@@ -97,7 +97,7 @@ namespace WinAPI
 	///////////
 
 	void FillNOP(void *address, size_t length);
-	void FillMem(void *address, const void *data, size_t length);
+	void FillMem(void *address, const void *data, size_t length, bool executable = true);
 
 	void HookWithJump(void* address, void* pNewFunc);
 

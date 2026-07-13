@@ -11,30 +11,29 @@
 #include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryGame/Game.h"
 #include "CryGame/GameCVars.h"
-#include "Library/WinAPI.h"
 
 #include "WeatherSystem.h"
 #include "Cry3DEngine/TimeOfDay.h"
 
-bool CWeatherSystem::tod_hooked = false;
-
-typedef void (ITimeOfDay::* ITODUpdate)(bool, bool);
-static ITODUpdate pTODUpdate = nullptr;
 
 CWeatherSystem::CWeatherSystem() {
 	m_originalWeatherValues.clear();
 	m_time = 0;
 	m_lastUpdate = -1000.0f;
 
-	if (!tod_hooked && gEnv->bClient) {
-		ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
-		void** pTODVtable = *reinterpret_cast<void***>(pTOD);
+	m_todCallbackId = 0;
 
-		auto update = &CWeatherSystem::TODUpdate;
-		pTODUpdate = *reinterpret_cast<ITODUpdate*>(pTODVtable + 9);
+	if (TimeOfDay* pTOD = static_cast<TimeOfDay*>(gEnv->p3DEngine->GetTimeOfDay())) {
+		m_todCallbackId = pTOD->AddUpdateCallback([this](bool interpolate, bool forceUpdate) {
+			OnTODUpdate(interpolate, forceUpdate);
+		});
+	}
+}
 
-		WinAPI::FillMem(&pTODVtable[9], &reinterpret_cast<void*&>(update), sizeof(void*));
-		tod_hooked = true;
+CWeatherSystem::~CWeatherSystem() {
+	if (TimeOfDay* pTOD = static_cast<TimeOfDay*>(gEnv->p3DEngine->GetTimeOfDay())) {
+		pTOD->RemoveUpdateCallback(m_todCallbackId);
+		m_todCallbackId = 0;
 	}
 }
 
@@ -554,17 +553,8 @@ bool CWeatherSystem::IsFrozen() const {
 }
 
 
-//------------------------------------------------------------------------
-// Hook functions
-//------------------------------------------------------------------------
-void CWeatherSystem::TODUpdate(bool interpolate, bool force) {
-	// ! use self in the entiriety of this function
-	// as this here refers to the ITimeOfDay instance !
-	CWeatherSystem* self = g_pGame->GetWeatherSystem();
-
-	// call the original update
-	ITimeOfDay* pTOD = reinterpret_cast<ITimeOfDay*>(this);
-	(pTOD->*pTODUpdate)(interpolate, force);
+void CWeatherSystem::OnTODUpdate(bool interpolate, bool force) {
+	I3DEngine* p3DEngine = gEnv->p3DEngine;
 
 	// weather system by default is only able to force values for
 	// float values, not for color splines, therefore do some
@@ -577,26 +567,26 @@ void CWeatherSystem::TODUpdate(bool interpolate, bool force) {
 		float x = 0.0f, y = 0.0f, z = 0.0f;
 
 		// 2103 = Sun color
-		auto it = self->m_activeValues.find(WEATHER_ENV_NAMESPACE + 3);
-		if (it != self->m_activeValues.end() && it->second.length() > 0 && it->second[0] == 'v' && sscanf(it->second.c_str() + 1, "%f,%f,%f", &x, &y, &z) == 3) {
-			gEnv->p3DEngine->SetSunColor(
-				gEnv->p3DEngine->GetSunColor().CompMul(Vec3(x, y, z))
+		auto it = m_activeValues.find(WEATHER_ENV_NAMESPACE + 3);
+		if (it != m_activeValues.end() && it->second.length() > 0 && it->second[0] == 'v' && sscanf(it->second.c_str() + 1, "%f,%f,%f", &x, &y, &z) == 3) {
+			p3DEngine->SetSunColor(
+				p3DEngine->GetSunColor().CompMul(Vec3(x, y, z))
 			);
 		}
 
 		// 2106 = Sky color
-		it = self->m_activeValues.find(WEATHER_ENV_NAMESPACE + 6);
-		if (it != self->m_activeValues.end() && it->second.length() > 0 && it->second[0] == 'v' && sscanf(it->second.c_str() + 1, "%f,%f,%f", &x, &y, &z) == 3) {
-			gEnv->p3DEngine->SetSkyColor(
-				gEnv->p3DEngine->GetSkyColor().CompMul(Vec3(x, y, z))
+		it = m_activeValues.find(WEATHER_ENV_NAMESPACE + 6);
+		if (it != m_activeValues.end() && it->second.length() > 0 && it->second[0] == 'v' && sscanf(it->second.c_str() + 1, "%f,%f,%f", &x, &y, &z) == 3) {
+			p3DEngine->SetSkyColor(
+				p3DEngine->GetSkyColor().CompMul(Vec3(x, y, z))
 			);
 		}
 
 		// 2108 = Fog color
-		it = self->m_activeValues.find(WEATHER_ENV_NAMESPACE + 8);
-		if (it != self->m_activeValues.end() && it->second.length() > 0 && it->second[0] == 'v' && sscanf(it->second.c_str() + 1, "%f,%f,%f", &x, &y, &z) == 3) {
-			gEnv->p3DEngine->SetFogColor(
-				gEnv->p3DEngine->GetFogColor().CompMul(Vec3(x, y, z))
+		it = m_activeValues.find(WEATHER_ENV_NAMESPACE + 8);
+		if (it != m_activeValues.end() && it->second.length() > 0 && it->second[0] == 'v' && sscanf(it->second.c_str() + 1, "%f,%f,%f", &x, &y, &z) == 3) {
+			p3DEngine->SetFogColor(
+				p3DEngine->GetFogColor().CompMul(Vec3(x, y, z))
 			);
 		}
 	}

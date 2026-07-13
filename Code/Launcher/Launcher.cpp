@@ -27,6 +27,7 @@
 #include "CrySystem/Logger.h"
 #include "CrySystem/RandomGenerator.h"
 #include "CrySystem/StreamEngine.h"
+#include "Library/CodeWall.h"
 #include "Library/CrashLogger.h"
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
@@ -49,9 +50,18 @@ void* g_pCrySystem = nullptr;
 void* g_pCryRenderD3D9 = nullptr;
 void* g_pCryRenderD3D10 = nullptr;
 void* g_pCryRenderNULL = nullptr;
+void* g_pCryMovie = nullptr;
+void* g_pCryInput = nullptr;
+void* g_pCryFont = nullptr;
+void* g_pCryAnimation = nullptr;
+void* g_pCryEntitySystem = nullptr;
+void* g_pCrySoundSystem = nullptr;
+void* g_pCryPhysics = nullptr;
+void* g_pCompressATI2 = nullptr;
 void* g_pFmodEx = nullptr;
 void* g_pFmodEvent = nullptr;
 void* g_pFmodEventNet = nullptr;
+void* g_pD3DCompiler = nullptr;
 bool g_hasC1Fmod = false;
 bool g_hasWarheadWarsFmod = false;
 
@@ -718,7 +728,7 @@ static void ReplaceLocalizationManager(void* pCrySystem)
 
 	// vtable hook
 	TGetLocalizationManager newFunc = &DummyCSystem::GetLocalizationManager;
-	WinAPI::FillMem(&vtable[105], &reinterpret_cast<void*&>(newFunc), sizeof(void*));
+	WinAPI::FillMem(&vtable[105], &reinterpret_cast<void*&>(newFunc), sizeof(void*), false);
 }
 
 static ITimeOfDay* CreateTimeOfDay()
@@ -863,7 +873,7 @@ static void HookNetworkGetService(void* pCryNetwork)
 
 	// vtable hook
 	auto pNewGetService = &DummyCNetwork::GetService;
-	WinAPI::FillMem(&pCNetworkVTable[7], &reinterpret_cast<void*&>(pNewGetService), sizeof(void*));
+	WinAPI::FillMem(&pCNetworkVTable[7], &reinterpret_cast<void*&>(pNewGetService), sizeof(void*), false);
 }
 
 struct DummyCSystem
@@ -928,7 +938,7 @@ static void HookSystemWarning(void* pCrySystem)
 
 	// vtable hook
 	auto pNewWarning = &DummyCSystem::Warning;
-	WinAPI::FillMem(&pCSystemVTable[21], &reinterpret_cast<void*&>(pNewWarning), sizeof(void*));
+	WinAPI::FillMem(&pCSystemVTable[21], &reinterpret_cast<void*&>(pNewWarning), sizeof(void*), false);
 }
 
 static void LogRealWindowsBuild(Logger& logger)
@@ -1101,7 +1111,7 @@ void Launcher::LoadEngine()
 	{
 		if (WinAPI::GetCurrentErrorCode() == 193)  // ERROR_BAD_EXE_FORMAT
 		{
-			throw StringTools::ErrorFormat("Failed to load the CrySystem DLL!\n\n"
+			throw StringTools::ErrorFormat("Failed to load CrySystem.dll\n\n"
 #ifdef BUILD_64BIT
 				"It seems you have 32-bit DLLs in your Bin64 directory! Please fix it."
 #else
@@ -1172,101 +1182,77 @@ void Launcher::LoadEngine()
 		}
 	}
 
-	g_pCryAction = WinAPI::DLL::Load("CryAction.dll");
-	if (!g_pCryAction)
+	struct SLoadEntry
 	{
-		throw StringTools::SysErrorFormat("Failed to load the CryAction DLL!");
-	}
+		const char* dllName;
+		void** outPtr;
+	};
 
-	CRYACTION_BASE = reinterpret_cast<std::uintptr_t>(g_pCryAction);
-
-	g_pCryAISystem = WinAPI::DLL::Load("CryAISystem.dll");
-	if (!g_pCryAISystem)
+	std::vector<SLoadEntry> loadList =
 	{
-		throw StringTools::SysErrorFormat("Failed to load the CryAISystem DLL!");
-	}
+		{ "CryAction.dll",       &g_pCryAction },
+		{ "CryAISystem.dll",     &g_pCryAISystem },
+		{ "CryNetwork.dll",      &g_pCryNetwork },
+		{ "Cry3DEngine.dll",     &g_pCry3DEngine },
+		{ "CryFont.dll",         &g_pCryFont },
+		{ "CryAnimation.dll",    &g_pCryAnimation },
+		{ "CryEntitySystem.dll", &g_pCryEntitySystem },
+	};
 
-	g_pCryNetwork = WinAPI::DLL::Load("CryNetwork.dll");
-	if (!g_pCryNetwork)
+	if (WinAPI::CmdLine::HasArg("-oldphysics"))
 	{
-		throw StringTools::SysErrorFormat("Failed to load the CryNetwork DLL!");
-	}
-
-	g_pCry3DEngine = WinAPI::DLL::Load("Cry3DEngine.dll");
-	if (!g_pCry3DEngine)
-	{
-		throw StringTools::SysErrorFormat("Failed to load the Cry3DEngine DLL!");
+		loadList.push_back({ "CryPhysics.dll", &g_pCryPhysics });
 	}
 
 	if (m_params.isDedicatedServer)
 	{
-		g_pCryRenderNULL = WinAPI::DLL::Load("CryRenderNULL.dll");
-		if (!g_pCryRenderNULL)
-		{
-			throw StringTools::SysErrorFormat("Failed to load the CryRenderNULL DLL!");
-		}
+		loadList.push_back({ "CryRenderNULL.dll", &g_pCryRenderNULL });
 	}
 	else
 	{
-		if (!WinAPI::CmdLine::HasArg("-dx9") && (WinAPI::CmdLine::HasArg("-dx10") || WinAPI::IsVistaOrLater()))
+		loadList.push_back({ "CryMovie.dll", &g_pCryMovie });
+		loadList.push_back({ "CryInput.dll", &g_pCryInput });
+		if (WinAPI::CmdLine::HasArg("-oldsound")) {
+			loadList.push_back({ "CrySoundSystem.dll", &g_pCrySoundSystem });
+		}
+		if (!WinAPI::CmdLine::HasArg("-dx9") &&
+			(WinAPI::CmdLine::HasArg("-dx10") || WinAPI::IsVistaOrLater()))
 		{
-			g_pCryRenderD3D10 = WinAPI::DLL::Load("CryRenderD3D10.dll");
-			if (!g_pCryRenderD3D10)
-			{
-				throw StringTools::SysErrorFormat("Failed to load the CryRenderD3D10 DLL!");
-			}
+			loadList.push_back({ "CryRenderD3D10.dll", &g_pCryRenderD3D10 });
+			loadList.push_back({ "D3DCompiler_34.dll", &g_pD3DCompiler });
 		}
 		else
 		{
-			g_pCryRenderD3D9 = WinAPI::DLL::Load("CryRenderD3D9.dll");
-			if (!g_pCryRenderD3D9)
-			{
-				throw StringTools::SysErrorFormat("Failed to load the CryRenderD3D9 DLL!");
-			}
+			loadList.push_back({ "CryRenderD3D9.dll", &g_pCryRenderD3D9 });
+			loadList.push_back({ "d3dx9_34.dll", &g_pD3DCompiler });
 		}
 
-#ifdef BUILD_64BIT
-		g_pFmodEx = WinAPI::DLL::Load("fmodex64.dll");
-#else
-		g_pFmodEx = WinAPI::DLL::Load("fmodex.dll");
-#endif
-		if (!g_pFmodEx)
+		loadList.push_back({ "CompressATI2.dll", &g_pCompressATI2 });
+
+	#ifdef BUILD_64BIT
+		loadList.push_back({ "fmodex64.dll", &g_pFmodEx });
+		loadList.push_back({ "fmod_event64.dll", &g_pFmodEvent });
+		loadList.push_back({ "fmod_event_net64.dll", &g_pFmodEventNet });
+	#else
+		loadList.push_back({ "fmodex.dll", &g_pFmodEx });
+		loadList.push_back({ "fmod_event.dll", &g_pFmodEvent });
+		loadList.push_back({ "fmod_event_net.dll", &g_pFmodEventNet });
+	#endif
+	}
+
+	for (const SLoadEntry& entry : loadList)
+	{
+		*entry.outPtr = WinAPI::DLL::Load(entry.dllName);
+
+		if (!*entry.outPtr)
 		{
-#ifdef BUILD_64BIT
-			throw StringTools::SysErrorFormat("Failed to load the fmodex64 DLL!");
-#else
-			throw StringTools::SysErrorFormat("Failed to load the fmodex DLL!");
-#endif
+			throw StringTools::SysErrorFormat("Failed to load %s", entry.dllName);
 		}
+	}
 
-#ifdef BUILD_64BIT
-		g_pFmodEvent = WinAPI::DLL::Load("fmod_event64.dll");
-#else
-		g_pFmodEvent = WinAPI::DLL::Load("fmod_event.dll");
-#endif
-		if (!g_pFmodEvent)
-		{
-#ifdef BUILD_64BIT
-			throw StringTools::SysErrorFormat("Failed to load the fmod_event64 DLL!");
-#else
-			throw StringTools::SysErrorFormat("Failed to load the fmod_event DLL!");
-#endif
-		}
+	CRYACTION_BASE = reinterpret_cast<std::uintptr_t>(g_pCryAction);
 
-#ifdef BUILD_64BIT
-		g_pFmodEventNet = WinAPI::DLL::Load("fmod_event_net64.dll");
-#else
-		g_pFmodEventNet = WinAPI::DLL::Load("fmod_event_net.dll");
-#endif
-		if (!g_pFmodEventNet)
-		{
-#ifdef BUILD_64BIT
-			throw StringTools::SysErrorFormat("Failed to load the fmod_event_net64 DLL!");
-#else
-			throw StringTools::SysErrorFormat("Failed to load the fmod_event_net DLL!");
-#endif
-		}
-
+	if (!m_params.isDedicatedServer) {
 		WinAPI::VersionResource fmodVer;
 		if (!WinAPI::GetVersionResource(g_pFmodEx, fmodVer))
 		{
@@ -1278,13 +1264,13 @@ void Launcher::LoadEngine()
 			fmodVer.minor == 4 &&
 			fmodVer.patch == 7 &&
 			fmodVer.tweak == 23
-		);
+			);
 		g_hasWarheadWarsFmod = (!g_hasC1Fmod &&
 			fmodVer.major == 0 &&
 			fmodVer.minor == 4 &&
 			fmodVer.patch == 14 &&
 			fmodVer.tweak == 3
-		);
+			);
 	}
 }
 
@@ -1580,6 +1566,9 @@ struct DummySystemCallback : public ISystemUserCallback
 
 void Launcher::Run()
 {
+#ifdef CLIENT_LAUNCHER
+	CodeWall::InitializeCodeWallExternal();
+#endif
 	DummySystemCallback dummyCallback;
 
 	m_params.hInstance = WinAPI::DLL::Get(nullptr);  // EXE handle
@@ -1628,11 +1617,13 @@ void Launcher::Run()
 	else
 	{
 #ifdef CLIENT_LAUNCHER
+		CodeWall::InitializeCodeWallInternalCIG();
 		Client client;
 		gClient = &client;
 
 		this->StartEngine();
 
+		CodeWall::InitializeCodeWallInternalACG();
 		gClient->UpdateLoop();
 #endif
 	}

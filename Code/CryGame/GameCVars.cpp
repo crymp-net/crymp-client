@@ -32,6 +32,9 @@
 #include "Menus/FlashMenuObject.h"
 #include "Menus/MPHub.h"
 
+#include "Library/CodeWall.h"
+
+
 static void OnChangeThirdPerson(ICVar* pCVar)
 {
 	CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
@@ -664,6 +667,9 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_explosiveRemovalTime", &mp_explosiveRemovalTime, 30.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds for explosive removal after death");
 	pConsole->Register("mp_explosion_mfx", &mp_explosion_mfx, 1, VF_NOT_NET_SYNCED, "Enable mfx via ClExplosion rmi for server controlled missiles");
 
+	pConsole->Register("sv_codewall", &sv_codewall, 0, OPTIONAL_SYNC, "Required code wall status");
+	pConsole->Register("cl_codewall", &cl_codewall, 0, VF_NOT_NET_SYNCED | VF_READONLY, "Code wall status");
+
 	pConsole->Register("cl_hud_chat", &cl_hud_chat, 1, VF_NOT_NET_SYNCED, "Shows / hides chat");
 	pConsole->Register("ads", &ads, 1, VF_NOT_NET_SYNCED, "Enable or disable (100h+) ads");
 
@@ -780,6 +786,17 @@ void SCVars::InitCVars(IConsole* pConsole)
 			return &s_instance;
 		}()
 	);
+
+	pConsole->AddCommand("codewall_status", [](IConsoleCmdArgs* args) -> void {
+		auto status = CodeWall::GetCodeWallStatus();
+		CryLogAlways("Status: %2d", status.status);
+		CryLogAlways("Elapsed time: %.2f", status.elapsed);
+		CryLogAlways("");
+		CryLogAlways("CLK last clock: %.3f", status.clkLastClock);
+		CryLogAlways("CLK last time: %llu", (uint64_t)status.clkLastTime);
+		CryLogAlways("CLK discrepancies: %d", status.clkDiscrepancies);
+		CryLogAlways("CLK last discrepancy: %.3f", status.clkLastDiscrepancy);
+	});
 
 }
 

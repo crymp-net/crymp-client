@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 #include "CryCommon/CryAction/IActorSystem.h"
 
@@ -19,7 +20,7 @@ class ActorSystem final : public IActorSystem
 	EntityId m_demoPlaybackMappedOriginalServerPlayer = 0;  // m_reserved_0xc_0x10
 	ISystem* m_pSystem = nullptr;  // m_reserved_0x10_0x18
 	IEntitySystem* m_pEntitySystem = nullptr;  // m_reserved_0x14_0x20
-	std::map<EntityId, IActor*> m_actors;  // m_reserved_0x18_0x28
+	std::map<EntityId, uintptr_t> m_actors;  // m_reserved_0x18_0x28
 	std::map<std::string, IGameFramework::IActorCreator*, std::less<void>> m_classes;  // m_reserved_0x30_0x58
 	std::vector<std::unique_ptr<ActorIterator>> m_iteratorPool;  // m_reserved_0x48_0x88
 
@@ -58,6 +59,14 @@ public:
 
 	void AddActor(EntityId entityId, IActor* pActor) override;
 	void RemoveActor(EntityId entityId) override;
+
+	IActor* DecodeActor(uintptr_t actorRef) {
+		return (IActor*)(actorRef ^ (uintptr_t)this);
+	}
+
+	uintptr_t EncodeActor(IActor* pActor) {
+		return ((uintptr_t)pActor) ^ ((uintptr_t)this);
+	}
 
 	////////////////////////////////////////////////////////////////////////////////
 

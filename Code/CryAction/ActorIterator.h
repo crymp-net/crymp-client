@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <cstdint>
 
 #include "CryCommon/CryAction/IActorSystem.h"
 
@@ -10,7 +11,7 @@ class ActorIterator final : public IActorIterator
 {
 	int m_refCount = 0;
 	ActorSystem* m_pActorSystem = nullptr;
-	std::map<EntityId, IActor*>::iterator m_iterator;
+	std::map<EntityId, uintptr_t>::iterator m_iterator;
 
 public:
 	explicit ActorIterator(ActorSystem* pActorSystem);
