@@ -1,73 +1,11 @@
 #include <windows.h>
-#include <winhttp.h>
-#include <winnls.h>
-
-#include <processthreadsapi.h>
 #include <aclapi.h>
-#include <sddl.h>
 #include <ctime>
-#include <cmath>
 
 #include "CodeWall.h"
 
 static CodeWall::CodeWallStatus gStatus;
 
-int CodeWall::InitializeCodeWallInternalACG() {
-	HMODULE hKernel32 = GetModuleHandleA("kernel32.dll");
-	if (!hKernel32) return gStatus.status;
-
-	typedef BOOL(WINAPI* PFN_SetProcessMitigationPolicy)(
-		PROCESS_MITIGATION_POLICY MitigationPolicy,
-		PVOID                    lpBuffer,
-		SIZE_T                   dwLength
-		);
-
-	PFN_SetProcessMitigationPolicy pSetProcessMitigationPolicy =
-		(PFN_SetProcessMitigationPolicy)GetProcAddress(hKernel32, "SetProcessMitigationPolicy");
-
-	// Enable Arbitrary Code Guard (ACG)
-	if (pSetProcessMitigationPolicy && (gStatus.status & eCW_ACG) == 0) {
-		// ProcessDynamicCodePolicy is enum value 2
-		PROCESS_MITIGATION_DYNAMIC_CODE_POLICY dynamicCodePolicy = { 0 };
-		dynamicCodePolicy.ProhibitDynamicCode = 1;
-
-		if (pSetProcessMitigationPolicy((PROCESS_MITIGATION_POLICY)2, &dynamicCodePolicy, sizeof(dynamicCodePolicy))) {
-			gStatus.changed = true;
-			gStatus.status |= eCW_ACG;
-		}
-	}
-
-	return gStatus.status;
-}
-
-
-int CodeWall::InitializeCodeWallInternalCIG() {
-	HMODULE hKernel32 = GetModuleHandleA("kernel32.dll");
-	if (!hKernel32) return gStatus.status;
-
-	typedef BOOL(WINAPI* PFN_SetProcessMitigationPolicy)(
-		PROCESS_MITIGATION_POLICY MitigationPolicy,
-		PVOID                    lpBuffer,
-		SIZE_T                   dwLength
-		);
-
-	PFN_SetProcessMitigationPolicy pSetProcessMitigationPolicy =
-		(PFN_SetProcessMitigationPolicy)GetProcAddress(hKernel32, "SetProcessMitigationPolicy");
-
-	// Enable Code Integrity Guard (CIG)
-	if (pSetProcessMitigationPolicy && (gStatus.status & eCW_CIG) == 0) {
-		// ProcessSignaturePolicy is enum value 8
-		PROCESS_MITIGATION_BINARY_SIGNATURE_POLICY sigPolicy = { 0 };
-		sigPolicy.MitigationOptIn = 1;
-
-		if (pSetProcessMitigationPolicy((PROCESS_MITIGATION_POLICY)8, &sigPolicy, sizeof(sigPolicy))) {
-			gStatus.changed = true;
-			gStatus.status |= eCW_CIG;
-		}
-	}
-
-	return gStatus.status;
-}
 
 int CodeWall::InitializeCodeWallExternal() {
 	// 3. Apply Restricted DACL to the process handle

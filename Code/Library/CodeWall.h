@@ -23,8 +23,6 @@ namespace CodeWall {
 		time_t clkLastTime = 0;
 	};
 
-	int  InitializeCodeWallInternalACG();
-	int  InitializeCodeWallInternalCIG();
 	int  InitializeCodeWallExternal();
 	const CodeWallStatus& UpdateCodeWall(bool enabled, bool ingame, float frameTime);
 	const CodeWallStatus& GetCodeWallStatus();
