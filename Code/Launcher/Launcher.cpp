@@ -57,11 +57,9 @@ void* g_pCryAnimation = nullptr;
 void* g_pCryEntitySystem = nullptr;
 void* g_pCrySoundSystem = nullptr;
 void* g_pCryPhysics = nullptr;
-void* g_pCompressATI2 = nullptr;
 void* g_pFmodEx = nullptr;
 void* g_pFmodEvent = nullptr;
 void* g_pFmodEventNet = nullptr;
-void* g_pD3DCompiler = nullptr;
 bool g_hasC1Fmod = false;
 bool g_hasWarheadWarsFmod = false;
 
@@ -1212,22 +1210,20 @@ void Launcher::LoadEngine()
 	{
 		loadList.push_back({ "CryMovie.dll", &g_pCryMovie });
 		loadList.push_back({ "CryInput.dll", &g_pCryInput });
+
 		if (WinAPI::CmdLine::HasArg("-oldsound")) {
 			loadList.push_back({ "CrySoundSystem.dll", &g_pCrySoundSystem });
 		}
+
 		if (!WinAPI::CmdLine::HasArg("-dx9") &&
 			(WinAPI::CmdLine::HasArg("-dx10") || WinAPI::IsVistaOrLater()))
 		{
 			loadList.push_back({ "CryRenderD3D10.dll", &g_pCryRenderD3D10 });
-			loadList.push_back({ "D3DCompiler_34.dll", &g_pD3DCompiler });
 		}
 		else
 		{
 			loadList.push_back({ "CryRenderD3D9.dll", &g_pCryRenderD3D9 });
-			loadList.push_back({ "d3dx9_34.dll", &g_pD3DCompiler });
 		}
-
-		loadList.push_back({ "CompressATI2.dll", &g_pCompressATI2 });
 
 	#ifdef BUILD_64BIT
 		loadList.push_back({ "fmodex64.dll", &g_pFmodEx });
@@ -1264,13 +1260,13 @@ void Launcher::LoadEngine()
 			fmodVer.minor == 4 &&
 			fmodVer.patch == 7 &&
 			fmodVer.tweak == 23
-			);
+		);
 		g_hasWarheadWarsFmod = (!g_hasC1Fmod &&
 			fmodVer.major == 0 &&
 			fmodVer.minor == 4 &&
 			fmodVer.patch == 14 &&
 			fmodVer.tweak == 3
-			);
+		);
 	}
 }
 
@@ -1617,13 +1613,11 @@ void Launcher::Run()
 	else
 	{
 #ifdef CLIENT_LAUNCHER
-		CodeWall::InitializeCodeWallInternalCIG();
 		Client client;
 		gClient = &client;
 
 		this->StartEngine();
 
-		CodeWall::InitializeCodeWallInternalACG();
 		gClient->UpdateLoop();
 #endif
 	}
