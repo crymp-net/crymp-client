@@ -26,6 +26,7 @@ int main()
 int __stdcall WinMain(void*, void*, char*, int)
 #endif
 {
+#ifdef CLIENT_LAUNCHER
 	try
 	{
 		Launcher().Run();
@@ -41,4 +42,7 @@ int __stdcall WinMain(void*, void*, char*, int)
 	}
 
 	return 0;
+#else
+	Launcher().Run();
+#endif
 }
