@@ -263,7 +263,7 @@ void CAdManager::DisplayAds() {
 								for (auto& version : ad->versions) {
 									float similarity = abs(version.aspectRatio - mapping.aspectRatio);
 
-									if (similarity < closest) {
+									if (similarity < closest && similarity < 0.5f) {
 										pVersionMaterial = FindMaterial(*ad, version);
 										if (pVersionMaterial) {
 											adVersion = &version;
