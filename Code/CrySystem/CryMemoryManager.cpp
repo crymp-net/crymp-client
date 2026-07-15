@@ -412,25 +412,34 @@ private:
 	void* m_freeListLast = nullptr;
 	std::mutex m_mutex;
 
+	SafePool() = default;
+
 public:
-	SafePool()
+	static SafePool* Init()
 	{
+		static SafePool* instance = nullptr;
+		if (instance)
+		{
+			return instance;
+		}
+
 		// use 0x80000000 .. 0xc0000000 for the pool to avoid interfering with DLL placement
 		void* hint = reinterpret_cast<void*>(0x80000000ULL);
 
 		void* pool = VirtualAlloc(hint, BLOCK_SIZE * BLOCK_COUNT, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 		if (!pool)
 		{
-			return;
+			return nullptr;
 		}
 
 		if (pool != hint)
 		{
 			VirtualFree(pool, 0, MEM_RELEASE);
-			return;
+			return nullptr;
 		}
 
-		m_pool = pool;
+		instance = new SafePool;
+		instance->m_pool = pool;
 
 		std::size_t i = 0;
 		for (; i < BLOCK_COUNT; i++)
@@ -445,21 +454,23 @@ public:
 
 			void* block = reinterpret_cast<void*>(address);
 
-			if (!m_freeList)
+			if (!instance->m_freeList)
 			{
-				m_freeList = block;
-				m_freeListLast = block;
+				instance->m_freeList = block;
+				instance->m_freeListLast = block;
 			}
 			else
 			{
-				*static_cast<void**>(m_freeListLast) = block;
-				m_freeListLast = block;
+				*static_cast<void**>(instance->m_freeListLast) = block;
+				instance->m_freeListLast = block;
 			}
 		}
 
-		m_blockCount = i;
+		instance->m_blockCount = i;
 		g_stats.safePoolBlocks.store(i, std::memory_order_relaxed);
 		g_stats.safePoolFreeBlocks.store(i, std::memory_order_relaxed);
+
+		return instance;
 	}
 
 	void* Allocate()
@@ -776,7 +787,7 @@ CRYMALLOC_API void CrySystemCrtFree(void* ptr)
 void CryMemoryManager::Init()
 {
 #ifdef BUILD_64BIT
-	g_safePool = new SafePool;
+	g_safePool = SafePool::Init();
 #endif
 }
 
