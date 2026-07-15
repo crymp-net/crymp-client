@@ -170,6 +170,7 @@ void CAdManager::DisplayAds() {
 		m_ads = std::move(m_upcomingAds);
 	}
 
+#ifdef REMOTE_ADS
 	if (m_upcomingPakPath != m_pakPath) {
 		if (!m_pakPath.empty()) {
 			if (gEnv->pCryPak->ClosePack(m_pakPath.c_str())) {
@@ -192,6 +193,7 @@ void CAdManager::DisplayAds() {
 			}
 		}
 	}
+#endif
 
 	if (m_ads.size() == 0) {
 		return;
@@ -495,6 +497,7 @@ void CAdManager::LoadAds(const std::string& response) {
 }
 
 void CAdManager::FetchAdsPak() {
+#ifdef REMOTE_ADS
 	gClient->GetFileCache()->Request(FileCacheRequest{
 		.fileURL = m_upcomingPakUrl,
 		.fileType = "pak",
@@ -512,6 +515,9 @@ void CAdManager::FetchAdsPak() {
 			}
 		}
 	});
+#else
+	m_state = EAdState::eAS_FetchedAdsPak;
+#endif
 }
 
 void CAdManager::CollectViewership(float delta) {
