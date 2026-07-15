@@ -33,6 +33,8 @@
 #define AD_CYCLE_ERROR 2
 
 #define ADVERTISING_SERVER_TOKEN 3000
+#define ADVERTISING_SERVER_RESPONSE 3001
+
 
 #ifndef ADS_ENABLED
 #define ADS_ENABLED true
@@ -41,6 +43,8 @@
 #ifndef ADS_SERVER
 #define ADS_SERVER "https://crymp.org/adserve/api/v1/public/ads"
 #endif
+
+// #define ADS_REMOTE
 
 struct SAdCue {
 	Vec3 pos;
@@ -87,13 +91,14 @@ void CAdManager::Update(float delta) {
 			return;
 		}
 
-
+#ifdef REMOTE_ADS
 		if (g_pGameCVars->ads == 0) {
 			const auto profile{ gClient->GetScriptBind_CPPAPI()->GetProfile("real") };
 			if (profile && profile->playedTime > (100.0f * 3600.0f)) {
 				return;
 			}
 		}
+#endif
 
 		CycleAds(delta);
 	}
@@ -379,12 +384,13 @@ IMaterial* CAdManager::FindMaterial(const SAdGroup& group, const SAdVersion& ver
 }
 
 void CAdManager::FetchAds() {
+	CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
+#ifdef REMOTE_ADS
 	auto collected = std::move(m_collectedRecords);
 	std::string collectedSerialized;
 	try {
 		std::string serverToken;
 
-		CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
 		if (pSSS) {
 			string csServerToken;
 			if (pSSS->GetGlobalValue(ADVERTISING_SERVER_TOKEN, csServerToken)) {
@@ -429,33 +435,7 @@ void CAdManager::FetchAds() {
 		.headers = {{"Content-type", "application/json"}},
 		.callback = [this](const HTTPClientResult& result) -> void {
 			if (result.code == 200) {
-				try {
-					m_upcomingAds.clear();
-					auto ads{ nlohmann::json::parse(result.response) };
-					auto& groups = ads["groups"];
-					for (size_t i = 0; i < groups.size(); i++) {
-						std::vector<SAdVersion> versions;
-						auto& jsonVersions = groups[i]["versions"];
-						for (size_t j = 0; j < jsonVersions.size(); j++) {
-							versions.emplace_back(SAdVersion{
-								.id = jsonVersions[j]["id"].get<std::string>(),
-								.path = jsonVersions[j]["path"].get<std::string>(),
-								.aspectRatio = jsonVersions[j]["aspectRatio"].get<float>(),
-							});
-						}
-						m_upcomingAds.emplace_back(SAdGroup{
-							.id = groups[i]["id"].get<std::string>(),
-							.viewId = groups[i]["viewId"].get<std::string>(),
-							.versions = std::move(versions)
-						});
-					}
-					m_upcomingPakUrl = ads["resources"].get<std::string>();
-					m_state = EAdState::eAS_FetchedAds;
-				} catch (nlohmann::json::exception& ex) {
-				  CryLogAlways("$4Failed to parse ads response: %s", ex.what());
-				  m_cycles[AD_CYCLE_ERROR] = m_time;
-				  m_state = EAdState::eAS_Error;
-				}
+				LoadAds(result.response);
 			} else {
 				 CryLogWarning("$4Failed to retrieve ads: %d", result.code);
 				 m_cycles[AD_CYCLE_ERROR] = m_time;
@@ -463,6 +443,55 @@ void CAdManager::FetchAds() {
 			}
 		}
 	});
+#else
+	std::string serverResponse;
+	m_collectedRecords.clear();
+
+	if (pSSS) {
+		string csServerResponse;
+		if (pSSS->GetGlobalValue(ADVERTISING_SERVER_RESPONSE, csServerResponse)) {
+			serverResponse.assign(csServerResponse.c_str());
+			LoadAds(serverResponse);
+			// when not remote, we assume ads are already bundled inside server pak
+			if (m_state == EAdState::eAS_FetchAds) {
+				m_state = EAdState::eAS_FetchedAdsPak;
+			}
+		} else {
+			m_state = EAdState::eAS_None;
+		}
+	}
+#endif
+}
+
+void CAdManager::LoadAds(const std::string& response) {
+	try {
+		m_upcomingAds.clear();
+		auto ads{ nlohmann::json::parse(response) };
+		auto& groups = ads["groups"];
+		for (size_t i = 0; i < groups.size(); i++) {
+			std::vector<SAdVersion> versions;
+			auto& jsonVersions = groups[i]["versions"];
+			for (size_t j = 0; j < jsonVersions.size(); j++) {
+				versions.emplace_back(SAdVersion{
+					.id = jsonVersions[j]["id"].get<std::string>(),
+					.path = jsonVersions[j]["path"].get<std::string>(),
+					.aspectRatio = jsonVersions[j]["aspectRatio"].get<float>(),
+					});
+			}
+			m_upcomingAds.emplace_back(SAdGroup{
+				.id = groups[i]["id"].get<std::string>(),
+				.viewId = groups[i]["viewId"].get<std::string>(),
+				.versions = std::move(versions)
+				});
+		}
+		m_upcomingPakUrl = ads["resources"].get<std::string>();
+		m_state = EAdState::eAS_FetchedAds;
+	}
+	catch (nlohmann::json::exception& ex) {
+		CryLogAlways("$4Failed to parse ads response: %s", ex.what());
+		m_cycles[AD_CYCLE_ERROR] = m_time;
+		m_state = EAdState::eAS_Error;
+	}
 }
 
 void CAdManager::FetchAdsPak() {
