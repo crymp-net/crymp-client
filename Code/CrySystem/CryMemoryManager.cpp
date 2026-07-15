@@ -567,6 +567,11 @@ static void* CryMalloc_internal(std::size_t size, std::size_t& allocatedSize)
 	return ptr;
 }
 
+#ifdef CRYMALLOC_API
+#undef CRYMALLOC_API
+#define CRYMALLOC_API extern "C"
+#endif
+
 CRYMALLOC_API void* CryMalloc(std::size_t size, std::size_t& allocatedSize)
 {
 	g_stats.mallocCalls.fetch_add(1, std::memory_order_relaxed);
