@@ -306,7 +306,7 @@ void CFists::RaiseWeapon(bool raise, bool faster /*= false*/)
 		return;
 
 	//Only when colliding something while running
-	if (raise)
+	if (raise && g_pGameCVars->mp_wallJump > 0.01f)
 	{
 		//Skip these checks for other clients
 		if (bIsClient)
