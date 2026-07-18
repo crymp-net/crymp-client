@@ -1617,8 +1617,55 @@ void Launcher::Run()
 		gClient = &client;
 
 		this->StartEngine();
+		this->PostStartEngine();
 
 		gClient->UpdateLoop();
 #endif
+	}
+}
+
+void Launcher::PostStartEngine() {
+	typedef int64(*TimeUpdateFunc) ();
+	class CTimer : ITimer {
+	public:
+		TimeUpdateFunc m_pfnUpdate;
+		int64			m_lBaseTime;				// absolute in ticks, 1 sec = m_lTicksPerSec units
+		int64			m_lLastTime;				// absolute in ticks, 1 sec = m_lTicksPerSec units, needed to compute frame time
+		int64           m_lOffsetTime;              // relative in ticks; offsets frame time by some amount so we can reset it independently of AsyncTime
+
+		int64			m_lTicksPerSec;				// units per sec
+	};
+
+	// Measure TSC invariant CPU frequency
+	auto t0 = std::chrono::steady_clock::now();
+	uint64_t rdtsc0 = __rdtsc();
+
+	// Sleep for a short interval (10ms) to measure elapsed cycles
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+	auto t1 = std::chrono::steady_clock::now();
+	uint64_t rdtsc1 = __rdtsc();
+
+	// Calculate actual elapsed nanoseconds (sleep_for is not perfectly exact)
+	int64 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+
+	// (Cycles / Elapsed Nanoseconds) * 1,000,000,000 = Cycles Per Second
+	static const int64 TscFrequency = static_cast<int64>(((rdtsc1 - rdtsc0) * 1000000000LL) / elapsed_ns);
+	static const uint64_t TscStart = __rdtsc();
+
+	CryLogAlways("$3[CryMP] Invariant CPU frequency: %lld", TscFrequency);
+
+	CTimer* pTimer = reinterpret_cast<CTimer*>(gEnv->pTimer);
+	// Monotonic counter starting at process startup
+	using clock = std::chrono::steady_clock;
+	static const auto start = clock::now();
+	if (pTimer) {
+		pTimer->m_pfnUpdate = []() -> int64 {
+			CTimer* pTimer = reinterpret_cast<CTimer*>(gEnv->pTimer);
+			// Correctly set the ticks per second to the CPU's cycle frequency
+			pTimer->m_lTicksPerSec = TscFrequency;
+			// Return elapsed CPU cycles since startup
+			return static_cast<int64>(__rdtsc() - TscStart);
+		};
 	}
 }

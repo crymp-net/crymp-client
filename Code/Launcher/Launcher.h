@@ -11,6 +11,7 @@ class Launcher
 	void LoadEngine();
 	void PatchEngine();
 	void StartEngine();
+	void PostStartEngine();
 
 public:
 	Launcher() = default;
