@@ -21,8 +21,13 @@ namespace CodeWall {
 		double clkLastDiscrepancy = 0.0;
 		double clkLastClock = 0.0;
 		time_t clkLastTime = 0;
+
+		void     *clkQpc = nullptr;
+		uint64_t clkQpcSignature = 0;
+		uint64_t clkLastQpcSignature = 0;
 	};
 
+	void InitializeCodeWall();
 	int  InitializeCodeWallExternal();
 	const CodeWallStatus& UpdateCodeWall(bool enabled, bool ingame, float frameTime);
 	const CodeWallStatus& GetCodeWallStatus();

@@ -1563,6 +1563,7 @@ struct DummySystemCallback : public ISystemUserCallback
 void Launcher::Run()
 {
 #ifdef CLIENT_LAUNCHER
+	CodeWall::InitializeCodeWall();
 	CodeWall::InitializeCodeWallExternal();
 #endif
 	DummySystemCallback dummyCallback;

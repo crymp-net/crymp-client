@@ -796,6 +796,8 @@ void SCVars::InitCVars(IConsole* pConsole)
 		CryLogAlways("CLK last time: %llu", (uint64_t)status.clkLastTime);
 		CryLogAlways("CLK discrepancies: %d", status.clkDiscrepancies);
 		CryLogAlways("CLK last discrepancy: %.3f", status.clkLastDiscrepancy);
+		CryLogAlways("CLK QPC signature: %016llx", status.clkQpcSignature);
+		CryLogAlways("CLK last QPC signature: %016llx", status.clkLastQpcSignature);
 	});
 
 }

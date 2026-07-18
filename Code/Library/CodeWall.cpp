@@ -6,6 +6,14 @@
 
 static CodeWall::CodeWallStatus gStatus;
 
+void CodeWall::InitializeCodeWall() {
+	HMODULE hNtdll = GetModuleHandle("ntdll.dll");
+	if (hNtdll != NULL) {
+		void* pfnRtlQpc = GetProcAddress(hNtdll, "RtlQueryPerformanceCounter");
+		gStatus.clkQpc = pfnRtlQpc ? pfnRtlQpc : QueryPerformanceCounter;
+		gStatus.clkQpcSignature = *reinterpret_cast<uint64_t*>(gStatus.clkQpc);
+	}
+}
 
 int CodeWall::InitializeCodeWallExternal() {
 	// 3. Apply Restricted DACL to the process handle
@@ -88,32 +96,16 @@ const CodeWall::CodeWallStatus& CodeWall::UpdateCodeWall(bool enabled, bool inga
 	enabledBefore = enabled;
 
 	int before = gStatus.status;
-	if (enabled) {
-		// Only check when CodeWall is enabled
-		if (ingame) {
-			// CLK is checked only when player is in-game
-			if (gStatus.elapsed - gStatus.clkLastClock >= 10.0) {
-				time_t now = time(NULL);
-				time_t elapsedTime = now - gStatus.clkLastTime;
-				gStatus.clkLastDiscrepancy = elapsedTime - (gStatus.elapsed - gStatus.clkLastClock);
+	// Only check when CodeWall is enabled
+	uint64_t qpcSignature = *reinterpret_cast<uint64_t*>(gStatus.clkQpc);
 
-				if (std::abs(gStatus.clkLastDiscrepancy) > 0.5) {
-					gStatus.clkDiscrepancies++;
-				} else {
-					gStatus.clkDiscrepancies = 0;
-				}
-
-				gStatus.clkLastClock = gStatus.elapsed;
-				gStatus.clkLastTime = now;
-			}
-
-			if (gStatus.clkDiscrepancies >= 3) {
-				gStatus.status &= ~(int)eCW_CLK;
-			} else {
-				gStatus.status |= (int)eCW_CLK;
-			}
-		}
+	if (qpcSignature != gStatus.clkQpcSignature) {
+		gStatus.status &= ~(int)eCW_CLK;
+	} else {
+		gStatus.status |= (int)eCW_CLK;
 	}
+
+	gStatus.clkLastQpcSignature = qpcSignature;
 
 	gStatus.changed = gStatus.status != before;
 	return gStatus;
