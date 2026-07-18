@@ -1636,12 +1636,12 @@ void Launcher::PostStartEngine() {
 		int64			m_lTicksPerSec;				// units per sec
 	};
 
-	// Measure TSC invariant CPU frequency
+	// Measure CPU's invariant TSC frequency
 	auto t0 = std::chrono::steady_clock::now();
 	uint64_t rdtsc0 = __rdtsc();
 
 	// Sleep for a short interval (10ms) to measure elapsed cycles
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 	auto t1 = std::chrono::steady_clock::now();
 	uint64_t rdtsc1 = __rdtsc();
@@ -1653,7 +1653,7 @@ void Launcher::PostStartEngine() {
 	static const int64 TscFrequency = static_cast<int64>(((rdtsc1 - rdtsc0) * 1000000000LL) / elapsed_ns);
 	static const uint64_t TscStart = __rdtsc();
 
-	CryLogAlways("$3[CryMP] Invariant CPU frequency: %lld", TscFrequency);
+	CryLogAlways("$3[CryMP] CPU invariant TSC frequency: %lld", TscFrequency);
 
 	CTimer* pTimer = reinterpret_cast<CTimer*>(gEnv->pTimer);
 	// Monotonic counter starting at process startup
