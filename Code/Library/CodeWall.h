@@ -17,11 +17,6 @@ namespace CodeWall {
 		int status = (int)eCW_Default;
 		double elapsed = 0.0;
 
-		int clkDiscrepancies = 0;
-		double clkLastDiscrepancy = 0.0;
-		double clkLastClock = 0.0;
-		time_t clkLastTime = 0;
-
 		void     *clkQpc = nullptr;
 		uint64_t clkQpcSignature = 0;
 		uint64_t clkLastQpcSignature = 0;

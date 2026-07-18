@@ -82,18 +82,7 @@ const CodeWall::CodeWallStatus& CodeWall::GetCodeWallStatus() {
 }
 
 const CodeWall::CodeWallStatus& CodeWall::UpdateCodeWall(bool enabled, bool ingame, float frameTime) {
-	static bool enabledBefore = false;
 	gStatus.elapsed += (double)frameTime;
-
-	if (enabled && !enabledBefore) {
-		// Reset the state when we go from disabled state to enabled
-		gStatus.clkLastDiscrepancy = 0.0;
-		gStatus.clkDiscrepancies = 0;
-		gStatus.clkLastClock = gStatus.elapsed;
-		gStatus.clkLastTime = time(NULL);
-	}
-
-	enabledBefore = enabled;
 
 	int before = gStatus.status;
 	// Only check when CodeWall is enabled
