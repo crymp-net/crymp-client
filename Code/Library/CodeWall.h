@@ -16,11 +16,6 @@ namespace CodeWall {
 		bool changed = true;
 		int status = (int)eCW_Default;
 		double elapsed = 0.0;
-
-		int clkDiscrepancies = 0;
-		double clkLastDiscrepancy = 0.0;
-		double clkLastClock = 0.0;
-		time_t clkLastTime = 0;
 	};
 
 	int  InitializeCodeWallExternal();

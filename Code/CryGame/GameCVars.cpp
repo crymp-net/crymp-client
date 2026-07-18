@@ -792,10 +792,6 @@ void SCVars::InitCVars(IConsole* pConsole)
 		CryLogAlways("Status: %2d", status.status);
 		CryLogAlways("Elapsed time: %.2f", status.elapsed);
 		CryLogAlways("");
-		CryLogAlways("CLK last clock: %.3f", status.clkLastClock);
-		CryLogAlways("CLK last time: %llu", (uint64_t)status.clkLastTime);
-		CryLogAlways("CLK discrepancies: %d", status.clkDiscrepancies);
-		CryLogAlways("CLK last discrepancy: %.3f", status.clkLastDiscrepancy);
 	});
 
 }

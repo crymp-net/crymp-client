@@ -74,48 +74,7 @@ const CodeWall::CodeWallStatus& CodeWall::GetCodeWallStatus() {
 }
 
 const CodeWall::CodeWallStatus& CodeWall::UpdateCodeWall(bool enabled, bool ingame, float frameTime) {
-	static bool enabledBefore = false;
 	gStatus.elapsed += (double)frameTime;
-
-	if (enabled && !enabledBefore) {
-		// Reset the state when we go from disabled state to enabled
-		gStatus.clkLastDiscrepancy = 0.0;
-		gStatus.clkDiscrepancies = 0;
-		gStatus.clkLastClock = gStatus.elapsed;
-		gStatus.clkLastTime = time(NULL);
-	}
-
-	enabledBefore = enabled;
-
-	int before = gStatus.status;
-	if (enabled) {
-		// Only check when CodeWall is enabled
-		if (ingame) {
-			// CLK is checked only when player is in-game
-			if (gStatus.elapsed - gStatus.clkLastClock >= 10.0) {
-				time_t now = time(NULL);
-				time_t elapsedTime = now - gStatus.clkLastTime;
-				gStatus.clkLastDiscrepancy = elapsedTime - (gStatus.elapsed - gStatus.clkLastClock);
-
-				if (std::abs(gStatus.clkLastDiscrepancy) > 0.5) {
-					gStatus.clkDiscrepancies++;
-				} else {
-					gStatus.clkDiscrepancies = 0;
-				}
-
-				gStatus.clkLastClock = gStatus.elapsed;
-				gStatus.clkLastTime = now;
-			}
-
-			if (gStatus.clkDiscrepancies >= 3) {
-				gStatus.status &= ~(int)eCW_CLK;
-			} else {
-				gStatus.status |= (int)eCW_CLK;
-			}
-		}
-	}
-
-	gStatus.changed = gStatus.status != before;
 	return gStatus;
 }
 
