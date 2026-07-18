@@ -40,6 +40,8 @@
 
 #include "config.h"
 
+#include <Windows.h>
+
 std::uintptr_t CRYACTION_BASE = 0;
 
 void* g_pCry3DEngine = nullptr;
@@ -1636,36 +1638,20 @@ void Launcher::PostStartEngine() {
 		int64			m_lTicksPerSec;				// units per sec
 	};
 
-	// Measure CPU's invariant TSC frequency
-	auto t0 = std::chrono::steady_clock::now();
-	uint64_t rdtsc0 = __rdtsc();
-
-	// Sleep for a short interval (10ms) to measure elapsed cycles
-	std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-	auto t1 = std::chrono::steady_clock::now();
-	uint64_t rdtsc1 = __rdtsc();
-
-	// Calculate actual elapsed nanoseconds (sleep_for is not perfectly exact)
-	int64 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
-
-	// (Cycles / Elapsed Nanoseconds) * 1,000,000,000 = Cycles Per Second
-	static const int64 TscFrequency = static_cast<int64>(((rdtsc1 - rdtsc0) * 1000000000LL) / elapsed_ns);
-	static const uint64_t TscStart = __rdtsc();
-
-	CryLogAlways("$3[CryMP] CPU invariant TSC frequency: %lld", TscFrequency);
-
-	CTimer* pTimer = reinterpret_cast<CTimer*>(gEnv->pTimer);
-	// Monotonic counter starting at process startup
-	using clock = std::chrono::steady_clock;
-	static const auto start = clock::now();
-	if (pTimer) {
-		pTimer->m_pfnUpdate = []() -> int64 {
-			CTimer* pTimer = reinterpret_cast<CTimer*>(gEnv->pTimer);
-			// Correctly set the ticks per second to the CPU's cycle frequency
-			pTimer->m_lTicksPerSec = TscFrequency;
-			// Return elapsed CPU cycles since startup
-			return static_cast<int64>(__rdtsc() - TscStart);
-		};
+	typedef BOOL(*PFNQUERYPERFORMANCECOUNTER)(LARGE_INTEGER* li);
+	static PFNQUERYPERFORMANCECOUNTER pfnQPC = static_cast<PFNQUERYPERFORMANCECOUNTER>(CodeWall::GetCodeWallStatus().clkQpcCave);
+	
+	if (pfnQPC) {
+		CTimer* pTimer = reinterpret_cast<CTimer*>(gEnv->pTimer);
+		// Monotonic counter starting at process startup
+		using clock = std::chrono::steady_clock;
+		static const auto start = clock::now();
+		if (pTimer) {
+			pTimer->m_pfnUpdate = []() -> int64 {
+				LARGE_INTEGER lNow;
+				pfnQPC(&lNow);
+				return lNow.QuadPart;
+			};
+		}
 	}
 }

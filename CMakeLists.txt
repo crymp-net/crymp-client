@@ -716,6 +716,8 @@ add_library(Base OBJECT
 	Code/CrySystem/ResourceList.h
 	Code/CrySystem/StreamEngine.cpp
 	Code/CrySystem/StreamEngine.h
+	Code/Library/Asm.cpp
+	Code/Library/Asm.h
 	Code/Library/CodeWall.cpp
 	Code/Library/CodeWall.h
 	Code/Library/CPUID.cpp
@@ -849,6 +851,8 @@ target_include_directories(Base SYSTEM PUBLIC
 	ThirdParty/Lua/src
 	ThirdParty/mimalloc/include
 	ThirdParty/tracy/public
+	ThirdParty/zydis/include
+	ThirdParty/zycore/include
 )
 
 target_link_libraries(Base PUBLIC dbghelp ws2_32 winhttp winmm)
@@ -1607,6 +1611,51 @@ target_link_libraries(DSOAL PUBLIC OpenAL)
 
 ################################################################################
 
+add_library(Zydis OBJECT
+	ThirdParty/zydis/src/Decoder.c
+	ThirdParty/zydis/src/DecoderData.c
+	ThirdParty/zydis/src/Disassembler.c
+	ThirdParty/zydis/src/Encoder.c
+	ThirdParty/zydis/src/EncoderData.c
+	ThirdParty/zydis/src/Formatter.c
+	ThirdParty/zydis/src/FormatterATT.c
+	ThirdParty/zydis/src/FormatterBase.c
+	ThirdParty/zydis/src/FormatterBuffer.c
+	ThirdParty/zydis/src/FormatterIntel.c
+	ThirdParty/zydis/src/MetaInfo.c
+	ThirdParty/zydis/src/Mnemonic.c
+	ThirdParty/zydis/src/Register.c
+	ThirdParty/zydis/src/Segment.c
+	ThirdParty/zydis/src/SharedData.c
+	ThirdParty/zydis/src/String.c
+	ThirdParty/zydis/src/Utils.c
+	ThirdParty/zydis/src/Zydis.c
+	
+	ThirdParty/zycore/src/Allocator.c
+	ThirdParty/zycore/src/ArgParse.c
+	ThirdParty/zycore/src/Bitset.c
+	ThirdParty/zycore/src/Format.c
+	ThirdParty/zycore/src/List.c
+	ThirdParty/zycore/src/String.c
+	ThirdParty/zycore/src/Vector.c
+	ThirdParty/zycore/src/Vector.c
+	ThirdParty/zycore/src/API/Memory.c
+	ThirdParty/zycore/src/API/Process.c
+	ThirdParty/zycore/src/API/Synchronization.c
+	ThirdParty/zycore/src/API/Terminal.c
+	ThirdParty/zycore/src/API/Thread.c
+)
+
+target_include_directories(Zydis PUBLIC
+	ThirdParty/zydis/src
+	ThirdParty/zydis/include
+	ThirdParty/zycore/include
+)
+
+target_compile_definitions(Zydis PRIVATE _CRT_SECURE_NO_WARNINGS ZYDIS_STATIC_BUILD ZYCORE_STATIC_BUILD)
+
+################################################################################
+
 set(CRYMP_CLIENT_EXE "CryMP-Client${BUILD_BITS}")
 set(CRYMP_SERVER_EXE "CryMP-Server${BUILD_BITS}")
 
@@ -1641,8 +1690,8 @@ add_executable(${CRYMP_SERVER_EXE} WIN32
 	Resources/Launcher.manifest
 )
 
-target_link_libraries(${CRYMP_CLIENT_EXE} PRIVATE Base CryGame libogg libvorbis CrySoundSystem OpenAL DSOAL)
-target_link_libraries(${CRYMP_SERVER_EXE} PRIVATE Base CryGame)
+target_link_libraries(${CRYMP_CLIENT_EXE} PRIVATE Base CryGame libogg libvorbis CrySoundSystem OpenAL DSOAL Zydis)
+target_link_libraries(${CRYMP_SERVER_EXE} PRIVATE Base CryGame Zydis)
 
 # use these only in Launcher code to avoid recompiling everything for each exe
 target_compile_definitions(${CRYMP_CLIENT_EXE} PRIVATE CLIENT_LAUNCHER)

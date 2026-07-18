@@ -9,13 +9,15 @@ namespace CodeWall {
 		eCW_ACG = 8,
 		eCW_DACL = 16,
 
-		eCW_Default = eCW_CLK | eCW_MEM
+		eCW_Default = eCW_MEM
 	};
 
 	struct CodeWallStatus {
 		bool changed = true;
 		int status = (int)eCW_Default;
 		double elapsed = 0.0;
+
+		void* clkQpcCave = nullptr;
 	};
 
 	int  InitializeCodeWallExternal();

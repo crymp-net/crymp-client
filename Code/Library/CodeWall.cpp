@@ -3,6 +3,8 @@
 #include <ctime>
 
 #include "CodeWall.h"
+#include "Library/Asm.h"
+#include "Library/WinAPI.h"
 
 static CodeWall::CodeWallStatus gStatus;
 
@@ -66,6 +68,13 @@ int CodeWall::InitializeCodeWallExternal() {
 		}
 		FreeLibrary(hAdvapi32);
 	}
+
+	gStatus.clkQpcCave = Asm::CloneFunction("ntdll.dll", "RtlQueryPerformanceCounter");
+	if (gStatus.clkQpcCave) {
+		gStatus.changed = true;
+		gStatus.status |= eCW_CLK;
+	}
+
 	return gStatus.status;
 }
 
