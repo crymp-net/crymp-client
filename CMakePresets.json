@@ -46,6 +46,24 @@
 			}
 		},
 		{
+			"name": "console-bin32",
+			"inherits": "base-bin32",
+			"displayName": "Console (32-bit)",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
+				"CRYMP_CONSOLE_APP": "ON"
+			}
+		},
+		{
+			"name": "console-bin64",
+			"inherits": "base-bin64",
+			"displayName": "Console (64-bit)",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
+				"CRYMP_CONSOLE_APP": "ON"
+			}
+		},
+		{
 			"name": "hot-reload-bin32",
 			"inherits": "base-bin32",
 			"displayName": "Hot Reload (32-bit)",
