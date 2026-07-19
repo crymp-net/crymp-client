@@ -166,7 +166,8 @@ static void CrashTestHandler(IConsoleCmdArgs* pArgs)
 			exit(13);
 			break;
 		}
-		case 14: {
+		case 14:
+		{
 			UseAfterFree();
 			break;
 		}
