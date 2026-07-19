@@ -64,6 +64,24 @@
 			}
 		},
 		{
+			"name": "debug-bin32",
+			"inherits": "base-bin32",
+			"displayName": "Debug (32-bit)",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
+				"CRYMP_ASAN": "ON"
+			}
+		},
+		{
+			"name": "debug-bin64",
+			"inherits": "base-bin64",
+			"displayName": "Debug (64-bit)",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
+				"CRYMP_ASAN": "ON"
+			}
+		},
+		{
 			"name": "hot-reload-bin32",
 			"inherits": "base-bin32",
 			"displayName": "Hot Reload (32-bit)",
