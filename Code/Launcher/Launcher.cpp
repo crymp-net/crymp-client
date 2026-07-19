@@ -1638,20 +1638,18 @@ void Launcher::PostStartEngine() {
 		int64			m_lTicksPerSec;				// units per sec
 	};
 
-	typedef BOOL(*PFNQUERYPERFORMANCECOUNTER)(LARGE_INTEGER* li);
-	static PFNQUERYPERFORMANCECOUNTER pfnQPC = static_cast<PFNQUERYPERFORMANCECOUNTER>(CodeWall::GetCodeWallStatus().clkQpcCave);
-	
-	if (pfnQPC) {
-		CTimer* pTimer = reinterpret_cast<CTimer*>(gEnv->pTimer);
-		// Monotonic counter starting at process startup
-		using clock = std::chrono::steady_clock;
-		static const auto start = clock::now();
-		if (pTimer) {
-			pTimer->m_pfnUpdate = []() -> int64 {
-				LARGE_INTEGER lNow;
-				pfnQPC(&lNow);
-				return lNow.QuadPart;
-			};
-		}
+#ifdef BUILD_64BIT
+	typedef BOOL(WINAPI*PFNQUERYPERFORMANCECOUNTER)(LARGE_INTEGER* li);
+#else
+	typedef BOOL(WINAPI *PFNQUERYPERFORMANCECOUNTER)(LARGE_INTEGER* li);
+#endif
+	static const PFNQUERYPERFORMANCECOUNTER pfnQPC = static_cast<PFNQUERYPERFORMANCECOUNTER>(CodeWall::GetCodeWallStatus().clkQpcCave);
+	static CTimer* const pTimer = reinterpret_cast<CTimer*>(gEnv->pTimer);
+	if (pfnQPC && pTimer) {
+		pTimer->m_pfnUpdate = []() -> int64 {
+			LARGE_INTEGER lNow;
+			pfnQPC(&lNow);
+			return lNow.QuadPart;
+		};
 	}
 }

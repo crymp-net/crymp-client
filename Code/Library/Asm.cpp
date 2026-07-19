@@ -6,6 +6,10 @@
 #include <zydis/Decoder.h>
 
 void* Asm::CloneFunction(const char* moduleName, const char* funcName) {
+	// This function clones an existing function by copying original source code
+	// into new memory that has executable flag and rewriting all relative CALLs (E8 opcode)
+	// to either a new CALL with a proper relative address from cloned function
+	// or into a code cave right after cloned function that performs the calling
 	HMODULE hModule = GetModuleHandleA(moduleName);
 	if (hModule == NULL) {
 		return NULL;
@@ -117,6 +121,8 @@ void* Asm::CloneFunction(const char* moduleName, const char* funcName) {
 		memcpy(caveStart, cave, 17);
 	}
 #else
+	// For 32-bit we simply just rewrite CALL operand with a new relative address since
+	// all addresses are 32-bit anyway
 	uintptr_t mem = reinterpret_cast<uintptr_t>(pMem);
 	for (size_t i = 0; i < calls.size(); i++) {
 		uintptr_t call = calls[i];
@@ -128,10 +134,6 @@ void* Asm::CloneFunction(const char* moduleName, const char* funcName) {
 		uint32_t callArg = callDestination - src - 5;
 
 		memcpy(callSite + 1, &callArg, 4);
-
-		char msg[100];
-		sprintf(msg, "Address: %p, calls: %ld, current: %p", pMem, calls.size(), callSite);
-		MessageBoxA(0, msg, 0, MB_OK);
 	}
 #endif
 
