@@ -82,6 +82,13 @@ static void StackOverflow()
 	}
 }
 
+static void UseAfterFree() {
+	char* mem = new char[10];
+	memset(mem, 0, 10);
+	delete[] mem;
+	memset(mem, 0, 10);
+}
+
 static void CrashTestHandler(IConsoleCmdArgs* pArgs)
 {
 	if (pArgs->GetArgCount() != 2)
@@ -159,6 +166,10 @@ static void CrashTestHandler(IConsoleCmdArgs* pArgs)
 			exit(13);
 			break;
 		}
+		case 14: {
+			UseAfterFree();
+			break;
+		}
 		default:
 		{
 			CryLogWarningAlways("sys_crashtest %d is not supported", value);
@@ -189,6 +200,7 @@ void CrashTest::Register()
 		" 10 = Pure virtual function call\n"
 		" 11 = Unhandled C++ exception\n"
 		" 12 = Stack overflow\n"
-		" 13 = exit(13)"
+		" 13 = exit(13)\n"
+		" 14 = use after free"
 	);
 }
