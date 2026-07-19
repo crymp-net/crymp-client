@@ -2495,7 +2495,8 @@ int CArticulatedEntity::Step(float time_interval)
 				    m_pCollEntList[i]->m_iSimClass <= 2 &&
 				        (m_pCollEntList[i]->m_iGroup == m_iGroup && m_pCollEntList[i]->m_bMoved ||
 				         !m_pCollEntList[i]->IsAwake() ||
-				         m_pWorld->m_pGroupNums[m_pCollEntList[i]->m_iGroup] <
+						  m_pCollEntList[i]->m_iGroup < 0 ||
+				          m_pWorld->m_pGroupNums[m_pCollEntList[i]->m_iGroup] <
 				             m_pWorld->m_pGroupNums[m_iGroup]))
 				{
 					m_pCollEntList[j++] = m_pCollEntList[i];
