@@ -6,6 +6,7 @@ Stack = {
 	_i = 1,
 	limit = 0xFFFFFFFFFFFFFFFF
 };
+
 function Stack:Create()
 	local stack = {
 		_v = {},
@@ -16,6 +17,7 @@ function Stack:Create()
 	self.__index = self;
 	return stack;
 end
+
 function Stack:Push(...)
 	for i, v in pairs({...}) do
 		if self._i > self.limit then
@@ -25,6 +27,7 @@ function Stack:Push(...)
 		self._i = self._i + 1;
 	end
 end
+
 function Stack:Pop()
 	if (self._i - 1 <= 0) then
 		return nil;
@@ -34,15 +37,19 @@ function Stack:Pop()
 	self._i = self._i - 1;
 	return v;
 end
+
 function Stack:IsEmpty()
 	return self._v[1] == nil;
 end
+
 function Stack:Limit(l)
 	self.limit = l;
 end
+
 function Stack:Top()
 	return self._v[self._i - 1];
 end
+
 function Stack:Front()
 	return self._v[1];
 end
@@ -52,6 +59,7 @@ Queue = {
 	_i = 1,
 	limit = 0xFFFFFFFFFFFFFFFF
 };
+
 function Queue:Create()
 	local queue = {
 		_v = {},
@@ -62,6 +70,7 @@ function Queue:Create()
 	self.__index = self;
 	return queue;
 end
+
 function Queue:Push(...)
 	for i, v in pairs({...}) do
 		if self._i > self.limit then
@@ -71,6 +80,7 @@ function Queue:Push(...)
 		self._i = self._i + 1;
 	end
 end
+
 function Queue:Pop()
 	if (self._i - 1 <= 0) then
 		return nil;
@@ -83,15 +93,19 @@ function Queue:Pop()
 	self._i = self._i - 1;
 	return v;
 end
+
 function Queue:IsEmpty()
 	return self._v[1] == nil;
 end
+
 function Queue:Limit(l)
 	self.limit = l;
 end
+
 function Queue:Top()
 	return self._v[self._i - 1];
 end
+
 function Queue:Front()
 	return self._v[1];
 end
@@ -100,6 +114,7 @@ FuncQueue = {
 	_v = {},
 	_i = 1
 };
+
 function FuncQueue:Create()
 	local funcQueue = {
 		_v = {},
@@ -109,6 +124,7 @@ function FuncQueue:Create()
 	self.__index = self;
 	return funcQueue;
 end
+
 function FuncQueue:Push(f, ...)
 	for i, v in pairs({...}) do
 		self._v[self._i] = {
@@ -118,6 +134,7 @@ function FuncQueue:Push(f, ...)
 		self._i = self._i + 1;
 	end
 end
+
 function FuncQueue:Pop()
 	if (self._i - 1 <= 0) then
 		return nil;
@@ -130,6 +147,7 @@ function FuncQueue:Pop()
 	self._i = self._i - 1;
 	return v.func, v.params;
 end
+
 function FuncQueue:IsEmpty()
 	return self._v[1] == nil;
 end
@@ -139,6 +157,7 @@ FunctionsContainer = {
 	AllowedCategs = {},
 	ACC = 0
 }
+
 function FunctionsContainer:Create()
 	local container = {
 		Funcs = {},
@@ -149,12 +168,14 @@ function FunctionsContainer:Create()
 	self.__index = self;
 	return container;
 end
+
 function FunctionsContainer:AddCategs(tbl)
 	for i, v in pairs(tbl) do
 		self.AllowedCategs[v] = true;
 		self.ACC = self.ACC + 1;
 	end
 end
+
 function FunctionsContainer:AddFunc(func, name, pl)
 	name = name:gsub("g_gameRules:", "");
 	local isallowed = self.AllowedCategs[name];
@@ -168,9 +189,11 @@ function FunctionsContainer:AddFunc(func, name, pl)
 		self.Funcs[name][#self.Funcs[name] + 1] = {func, pl};
 	end
 end
+
 function FunctionsContainer:GetFuncs(name)
 	return self.Funcs[name];
 end
+
 function FunctionsContainer:LoadPlugin(pl)
 	for i, v in pairs(pl) do
 		if type(v) == "function" then
@@ -178,9 +201,11 @@ function FunctionsContainer:LoadPlugin(pl)
 		end
 	end
 end
+
 Translator = {
 	__Languages = {}
 };
+
 function Translator:Create()
 	local t = {
 		__Languages = {}
@@ -189,11 +214,13 @@ function Translator:Create()
 	self.__index = self;
 	return t;
 end
+
 function Translator:AddLanguage(lang, tbl)
 	lang = lang:lower();
 	self.__Languages[lang] = {};
 	MergeTables(self.__Languages[lang], tbl);
 end
+
 function Translator:Translate(lang, text)
 	lang = lang:lower();
 	if (self.__Languages[lang]) then
@@ -206,6 +233,7 @@ function Translator:Translate(lang, text)
 	end
 	return text;
 end
+
 function __qt(p, m)
 	if (SafeWriting.Settings.DisableTranslations) then
 		p = "en";
@@ -216,9 +244,11 @@ function __qt(p, m)
 		return "[[" .. m .. "]]";
 	end
 end
+
 JL1Hash = {
 	Seed = 1
 };
+
 function JL1Hash:Create(seed)
 	local tbl = {
 		Seed = seed
@@ -228,18 +258,23 @@ function JL1Hash:Create(seed)
 	self.Seed = seed;
 	return tbl;
 end
+
 function JL1Hash:SetSeed(seed)
 	self.Seed = seed;
 end
+
 function JL1Hash:bleft(num, p)
 	return (num * 2 ^ p);
 end
+
 function JL1Hash:bright(num, p)
 	return math.floor(num / 2 ^ p);
 end
+
 function JL1Hash:band(num, p)
 	return band(num, p);
 end
+
 function JL1Hash:Hash(text)
 	local hash = 0;
 	local len = (text:len()) + 2;
@@ -266,9 +301,11 @@ function JL1Hash:Hash(text)
 	end
 	return string.format("%x", hash);
 end
+
 ScheduleBase = {
 	Events = {}
 };
+
 function ScheduleBase:New()
 	local tbl = {
 		Events = {}
@@ -277,9 +314,11 @@ function ScheduleBase:New()
 	self.__index = self;
 	return tbl;
 end
+
 function ScheduleBase:Create()
 	return self:New();
 end
+
 function ScheduleBase:AddEvent(timeout, event, params, _repeat)
 	if (type(params) == "boolean" or type(params) == "number") and _repeat == nil then
 		_repeat = params;
@@ -288,6 +327,7 @@ function ScheduleBase:AddEvent(timeout, event, params, _repeat)
 	params = params or {};
 	self.Events[#self.Events + 1] = {os.clock(), timeout / 1000, event, params, _repeat};
 end
+
 function ScheduleBase:Update()
 	local i = 1;
 	local v;
@@ -315,42 +355,87 @@ function ScheduleBase:Update()
 		end
 	end
 end
+
 function ScheduleBase:IsEmpty()
 	return #self.Events == 0;
 end
+
+
+function CompileFile(file, folder)
+	folder = folder or SafeWriting.AdditionalScriptsFolder;
+	local out = folder .. (file:gsub("[.]lua", ".sfwc"));
+	file = folder .. file;
+	local f, err = io.open(out, "wb");
+	if f then
+		local bc = loadfile(file);
+		f:write(string.dump(bc));
+		f:close();
+	else
+		print("Failed to open output stream in CompileFile");
+	end
+end
+
+function SpecialFormat(fmt, ...)
+	local ctr = 1;
+	local ctrend = #{...};
+	while ctr <= ctrend do
+		({...})[ctr] = string.gsub(({...})[ctr], "%%", "%%%%");
+		ctr = ctr + 1;
+	end
+	local style = SafeWriting.Settings.Style or {};
+	fmt = fmt:gsub("${t:(%w-)|([0-9])}", function(a, b)
+		return "$" .. (style[a] or b);
+	end);
+	return string.format(fmt, ...);
+end
+
+function GetSpecialFormat(fmt, ...)
+	local ctr = 1;
+	local ctrend = #{...};
+	while ctr <= ctrend do
+		({...})[ctr] = string.gsub(({...})[ctr], "%%", "%%%%");
+		ctr = ctr + 1;
+	end
+	return fmt, ...;
+end
+
+function MergeTables(tbl1, tbl2)
+	for i, v in pairs(tbl2) do
+		if (type(v) == "table") then
+			tbl1[i] = tbl1[i] or {};
+			MergeTables(tbl1[i], tbl2[i]);
+		else
+			tbl1[i] = v;
+		end
+	end
+end
+
+function MergeFunctions(f1, f2, p1)
+	local f3 = f1;
+	f1 = function(...)
+		f3(...);
+		f2(...);
+	end
+	return f1;
+end
+
 function xmlfixstring(str)
 	str = str:gsub("&", "&amp;");
 	str = str:gsub("\"", "&quot;");
 	return str;
 end
+
 function xmlgetstring(str)
 	str = str:gsub("&quot;", "\"");
 	str = str:gsub("&amp;", "&");
 	return str;
 end
+
 function requestencode(str)
 	str = str:gsub("[&]", string.char(0x80));
 	str = str:gsub("[<]", string.char(0x81));
 	str = str:gsub("[>]", string.char(0x82));
 	return str;
-end
-
-function similartext_old(a, b)
-	local delta = a:len() - b:len();
-	local nullchr = string.char(0);
-	if delta < 0 then
-		a = a .. string.rep(nullchr, -delta);
-	elseif delta > 0 then
-		b = b .. string.rep(nullchr, delta);
-	end
-	local e, f = 0, a:len();
-	for i = 1, f do
-		local c, d = a:byte(i), b:byte(i);
-		if c == d then
-			e = e + 1;
-		end
-	end
-	return e * 100 / f;
 end
 
 function similartext(a, b)
@@ -383,65 +468,13 @@ function similartext(a, b)
 	return 100 / (1 + distance)
 end
 
-function CompileFile(file, folder)
-	folder = folder or SafeWriting.AdditionalScriptsFolder;
-	local out = folder .. (file:gsub("[.]lua", ".sfwc"));
-	file = folder .. file;
-	local f, err = io.open(out, "wb");
-	if f then
-		local bc = loadfile(file);
-		f:write(string.dump(bc));
-		f:close();
-	else
-		print("Failed to open output stream in CompileFile");
-	end
-end
-function SpecialFormat(fmt, ...)
-	local ctr = 1;
-	local ctrend = #{...};
-	while ctr <= ctrend do
-		({...})[ctr] = string.gsub(({...})[ctr], "%%", "%%%%");
-		ctr = ctr + 1;
-	end
-	local style = SafeWriting.Settings.Style or {};
-	fmt = fmt:gsub("${t:(%w-)|([0-9])}", function(a, b)
-		return "$" .. (style[a] or b);
-	end);
-	return string.format(fmt, ...);
-end
-function GetSpecialFormat(fmt, ...)
-	local ctr = 1;
-	local ctrend = #{...};
-	while ctr <= ctrend do
-		({...})[ctr] = string.gsub(({...})[ctr], "%%", "%%%%");
-		ctr = ctr + 1;
-	end
-	return fmt, ...;
-end
-function MergeTables(tbl1, tbl2)
-	for i, v in pairs(tbl2) do
-		if (type(v) == "table") then
-			tbl1[i] = tbl1[i] or {};
-			MergeTables(tbl1[i], tbl2[i]);
-		else
-			tbl1[i] = v;
-		end
-	end
-end
-function MergeFunctions(f1, f2, p1)
-	local f3 = f1;
-	f1 = function(...)
-		f3(...);
-		f2(...);
-	end
-	return f1;
-end
 function tonum(...)
 	for i, v in ipairs({...}) do
 		({...})[i] = tonumber(v);
 	end
 	return ...;
 end
+
 function trim(str)
 	str = str:gsub("%\n", "");
 	str = str:gsub("%\t", "");
@@ -450,6 +483,7 @@ function trim(str)
 
 	return str;
 end
+
 function trim_from(str, params)
 	local ret = str;
 	for i, v in pairs(params) do
@@ -457,21 +491,12 @@ function trim_from(str, params)
 	end
 	return ret
 end
+
 function sfwstrfind(str, _substr, off)
 	local pos = str:find(_substr, off or 1, true);
 	return pos or -1;
 end
-function strcontains(str, _substr)
-	return (sfwstrfind(str, _substr) > (-1));
-end
-function readjson(text)
-	local text = text:gsub([["(.-)"[ ]*:[ ]*(.-)([,}])]], function(a, b, c)
-		return string.format("[\"%s\"]=%s%s", a, b, c);
-	end);
-	text = "return " .. text .. ";";
-	local t = assert(loadstring(text));
-	return t();
-end
+
 function in_array(s, arr)
 	for i, v in ipairs(arr) do
 		if (v == s) then
@@ -480,6 +505,7 @@ function in_array(s, arr)
 	end
 	return false;
 end
+
 function count(arr)
 	local c = 0;
 	for i, v in pairs(arr) do
@@ -487,18 +513,15 @@ function count(arr)
 	end
 	return c;
 end
-function GetDistance(a, b)
-	local x, y, z = a.x - b.x, a.y - b.y, a.z - b.z;
-	local c = math.sqrt(x ^ 2 + y ^ 2);
-	local d = math.sqrt(c ^ 2 + z ^ 2);
-	return d;
-end
+
 function torad(num)
 	return num / (180 / math.pi);
 end
+
 function todeg(num)
 	return num * (180 / math.pi);
 end
+
 function arr2str_fast(arr, stp, off)
 	if (not off) then
 		off = "";
@@ -528,6 +551,7 @@ function arr2str_fast(arr, stp, off)
 	t = t .. off .. "};\n";
 	return t;
 end
+
 function arr2str(arr, stp, off)
 	if (not off) then
 		off = "";
@@ -557,6 +581,7 @@ function arr2str(arr, stp, off)
 	t = t .. off .. "};\n";
 	return t;
 end
+
 function _pairs(arr)
 	local c1 = #arr;
 	for i, v in pairs(arr) do
@@ -568,6 +593,7 @@ function _pairs(arr)
 		return pairs(arr);
 	end
 end
+
 function split(text, separator)
 	local arr = {};
 	local idx = 0;
@@ -587,6 +613,7 @@ function split(text, separator)
 	end
 	return arr;
 end
+
 function fsplit(str, a)
 	local t = {};
 	for i in str:gmatch("([^" .. a .. "]+)") do
@@ -594,6 +621,7 @@ function fsplit(str, a)
 	end
 	return t;
 end
+
 function fsplit0(str, a)
 	local t = {};
 	local idx = 0;
@@ -603,6 +631,25 @@ function fsplit0(str, a)
 	end
 	return t;
 end
+
+function str_replace_i(t, w, i)
+	local pos = {};
+	local orig, ow, cnt = t, w, 0;
+	t = t:lower();
+	w = w:lower();
+	local p = string.find(t, w, nil, true);
+	while p do
+		pos[#pos + 1] = p;
+		p = string.find(t, w, p + 1, true);
+	end
+	local start = 1;
+	for j, v in ipairs(pos) do
+		orig = orig:sub(start, v - 1) .. i .. orig:sub(v + w:len());
+		start = v;
+	end
+	return orig;
+end
+
 function CTableToLuaTable(tbl)
 	local ntbl = {};
 	for i = 0, #tbl do
@@ -610,6 +657,7 @@ function CTableToLuaTable(tbl)
 	end
 	return ntbl;
 end
+
 function CmdGetNameAndText(line)
 	local params = split(line, " ");
 	params = CTableToLuaTable(params);
@@ -620,6 +668,7 @@ function CmdGetNameAndText(line)
 	end
 	return name, text;
 end
+
 function ClearString(str, name)
 	if utf8clean then
 		str = utf8clean(str);
@@ -710,6 +759,7 @@ function ClearString(str, name)
 	end
 	return str;
 end
+
 function VerifyName(meno)
 	local povolene = "abcdefghijklmnopqrstuvwxyz1235467890+-*/#[](){}<>.:;!?$^= ";
 	local povolene_t = {};
@@ -731,6 +781,7 @@ function VerifyName(meno)
 	end
 	return konecne;
 end
+
 function ParseDecIP(ip)
 	local formacie = {{
 		regex = "(%d+)-(%d+)-(%d+)-(%d+)[.]cm[.]vtr[.]net",
@@ -784,12 +835,14 @@ function ParseDecIP(ip)
 	end
 	return fip;
 end
+
 function IsRealIP(ip)
 	if string.match(ip, "^(%d)[.](%d)[.](%d)[.](%d)$") then
 		return false;
 	end
 	return string.match(ip, "^(%d+)[.](%d+)[.](%d+)[.](%d+)$");
 end
+
 function _GetIP(host)
 	local isHex = false;
 	local isKnown = false;
@@ -854,6 +907,7 @@ function _GetIP(host)
 	end
 	return host;
 end
+
 function average(...)
 	local pars = {...};
 	if #pars == 1 and type(pars[1]) == "table" then
@@ -880,31 +934,7 @@ function average(...)
 		end
 	end
 end
-function CalcDistance2D_XY(a, b)
-	local c, d = a.x - b.x, a.y - b.y;
-	return math.sqrt(c ^ 2 + d ^ 2);
-end
-function CalcDistance2D_XZ(a, b)
-	local c, d = a.x - b.x, a.z - b.z;
-	return math.sqrt(c ^ 2 + d ^ 2);
-end
-function CalcDistance2D_YZ(a, b)
-	local c, d = a.y - b.y, a.z - b.z;
-	return math.sqrt(c ^ 2 + d ^ 2);
-end
-function CalcDistance3D(a, b)
-	local c, d, e = a.x - b.x, a.y - b.y, a.z - b.z;
-	return math.sqrt(c ^ 2 + d ^ 2 + e ^ 2);
-end
-function CreateClass(name, derivatedFrom)
-	KnownClasses = KnownClasses or {};
-	KnownClasses[name] = derivatedFrom or "";
-	_G[name] = {
-		__className__ = name,
-		__motherName__ = derivatedFrom or ""
-	};
-	return _G[name];
-end
+
 function itype(a)
 	local tp = type(a);
 	if tp == "table" then
@@ -914,63 +944,42 @@ function itype(a)
 	end
 	return tp;
 end
-function str_replace_i(t, w, i)
-	local pos = {};
-	local orig, ow, cnt = t, w, 0;
-	t = t:lower();
-	w = w:lower();
-	local p = string.find(t, w, nil, true);
-	while p do
-		pos[#pos + 1] = p;
-		p = string.find(t, w, p + 1, true);
-	end
-	local start = 1;
-	for j, v in ipairs(pos) do
-		orig = orig:sub(start, v - 1) .. i .. orig:sub(v + w:len());
-		start = v;
-	end
-	return orig;
+
+function GetDistance(a, b)
+	local x, y, z = a.x - b.x, a.y - b.y, a.z - b.z;
+	return math.sqrt(x^2 + y^2 + z^2)
 end
-function pmcreate(name, body, ...)
-	local fullPath = name .. "?";
-	for i, v in pairs({...}) do
-		local tp = itype(v);
-		fullPath = fullPath .. "@" .. tp;
-	end
-	_G[fullPath] = body;
+
+function CalcDistance2D_XY(a, b)
+	local c, d = a.x - b.x, a.y - b.y;
+	return math.sqrt(c ^ 2 + d ^ 2);
 end
-function pmcall(name, ...)
-	local fullPath = name .. "?";
-	for i, v in pairs({...}) do
-		local tp = itype(v);
-		fullPath = fullPath .. "@" .. tp;
-	end
-	local f = _G[fullPath];
-	if not f then
-		print("Call to unexisting function " .. fullPath .. "!");
-	else
-		f(...);
-	end
+
+function CalcDistance2D_XZ(a, b)
+	local c, d = a.x - b.x, a.z - b.z;
+	return math.sqrt(c ^ 2 + d ^ 2);
 end
-function in_range(num1, num2, c)
-	return math.abs(num1 - num2) < c;
+
+function CalcDistance2D_YZ(a, b)
+	local c, d = a.y - b.y, a.z - b.z;
+	return math.sqrt(c ^ 2 + d ^ 2);
 end
-function looksAt(pos1, pos2, angle1, thrDeg)
-	thrDeg = thrDeg or 1;
-	thrDeg = torad(thrDeg);
-	local angles = calcViewAngles(pos1, pos2);
-	return (in_range(angles.x, angle1.x, thrDeg) and in_range(angles.z, angle1.z, thrDeg));
+
+function CalcDistance3D(a, b)
+	local c, d, e = a.x - b.x, a.y - b.y, a.z - b.z;
+	return math.sqrt(c ^ 2 + d ^ 2 + e ^ 2);
 end
-function calcViewAngles(pos1, pos2)
-	local x, y, z = pos2.x - pos1.x, pos2.y - pos1.y, pos2.z - pos1.z;
-	local d = math.sqrt(x ^ 2 + y ^ 2);
-	local angles = {
-		x = math.atan2(z, d),
-		y = 0,
-		z = -math.atan2(x, y)
+
+function CreateClass(name, derivatedFrom)
+	KnownClasses = KnownClasses or {};
+	KnownClasses[name] = derivatedFrom or "";
+	_G[name] = {
+		__className__ = name,
+		__motherName__ = derivatedFrom or ""
 	};
-	return angles;
+	return _G[name];
 end
+
 function Derive(a)
 	local b = {};
 	for i, v in pairs(a) do
@@ -979,6 +988,7 @@ function Derive(a)
 	return b;
 end
 derive = Derive;
+
 AdvancedPlugin = {
 	OutFolder = "",
 	OutFile = "",
@@ -986,9 +996,11 @@ AdvancedPlugin = {
 	TableName = "",
 	Data = {}
 };
+
 function AdvancedPlugin:GetPath(path)
 	return self.OutFolder .. path;
 end
+
 function AdvancedPlugin:Init(outfile, outf)
 	self.Name = self:GetName();
 	self.OutFolder = outf or SafeWriting.GlobalStorageFolder;
@@ -996,12 +1008,14 @@ function AdvancedPlugin:Init(outfile, outf)
 	self.TableName = self.Name .. ".Data";
 	self:LoadData();
 end
+
 function AdvancedPlugin:LoadData()
 	local f = loadfile(self:GetPath(self.OutFile));
 	if f then
 		assert(f)();
 	end
 end
+
 function AdvancedPlugin:GetName()
 	if self.Name then
 		return self.Name;
@@ -1012,6 +1026,7 @@ function AdvancedPlugin:GetName()
 		end
 	end
 end
+
 function AdvancedPlugin:SaveData()
 	local out = self:GetPath(self.OutFile);
 	local f, err = io.open(out, "w");
@@ -1020,6 +1035,7 @@ function AdvancedPlugin:SaveData()
 		f:close();
 	end
 end
+
 function AdvancedPlugin:New(...)
 	local plg = {
 		OutFolder = "",
@@ -1033,6 +1049,7 @@ function AdvancedPlugin:New(...)
 	self.__index = self;
 	return plg;
 end
+
 function AdvancedPlugin:Load()
 	SafeWriting.FuncContainer:LoadPlugin(self);
 end
