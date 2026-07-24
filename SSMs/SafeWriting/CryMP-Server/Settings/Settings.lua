@@ -24,6 +24,7 @@ SafeWriting.Settings={
 	PAK=nil;
 
 	OptimizeSpeed=false;	--makes server do less output (recommended for non-stop servers)
+	Caching=false;
 	HomeCountry="unknown";	--set it to anything, for example: sk,cz,pl,ua,at,ru,de,uk,...
 	EnableSafeWritingExe=true;	--enables using SSMSafeWriting.exe for mod
 	UseDLLInfoLoader=true; --use dll to load player's info - it's much faster than normal Lua way.
@@ -49,8 +50,8 @@ SafeWriting.Settings={
 	TimeOfDaySpeed=0;  --set to any number you wish	
 	
 	AutoGenerateCCommands=true;	--if enabled, script will generate console command for every chat command, console command will be sfw_{chat command name} {params...}
-	--^^^^^ for above, notice that if chat command does not require any parameters, console command still does, so use it like sfw_flare 0 or anything
-	
+	JcukenChatCommands=false;
+
 	Admins={ -- here are profile IDs of admins
 		["1"] = "Zi;"; --you can even write name here if you want
 	};
