@@ -167,7 +167,7 @@ void *ScriptSystem::Allocate(size_t size)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
 
-	void *block = mi_malloc(size);
+	void *block = malloc(size);
 	TracyAllocN(block, size, "ScriptSystem");
 
 	// we never fail
@@ -185,7 +185,7 @@ void ScriptSystem::Deallocate(void *block)
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
 
 	TracyFreeN(block, "ScriptSystem");
-	mi_free(block);
+	free(block);
 }
 
 void ScriptSystem::PushAny(const ScriptAnyValue & any)

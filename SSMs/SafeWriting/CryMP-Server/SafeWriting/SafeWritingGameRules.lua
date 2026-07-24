@@ -164,6 +164,19 @@ if not SafeWritingGameRules.UpdatePings then
 			end
 		end
 	end
+	
+	SafeWritingGameRules.SetTimer = function(self, timerId, msec, continues)
+		TICKS = (TICKS or 0) + 1
+		if continues == nil and TICK_ACTIVE[timerId] then
+			return
+		end
+		TICK_ACTIVE[timerId] = true
+		Script.SetTimer(msec,function()
+			TICK_ACTIVE[timerId] = nil
+			self.Server.OnTimer(self,timerId,msec);
+		end);
+	end
+
 	SafeWritingGameRules.Server.OnTimer = function(self, timerId, msec)
 		if g_gameRules.class == "PowerStruggle" then
 			if (timerId == self.NUKE_SPECTATE_TIMERID) then
@@ -185,12 +198,11 @@ if not SafeWritingGameRules.UpdatePings then
 				self:SetTimer(self.TICK_TIMERID, self.TICK_TIME, true);
 			end
 		elseif (timerId == self.NEXTLEVEL_TIMERID) then
-			SfwLog("Trying to load nextlevel");
+			printf("Trying to load nextlevel");
 			if (SafeWriting.Settings.EnableStatistics) then
 				SaveAllPlayersInfo();
 			end
 			self:GotoState("Reset");
-			printf("Next level timer active")
 			if (SafeWriting.GlobalStorage.ForceNextMap) then
 				local map = SafeWriting.GlobalStorage.NextMap;
 				SafeWriting.GlobalStorage.ForceNextMap = false;
@@ -551,7 +563,10 @@ if not SafeWritingGameRules.UpdatePings then
 								local ping = math.floor(((self.game:GetPing(player.actor:GetChannel()) or 0) * 1000 +
 															0.5) / ratio);
 								player.ping = ping;
-								self.game:SetSynchedEntityValue(player.id, self.SCORE_PING_KEY, ping);
+								if player.lastPingUpdate == nil or _time - player.lastPingUpdate >= 1 then
+									SetSynchedEntityValue(player, self.SCORE_PING_KEY, ping);
+									player.lastPingUpdate = _time;
+								end
 								AntiCheat:PlayerPositionCheck(player);
 								if player.assignedProperties then
 									for i, v in pairs(player.assignedProperties) do
@@ -960,14 +975,7 @@ if not SafeWritingGameRules.UpdatePings then
 				self:UpdateReviveQueue();
 			end
 		end
-		--[[if self.GetState and self:GetState()=="PreGame" then
-						local players=self.game:GetPlayers()
-						if players and #players>0 then
-								System.ExecuteCommand("sv_restart")
-						end
-				end--]]
 		local onTick = self:GetServerStateTable().OnTick;
-		SafeWriting:OnTimerTick();
 		if (onTick) then
 			onTick(self);
 		end
@@ -1245,6 +1253,9 @@ if not SafeWritingGameRules.UpdatePings then
 		else
 			source.ChatExceptions = source.ChatExceptions - 1;
 		end
+		if se.JcukenChatCommands and source ~= nil and source.host and ParseJcukenChatCommand then
+			mMsg = ParseJcukenChatCommand(mMsg)
+		end
 		local plg, plgs = MakePluginEvent("OnChatMessage", mType, source, target, mMsg);
 		if plg ~= nil then
 			mMsg = plg;
@@ -1506,15 +1517,14 @@ if not SafeWritingGameRules.UpdatePings then
 		if (SafeWriting.Settings.UseDLLInfoLoader) then
 			local player;
 			player = g_gameRules.game:GetPlayerByChannelId(tonumber(channelId));
-			local hostport = {};
-			hostport = split(hostname, ":");
+			local hostport = fsplit(hostname, ":");
 			local ipdetect = "C++";
 			if (player) then
 				local plName = player:GetName() or "<unknown>";
 				player.connecttime = _time;
 				player.channelId = channelId;
-				player.host = tostring(hostport[0]);
-				player.port = tonumber(hostport[1]);
+				player.host = tostring(hostport[1]);
+				player.port = tonumber(hostport[2]);
 				player.profile = profileId;
 				player.ip = ip or "unknown";
 				local clientName = "SfwCl";
@@ -1534,7 +1544,7 @@ if not SafeWritingGameRules.UpdatePings then
 					player.isSfwCl = true;
 				end
 				SfwLog(
-					"Player " .. plName .. "(" .. channelId .. ") connected (" .. hostport[0] .. ":" .. player.port ..
+					"Player " .. plName .. "(" .. channelId .. ") connected (" .. hostport[1] .. ":" .. player.port ..
 						", IP: " .. player.ip .. " - " .. ipdetect .. "), profile: " .. profileId .. ", client: " ..
 						clientName);
 				if not _G["ChannelInfo"] then
@@ -1552,7 +1562,7 @@ if not SafeWritingGameRules.UpdatePings then
 				end
 				CheckPlayer(player, true);
 			else
-				SfwLog("Player " .. channelId .. " not found (host: " .. hostport[0] .. ",port: " .. hostport[1] ..
+				SfwLog("Player " .. channelId .. " not found (host: " .. hostport[1] .. ",port: " .. hostport[2] ..
 						   "), profile: " .. profileId);
 			end
 		end
@@ -1688,10 +1698,10 @@ if not SafeWritingGameRules.UpdatePings then
 		if (not IsRealIP(ip)) then
 			ip = _GetIP(ip);
 		end
-		local hostport = split(host, ":");
+		local hostport = fsplit(host, ":");
 		_G["ChannelInfo"][chnl] = {
-			host = hostport[0],
-			port = tonumber(hostport[1]),
+			host = hostport[1],
+			port = tonumber(hostport[2]),
 			profile = profile,
 			channelId = chnl,
 			ip = ip
@@ -1874,7 +1884,7 @@ if not SafeWritingGameRules.UpdatePings then
 end
 
 function IsSafeWritingGameRulesLoaded()
-	return g_gameRules.UpdatePings == SafeWritingGameRules.UpdatePings
+	return g_gameRules.SetTimer == SafeWritingGameRules.SetTimer
 end
 
 function SafeWriting_OnUpdate(dt)
@@ -1887,6 +1897,7 @@ function SafeWriting_OnUpdate(dt)
 
 	if not IsSafeWritingGameRulesLoaded() then
 		printf("Overriding game rules")
+		TICK_ACTIVE = {}
 		for i, v in pairs(SafeWritingGameRules.Server) do
 			g_gameRules.Server[i] = v
 		end

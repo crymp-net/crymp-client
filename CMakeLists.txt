@@ -17,13 +17,19 @@ endif()
 
 # use /ZI instead of /Zi in Debug and RelWithDebInfo to enable Edit and Continue
 foreach(flags
-	CMAKE_C_FLAGS_DEBUG
-	CMAKE_C_FLAGS_RELWITHDEBINFO
-	CMAKE_CXX_FLAGS_DEBUG
-	CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    CMAKE_C_FLAGS_DEBUG
+    CMAKE_C_FLAGS_RELWITHDEBINFO
+    CMAKE_CXX_FLAGS_DEBUG
+    CMAKE_CXX_FLAGS_RELWITHDEBINFO
 )
-	string(REPLACE /Zi "" ${flags} "${${flags}}")
-	set(${flags} "${${flags}} /ZI")
+    string(REPLACE "/ZI" "" ${flags} "${${flags}}")
+    string(REPLACE "/Zi" "" ${flags} "${${flags}}")
+
+    if(CRYMP_ASAN)
+        set(${flags} "${${flags}} /Zi")
+    else()
+        set(${flags} "${${flags}} /ZI")
+    endif()
 endforeach()
 
 # use /INCREMENTAL in Debug and RelWithDebInfo to enable Edit and Continue
@@ -31,7 +37,11 @@ foreach(flags
 	CMAKE_EXE_LINKER_FLAGS_DEBUG
 	CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO
 )
-	set(${flags} "${${flags}} /INCREMENTAL")
+	if(CRYMP_ASAN)
+		set(${flags} "${${flags}} /INCREMENTAL:NO")
+	else()
+		set(${flags} "${${flags}} /INCREMENTAL")
+	endif()
 endforeach()
 
 # C11
@@ -52,6 +62,7 @@ option(CRYMP_DEBUG_ALLOCATOR_OVERFLOW_INSTEAD_OF_UNDERFLOW "Detect buffer overfl
 option(CRYMP_DEBUG_ALLOCATOR_CHECK_READS "Check for both invalid reads and writes." OFF)
 
 option(CRYMP_TRACY_ENABLED "Enable Tracy profiler." OFF)
+option(CRYMP_ASAN "Enable AddressSanitizer (MSVC)" OFF)
 
 option(CRYMP_PAK_HOT_RELOADING_ENABLED "Use the Pak folder directly for hot reloading. For development only." OFF)
 
@@ -821,6 +832,23 @@ target_compile_definitions(Base PUBLIC
 	MI_SECURE=3
 	MI_SKIP_COLLECT_ON_EXIT=1
 )
+
+# ASAN configuration
+if(MSVC AND CRYMP_ASAN)
+    target_compile_options(Base PUBLIC
+        /fsanitize=address
+        /Zi
+    )
+
+    target_link_options(Base PUBLIC
+        /fsanitize=address
+    )
+
+    target_compile_definitions(Base PUBLIC
+        _DISABLE_VECTOR_ANNOTATION
+        _DISABLE_STRING_ANNOTATION
+    )
+endif()
 
 target_compile_options(Base PUBLIC /W4
 	/wd4018  # Disable - 'token' : signed/unsigned mismatch

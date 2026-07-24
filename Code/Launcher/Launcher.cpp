@@ -1309,7 +1309,9 @@ void Launcher::PatchEngine()
 		MemoryPatch::CrySystem::FixCPUInfoOverflow(g_pCrySystem);
 		MemoryPatch::CrySystem::FixFlashAllocatorUnderflow(g_pCrySystem);
 		MemoryPatch::CrySystem::HookCPUDetect(g_pCrySystem, &CPUInfo::Detect);
-		MemoryPatch::CrySystem::HookError(g_pCrySystem, &CrashLogger::OnEngineError);
+		if (!WinAPI::CmdLine::HasArg("-rawdump")) {
+			MemoryPatch::CrySystem::HookError(g_pCrySystem, &CrashLogger::OnEngineError);
+		}
 		//MemoryPatch::CrySystem::MakeDX9Default(g_pCrySystem);
 		MemoryPatch::CrySystem::RemoveSecuROM(g_pCrySystem);
 		MemoryPatch::CrySystem::UnhandledExceptions(g_pCrySystem);
@@ -1505,7 +1507,9 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 	const char* banner = "CryMP Server " CRYMP_VERSION_STRING " " CRYMP_BITS " " CRYMP_BUILD_TYPE;
 #endif
 
-	CrashLogger::Enable(&ProvideLogFile, &CryMemoryManager::ProvideHeapInfo, banner);
+	if (!WinAPI::CmdLine::HasArg("-rawdump")) {
+		CrashLogger::Enable(&ProvideLogFile, &CryMemoryManager::ProvideHeapInfo, banner);
+	}
 
 	logger.LogAlways("Log begins at %s", Logger::FormatPrefix("%F %T%z").c_str());
 

@@ -3,10 +3,21 @@ SSMCMDS = SSCMDS or {} -- Array for commands
 SafeWriting = SafeWriting or {
 	GlobalStorage = {},
 	GlobalData = {},
+	GlobalValues = {},
+	UsedGlobalValues = {},
+	TickCache = {},
+	Status = {
+		SGVRealCalls = 0,
+		SGVCalls = 0,
+		SEVRealCalls = 0,
+		SEVCalls = 0,
+		CacheHits = 0,
+		CacheCalls = 0
+	},
 	-- FuncContainer={};
 	-- Schedule={};
-	Version = "3.0.2",
-	NumVersion = 302, -- format abc.d, 2.1.6 = 216, 2.1.6.1 = 216.1
+	Version = "3.0.3",
+	NumVersion = 303, -- format abc.d, 2.1.6 = 216, 2.1.6.1 = 216.1
 	GameVersion = "<unknown>",
 	NanosuitModes = {
 		["speed"] = 0,
@@ -124,7 +135,8 @@ System.LogAlways("$6[SafeWriting] Successfuly initialized FunctionsContainer")
 
 StartupTime = os.time()
 
-function SafeWriting:OnTimerTick()
+function SafeWriting:OnTimerTick(frameTime)
+	self.TickCache = {}
 	local mapch = MapChanged()
 	local se = self.Settings
 	if not se then
@@ -155,15 +167,15 @@ function SafeWriting:OnTimerTick()
 			if pls then
 				numpl = count(pls)
 			end
-			local mapver = 0
+			local mapver = ""
 			if mapdl then
 				if type(mapdl) ~= "string" then
-					mapver = tonumber(mapdl[2])
+					mapver = mapdl[2]
 					mapdl = mapdl[1]
 				else
 					local vr = string.match(mapdl, "^%[([0-9.]+)%]")
 					if vr then
-						mapver = tonumber(vr)
+						mapver = vr
 						mapdl = string.match(mapdl, "^%[[0-9.]+%](.*)")
 					end
 				end
@@ -173,7 +185,7 @@ function SafeWriting:OnTimerTick()
 					end
 				end
 			end
-			if mapver ~= 0 then
+			if mapver ~= "" then
 				map = map .. "|" .. mapver
 			end
 			local desc = se.ServerDescription or ""
@@ -296,7 +308,6 @@ function SafeWriting:OnTimerTick()
 					Chat:SendToAll(nil, "Map voting was not successful, two maps had same count of votes")
 				end
 			else
-				gs.ForceNextMap = true
 				local nextmap = nil
 				for i, v in pairs(se.GameModes) do
 					for k, j in pairs(v) do
@@ -307,7 +318,7 @@ function SafeWriting:OnTimerTick()
 						end
 					end
 				end
-				gs.NextMap = nextmap
+				SetNextMap(nextmap)
 				Chat:SendToAll(nil, SpecialFormat("Map voting was successful, next map: %s (%s votes)", maxmap,
 					tostring(_max)))
 			end
@@ -336,6 +347,27 @@ function SafeWriting:OnTimerTick()
 		if ((_time - gd.LastAutoSave) > ((se.AutoSaveInterval or 10) * 60)) then
 			SaveAllPlayersInfo()
 			gd.LastAutoSave = _time
+		end
+	end
+	if self.LAST_GVSync == nil or (_time - self.LAST_GVSync) > (se.GlobalValuesSyncPeriod or 1) then
+		self.LAST_GVSync = _time
+		local removeUsedKeys = {}
+		for i, v in pairs(self.UsedGlobalValues) do
+			if self.GlobalValues[i] == nil then
+				removeUsedKeys[#removeUsedKeys + 1] = i
+				g_gameRules.game:SetSynchedGlobalValue(i, nil)
+				self.Status.SGVRealCalls = self.Status.SGVRealCalls + 1
+			end
+		end
+		for i, v in ipairs(removeUsedKeys) do
+			self.UsedGlobalValues[i] = nil
+		end
+		for i, v in pairs(self.GlobalValues) do
+			if v ~= self.UsedGlobalValues[i] then
+				self.UsedGlobalValues[i] = v
+				g_gameRules.game:SetSynchedGlobalValue(i, v)
+				self.Status.SGVRealCalls = self.Status.SGVRealCalls + 1
+			end
 		end
 	end
 	self.Schedule:Update()
@@ -373,6 +405,15 @@ function GetGameRules()
 	else
 		return result
 	end
+end
+
+function SetNextMap(mapName, gameRules)
+	local gs = SafeWriting.GlobalStorage
+	gs.ForceNextMap = true
+	gs.NextMap = {
+		map = mapName,
+		gameRules = gameRules or g_gameRules.class
+	}
 end
 
 function BanChecker(player)
@@ -440,6 +481,20 @@ function print(...)
 	end
 	f = f:sub(1, f:len() - 1)
 	System.LogAlways(f)
+end
+
+function urlfmt(fmt, ...)
+	local args = {}
+	for i, v in pairs({...}) do
+		if type(v) == "string" then
+			args[i] = v:gsub("[^a-zA-Z0-9]", function(c)
+				return string.format("%%%02X", string.byte(c))
+			end)
+		else
+			args[i] = v
+		end
+	end
+	return string.format(fmt, unpack(args))
 end
 
 function SetError(err, quit)
@@ -522,26 +577,6 @@ function UnloadAllScripts()
 	LOADED_SCRIPTS = 0
 	TOTAL_SCRIPTS = 0
 	ERROR_SCRIPTS = {}
-end
-
-function spamBegin()
-	SPAMMSG = ""
-end
-
-function spam(fmt, ...)
-	if not SPAMMSG then
-		SPAMMSG = ""
-	end
-	local text = fmt
-	if ... then
-		text = string.format(text, ...)
-	end
-	SPAMMSG = SPAMMSG .. text .. "\n"
-end
-
-function spamEnd()
-	System.LogAlways(SPAMMSG)
-	SPAMMSG = ""
 end
 
 function include(file)
@@ -873,6 +908,10 @@ function PrepareAll()
 		if CPPAPI and CPPAPI.SetExplosiveRemovalTime then
 			CPPAPI.SetExplosiveRemovalTime(SafeWriting.Settings.ExplosiveRemovalTime)
 		end
+	end
+	for i, v in pairs(SafeWriting.GlobalValues) do
+		g_gameRules.game:SetSynchedGlobalValue(i, v)
+		SafeWriting.Status.SGVRealCalls = SafeWriting.Status.SGVRealCalls + 1
 	end
 	MakePluginEvent("PrepareAll")
 	printf("Mod was successfuly loaded")
@@ -1687,20 +1726,6 @@ function AsyncCreate(callback, func, ...)
 	end
 end
 
-function urlfmt(fmt, ...)
-	local args = {}
-	for i, v in pairs({...}) do
-		if type(v) == "string" then
-			args[i] = v:gsub("[^a-zA-Z0-9]", function(c)
-				return string.format("%%%02X", string.byte(c))
-			end)
-		else
-			args[i] = v
-		end
-	end
-	return string.format(fmt, unpack(args))
-end
-
 function ParseHTTP(tmp_ret)
 	if not tmp_ret then
 		return nil, nil, "No content"
@@ -2081,7 +2106,7 @@ function CheckPlayer(player, noevent)
 			end
 		end
 		if (player.ip and IsRealIP(player.ip)) then
-			if (verifyip(player.ip)) then
+			if (VerifyIP(player.ip)) then
 				player.wasForceDisconnected = true
 				CryAction.BanPlayer(player.id, "you are permabanned here")
 				if KICK_REMOVE_ENTITY then
@@ -2146,8 +2171,7 @@ function CheckPlayer(player, noevent)
 				player.IsPremiumLogged = true
 			end
 		end
-		local pts = split(player.host, ".")
-		pts = CTableToLuaTable(pts)
+		local pts = fsplit(player.host, ".")
 		lang = pts[#pts]
 		if (player.ip:sub(1, ("192.168"):len()) == "192.168") then
 			lang = se.HomeCountry or "localhost"
@@ -2165,18 +2189,18 @@ function CheckPlayer(player, noevent)
 	end
 end
 
-function verifyip(ip)
+function VerifyIP(ip)
 	local se = SafeWriting.Settings
-	local ipparts = CTableToLuaTable(split(ip, "."))
+	local ipparts = fsplit(ip, ".")
 	local success = 0
 	if (not se.IPRangeBans) then
 		return false
 	end
 	for i, v in pairs(se.IPRangeBans) do
-		local rbp = CTableToLuaTable(split(v, "."))
+		local rbp = fsplit(v, ".")
 		for j, w in pairs(rbp) do
 			if (string.find(w, "-", nil, true)) then
-				local _min, _max = unpack(CTableToLuaTable(split(w, "-")))
+				local _min, _max = unpack(fsplit(w, "-"))
 				_min = tonumber(_min)
 				_max = tonumber(_max)
 				local _ip = tonumber(ipparts[j])
@@ -2252,61 +2276,82 @@ function GetPlayerByName(name)
 end
 GetPlayer = GetPlayerByName
 
-function GetPlayers()
-	local players = g_gameRules.game:GetPlayers()
-	if not players then
-		return {}
-	end
-	local known = {}
-	local pl = {}
-	for i, v in pairs(players) do
-		if not known[v.id] then
-			known[v.id] = true
-			pl[#pl + 1] = v
+function GetCached(cacheId, callback)
+	if SafeWriting.Settings.Caching then
+		SafeWriting.Status.CacheCalls = SafeWriting.Status.CacheCalls + 1
+		if SafeWriting.TickCache[cacheId] then 
+			SafeWriting.Status.CacheHits = SafeWriting.Status.CacheHits + 1
+			return SafeWriting.TickCache[cacheId]
 		end
+		local result = callback()
+		SafeWriting.TickCache[cacheId] = result
+		return result
+	else
+		return callback()
 	end
-	return pl
+end
+
+function GetPlayers()
+	return GetCached("Players", function()
+		local players = g_gameRules.game:GetPlayers()
+		if not players then
+			return {}
+		end
+		local known = {}
+		local pl = {}
+		for i, v in pairs(players) do
+			if not known[v.id] then
+				known[v.id] = true
+				pl[#pl + 1] = v
+			end
+		end
+		return pl
+	end)
 end
 
 function GetPlayersByTeamId(teamId)
-	local players = GetPlayers()
-	local out = {}
-	for i, v in pairs(players) do
-		if g_gameRules.game:GetTeam(v.id) == teamId then
-			table.insert(out, v)
+	return GetCached("Team_" .. teamId, function()
+		local players = GetPlayers()
+		local out = {}
+		for i, v in pairs(players) do
+			if g_gameRules.game:GetTeam(v.id) == teamId then
+				table.insert(out, v)
+			end
 		end
-	end
-	return out
+		return out
+	end)
 end
 
 function GetPlayersByName(name)
 	local players = GetPlayers()
-	if (name == "*all") then
-		return players
-	end
-	local out = {}
-	if (players) then
-		if name == "*us" or name == "*nk" and g_gameRules.class == "PowerStruggle" then
-			local tgtTeam = (name == "*us" and 2 or 1)
-			for i, v in pairs(players) do
-				if g_gameRules.game:GetTeam(v.id) == tgtTeam then
-					out[#out + 1] = v
+	return GetCached("Players_" .. name, function()
+		if (name == "*all") then
+			return players
+		end
+		local out = {}
+		if (players) then
+			if name == "*us" or name == "*nk" and g_gameRules.class == "PowerStruggle" then
+				local tgtTeam = (name == "*us" and 2 or 1)
+				for i, v in pairs(players) do
+					if g_gameRules.game:GetTeam(v.id) == tgtTeam then
+						out[#out + 1] = v
+					end
+				end
+				return out
+			end
+			for i, player in pairs(players) do
+				local _name = player:GetName()
+				if (_name == name) then
+					out[#out + 1] = player
+				end
+				_name = _name:lower()
+				if (string.find(_name, name:lower(), nil, true)) then
+					out[#out + 1] = player
 				end
 			end
-			return out
 		end
-		for i, player in pairs(players) do
-			local _name = player:GetName()
-			if (_name == name) then
-				out[#out + 1] = player
-			end
-			_name = _name:lower()
-			if (string.find(_name, name:lower(), nil, true)) then
-				out[#out + 1] = player
-			end
-		end
-	end
-	return out
+		return out
+	end)
 end
 
 function GetRandomName(tries)
@@ -2488,16 +2533,6 @@ function ChangeTeam(player, newTeam)
 			g_gameRules:QueueRevive(player.id)
 		end
 	end
-end
-
-function get_timezone()
-	local now = os.time()
-	return os.difftime(now, os.time(os.date("!*t", now)))
-end
-
-function get_tzoffset(timezone)
-	local h, m = math.modf(timezone / 3600)
-	return string.format("%+.4d", 100 * h + 60 * m)
 end
 
 function GetTimeZone(ts)
@@ -3426,11 +3461,49 @@ function SendMessage(tp, to, msg)
 		stream:SendToTarget(to, msg)
 	end
 end
-System.AddCCommand("SfWDir", "InitializeFolders(%%)", "Initializes folders for SSM SafeWriting")
+
+function CopyArray(arr)
+	local a = {}
+	for i, v in ipairs(arr) do
+		table.insert(a, v)
+	end
+	return a
+end
+
+function SetSynchedEntityValue(ent, id, val)
+	SafeWriting.Status.SEVCalls = SafeWriting.Status.SEVCalls + 1
+	if not ent.SEVs then
+		ent.SEVs = {}
+	end
+	if val ~= ent.SEVs[id] then
+		ent.SEVs[id] = val
+		g_gameRules.game:SetSynchedEntityValue(ent.id, id, val)
+		SafeWriting.Status.SEVRealCalls = SafeWriting.Status.SEVRealCalls + 1
+	end
+end
+
+function GetSynchedGlobalValue(ent, id)
+	if not ent.SEVs then
+		return nil
+	end
+	return ent.SEVs[id]
+end
+
+function SetSynchedGlobalValue(id, val)
+	SafeWriting.Status.SGVCalls = SafeWriting.Status.SGVCalls + 1
+	if val ~= SafeWriting.GlobalValues[id] then
+		SafeWriting.GlobalValues[id] = val
+	end
+end
+
+function GetSynchedGlobalValue(id)
+	return SafeWriting.GlobalValues[id]
+end
+
 System.AddCCommand("SfW_ReloadScripts", "ReloadAllScripts(%%)", "Reloads all scripts of SSM SafeWriting")
+System.AddCCommand("SfWDir", "InitializeFolders(%%)", "Initializes folders for SSM SafeWriting")
 System.AddCCommand("SfWGameVer", "SetGameVersion(%%)", "Sets game version for mod")
 System.AddCCommand("SfWSetTempVer", "SfwSetTempVersion(%line)", "Sets old version")
-System.AddCCommand("Sfw_ReloadCore", "CPPAPI.ReloadCoreScripts()", "Reloads core scripts")
 SafeWriting.GeneratedCCommands["reloadscripts"] = true
 printf("Setting up the directories")
 System.ExecuteCommand("exec sfw.cfg")
