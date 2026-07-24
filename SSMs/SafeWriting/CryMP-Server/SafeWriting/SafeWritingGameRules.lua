@@ -563,7 +563,10 @@ if not SafeWritingGameRules.UpdatePings then
 								local ping = math.floor(((self.game:GetPing(player.actor:GetChannel()) or 0) * 1000 +
 															0.5) / ratio);
 								player.ping = ping;
-								SetSynchedEntityValue(player, self.SCORE_PING_KEY, ping);
+								if player.lastPingUpdate == nil or _time - player.lastPingUpdate >= 1 then
+									SetSynchedEntityValue(player, self.SCORE_PING_KEY, ping);
+									player.lastPingUpdate = _time;
+								end
 								AntiCheat:PlayerPositionCheck(player);
 								if player.assignedProperties then
 									for i, v in pairs(player.assignedProperties) do
@@ -1511,15 +1514,14 @@ if not SafeWritingGameRules.UpdatePings then
 		if (SafeWriting.Settings.UseDLLInfoLoader) then
 			local player;
 			player = g_gameRules.game:GetPlayerByChannelId(tonumber(channelId));
-			local hostport = {};
-			hostport = split(hostname, ":");
+			local hostport = fsplit(hostname, ":");
 			local ipdetect = "C++";
 			if (player) then
 				local plName = player:GetName() or "<unknown>";
 				player.connecttime = _time;
 				player.channelId = channelId;
-				player.host = tostring(hostport[0]);
-				player.port = tonumber(hostport[1]);
+				player.host = tostring(hostport[1]);
+				player.port = tonumber(hostport[2]);
 				player.profile = profileId;
 				player.ip = ip or "unknown";
 				local clientName = "SfwCl";
@@ -1539,7 +1541,7 @@ if not SafeWritingGameRules.UpdatePings then
 					player.isSfwCl = true;
 				end
 				SfwLog(
-					"Player " .. plName .. "(" .. channelId .. ") connected (" .. hostport[0] .. ":" .. player.port ..
+					"Player " .. plName .. "(" .. channelId .. ") connected (" .. hostport[1] .. ":" .. player.port ..
 						", IP: " .. player.ip .. " - " .. ipdetect .. "), profile: " .. profileId .. ", client: " ..
 						clientName);
 				if not _G["ChannelInfo"] then
@@ -1557,7 +1559,7 @@ if not SafeWritingGameRules.UpdatePings then
 				end
 				CheckPlayer(player, true);
 			else
-				SfwLog("Player " .. channelId .. " not found (host: " .. hostport[0] .. ",port: " .. hostport[1] ..
+				SfwLog("Player " .. channelId .. " not found (host: " .. hostport[1] .. ",port: " .. hostport[2] ..
 						   "), profile: " .. profileId);
 			end
 		end
@@ -1693,10 +1695,10 @@ if not SafeWritingGameRules.UpdatePings then
 		if (not IsRealIP(ip)) then
 			ip = _GetIP(ip);
 		end
-		local hostport = split(host, ":");
+		local hostport = fsplit(host, ":");
 		_G["ChannelInfo"][chnl] = {
-			host = hostport[0],
-			port = tonumber(hostport[1]),
+			host = hostport[1],
+			port = tonumber(hostport[2]),
 			profile = profile,
 			channelId = chnl,
 			ip = ip

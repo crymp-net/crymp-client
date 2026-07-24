@@ -659,8 +659,7 @@ function CTableToLuaTable(tbl)
 end
 
 function CmdGetNameAndText(line)
-	local params = split(line, " ");
-	params = CTableToLuaTable(params);
+	local params = fsplit(line, " ");
 	local name = params[2];
 	local text;
 	if (#params > 2) then

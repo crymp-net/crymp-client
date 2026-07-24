@@ -5,9 +5,15 @@ SafeWriting = SafeWriting or {
 	GlobalData = {},
 	GlobalValues = {},
 	UsedGlobalValues = {},
-	SVSavings = 0,
-	SVCalls = 0,
-	SVRealCalls = 0,
+	TickCache = {},
+	Status = {
+		SGVRealCalls = 0,
+		SGVCalls = 0,
+		SEVRealCalls = 0,
+		SEVCalls = 0,
+		CacheHits = 0,
+		CacheCalls = 0
+	},
 	-- FuncContainer={};
 	-- Schedule={};
 	Version = "3.0.3",
@@ -130,6 +136,7 @@ System.LogAlways("$6[SafeWriting] Successfuly initialized FunctionsContainer")
 StartupTime = os.time()
 
 function SafeWriting:OnTimerTick(frameTime)
+	self.TickCache = {}
 	local mapch = MapChanged()
 	local se = self.Settings
 	if not se then
@@ -349,7 +356,7 @@ function SafeWriting:OnTimerTick(frameTime)
 			if self.GlobalValues[i] == nil then
 				removeUsedKeys[#removeUsedKeys + 1] = i
 				g_gameRules.game:SetSynchedGlobalValue(i, nil)
-				self.SVRealCalls = self.SVRealCalls + 1
+				self.Status.SGVRealCalls = self.Status.SGVRealCalls + 1
 			end
 		end
 		for i, v in ipairs(removeUsedKeys) do
@@ -359,7 +366,7 @@ function SafeWriting:OnTimerTick(frameTime)
 			if v ~= self.UsedGlobalValues[i] then
 				self.UsedGlobalValues[i] = v
 				g_gameRules.game:SetSynchedGlobalValue(i, v)
-				self.SVRealCalls = self.SVRealCalls + 1
+				self.Status.SGVRealCalls = self.Status.SGVRealCalls + 1
 			end
 		end
 	end
@@ -904,7 +911,7 @@ function PrepareAll()
 	end
 	for i, v in pairs(SafeWriting.GlobalValues) do
 		g_gameRules.game:SetSynchedGlobalValue(i, v)
-		SafeWriting.SVRealCalls = SafeWriting.SVRealCalls + 1
+		SafeWriting.Status.SGVRealCalls = SafeWriting.Status.SGVRealCalls + 1
 	end
 	MakePluginEvent("PrepareAll")
 	printf("Mod was successfuly loaded")
@@ -2164,8 +2171,7 @@ function CheckPlayer(player, noevent)
 				player.IsPremiumLogged = true
 			end
 		end
-		local pts = split(player.host, ".")
-		pts = CTableToLuaTable(pts)
+		local pts = fsplit(player.host, ".")
 		lang = pts[#pts]
 		if (player.ip:sub(1, ("192.168"):len()) == "192.168") then
 			lang = se.HomeCountry or "localhost"
@@ -2185,16 +2191,16 @@ end
 
 function VerifyIP(ip)
 	local se = SafeWriting.Settings
-	local ipparts = CTableToLuaTable(split(ip, "."))
+	local ipparts = fsplit(ip, ".")
 	local success = 0
 	if (not se.IPRangeBans) then
 		return false
 	end
 	for i, v in pairs(se.IPRangeBans) do
-		local rbp = CTableToLuaTable(split(v, "."))
+		local rbp = fsplit(v, ".")
 		for j, w in pairs(rbp) do
 			if (string.find(w, "-", nil, true)) then
-				local _min, _max = unpack(CTableToLuaTable(split(w, "-")))
+				local _min, _max = unpack(fsplit(w, "-"))
 				_min = tonumber(_min)
 				_max = tonumber(_max)
 				local _ip = tonumber(ipparts[j])
@@ -2270,61 +2276,82 @@ function GetPlayerByName(name)
 end
 GetPlayer = GetPlayerByName
 
-function GetPlayers()
-	local players = g_gameRules.game:GetPlayers()
-	if not players then
-		return {}
-	end
-	local known = {}
-	local pl = {}
-	for i, v in pairs(players) do
-		if not known[v.id] then
-			known[v.id] = true
-			pl[#pl + 1] = v
+function GetCached(cacheId, callback)
+	if SafeWriting.Settings.Caching then
+		SafeWriting.Status.CacheCalls = SafeWriting.Status.CacheCalls + 1
+		if SafeWriting.TickCache[cacheId] then 
+			SafeWriting.Status.CacheHits = SafeWriting.Status.CacheHits + 1
+			return SafeWriting.TickCache[cacheId]
 		end
+		local result = callback()
+		SafeWriting.TickCache[cacheId] = result
+		return result
+	else
+		return callback()
 	end
-	return pl
+end
+
+function GetPlayers()
+	return GetCached("Players", function()
+		local players = g_gameRules.game:GetPlayers()
+		if not players then
+			return {}
+		end
+		local known = {}
+		local pl = {}
+		for i, v in pairs(players) do
+			if not known[v.id] then
+				known[v.id] = true
+				pl[#pl + 1] = v
+			end
+		end
+		return pl
+	end)
 end
 
 function GetPlayersByTeamId(teamId)
-	local players = GetPlayers()
-	local out = {}
-	for i, v in pairs(players) do
-		if g_gameRules.game:GetTeam(v.id) == teamId then
-			table.insert(out, v)
+	return GetCached("Team_" .. teamId, function()
+		local players = GetPlayers()
+		local out = {}
+		for i, v in pairs(players) do
+			if g_gameRules.game:GetTeam(v.id) == teamId then
+				table.insert(out, v)
+			end
 		end
-	end
-	return out
+		return out
+	end)
 end
 
 function GetPlayersByName(name)
 	local players = GetPlayers()
-	if (name == "*all") then
-		return players
-	end
-	local out = {}
-	if (players) then
-		if name == "*us" or name == "*nk" and g_gameRules.class == "PowerStruggle" then
-			local tgtTeam = (name == "*us" and 2 or 1)
-			for i, v in pairs(players) do
-				if g_gameRules.game:GetTeam(v.id) == tgtTeam then
-					out[#out + 1] = v
+	return GetCached("Players_" .. name, function()
+		if (name == "*all") then
+			return players
+		end
+		local out = {}
+		if (players) then
+			if name == "*us" or name == "*nk" and g_gameRules.class == "PowerStruggle" then
+				local tgtTeam = (name == "*us" and 2 or 1)
+				for i, v in pairs(players) do
+					if g_gameRules.game:GetTeam(v.id) == tgtTeam then
+						out[#out + 1] = v
+					end
+				end
+				return out
+			end
+			for i, player in pairs(players) do
+				local _name = player:GetName()
+				if (_name == name) then
+					out[#out + 1] = player
+				end
+				_name = _name:lower()
+				if (string.find(_name, name:lower(), nil, true)) then
+					out[#out + 1] = player
 				end
 			end
-			return out
 		end
-		for i, player in pairs(players) do
-			local _name = player:GetName()
-			if (_name == name) then
-				out[#out + 1] = player
-			end
-			_name = _name:lower()
-			if (string.find(_name, name:lower(), nil, true)) then
-				out[#out + 1] = player
-			end
-		end
-	end
-	return out
+		return out
+	end)
 end
 
 function GetRandomName(tries)
@@ -3435,16 +3462,23 @@ function SendMessage(tp, to, msg)
 	end
 end
 
+function CopyArray(arr)
+	local a = {}
+	for i, v in ipairs(arr) do
+		table.insert(a, v)
+	end
+	return a
+end
+
 function SetSynchedEntityValue(ent, id, val)
-	SafeWriting.SVCalls = SafeWriting.SVCalls + 1
+	SafeWriting.Status.SEVCalls = SafeWriting.Status.SEVCalls + 1
 	if not ent.SEVs then
 		ent.SEVs = {}
 	end
 	if val ~= ent.SEVs[id] then
 		ent.SEVs[id] = val
 		g_gameRules.game:SetSynchedEntityValue(ent.id, id, val)
-	else
-		SafeWriting.SVSavings = SafeWriting.SVSavings + 1
+		SafeWriting.Status.SEVRealCalls = SafeWriting.Status.SEVRealCalls + 1
 	end
 end
 
@@ -3456,11 +3490,9 @@ function GetSynchedGlobalValue(ent, id)
 end
 
 function SetSynchedGlobalValue(id, val)
-	SafeWriting.SVCalls = SafeWriting.SVCalls + 1
+	SafeWriting.Status.SGVCalls = SafeWriting.Status.SGVCalls + 1
 	if val ~= SafeWriting.GlobalValues[id] then
 		SafeWriting.GlobalValues[id] = val
-	else
-		SafeWriting.SVSavings = SafeWriting.SVSavings + 1
 	end
 end
 
@@ -3468,17 +3500,10 @@ function GetSynchedGlobalValue(id)
 	return SafeWriting.GlobalValues[id]
 end
 
-function ShowSfwStatus()
-	printf("SV Savings: %d / %d", SafeWriting.SVSavings, SafeWriting.SVCalls)
-	printf("SV Real calls: %d", SafeWriting.SVRealCalls)
-end
-
-System.AddCCommand("SfWDir", "InitializeFolders(%%)", "Initializes folders for SSM SafeWriting")
 System.AddCCommand("SfW_ReloadScripts", "ReloadAllScripts(%%)", "Reloads all scripts of SSM SafeWriting")
+System.AddCCommand("SfWDir", "InitializeFolders(%%)", "Initializes folders for SSM SafeWriting")
 System.AddCCommand("SfWGameVer", "SetGameVersion(%%)", "Sets game version for mod")
 System.AddCCommand("SfWSetTempVer", "SfwSetTempVersion(%line)", "Sets old version")
-System.AddCCommand("Sfw_ReloadCore", "CPPAPI.ReloadCoreScripts()", "Reloads core scripts")
-System.AddCCommand("SfWStatus", "ShowSfwStatus()", "Show SafeWriting status")
 SafeWriting.GeneratedCCommands["reloadscripts"] = true
 printf("Setting up the directories")
 System.ExecuteCommand("exec sfw.cfg")
