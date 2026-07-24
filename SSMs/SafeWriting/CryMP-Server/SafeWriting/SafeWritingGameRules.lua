@@ -1253,6 +1253,9 @@ if not SafeWritingGameRules.UpdatePings then
 		else
 			source.ChatExceptions = source.ChatExceptions - 1;
 		end
+		if se.JcukenChatCommands and source ~= nil and source.host and ParseJcukenChatCommand then
+			mMsg = ParseJcukenChatCommand(mMsg)
+		end
 		local plg, plgs = MakePluginEvent("OnChatMessage", mType, source, target, mMsg);
 		if plg ~= nil then
 			mMsg = plg;

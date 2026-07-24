@@ -669,8 +669,8 @@ function CmdGetNameAndText(line)
 end
 
 function ClearString(str, name)
-	if utf8clean then
-		str = utf8clean(str);
+	if Utf8Clean then
+		str = Utf8Clean(str);
 	end
 	local chars = {
 		[string.char(252)] = "u",
