@@ -164,6 +164,19 @@ if not SafeWritingGameRules.UpdatePings then
 			end
 		end
 	end
+
+	SafeWritingGameRules.RestartGame = function(self, forceInGame)
+		local se = SafeWriting.Settings
+		if not se.SmoothGameStart then
+			self:GotoState("Reset");
+			self.game:ResetEntities();
+			if (forceInGame) then
+				self.forceInGame=true;
+			end
+		else
+			self:GotoState("InGame");
+		end
+	end
 	
 	SafeWritingGameRules.SetTimer = function(self, timerId, msec, continues)
 		TICKS = (TICKS or 0) + 1
