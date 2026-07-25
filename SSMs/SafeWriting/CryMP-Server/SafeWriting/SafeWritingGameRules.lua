@@ -177,6 +177,49 @@ if not SafeWritingGameRules.UpdatePings then
 			self:GotoState("InGame");
 		end
 	end
+
+	SafeWritingGameRules.ResetPlayers = function(self)
+		local se = SafeWriting.Settings
+		local defaultBehavior = true
+		if se.SmoothGameStart and self:GetState() == "InGame" then
+			defaultBehavior = false
+		end
+		if defaultBehavior then
+			self:ReviveAllPlayers();
+		end
+		
+		local players=self.game:GetPlayers();
+		if (players) then
+			for i,player in pairs(players) do
+				self:ResetScore(player.id);		
+			end
+		end
+
+		if self.class == "PowerStruggle" then
+			if defaultBehavior then
+				self:ClearReviveQueue();
+			end
+
+			local players=self.game:GetPlayers();
+			if (players) then
+				for i,player in pairs(players) do
+					if defaultBehavior then
+						player.last_team_change=nil;
+					end
+					if (player.actor:GetSpectatorMode()==0 or player.actor:GetSpectatorMode()==3) then
+						self:ResetPP(player.id);
+						self:ResetCP(player.id);
+						self:SetPlayerPP(player.id, self.ppList.START);
+						
+						if defaultBehavior then
+							local teamId=self.game:GetTeam(player.id) or 0;
+							self.Server.RequestSpawnGroup(self, player.id, self.game:GetTeamDefaultSpawnGroup(teamId) or NULL_ENTITY, true);
+						end
+					end
+				end
+			end
+		end
+	end
 	
 	SafeWritingGameRules.SetTimer = function(self, timerId, msec, continues)
 		TICKS = (TICKS or 0) + 1
