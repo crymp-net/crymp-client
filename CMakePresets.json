@@ -73,7 +73,7 @@
 			}
 		},
 		{
-			"name": "debug-bin64",
+			"name": "asan-bin64",
 			"inherits": "base-bin64",
 			"displayName": "Debug (64-bit)",
 			"cacheVariables": {
