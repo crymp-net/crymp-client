@@ -15,7 +15,7 @@ SafeWriting.Settings = {
     ServerDescription = "A new CryMP server", -- description for your server
 
     -- if set, clients will download and load the pak file when connecting to this server
-    -- for example: PAK="https://example.com/example.pak";
+    -- for example: PAK="https://example.com/example.pak",
     PAK = nil,
 
     OptimizeSpeed = false, 				-- makes server do less output (recommended for non-stop servers)
