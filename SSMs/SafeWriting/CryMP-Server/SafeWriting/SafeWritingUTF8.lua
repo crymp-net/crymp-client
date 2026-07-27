@@ -151,7 +151,8 @@ UTF8Clean = {
 	['ğ'] = "g",
 	['ı'] = "i"
 };
-function utf8clean(txt)
+
+function Utf8Clean(txt)
 	-- combos first:
 	local combos = {
 		[' Е'] = ' Ye',
@@ -167,3 +168,49 @@ function utf8clean(txt)
 	end
 	return txt;
 end
+
+local jcuken_qwerty = {
+    ["й"]="q", ["ц"]="w", ["у"]="e", ["к"]="r", ["е"]="t",
+    ["н"]="y", ["г"]="u", ["ш"]="i", ["щ"]="o", ["з"]="p",
+    ["х"]="[", ["ъ"]="]",
+
+    ["ф"]="a", ["ы"]="s", ["в"]="d", ["а"]="f", ["п"]="g",
+    ["р"]="h", ["о"]="j", ["л"]="k", ["д"]="l", ["ж"]=";",
+    ["э"]="'",
+
+    ["я"]="z", ["ч"]="x", ["с"]="c", ["м"]="v", ["и"]="b",
+    ["т"]="n", ["ь"]="m", ["б"]=",", ["ю"]=".",
+
+    -- Shifted characters
+    ["Й"]="Q", ["Ц"]="W", ["У"]="E", ["К"]="R", ["Е"]="T",
+    ["Н"]="Y", ["Г"]="U", ["Ш"]="I", ["Щ"]="O", ["З"]="P",
+    ["Х"]="{", ["Ъ"]="}",
+
+    ["Ф"]="A", ["Ы"]="S", ["В"]="D", ["А"]="F", ["П"]="G",
+    ["Р"]="H", ["О"]="J", ["Л"]="K", ["Д"]="L", ["Ж"]=":",
+    ["Э"]='"',
+
+    ["Я"]="Z", ["Ч"]="X", ["С"]="C", ["М"]="V", ["И"]="B",
+    ["Т"]="N", ["Ь"]="M", ["Б"]="<", ["Ю"]=">",
+
+    -- Number row symbols
+    ['"']="@", ["№"]="#", [";"]="$", [":"]="^", ["?"]="&",
+}
+
+function JcukenToQwerty(text)
+    return (text:gsub("[%z\1-\127\194-\244][\128-\191]*", function(c)
+        return jcuken_qwerty[c] or c
+    end))
+end
+
+function ParseJcukenChatCommand(text)
+	if text:match("^![%z\194-\244]+") then
+		return JcukenToQwerty(text)
+	elseif text:match("^1[%z\194-\244]+") then
+		return "!" .. JcukenToQwerty(text:sub(2))
+	else
+		return text
+	end
+end
+
+utf8clean = Utf8Clean

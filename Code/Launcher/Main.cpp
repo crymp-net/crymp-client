@@ -26,19 +26,24 @@ int main()
 int __stdcall WinMain(void*, void*, char*, int)
 #endif
 {
-	try
-	{
+	if (WinAPI::CmdLine::HasArg("-rawdump")) {
 		Launcher().Run();
-	}
-	catch (const CryMP_Error& error)
-	{
+		return 0;
+	} else {
+		try
+		{
+			Launcher().Run();
+		}
+		catch (const CryMP_Error& error)
+		{
 #ifdef CRYMP_CONSOLE_APP
-		std::fprintf(stderr, "%s\n", error.what());
+			std::fprintf(stderr, "%s\n", error.what());
 #else
-		WinAPI::ErrorBox(error.what());
+			WinAPI::ErrorBox(error.what());
 #endif
-		return 1;
-	}
+			return 1;
+		}
 
-	return 0;
+		return 0;
+	}
 }

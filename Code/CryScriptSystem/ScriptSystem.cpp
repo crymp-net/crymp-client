@@ -167,7 +167,11 @@ void *ScriptSystem::Allocate(size_t size)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
 
-	void *block = mi_malloc(size);
+#ifdef CRYMP_ASAN
+	void *block = malloc(size);
+#else
+	void* block = mi_malloc(size);
+#endif
 	TracyAllocN(block, size, "ScriptSystem");
 
 	// we never fail
@@ -185,7 +189,11 @@ void ScriptSystem::Deallocate(void *block)
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
 
 	TracyFreeN(block, "ScriptSystem");
+#ifdef CRYMP_ASAN
+	free(block);
+#else
 	mi_free(block);
+#endif
 }
 
 void ScriptSystem::PushAny(const ScriptAnyValue & any)
