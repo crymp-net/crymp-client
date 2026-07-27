@@ -64,7 +64,7 @@
 			}
 		},
 		{
-			"name": "debug-bin32",
+			"name": "asan-bin32",
 			"inherits": "base-bin32",
 			"displayName": "Debug (32-bit)",
 			"cacheVariables": {
