@@ -394,10 +394,7 @@ void CAdManager::FetchAds() {
 		std::string serverToken;
 
 		if (pSSS) {
-			string csServerToken;
-			if (pSSS->GetGlobalValue(ADVERTISING_SERVER_TOKEN, csServerToken)) {
-				serverToken.assign(csServerToken.c_str());
-			}
+			pSSS->GetGlobalValue(ADVERTISING_SERVER_TOKEN, serverToken);
 		}
 
 		auto arr = nlohmann::json::array();
@@ -450,9 +447,7 @@ void CAdManager::FetchAds() {
 	m_collectedRecords.clear();
 
 	if (pSSS) {
-		string csServerResponse;
-		if (pSSS->GetGlobalValue(ADVERTISING_SERVER_RESPONSE, csServerResponse)) {
-			serverResponse.assign(csServerResponse.c_str());
+		if (pSSS->GetGlobalValue(ADVERTISING_SERVER_RESPONSE, serverResponse)) {
 			LoadAds(serverResponse);
 			// when not remote, we assume ads are already bundled inside server pak
 			if (m_state == EAdState::eAS_FetchAds) {
@@ -566,10 +561,7 @@ void CAdManager::CollectViewership(float delta) {
 
 	CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
 	if (pSSS) {
-		string csServerToken;
-		if (pSSS->GetGlobalValue(ADVERTISING_SERVER_TOKEN, csServerToken)) {
-			serverToken.assign(csServerToken.c_str());
-		}
+		pSSS->GetGlobalValue(ADVERTISING_SERVER_TOKEN, serverToken);
 	}
 
 	if (pPlayer) {

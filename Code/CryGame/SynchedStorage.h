@@ -1,39 +1,44 @@
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <mutex>
+#include <string>
+#include <variant>
 
 #include "CryCommon/CryNetwork/INetwork.h"
-#include "CryCommon/CryAction/IGameFramework.h"
-#include "CryCommon/CryCore/ConfigurableVariant.h"
 
-using TSynchedValueTypes = NTypelist::CConstruct<bool, float, int, EntityId, string>::TType;
+struct IGameFramework;
 
-enum ESynchedValueTypes
+using TSynchedKey = std::uint16_t;
+using TSynchedValue = std::variant<bool, float, int, EntityId, std::string>;
+
+enum class SynchedValueType
 {
-	eSVT_None     = -1,
-	eSVT_Bool     = NTypelist::IndexOf<bool,     TSynchedValueTypes>::value,
-	eSVT_Float    = NTypelist::IndexOf<float,    TSynchedValueTypes>::value,
-	eSVT_Int      = NTypelist::IndexOf<int,      TSynchedValueTypes>::value,
-	eSVT_EntityId = NTypelist::IndexOf<EntityId, TSynchedValueTypes>::value,
-	eSVT_String   = NTypelist::IndexOf<string,   TSynchedValueTypes>::value,
+	None = -1,
+	Bool = 0,
+	Float = 1,
+	Int = 2,
+	EntityId = 3,
+	String = 4,
 };
 
-using TSynchedKey = uint16;
-using TSynchedValue = CConfigurableVariant<TSynchedValueTypes, sizeof (void*)>;
+static_assert(static_cast<SynchedValueType>(TSynchedValue(bool{}).index()) == SynchedValueType::Bool);
+static_assert(static_cast<SynchedValueType>(TSynchedValue(float{}).index()) == SynchedValueType::Float);
+static_assert(static_cast<SynchedValueType>(TSynchedValue(int{}).index()) == SynchedValueType::Int);
+static_assert(static_cast<SynchedValueType>(TSynchedValue(EntityId{}).index()) == SynchedValueType::EntityId);
+static_assert(static_cast<SynchedValueType>(TSynchedValue(std::string{}).index()) == SynchedValueType::String);
 
 class CSynchedStorage : public INetMessageSink
 {
-public:
+protected:
 	using TStorage = std::map<TSynchedKey, TSynchedValue>;
-
 	using TEntityStorageMap = std::map<EntityId, TStorage>;
 
-protected:
 	TStorage m_globalStorage;
 	TEntityStorageMap m_entityStorage;
 
-	IGameFramework *m_pGameFramework = nullptr;
+	IGameFramework* m_pGameFramework = nullptr;
 
 	std::recursive_mutex m_mutex;
 
@@ -42,60 +47,54 @@ protected:
 public:
 	virtual ~CSynchedStorage() = default;
 
-	template<typename ValueType>
-	void SetGlobalValue(TSynchedKey key, const ValueType & value)
+	template<class T>
+	void SetGlobalValue(TSynchedKey key, const T& value)
 	{
 		std::lock_guard lock(m_mutex);
 
-		auto it = m_globalStorage.find(key);
-		if (it == m_globalStorage.end())
+		const auto [it, added] = m_globalStorage.try_emplace(key, value);
+		if (added)
 		{
-			TSynchedValue & newValue = m_globalStorage[key];
-			newValue.Set(value);
-
-			OnGlobalChanged(key, newValue);
+			OnGlobalChanged(key);
 		}
 		else
 		{
-			const ValueType *pStoredValue = it->second.GetPtr<ValueType>();
+			const T* pStoredValue = std::get_if<T>(&it->second);
 			if (!pStoredValue || *pStoredValue != value)
 			{
-				it->second.Set(value);
+				it->second = value;
 
-				OnGlobalChanged(key, it->second);
+				OnGlobalChanged(key);
 			}
 		}
 	}
 
-	template<typename ValueType>
-	void SetEntityValue(EntityId id, TSynchedKey key, const ValueType & value)
+	template<class T>
+	void SetEntityValue(EntityId id, TSynchedKey key, const T& value)
 	{
 		std::lock_guard lock(m_mutex);
 
-		TStorage & storage = m_entityStorage[id];
+		TStorage& storage = m_entityStorage[id];
 
-		auto it = storage.find(key);
-		if (it == storage.end())
+		const auto [it, added] = storage.try_emplace(key, value);
+		if (added)
 		{
-			TSynchedValue & newValue = storage[key];
-			newValue.Set(value);
-
-			OnEntityChanged(id, key, newValue);
+			OnEntityChanged(id, key);
 		}
 		else
 		{
-			const ValueType *pStoredValue = it->second.GetPtr<ValueType>();
+			const T* pStoredValue = std::get_if<T>(&it->second);
 			if (!pStoredValue || *pStoredValue != value)
 			{
-				it->second.Set(value);
+				it->second = value;
 
-				OnEntityChanged(id, key, it->second);
+				OnEntityChanged(id, key);
 			}
 		}
 	}
 
-	template<typename ValueType>
-	bool GetGlobalValue(TSynchedKey key, ValueType & value)
+	template<class T>
+	bool GetGlobalValue(TSynchedKey key, T& value)
 	{
 		std::lock_guard lock(m_mutex);
 
@@ -105,7 +104,7 @@ public:
 			return false;
 		}
 
-		const ValueType *pStoredValue = it->second.GetPtr<ValueType>();
+		const T* pStoredValue = std::get_if<T>(&it->second);
 		if (!pStoredValue)
 		{
 			return false;
@@ -116,7 +115,7 @@ public:
 		return true;
 	}
 
-	bool GetGlobalValue(TSynchedKey key, TSynchedValue & value)
+	bool GetGlobalValue(TSynchedKey key, TSynchedValue& value)
 	{
 		std::lock_guard lock(m_mutex);
 
@@ -131,8 +130,8 @@ public:
 		return true;
 	}
 
-	template<typename ValueType>
-	bool GetEntityValue(EntityId entityId, TSynchedKey key, ValueType & value)
+	template<class T>
+	bool GetEntityValue(EntityId entityId, TSynchedKey key, T& value)
 	{
 		std::lock_guard lock(m_mutex);
 
@@ -148,7 +147,7 @@ public:
 			return false;
 		}
 
-		const ValueType *pStoredValue = it->second.GetPtr<ValueType>();
+		const T* pStoredValue = std::get_if<T>(&it->second);
 		if (!pStoredValue)
 		{
 			return false;
@@ -159,7 +158,7 @@ public:
 		return true;
 	}
 
-	bool GetEntityValue(EntityId entityId, TSynchedKey key, TSynchedValue & value)
+	bool GetEntityValue(EntityId entityId, TSynchedKey key, TSynchedValue& value)
 	{
 		std::lock_guard lock(m_mutex);
 
@@ -180,36 +179,36 @@ public:
 		return true;
 	}
 
-	int GetGlobalValueType(TSynchedKey key)
+	SynchedValueType GetGlobalValueType(TSynchedKey key)
 	{
 		std::lock_guard lock(m_mutex);
 
 		auto it = m_globalStorage.find(key);
 		if (it == m_globalStorage.end())
 		{
-			return eSVT_None;
+			return SynchedValueType::None;
 		}
 
-		return it->second.GetType();
+		return static_cast<SynchedValueType>(it->second.index());
 	}
 
-	int GetEntityValueType(EntityId id, TSynchedKey key)
+	SynchedValueType GetEntityValueType(EntityId id, TSynchedKey key)
 	{
 		std::lock_guard lock(m_mutex);
 
 		auto eit = m_entityStorage.find(id);
 		if (eit == m_entityStorage.end())
 		{
-			return eSVT_None;
+			return SynchedValueType::None;
 		}
 
 		auto it = eit->second.find(key);
 		if (it == eit->second.end())
 		{
-			return eSVT_None;
+			return SynchedValueType::None;
 		}
 
-		return it->second.GetType();
+		return static_cast<SynchedValueType>(it->second.index());
 	}
 
 	void ClearGlobalValue(TSynchedKey key)
@@ -218,8 +217,7 @@ public:
 
 		if (m_globalStorage.erase(key))
 		{
-
-			OnGlobalChanged(key, TSynchedValue{});
+			OnGlobalChanged(key);
 		}
 	}
 
@@ -234,8 +232,7 @@ public:
 
 			if (storage.erase(key))
 			{
-
-				OnEntityChanged(id, key, TSynchedValue{});
+				OnEntityChanged(id, key);
 			}
 
 			if (storage.empty())
@@ -249,15 +246,15 @@ public:
 
 	virtual void Dump();
 
-	void SerializeValue(TSerialize ser, TSynchedKey & key, TSynchedValue & value, int type);
-	void SerializeEntityValue(TSerialize ser, EntityId id, TSynchedKey & key, TSynchedValue & value, int type);
+	void SerializeValue(TSerialize ser, TSynchedKey& key, TSynchedValue& value, SynchedValueType type);
+	void SerializeEntityValue(TSerialize ser, EntityId id, TSynchedKey& key, TSynchedValue& value, SynchedValueType type);
 
 protected:
-	virtual void OnGlobalChanged(TSynchedKey key, const TSynchedValue & value)
+	virtual void OnGlobalChanged(TSynchedKey key)
 	{
 	}
 
-	virtual void OnEntityChanged(EntityId id, TSynchedKey key, const TSynchedValue & value)
+	virtual void OnEntityChanged(EntityId id, TSynchedKey key)
 	{
 	}
 };

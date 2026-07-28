@@ -112,8 +112,8 @@ private:
 	int				m_currentClientTeam;
 	bool			m_bShow;
 	float			m_lastShowSwitch;
-	string		m_currentServer;
-	string    m_currentServerIp;	
+	std::string m_currentServer;
+	std::string m_currentServerIp;
 	CGameFlashAnimation *m_pFlashBoard;
 	SRankStats m_rankStats;
 

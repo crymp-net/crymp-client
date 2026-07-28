@@ -1,4 +1,5 @@
 #pragma once
+
 #include <array>
 #include <map>
 #include <optional>
@@ -33,12 +34,12 @@ class CWeatherSystem {
 	};
 
 	bool                          m_enabled = false;
-	string                        m_lastTodXmlPath;
+	std::string                   m_lastTodXmlPath;
 	std::map<int, float[3]>       m_originalWeatherValues;
 	std::optional<Vec3>           m_originalWind;
 	std::map<int, IStatInstGroup> m_originalGroups;
 
-	std::map<int, string>                                 m_activeValues;
+	std::map<int, std::string>                            m_activeValues;
 	std::set<std::string>                                 m_activeEffects;
 	std::optional<unsigned>                               m_activeMask;
 	std::map<std::string, std::vector<IParticleEmitter*>> m_activeEmitters;
@@ -98,6 +99,6 @@ private:
 	std::string m_cachedTodXmlPath;
 	std::string m_cachedTodXmlName;
 
-	void UpdateTodXmlNameCache(const string& xmlPath);
-	std::string_view GetTodXmlName(std::string_view path) const;
+	void UpdateTodXmlNameCache(std::string_view xmlPath);
+	std::string_view GetTodXmlName(std::string_view xmlPath) const;
 };

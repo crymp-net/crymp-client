@@ -1,5 +1,8 @@
-#include "ServerSynchedStorage.h"
+#include "CryCommon/CryAction/IGameFramework.h"
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
+#include "CryCommon/CrySystem/gEnv.h"
+
+#include "ServerSynchedStorage.h"
 
 CServerSynchedStorage::SChannel *CServerSynchedStorage::GetChannel(int channelId)
 {
@@ -120,21 +123,21 @@ void CServerSynchedStorage::AddToGlobalQueueFor(int channelId, TSynchedKey key)
 
 	CClientSynchedStorage::CSetGlobalMsg *pMsg = nullptr;
 
-	switch (value.GetType())
+	switch (static_cast<SynchedValueType>(value.index()))
 	{
-		case eSVT_Bool:
+		case SynchedValueType::Bool:
 			pMsg = new CClientSynchedStorage::CSetGlobalBoolMsg(channelId, this, key, value);
 			break;
-		case eSVT_Float:
+		case SynchedValueType::Float:
 			pMsg = new CClientSynchedStorage::CSetGlobalFloatMsg(channelId, this, key, value);
 			break;
-		case eSVT_Int:
+		case SynchedValueType::Int:
 			pMsg = new CClientSynchedStorage::CSetGlobalIntMsg(channelId, this, key, value);
 			break;
-		case eSVT_EntityId:
+		case SynchedValueType::EntityId:
 			pMsg = new CClientSynchedStorage::CSetGlobalEntityIdMsg(channelId, this, key, value);
 			break;
-		case eSVT_String:
+		case SynchedValueType::String:
 			pMsg = new CClientSynchedStorage::CSetGlobalStringMsg(channelId, this, key, value);
 			break;
 	}
@@ -163,21 +166,21 @@ void CServerSynchedStorage::AddToEntityQueueFor(int channelId, EntityId entityId
 
 	CClientSynchedStorage::CSetEntityMsg *pMsg = nullptr;
 
-	switch (value.GetType())
+	switch (static_cast<SynchedValueType>(value.index()))
 	{
-		case eSVT_Bool:
+		case SynchedValueType::Bool:
 			pMsg = new CClientSynchedStorage::CSetEntityBoolMsg(channelId, this, entityId, key, value);
 			break;
-		case eSVT_Float:
+		case SynchedValueType::Float:
 			pMsg = new CClientSynchedStorage::CSetEntityFloatMsg(channelId, this, entityId, key, value);
 			break;
-		case eSVT_Int:
+		case SynchedValueType::Int:
 			pMsg = new CClientSynchedStorage::CSetEntityIntMsg(channelId, this, entityId, key, value);
 			break;
-		case eSVT_EntityId:
+		case SynchedValueType::EntityId:
 			pMsg = new CClientSynchedStorage::CSetEntityEntityIdMsg(channelId, this, entityId, key, value);
 			break;
-		case eSVT_String:
+		case SynchedValueType::String:
 			pMsg = new CClientSynchedStorage::CSetEntityStringMsg(channelId, this, entityId, key, value);
 			break;
 	}
@@ -198,43 +201,32 @@ void CServerSynchedStorage::FullSynch(int channelId, bool reset)
 		ResetChannel(channelId);
 	}
 
-	for (const auto & item : m_globalStorage)
+	for (const auto& [key, value] : m_globalStorage)
 	{
-		AddToGlobalQueueFor(channelId, item.first);
+		AddToGlobalQueueFor(channelId, key);
 	}
 
-	ClearNonExistingEntities();
+	// Remove non-existent entities
+	std::erase_if(m_entityStorage, [pEntitySystem = gEnv->pEntitySystem](const auto& item) {
+		const auto& [entityId, storage] = item;
+		return pEntitySystem->GetEntity(entityId) == nullptr;
+	});
 
-	for (const auto & entityItem : m_entityStorage)
+	for (const auto& [entityId, storage] : m_entityStorage)
 	{
-		for (const auto & item : entityItem.second)
+		for (const auto& [key, value] : storage)
 		{
-			AddToEntityQueueFor(channelId, entityItem.first, item.first);
+			AddToEntityQueueFor(channelId, entityId, key);
 		}
 	}
 }
 
-void CServerSynchedStorage::ClearNonExistingEntities()
-{
-	for (auto it = m_entityStorage.begin(); it != m_entityStorage.end(); )
-	{
-		if (gEnv->pEntitySystem->GetEntity(it->first) == nullptr)
-		{
-			it = m_entityStorage.erase(it);
-		}
-		else
-		{
-			++it;
-		}
-	}
-}
-
-void CServerSynchedStorage::OnGlobalChanged(TSynchedKey key, const TSynchedValue & value)
+void CServerSynchedStorage::OnGlobalChanged(TSynchedKey key)
 {
 	AddToGlobalQueue(key);
 }
 
-void CServerSynchedStorage::OnEntityChanged(EntityId entityId, TSynchedKey key, const TSynchedValue & value)
+void CServerSynchedStorage::OnEntityChanged(EntityId entityId, TSynchedKey key)
 {
 	AddToEntityQueue(entityId, key);
 }

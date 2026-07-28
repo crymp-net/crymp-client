@@ -4612,10 +4612,10 @@ void CGameRules::OnSetActorModel(CActor* pActor, int currTeamId)
 	const int CURR_KEY_MODEL = KEY_MODEL + currTeamId;
 	const int TEAM_ID_NK = 1;
 
-	string model;
+	std::string model;
 	if (GetSynchedEntityValue(playerId, CURR_KEY_MODEL, model) && model.length() > 0)
 	{
-		pActor->SetFileModel(model.c_str());
+		pActor->SetFileModel(model);
 	}
 	else if (isPlayer)
 	{
