@@ -11,6 +11,7 @@
 #include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryGame/Game.h"
 #include "CryGame/GameCVars.h"
+#include "Library/StringTools.h"
 
 #include "WeatherSystem.h"
 #include "Cry3DEngine/TimeOfDay.h"
@@ -92,7 +93,7 @@ void CWeatherSystem::Update(float frameTime) {
 		ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
 		if (pTOD) {
 
-			string todPath;
+			std::string todPath;
 			if (pSSS->GetGlobalValue(WEATHER_TOD_PATH_ID, todPath))
 			{
 				if (todPath != m_lastTodXmlPath)
@@ -114,7 +115,7 @@ void CWeatherSystem::Update(float frameTime) {
 						}
 					}
 
-					pTOD->LoadCustomSettings(todPath, blendDuration);
+					pTOD->LoadCustomSettings(todPath.c_str(), blendDuration);
 
 					m_lastTodXmlPath = todPath;
 				}
@@ -122,7 +123,7 @@ void CWeatherSystem::Update(float frameTime) {
 
 			int count = pTOD->GetVariableCount();
 			for (int i = 0; i < count; i++) {
-				string value;
+				std::string value;
 				auto existing = m_activeValues.find(WEATHER_ENV_NAMESPACE + i);
 				if (pSSS->GetGlobalValue(WEATHER_ENV_NAMESPACE + i, value) && value.length() > 0) {
 					if (existing == m_activeValues.end() || existing->second != value) {
@@ -154,7 +155,7 @@ void CWeatherSystem::Update(float frameTime) {
 			}
 			for (int i = WEATHER_ENABLED + 1; i < WEATHER_VAR_COUNT; i++) {
 				float f3[3];
-				string value;
+				std::string value;
 				auto existing = m_activeValues.find(WEATHER_NAMESPACE + i);
 				pSSS->GetGlobalValue(WEATHER_NAMESPACE + i, value);
 				if (existing == m_activeValues.end() || existing->second != value) {
@@ -837,7 +838,7 @@ void CWeatherSystem::PostUpdate()
 			progress = std::clamp(t / d, 0.0f, 1.0f);
 		}
 
-		string xml = pTOD->GetActiveCustomTodFile();
+		std::string_view xml = StringTools::SafeView(pTOD->GetActiveCustomTodFile());
 		if (xml.empty())
 		{
 			xml = m_lastTodXmlPath;
@@ -900,15 +901,13 @@ std::string_view CWeatherSystem::GetTodXmlName(std::string_view path) const
 	return path;
 }
 
-void CWeatherSystem::UpdateTodXmlNameCache(const string& xmlPath)
+void CWeatherSystem::UpdateTodXmlNameCache(std::string_view xmlPath)
 {
-	std::string path(xmlPath.c_str());
-
-	if (path == m_cachedTodXmlPath)
+	if (xmlPath == m_cachedTodXmlPath)
 	{
 		return;
 	}
 
-	m_cachedTodXmlPath = std::move(path);
+	m_cachedTodXmlPath = xmlPath;
 	m_cachedTodXmlName = this->GetTodXmlName(m_cachedTodXmlPath);
 }

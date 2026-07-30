@@ -11,6 +11,8 @@ History:
 
 *************************************************************************/
 #include "CryCommon/CrySystem/ISystem.h"
+#include "Library/StringTools.h"
+
 #include "ScriptBind_GameRules.h"
 #include "GameRules.h"
 #include "Actors/Actor.h"
@@ -1912,9 +1914,9 @@ int CScriptBind_GameRules::SetSynchedGlobalValue(IFunctionHandler* pH, int key)
 		{
 		case svtString:
 		{
-			const char* s = 0;
+			const char* s = nullptr;
 			pH->GetParam(2, s);
-			pGameRules->SetSynchedGlobalValue(key, string(s));
+			pGameRules->SetSynchedGlobalValue(key, StringTools::SafeString(s));
 		}
 		break;
 		case svtPointer:
@@ -1956,43 +1958,43 @@ int CScriptBind_GameRules::GetSynchedGlobalValue(IFunctionHandler* pH, int key)
 {
 	CGameRules* pGameRules = GetGameRules(pH);
 
-	int type = pGameRules->GetSynchedGlobalValueType(key);
-	if (type == eSVT_None)
+	SynchedValueType type = pGameRules->GetSynchedGlobalValueType(key);
+	if (type == SynchedValueType::None)
 		return pH->EndFunction();
 
 	switch (type)
 	{
-	case eSVT_Bool:
+	case SynchedValueType::Bool:
 	{
 		bool b;
 		pGameRules->GetSynchedGlobalValue(key, b);
 		return pH->EndFunction(b);
 	}
 	break;
-	case eSVT_Float:
+	case SynchedValueType::Float:
 	{
 		float f;
 		pGameRules->GetSynchedGlobalValue(key, f);
 		return pH->EndFunction(f);
 	}
 	break;
-	case eSVT_Int:
+	case SynchedValueType::Int:
 	{
 		int i;
 		pGameRules->GetSynchedGlobalValue(key, i);
 		return pH->EndFunction(i);
 	}
 	break;
-	case eSVT_EntityId:
+	case SynchedValueType::EntityId:
 	{
 		EntityId e;
 		pGameRules->GetSynchedGlobalValue(key, e);
 		return pH->EndFunction(ScriptHandle(e));
 	}
 	break;
-	case eSVT_String:
+	case SynchedValueType::String:
 	{
-		static string s;
+		std::string s;
 		pGameRules->GetSynchedGlobalValue(key, s);
 		return pH->EndFunction(s.c_str());
 	}
@@ -2017,9 +2019,9 @@ int CScriptBind_GameRules::SetSynchedEntityValue(IFunctionHandler* pH, ScriptHan
 		{
 		case svtString:
 		{
-			const char* s = 0;
+			const char* s = nullptr;
 			pH->GetParam(3, s);
-			pGameRules->SetSynchedEntityValue(id, key, string(s));
+			pGameRules->SetSynchedEntityValue(id, key, StringTools::SafeString(s));
 		}
 		break;
 		case svtPointer:
@@ -2061,43 +2063,43 @@ int CScriptBind_GameRules::GetSynchedEntityValue(IFunctionHandler* pH, ScriptHan
 	CGameRules* pGameRules = GetGameRules(pH);
 
 	EntityId id = (EntityId)entityId.n;
-	int type = pGameRules->GetSynchedEntityValueType(id, key);
-	if (type == eSVT_None)
+	SynchedValueType type = pGameRules->GetSynchedEntityValueType(id, key);
+	if (type == SynchedValueType::None)
 		return pH->EndFunction();
 
 	switch (type)
 	{
-	case eSVT_Bool:
+	case SynchedValueType::Bool:
 	{
 		bool b;
 		pGameRules->GetSynchedEntityValue(id, key, b);
 		return pH->EndFunction(b);
 	}
 	break;
-	case eSVT_Float:
+	case SynchedValueType::Float:
 	{
 		float f;
 		pGameRules->GetSynchedEntityValue(id, key, f);
 		return pH->EndFunction(f);
 	}
 	break;
-	case eSVT_Int:
+	case SynchedValueType::Int:
 	{
 		int i;
 		pGameRules->GetSynchedEntityValue(id, key, i);
 		return pH->EndFunction(i);
 	}
 	break;
-	case eSVT_EntityId:
+	case SynchedValueType::EntityId:
 	{
 		EntityId e;
 		pGameRules->GetSynchedEntityValue(id, key, e);
 		return pH->EndFunction(ScriptHandle(e));
 	}
 	break;
-	case eSVT_String:
+	case SynchedValueType::String:
 	{
-		static string s;
+		std::string s;
 		pGameRules->GetSynchedEntityValue(id, key, s);
 		return pH->EndFunction(s.c_str());
 	}

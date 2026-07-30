@@ -304,8 +304,8 @@ void CHUDScore::Render()
 	if (!pClientActor)
 		return;
 
-	string svr_name = "";
-	string svr_ip = "";
+	std::string svr_name;
+	std::string svr_ip;
 
 	pGameRules->GetSynchedGlobalValue(GLOBAL_SERVER_IP_KEY, svr_ip);
 	pGameRules->GetSynchedGlobalValue(GLOBAL_SERVER_NAME_KEY, svr_name);

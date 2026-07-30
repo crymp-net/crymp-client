@@ -3,6 +3,7 @@
 #include <array>
 #include <variant>
 #include <vector>
+#include <string>
 #include <string_view>
 #include <functional>
 
@@ -142,7 +143,7 @@ private:
 	float m_transitionTargetStartTime = 0.0f;
 	float m_transitionTargetEndTime = 0.0f;
 
-	string m_activeCustomTodFile;
+	std::string m_activeCustomTodFile;
 
 	int m_updateCallbackCounter = 0;
 	std::vector<std::pair<int, std::function<void(bool, bool)>>> m_updateCallbacks;
@@ -189,7 +190,7 @@ public:
 	}
 
 	void DebugDraw() override;
-	void LoadCustomSettings(string xmlPath, float blendDuration = 0.0f) override;
+	void LoadCustomSettings(const char* xmlPath, float blendDuration = 0.0f) override;
 	float GetTransitionTime() const override 
 	{ 
 		return m_transitionTime; 
@@ -202,15 +203,12 @@ public:
 	{
 		return m_transitionDuration > 0.0f && m_transitionTime < m_transitionDuration; 
 	}
-	const string& GetActiveCustomTodFile() const override 
+	const char* GetActiveCustomTodFile() const override
 	{
-		return m_activeCustomTodFile;
+		return m_activeCustomTodFile.c_str();
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
-
-	void RestoreLevelDefaults();
-	void RestoreLevelDefaults(float blendDuration);
 
 	int AddUpdateCallback(std::function<void(bool, bool)> callback);
 	void RemoveUpdateCallback(int id);
@@ -226,4 +224,6 @@ private:
 	void EvaluateVariables(std::vector<Variable>& outVars, const std::vector<Variable>& sourceVars, float time) const;
 
 	Vec3 CalculateSunDirection(const Vec3& sunRotation) const;
+
+	void RestoreLevelDefaults(float blendDuration = 0.0f);
 };

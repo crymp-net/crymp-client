@@ -3,42 +3,18 @@
 
 #include "SynchedStorage.h"
 
-static void DumpValue(TSynchedKey key, const TSynchedValue & value)
+struct DumpVisitor
 {
-	switch(value.GetType())
-	{
-		case eSVT_Bool:
-		{
-			CryLogAlways("  %.08d -     bool: %s", key, *value.GetPtr<bool>() ? "true" : "false");
-			break;
-		}
-		case eSVT_Float:
-		{
-			CryLogAlways("  %.08d -    float: %f", key, *value.GetPtr<float>());
-			break;
-		}
-		case eSVT_Int:
-		{
-			CryLogAlways("  %.08d -      int: %d", key, *value.GetPtr<int>());
-			break;
-		}
-		case eSVT_EntityId:
-		{
-			CryLogAlways("  %.08d - entityId: %.08x", key, *value.GetPtr<EntityId>());
-			break;
-		}
-		case eSVT_String:
-		{
-			CryLogAlways("  %.08d -  string: %s", key, value.GetPtr<string>()->c_str());
-			break;
-		}
-		default:
-		{
-			CryLogAlways("  %.08d - unknown: %.08x", key, *value.GetPtr<uint32>());
-			break;
-		}
-	}
-}
+	TSynchedKey key{};
+
+	explicit DumpVisitor(TSynchedKey key) : key(key) {}
+
+	void operator()(bool v)               { CryLogAlways("  %.08u -     bool: %s", key, v ? "true" : "false"); }
+	void operator()(float v)              { CryLogAlways("  %.08u -    float: %f", key, v); }
+	void operator()(int v)                { CryLogAlways("  %.08u -      int: %d", key, v); }
+	void operator()(EntityId v)           { CryLogAlways("  %.08u - entityId: %u", key, v); }
+	void operator()(const std::string& v) { CryLogAlways("  %.08u -   string: %s", key, v.c_str()); }
+};
 
 void CSynchedStorage::Reset()
 {
@@ -52,225 +28,133 @@ void CSynchedStorage::Dump()
 {
 	std::lock_guard lock(m_mutex);
 
-	CryLogAlways("---------------------------");
-	CryLogAlways(" SYNCHED STORAGE DUMP");
-	CryLogAlways("---------------------------\n");
+	CryLogAlways("-------------------------------- SynchedStorage --------------------------------");
 	CryLogAlways("Globals:");
 
-	for (const auto & item : m_globalStorage)
+	for (const auto& [key, value] : m_globalStorage)
 	{
-		DumpValue(item.first, item.second);
+		std::visit(DumpVisitor{key}, value);
 	}
 
-	CryLogAlways("---------------------------\n");
-
-	for (const auto & entityItem : m_entityStorage)
+	for (const auto& [entityId, storage] : m_entityStorage)
 	{
-		IEntity *pEntity = gEnv->pEntitySystem->GetEntity(entityItem.first);
-		const char *name = pEntity ? pEntity->GetName() : "null";
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
+		const char* name = pEntity ? pEntity->GetName() : "null";
 
-		CryLogAlways("Entity %.08d(%s)", entityItem.first, name);
+		CryLogAlways("Entity %u (%s):", entityId, name);
 
-		for (const auto & item : entityItem.second)
+		for (const auto& [key, value] : storage)
 		{
-			DumpValue(item.first, item.second);
+			std::visit(DumpVisitor{key}, value);
 		}
 	}
+
+	CryLogAlways("--------------------------------------------------------------------------------");
 }
 
-void CSynchedStorage::SerializeValue(TSerialize ser, TSynchedKey & key, TSynchedValue & value, int type)
+void CSynchedStorage::SerializeValue(TSerialize ser, TSynchedKey& key, TSynchedValue& value, SynchedValueType type)
 {
 	ser.Value("key", key, /* 'ssk' */ 0x0073736B);
 
+	const auto impl = [&]<class T>(int policy) {
+		T v{};
+
+		if (ser.IsWriting())
+		{
+			T* p = std::get_if<T>(&value);
+			if (p)
+			{
+				v = *p;
+			}
+		}
+
+		ser.Value("value", v, policy);
+
+		if (ser.IsReading())
+		{
+			SetGlobalValue(key, v);
+		}
+	};
+
 	switch (type)
 	{
-		case eSVT_Bool:
+		case SynchedValueType::Bool:
 		{
-			bool b;
-
-			if (ser.IsWriting())
-			{
-				b = *value.GetPtr<bool>();
-			}
-
-			ser.Value("value", b, 'bool');
-
-			if (ser.IsReading())
-			{
-				SetGlobalValue(key, b);
-			}
-
+			impl.operator()<bool>(/* 'bool' */ 0x626F6F6C);
 			break;
 		}
-		case eSVT_Float:
+		case SynchedValueType::Float:
 		{
-			float f;
-
-			if (ser.IsWriting())
-			{
-				f = *value.GetPtr<float>();
-			}
-
-			ser.Value("value", f, 'ssfl');
-
-			if (ser.IsReading())
-			{
-				SetGlobalValue(key, f);
-			}
-
+			impl.operator()<float>(/* 'ssfl' */ 0x7373666C);
 			break;
 		}
-		case eSVT_Int:
+		case SynchedValueType::Int:
 		{
-			int i;
-
-			if (ser.IsWriting())
-			{
-				i = *value.GetPtr<int>();
-			}
-
-			ser.Value("value", i, /* 'ssi' */ 0x00737369);
-
-			if (ser.IsReading())
-			{
-				SetGlobalValue(key, i);
-			}
-
+			impl.operator()<int>(/* 'ssi' */ 0x00737369);
 			break;
 		}
-		case eSVT_EntityId:
+		case SynchedValueType::EntityId:
 		{
-			EntityId e;
-
-			if (ser.IsWriting())
-			{
-				e = *value.GetPtr<EntityId>();
-			}
-
-			ser.Value("value", e, /* 'eid' */0x00656964);
-
-			if (ser.IsReading())
-			{
-				SetGlobalValue(key, e);
-			}
-
+			impl.operator()<EntityId>(/* 'eid' */ 0x00656964);
 			break;
 		}
-		case eSVT_String:
+		case SynchedValueType::String:
 		{
-			string s;
-
-			if (ser.IsWriting())
-			{
-				s = *value.GetPtr<string>();
-			}
-
-			ser.Value("value", s);
-
-			if (ser.IsReading())
-			{
-				SetGlobalValue(key, s);
-			}
-
+			impl.operator()<std::string>(0);
 			break;
 		}
 	}
 }
 
-void CSynchedStorage::SerializeEntityValue(TSerialize ser, EntityId id, TSynchedKey & key, TSynchedValue & value, int type)
+void CSynchedStorage::SerializeEntityValue(TSerialize ser, EntityId id, TSynchedKey& key, TSynchedValue& value, SynchedValueType type)
 {
 	ser.Value("key", key, /* 'ssk' */ 0x0073736B);
 
+	const auto impl = [&]<class T>(int policy) {
+		T v{};
+
+		if (ser.IsWriting())
+		{
+			T* p = std::get_if<T>(&value);
+			if (p)
+			{
+				v = *p;
+			}
+		}
+
+		ser.Value("value", v, policy);
+
+		if (ser.IsReading())
+		{
+			SetEntityValue(id, key, v);
+		}
+	};
+
 	switch (type)
 	{
-		case eSVT_Bool:
+		case SynchedValueType::Bool:
 		{
-			bool b;
-
-			if (ser.IsWriting())
-			{
-				b = *value.GetPtr<bool>();
-			}
-
-			ser.Value("value", b, 'bool');
-
-			if (ser.IsReading())
-			{
-				SetEntityValue(id, key, b);
-			}
-
+			impl.operator()<bool>(/* 'bool' */ 0x626F6F6C);
 			break;
 		}
-		case eSVT_Float:
+		case SynchedValueType::Float:
 		{
-			float f;
-
-			if (ser.IsWriting())
-			{
-				f = *value.GetPtr<float>();
-			}
-
-			ser.Value("value", f, 'ssfl');
-
-			if (ser.IsReading())
-			{
-				SetEntityValue(id, key, f);
-			}
-
+			impl.operator()<float>(/* 'ssfl' */ 0x7373666C);
 			break;
 		}
-		case eSVT_Int:
+		case SynchedValueType::Int:
 		{
-			int i;
-
-			if (ser.IsWriting())
-			{
-				i = *value.GetPtr<int>();
-			}
-
-			ser.Value("value", i, /* 'ssi' */ 0x00737369);
-
-			if (ser.IsReading())
-			{
-				SetEntityValue(id, key, i);
-			}
-
+			impl.operator()<int>(/* 'ssi' */ 0x00737369);
 			break;
 		}
-		case eSVT_EntityId:
+		case SynchedValueType::EntityId:
 		{
-			EntityId e;
-
-			if (ser.IsWriting())
-			{
-				e = *value.GetPtr<EntityId>();
-			}
-
-			ser.Value("value", e, /* 'eid' */0x00656964);
-
-			if (ser.IsReading())
-			{
-				SetEntityValue(id, key, e);
-			}
-
+			impl.operator()<EntityId>(/* 'eid' */ 0x00656964);
 			break;
 		}
-		case eSVT_String:
+		case SynchedValueType::String:
 		{
-			string s;
-
-			if (ser.IsWriting())
-			{
-				s = *value.GetPtr<string>();
-			}
-
-			ser.Value("value", s);
-
-			if (ser.IsReading())
-			{
-				SetEntityValue(id, key, s);
-			}
-
+			impl.operator()<std::string>(0);
 			break;
 		}
 	}

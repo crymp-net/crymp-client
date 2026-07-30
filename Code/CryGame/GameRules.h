@@ -476,10 +476,10 @@ public:
 		return g_pGame->GetSynchedStorage()->GetGlobalValue(key, value);
 	}
 
-	int GetSynchedGlobalValueType(TSynchedKey key) const
+	SynchedValueType GetSynchedGlobalValueType(TSynchedKey key) const
 	{
 		if (!g_pGame->GetSynchedStorage())
-			return eSVT_None;
+			return SynchedValueType::None;
 		return g_pGame->GetSynchedStorage()->GetGlobalValueType(key);
 	}
 
@@ -503,7 +503,7 @@ public:
 		return g_pGame->GetSynchedStorage()->GetEntityValue(id, key, value);
 	}
 	
-	int GetSynchedEntityValueType(EntityId id, TSynchedKey key) const
+	SynchedValueType GetSynchedEntityValueType(EntityId id, TSynchedKey key) const
 	{
 		return g_pGame->GetSynchedStorage()->GetEntityValueType(id, key);
 	}

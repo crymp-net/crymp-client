@@ -1996,7 +1996,7 @@ void CHUDPowerStruggle::SetLastBuyMenuPage(BuyMenuPage page, bool updateTime)
 void CHUDPowerStruggle::GetTeamStatus(int teamId, float& power, float& hq, int& controlledAliens, EntityId& prototypeFactoryId)
 {
 	power = 0.0f;
-	if (m_pGameRules->GetSynchedGlobalValueType(300 + teamId) == eSVT_Int)
+	if (m_pGameRules->GetSynchedGlobalValueType(300 + teamId) == SynchedValueType::Int)
 	{
 		int p;
 		m_pGameRules->GetSynchedGlobalValue(300 + teamId, p);

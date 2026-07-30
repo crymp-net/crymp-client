@@ -1042,18 +1042,18 @@ Vec3 TimeOfDay::CalculateSunDirection(const Vec3& sunRotation) const
 	return sunDirection;
 }
 
-void TimeOfDay::LoadCustomSettings(string xmlPath, float blendDuration)
+void TimeOfDay::LoadCustomSettings(const char* xmlPath, float blendDuration)
 {
-	if (xmlPath.empty())
+	if (!xmlPath || !*xmlPath)
 	{
 		this->RestoreLevelDefaults(blendDuration);
 		return;
 	}
 
-	XmlNodeRef node = gEnv->pSystem->LoadXmlFile(xmlPath.c_str());
+	XmlNodeRef node = gEnv->pSystem->LoadXmlFile(xmlPath);
 	if (!node)
 	{
-		CryLogWarningAlways("Failed to load custom ToD settings from '%s'", xmlPath.c_str());
+		CryLogWarningAlways("Failed to load custom ToD settings from '%s'", xmlPath);
 		return;
 	}
 
@@ -1067,7 +1067,7 @@ void TimeOfDay::LoadCustomSettings(string xmlPath, float blendDuration)
 		//CryMP: Keep current active clock settings when loading a custom visual ToD preset.
 		this->Update(true, true);
 
-		CryLog("$3[CryMP] Loaded custom ToD settings from '%s'", xmlPath.c_str());
+		CryLog("$3[CryMP] Loaded custom ToD settings from '%s'", xmlPath);
 		return;
 	}
 
@@ -1089,12 +1089,7 @@ void TimeOfDay::LoadCustomSettings(string xmlPath, float blendDuration)
 	m_transitionTime = 0.0f;
 	m_transitionDuration = std::max(blendDuration, 0.001f);
 
-	CryLog("$3[CryMP] Blending custom ToD settings from '%s' over %.2f seconds", xmlPath.c_str(), blendDuration);
-}
-
-void TimeOfDay::RestoreLevelDefaults()
-{
-	this->RestoreLevelDefaults(0.0f);
+	CryLog("$3[CryMP] Blending custom ToD settings from '%s' over %.2f seconds", xmlPath, blendDuration);
 }
 
 void TimeOfDay::RestoreLevelDefaults(float blendDuration)

@@ -643,13 +643,13 @@ void CGame::OnActionEvent(const SActionEvent& event)
 	case eAE_serverIp:
 		if (gEnv->bServer && GetServerSynchedStorage())
 		{
-			GetServerSynchedStorage()->SetGlobalValue(GLOBAL_SERVER_IP_KEY, string(event.m_description));
+			GetServerSynchedStorage()->SetGlobalValue(GLOBAL_SERVER_IP_KEY, StringTools::SafeString(event.m_description));
 			GetServerSynchedStorage()->SetGlobalValue(GLOBAL_SERVER_PUBLIC_PORT_KEY, event.m_value);
 		}
 		break;
 	case eAE_serverName:
 		if (gEnv->bServer && GetServerSynchedStorage())
-			GetServerSynchedStorage()->SetGlobalValue(GLOBAL_SERVER_NAME_KEY, string(event.m_description));
+			GetServerSynchedStorage()->SetGlobalValue(GLOBAL_SERVER_NAME_KEY, StringTools::SafeString(event.m_description));
 		break;
 	case  eAE_languageChanged:
 		ReloadFlashInstances();
