@@ -129,7 +129,6 @@ SafeWriting.FuncContainer:AddCategs({"OnTimerTick", "PrepareAll", "CheckPlayer",
 									 "OnEnterServiceZone", "CanEnterSeat", "OnKillAward"})
 Out = Queue:Create()
 SafeWriting.Translator = SafeWriting.Translator or Translator:Create()
-SafeWriting.JL1 = JL1Hash:Create(0x3f0)
 SafeWriting.Schedule = SafeWriting.Schedule or ScheduleBase:New()
 System.LogAlways("$6[SafeWriting] Successfuly initialized FunctionsContainer")
 
@@ -747,7 +746,6 @@ function InitializeAllScripts(hookFunc)
 			end
 		end
 	end
-	SafeWriting.JL1:SetSeed(SafeWriting.Settings.HashSeed or 0x3f0)
 end
 
 function ExecuteCCommandAsChat(command, text)
@@ -1279,7 +1277,7 @@ function ExecuteCommand(cmdname, player, msg)
 					end
 				end
 				if (se.UseSessionSalt) then
-					pass = SafeWriting.JL1:Hash(pass .. player.profile)
+					pass = CPPAPI.SHA256(pass .. player.profile)
 				end
 				msg = string.format(msg, pass)
 				Msg:SendToTarget(player, msg)
@@ -1290,7 +1288,7 @@ function ExecuteCommand(cmdname, player, msg)
 				SessionFlags.All) then
 				local pass = "Session"
 				if (se.UseSessionSalt) then
-					pass = SafeWriting.JL1:Hash(pass .. player.profile)
+					pass = CPPAPI.SHA256(pass .. player.profile)
 				end
 				Msg:SendToTarget(player, "	Please, update your session by writing buy %s to console	", pass)
 				return
