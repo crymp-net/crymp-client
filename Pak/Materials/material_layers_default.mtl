@@ -1,0 +1,25 @@
+<Material MtlFlags="0" Shader="Illum" GenMask="285212672" SurfaceType="" Diffuse="0.50196099,0.50196099,0.50196099" Specular="0.50196099,0.50196099,0.50196099" Emissive="0,0,0" Shininess="10" Opacity="1">
+ <Textures>
+  <Texture Map="Diffuse" File="textures/defaults/white.dds">
+   <TexMod />
+  </Texture>
+  <Texture Map="Normalmap" File="textures/defaults/white_ddn.dds">
+   <TexMod />
+  </Texture>
+  <Texture Map="[1] Custom" File="textures/cubemaps/camera_river_cubemap_bright.dds">
+   <TexMod />
+  </Texture>
+ </Textures>
+ <PublicParams AmbientMultiplier="1"/>
+ <MaterialLayers>
+  <Layer Name="FrozenLayerWip" NoDraw="0">
+   <PublicParams VariationTilling="1" TillingU="1" TillingV="1" ReflectionAmount="0.23999999" TopSnowAmount="1" WorldSpaceSnow="1" TintColor="1,1,1"/>
+  </Layer>
+  <Layer Name="WetLayer" NoDraw="0">
+   <PublicParams AnimScale="1" NoiseOffset="0" VariationTileU="4" VariationTileV="4" VariationTileW="4" WetMultiplier="1" DarkeningAmount="0.125" DetailBumpTile="0.2" BumpScale="0.30000001"/>
+  </Layer>
+  <Layer Name="CloakLayer" NoDraw="0">
+   <PublicParams RefrBumpScale="1" SparksTilling="1" SparksColor="0.30000001,0.30000001,1"/>
+  </Layer>
+ </MaterialLayers>
+</Material>
