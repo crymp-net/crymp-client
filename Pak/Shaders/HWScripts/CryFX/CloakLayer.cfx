@@ -51,6 +51,16 @@ float4 SparksColor
   string UIWidget = "color";
 > = {0.3, 0.3, 1.0, 1};
 
+float CloakVisibility
+<
+  vsregister = VS_REG_PM_5.z;
+  string UIName = "Cloak Visibility";
+  string UIWidget = "slider";
+  float UIMin = 0.0;
+  float UIMax = 2.0;
+  float UIStep = 0.01;
+> = 1.0;
+
 /// Un-Tweakables //////////////////////
 
 float4 ScrSize : PB_ScreenSize;
@@ -157,7 +167,7 @@ struct vtxOUTSparks
   float4 baseTC     : TEXCOORDN;    
   float4 screenPos  : TEXCOORDN;
   float4 vPosOS     : TEXCOORDN;    //w: distance to world origin
-  float3 vConstants : TEXCOORDN;
+  float4 vConstants : TEXCOORDN;
 };
 
 ///////////////// vertex shader //////////////////
@@ -236,7 +246,7 @@ vtxOUT CloakVS(app2vertGeneral IN)
   OUT.vBinormal.xyz = worldTangentT;
   OUT.vNormal.xyz = worldTangentN;
 
-	// Output the screen-space texture coordinates
+  // Output the screen-space texture coordinates
   OUT.screenPos = HPosToScreenTC(OUT.HPosition);
 
   // Store light amount
@@ -244,18 +254,24 @@ vtxOUT CloakVS(app2vertGeneral IN)
 
   // output world position and view vector
   OUT.viewVec.xyz = vertPassPos.WorldPos.xyz;
+
+  // CryMP
+  float fVisibility = clamp(CloakVisibility, 0.0, 2.0);
+  OUT.viewVec.w = fVisibility;
+
   OUT.vPosWS.xyz = vertPassPos.WorldPos.xyz+g_VS_WorldViewPos.xyz;
 
   // output distance to world origin for frac/noise variation stuff
   OUT.vPosWS.w = length(  OUT.vPosWS.xyz   );
 
   // Output some constants
-  OUT.baseTC.w = (0.25 + 0.25 * (1-OUT.baseTC.z)*10 ) * RefrBumpScale;
+  float fRefractionScale = lerp(0.12, 1.0, fVisibility);
+  OUT.baseTC.w = (0.25 + 0.25 * (1-OUT.baseTC.z)*10 ) * RefrBumpScale * fRefractionScale;
   OUT.baseTC.z = saturate( OUT.baseTC.z ) * 0.8;
 
   /////////////////////////////////////////////////////////////////////
   OUT.vRefrScreenPos = 0;
-  
+
   int nQuality = GetShaderQuality(); 
   if( nQuality == QUALITY_LOW )
   {
@@ -270,10 +286,9 @@ vtxOUT CloakVS(app2vertGeneral IN)
 
     // Project refraction into screen space
     float4 vRefrPos = mul(mComposite, float4(vertPassPos.WorldPos.xyz+g_VS_WorldViewPos.xyz+ vRefr*0.05*OUT.baseTC.w, 1));                           // 4 alu
-    
+
     OUT.vRefrScreenPos = vRefrPos;  
   }
-  
 
   return OUT;
 }
@@ -286,7 +301,21 @@ pixout CloakRefrationPS(vtxOUT IN)
   pixout OUT;;
   int nQuality = GetShaderQuality(); 
 
-  half fLightAmount = IN.screenPos.z;
+  // CryMP
+  half fVisibility = clamp(IN.viewVec.w, 0.0, 2.0);
+  half fVisualStrength = fVisibility <= 1.0
+    ? fVisibility * fVisibility
+    : fVisibility;
+
+  half fOriginalLightAmount = IN.screenPos.z;
+  half fNewLightAmount = min(0.9f, fOriginalLightAmount);
+  half fSubtleLightAmount = fNewLightAmount * 0.10f;
+
+  half fLightAmount = lerp(
+    fSubtleLightAmount,
+    fOriginalLightAmount,
+    fVisualStrength);
+
   half2 vRefrCloakAmount = IN.baseTC.wz;
 
   half2 refrTC = (IN.screenPos.xy/IN.screenPos.w) ;
@@ -302,7 +331,7 @@ pixout CloakRefrationPS(vtxOUT IN)
   // cloakInterlationMapSampler= abs(frac((refrTC.y+RandomVals.x)*PS_ScreenSize.y*0.25)*2-1)*0.1+0.9;
   half2 vInterlation  = tex2D(cloakInterlationMapSampler, (refrTC.y+RandomVals.x)*PS_ScreenSize.y*0.25 ).xy;
 
-  
+
   float2 vRefrVS = 0.0f;
   if( nQuality > QUALITY_LOW )
   {
@@ -348,7 +377,7 @@ vtxOUTSparks CloakSparksVS(app2vertMotionBlur IN)
   vertPassPos.ObjToTangentSpace[0] = IN.Tangent.xyz;
   vertPassPos.ObjToTangentSpace[1] = IN.Binormal.xyz;
   vertPassPos.ObjToTangentSpace[2] = normalize(cross(IN.Tangent, IN.Binormal)) * IN.Tangent.w;
-  
+
   // Displace vertex position for more interesting sparks animation
   IN.Position.xyz += vertPassPos.ObjToTangentSpace[2] * (0.0025 + 0.01*sin(g_VS_AnimGenParams.x*4+20*length(IN.Position.xyz)));//*OUT.baseTC.z;
 
@@ -363,7 +392,7 @@ vtxOUTSparks CloakSparksVS(app2vertMotionBlur IN)
   #endif
 
   OUT.vPosOS.xyz = vertPassPos.Position.xyz * SparksTilling;
-  
+
   OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -387,7 +416,7 @@ vtxOUTSparks CloakSparksVS(app2vertMotionBlur IN)
   float3 vWorldPos = vertPassPos.WorldPos.xyz+g_VS_WorldViewPos.xyz;
   OUT.vPosOS.w = length(  vWorldPos.xyz   );
 
-	// Output the screen-space texture coordinates
+  // Output the screen-space texture coordinates
   OUT.screenPos = HPosToScreenTC(OUT.HPosition);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -400,6 +429,8 @@ vtxOUTSparks CloakSparksVS(app2vertMotionBlur IN)
   float fCloakAmount = OUT.baseTC.z;
   float fCloakAmountBump = max(1 - fCloakAmount, 0.0);
   OUT.vConstants.xy = half2(frac(AnimGenParams)*2,  1 ) * 0.1 * half2( 1-fCloakAmount+max(0,-1+fSpeedScale*0.1), max((1-fCloakAmount)*0.2, 0.1));
+
+  OUT.vConstants.w = clamp(CloakVisibility, 0.0, 2.0); // CryMP
 
   return OUT;
 }
@@ -415,7 +446,21 @@ pixout CloakSparksPS(vtxOUTSparks IN)
 
   half fSpeedScale = IN.vConstants.z;
   half fCloakAmount = IN.baseTC.z;
-  half fLightAmount = IN.baseTC.w;
+
+  // CryMP
+  half fVisibility = clamp(IN.vConstants.w, 0.0, 2.0);
+  half fVisualStrength = fVisibility <= 1.0
+    ? fVisibility * fVisibility
+    : fVisibility;
+
+  half fOriginalLightAmount = IN.baseTC.w;
+  half fNewLightAmount = min(1.0f, fOriginalLightAmount);
+  half fSubtleLightAmount = fNewLightAmount * 0.05f;
+
+  half fLightAmount = lerp(
+    fSubtleLightAmount,
+    fOriginalLightAmount,
+    fVisualStrength);
 
   half2 refrTC = (IN.screenPos.xy/IN.screenPos.ww) ;
   half3 normalVec = GetNormalMap(bumpMapSampler, IN.baseTC.xy);
