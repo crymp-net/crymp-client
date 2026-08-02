@@ -632,6 +632,66 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_strafeJump", &mp_strafeJump, 1, OPTIONAL_SYNC, "Enables or disables strafe jumping");
 	pConsole->Register("mp_fpsLimit", &mp_fpsLimit, 0, OPTIONAL_SYNC, "Sets FPS upper boundary (0: disabled)");
 	pConsole->Register("mp_soundSpeed", &mp_soundSpeed, 0.0f, OPTIONAL_SYNC, "Speed of sound (0 = infinite)");
+	pConsole->Register("mp_cloakVisibility", &mp_cloakVisibility, 1.0f, OPTIONAL_SYNC, "Controls cloak visibility(0 = least visible, 1 = original Crysis, > 1 = more visible)",
+		[](ICVar* pCVar)
+		{
+			if (!gEnv->bClient)
+				return;
+
+			IMaterialManager* pMaterialManager = gEnv->p3DEngine->GetMaterialManager();
+			if (!pMaterialManager)
+				return;
+
+			IMaterial* pDefaultLayersMaterial = pMaterialManager->GetDefaultLayersMaterial();
+			if (!pDefaultLayersMaterial)
+				return;
+
+			const float cloakVisibility = clamp_tpl(
+				pCVar->GetFVal(),
+				0.0f,
+				2.0f);
+
+			for (int i = 0; i < pDefaultLayersMaterial->GetLayerCount(); ++i)
+			{
+				const IMaterialLayer* pLayer = pDefaultLayersMaterial->GetLayer(i);
+				if (!pLayer)
+					continue;
+
+				const SShaderItem& shaderItem = pLayer->GetShaderItem();
+
+				if (!shaderItem.m_pShader || !shaderItem.m_pShaderResources)
+					continue;
+
+				const char* pShaderName = shaderItem.m_pShader->GetName();
+				if (!pShaderName || _stricmp(pShaderName, "CloakLayer") != 0)
+					continue;
+
+				DynArray<SShaderParam>& params = shaderItem.m_pShaderResources->GetParameters();
+
+				UParamVal value{};
+				value.m_Float = cloakVisibility;
+
+				if (SShaderParam::SetParam("CloakVisibility", &params, value))
+				{
+					shaderItem.m_pShaderResources->UpdateConstants(shaderItem.m_pShader);
+
+					if (fabsf(cloakVisibility - 1.0f) < 0.001f)
+					{
+						CryLogAlways("$3[CryMP] Cloak visibility set to $6original Crysis");
+					}
+					else
+					{
+						CryLogAlways("$3[CryMP] Cloak visibility set to $6%.2f", cloakVisibility);
+					}
+				}
+				else
+				{
+					CryLogAlways("[Cloak] CloakVisibility parameter not found");
+				}
+
+				break;
+			}
+		});
 
 	//CryMP CVars (un-synced)
 	pConsole->Register("mp_newSpectator", &mp_newSpectator, 1, VF_NOT_NET_SYNCED, "");
