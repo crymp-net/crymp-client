@@ -193,6 +193,31 @@ bool CPlatformSoundFmodEx400::GetParamByType(enumPlatformSoundParamSemantics eSe
 			pParam->SetValue(nTemp);
 			break;
 		}
+		case pspPITCH:
+		{
+			int32 nPitch = 1000;
+			if (!pParam->GetValue(nPitch))
+				return false;
+
+			CSoundBuffer* pBuffer = m_pSound->GetSoundBufferPtr();
+			if (!pBuffer || !pBuffer->GetInfo())
+				return false;
+
+			const float fFrequency =
+				(float)pBuffer->GetInfo()->nBaseFreq *
+				((float)nPitch / 1000.0f);
+
+			m_ExResult = m_pExChannel->setFrequency(
+				__max(fFrequency, 100.0f));
+
+			if (m_ExResult != FMOD_OK)
+			{
+				FmodErrorOutput("set channel pitch failed! ", ILog::eWarning);
+				return false;
+			}
+
+			break;
+		}
 		case pspVOLUME:
 		{
 			float fTemp = 0.0f;

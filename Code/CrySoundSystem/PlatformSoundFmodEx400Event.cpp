@@ -861,6 +861,30 @@ bool CPlatformSoundFmodEx400Event::SetParamByType(enumPlatformSoundParamSemantic
 				return false;
 				break;
 			}
+		case pspPITCH:
+		{
+			int32 nPitch = 1000;
+			if (!pParam->GetValue(nPitch))
+				return false;
+
+			if (m_State == pssINFOONLY)
+				return false;
+
+			const float fNormalized =
+				((float)nPitch / 1000.0f) - 1.0f;
+
+			const float fPitch = fNormalized * 0.25f;
+
+			m_ExResult = m_pEvent->setPitch(fPitch);
+
+			if (m_ExResult != FMOD_OK)
+			{
+				FmodErrorOutput("set event pitch failed! ", ILog::eMessage);
+				return false;
+			}
+
+			break;
+		}
 		case pspVOLUME:
 		{
 			// do not set the volume on infoonly events
