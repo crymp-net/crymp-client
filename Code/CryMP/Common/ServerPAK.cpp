@@ -11,6 +11,7 @@
 #include "CrySystem/CryPak.h"
 
 #include "ServerPAK.h"
+#include "Utilities.h"
 
 ServerPAK::ServerPAK()
 {
@@ -78,6 +79,7 @@ void ServerPAK::ResetSubSystems()
 	IGameFramework* pGameFrameWork = gEnv->pGame->GetIGameFramework();
 
 	//Reset a bunch of subsystems
+	ResetGameObjectSystem();
 	gEnv->p3DEngine->ResetPostEffects();
 	gEnv->p3DEngine->ResetParticlesAndDecals();
 	pGameFrameWork->ResetBrokenGameObjects();

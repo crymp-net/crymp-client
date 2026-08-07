@@ -562,6 +562,8 @@ add_library(Base OBJECT
 	Code/CryMP/Common/Executor.h
 	Code/CryMP/Common/ServerPAK.cpp
 	Code/CryMP/Common/ServerPAK.h
+	Code/CryMP/Common/Utilities.cpp
+	Code/CryMP/Common/Utilities.h
 	Code/CryMP/Common/GSMasterHook.cpp
 	Code/CryMP/Common/GSMasterHook.h
 	Code/CryMP/Common/HTTP.cpp

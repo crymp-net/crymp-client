@@ -19,6 +19,8 @@
 #include "CryMP/Server/SSM.h"
 #include "CryMP/Server/SafeWriting/SafeWriting.h"
 
+#include "CryMP/Common/Utilities.h"
+
 Server::Server()
 {
 }
@@ -36,10 +38,11 @@ void Server::Init(IGameFramework* pGameFramework)
 
 	pGameFramework->RegisterListener(this, "crymp-server", FRAMEWORKLISTENERPRIORITY_DEFAULT);
 
-
+	bool hasPak = false;
 	const std::string serverPak(WinAPI::CmdLine::GetArgValue("-pak"));
 	if (!serverPak.empty()) {
         const bool success = CryPak::GetInstance().LoadServerPak(serverPak);
+		hasPak = true;
         CryLogAlways("$6[CryMP] Loading server pak '%s' %s", serverPak.c_str(), success ? "succeeded" : "failed");
 	}
 
@@ -47,6 +50,10 @@ void Server::Init(IGameFramework* pGameFramework)
 	// mods are not supported
 	this->pGame = new CGame();
 	this->pGame->Init(pGameFramework);
+
+	if (hasPak) {
+		ResetGameObjectSystem();
+	}
 
 	if (ICVar* maxPlayers = gEnv->pConsole->GetCVar("sv_maxplayers")) {
 		// this overrides max 32 players cap
