@@ -492,9 +492,6 @@ struct SCVars
 	int			mp_chat;
 	int			cl_hud_chat;
 
-	int			sv_codewall;
-	int			cl_codewall;
-
 	int			ads;
 
 	float       hud_scale;

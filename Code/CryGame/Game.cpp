@@ -60,7 +60,6 @@
 #include "CryMP/Client/Advertising.h"
 #include "CryMP/Client/HealthManager.h"
 
-#include "Library/CodeWall.h"
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
@@ -381,28 +380,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 	}
 
 	bool paused = m_pFramework->IsGamePaused();
-	bool cwEnabled = gEnv->bMultiplayer && !gEnv->bServer;
 	float frameTime = gEnv->pTimer->GetFrameTime();
-	const CodeWall::CodeWallStatus& cwStatus = CodeWall::UpdateCodeWall(
-		cwEnabled,
-		!paused && m_pFramework->GetClientActor() != NULL,
-		frameTime
-	);
-	g_pGameCVars->cl_codewall = cwStatus.status;
-
-	int expectedCW = g_pGameCVars->sv_codewall;
-	if (cwEnabled && expectedCW != 0) {
-		static bool okFirstTime = true;
-		static bool okInPast = true;
-		bool ok = (expectedCW & cwStatus.status) == expectedCW;
-		if (okFirstTime || (okInPast != ok)) {
-			if (!ok) {
-				throw StringTools::ErrorFormat(CodeWall::GetErrorMessage().c_str());
-			}
-			okFirstTime = false;
-			okInPast = ok;
-		}
-	}
 
 	if (paused == false)
 	{
