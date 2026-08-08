@@ -29,19 +29,21 @@ struct SEntitySchedulingProfiles
 	uint32 owned;
 };
 
-void ResetGameObjectSystem() {
+struct SchedulingParamsMap
+{
+	SEntitySchedulingProfiles& operator[](const string& key)
+	{
 #ifdef BUILD_64BIT
-	constexpr size_t kSchedulingParamsOffset = 0xD8;
-	uintptr_t kMapOperator = CRYACTION_BASE + 0x1B3120;
-	typedef SEntitySchedulingProfiles* (__fastcall* PFNEMPLACE)(void* map, string* key);
+		std::uintptr_t func = CRYACTION_BASE + 0x1B3120;
 #else
-	constexpr size_t kSchedulingParamsOffset = 0x6C;
-	uintptr_t kMapOperator = CRYACTION_BASE + 0x12EE00;
-	typedef SEntitySchedulingProfiles* (__fastcall* PFNEMPLACE)(void* map, void *dummyEdx, string* key);
+		std::uintptr_t func = CRYACTION_BASE + 0x12EE00;
 #endif
 
-	PFNEMPLACE Emplace = (PFNEMPLACE)kMapOperator;
+		return (this->*reinterpret_cast<decltype(&SchedulingParamsMap::operator[])&>(func))(key);
+	}
+};
 
+void ResetGameObjectSystem() {
 	// By default game initializes this only once, it contains information on how to schedule
 	// entity classes on network. Now, the issue is if there are new classes in the server/client PAK
 	// the network system won't recognize it and it will disconnect the player on protocol error.
@@ -76,22 +78,13 @@ void ResetGameObjectSystem() {
 			if (node->haveAttr("own"))
 				StringToKey(node->getAttr("own"), p.owned);
 
-			// CE2 SDK uses MSVC 2005, since we are building with at least MSVC 2022, calling std::map::emplace
-			// would crash on ABI differences.
-			// Instead we call existing MSVC 2005 API inside CE2 SDK to emplace the object
-			//  original code: m_schedulingParams[name] = p;
-			void* m_schedulingParams = reinterpret_cast<void*>(
-				reinterpret_cast<uintptr_t>(pGOS) + kSchedulingParamsOffset
-			);
+			SchedulingParamsMap& m_schedulingParams =
 #ifdef BUILD_64BIT
-			auto value = Emplace(m_schedulingParams, &name);
-			*value = p;
+				*reinterpret_cast<SchedulingParamsMap*>(reinterpret_cast<std::uintptr_t>(pGOS) + 0xD8);
 #else
-			// We need to fill EDX with a dummy value to force &name to be pushed on stack
-			// since this is a thiscall masked as a fastcall.
-			auto value = Emplace(m_schedulingParams, NULL, &name);
-			*value = p;
+				*reinterpret_cast<SchedulingParamsMap*>(reinterpret_cast<std::uintptr_t>(pGOS) + 0x6C);
 #endif
+			m_schedulingParams[name] = p;
 		}
 	}
 
