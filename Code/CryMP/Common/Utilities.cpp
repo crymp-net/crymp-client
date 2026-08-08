@@ -5,6 +5,8 @@
 #include "CryGame/Game.h"
 #include "CrySystem/CryPak.h"
 
+extern std::uintptr_t CRYACTION_BASE;
+
 static bool StringToKey(const char* s, uint32& key)
 {
 	const size_t len = strlen(s);
@@ -28,14 +30,13 @@ struct SEntitySchedulingProfiles
 };
 
 void ResetGameObjectSystem() {
-
 #ifdef BUILD_64BIT
 	constexpr size_t kSchedulingParamsOffset = 0xD8;
-	constexpr uintptr_t kMapOperator = 0x306B3120;
+	uintptr_t kMapOperator = CRYACTION_BASE + 0x1B3120;
 	typedef SEntitySchedulingProfiles* (__fastcall* PFNEMPLACE)(void* map, string* key);
 #else
 	constexpr size_t kSchedulingParamsOffset = 0x6C;
-	constexpr uintptr_t kMapOperator = 0x3062EE00;
+	uintptr_t kMapOperator = CRYACTION_BASE + 0x12EE00;
 	typedef SEntitySchedulingProfiles* (__fastcall* PFNEMPLACE)(void* map, void *dummyEdx, string* key);
 #endif
 
