@@ -47,8 +47,8 @@ void ResetGameObjectSystem() {
 	// the network system won't recognize it and it will disconnect the player on protocol error.
 	// Therefore we need to reconstruct the database like this, since this is internal function of CE SDK class
 	// and it's not exposed in the public SDK.
-	IGameObjectSystem* pGOS = static_cast<IGameObjectSystem*>(gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem());
-	if (XmlNodeRef schedParams = gEnv->pSystem->LoadXmlFile("Game/Scripts/Network/EntityScheduler.xml"))
+	IGameObjectSystem* pGOS = gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem();
+	if (XmlNodeRef schedParams = gEnv->pSystem->LoadXmlFile("Scripts/Network/EntityScheduler.xml"))
 	{
 		uint32 defaultPolicy = 0;
 
@@ -99,7 +99,7 @@ void ResetGameObjectSystem() {
 	// by server/client PAK
 
 	IEntityClassRegistry* pClassRegistry = gEnv->pEntitySystem->GetClassRegistry();
-	pClassRegistry->LoadClasses("LoadClasses", true);
+	pClassRegistry->LoadClasses("Entities", true);
 
 	// Merely calling Reload doesn't create new classes in the Network system, that's why
 	// Scan(...) must be called instead
