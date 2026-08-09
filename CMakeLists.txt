@@ -845,6 +845,11 @@ if(MSVC AND CRYMP_ASAN)
     target_link_options(Base PUBLIC
         /fsanitize=address
     )
+
+	target_compile_definitions(Base PUBLIC
+        _DISABLE_VECTOR_ANNOTATION
+        _DISABLE_STRING_ANNOTATION
+    )
 endif()
 
 target_compile_options(Base PUBLIC /W4

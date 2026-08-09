@@ -94,7 +94,21 @@ void ResetGameObjectSystem() {
 	IEntityClassRegistry* pClassRegistry = gEnv->pEntitySystem->GetClassRegistry();
 	pClassRegistry->LoadClasses("Entities", true);
 
+	// Now we must reconstruct the protocol definition, to do so we reset the safety state
+	// which will force CryEngine to rebuild the extension ID tables for network sinks
+	// before connecting to the server
+#ifdef BUILD_64BIT
+	bool* pDispatchSafety = reinterpret_cast<bool*>(
+		reinterpret_cast<uintptr_t>(pGOS) + 0x50
+	);
+	*pDispatchSafety = false;
+#else
+	bool* pDispatchSafety = reinterpret_cast<bool*>(
+		reinterpret_cast<uintptr_t>(pGOS) + 0x28
+		);
+	*pDispatchSafety = false;
+#endif
 	// Merely calling Reload doesn't create new classes in the Network system, that's why
 	// Scan(...) must be called instead
-	gEnv->pGame->GetIGameFramework()->GetIItemSystem()->Scan("Scripts/Entities/Items/XML");
+	gEnv->pGame->GetIGameFramework()->GetIItemSystem()->Reload();
 }
