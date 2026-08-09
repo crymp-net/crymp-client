@@ -105,8 +105,8 @@ void CHomingMissile::Update(SEntityUpdateContext& ctx, int updateSlot)
 //-----------------------------------------------------------------------------
 void CHomingMissile::UpdateControlledMissile(float frameTime)
 {
-	bool isServer = gEnv->bServer;
-	bool isClient = gEnv->bClient;
+	const bool isServer = gEnv->bServer;
+	const bool isClient = gEnv->bClient;
 
 	CActor* pClientActor = 0;
 	if (gEnv->bClient)
@@ -251,6 +251,11 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 		}
 	}
 
+	if (!isServer)
+	{
+		return;
+	}
+
 	//This code is shared by both modes above (auto and controlled)
 	if (!m_destination.IsZero())
 	{
@@ -333,6 +338,10 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 //----------------------------------------------------------------------------
 void CHomingMissile::UpdateCruiseMissile(float frameTime)
 {
+	if (!gEnv->bServer)
+	{
+		return;
+	}
 
 	IRenderer* pRenderer = gEnv->pRenderer;
 	IRenderAuxGeom* pGeom = pRenderer->GetIRenderAuxGeom();
