@@ -487,6 +487,7 @@ struct SCVars
 	int			mp_fpsLimit;
 	float		mp_soundSpeed;
 	float       mp_cloakVisibility;
+	int         mp_missileApproachSound;
 	ICVar*      mp_language;
 
 	int			mp_chat;

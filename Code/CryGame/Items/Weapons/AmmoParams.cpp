@@ -152,6 +152,23 @@ SWhizParams::SWhizParams(const IItemParamsNode* whiz)
 	reader.Read("speed", speed);
 }
 
+SMissileApproachParams::SMissileApproachParams(const IItemParamsNode* missileApproach)
+	: sound(0)
+	, prediction(2.0f)
+	, passRadius(150.0f)
+	, distanceMultiplier(2.5f)
+{
+	CItemParamReader reader(missileApproach);
+
+	reader.Read("sound", sound);
+	if (sound && !sound[0])
+		sound = 0;
+
+	reader.Read("prediction", prediction);
+	reader.Read("pass_radius", passRadius);
+	reader.Read("distance_multiplier", distanceMultiplier);
+}
+
 SAmmoParams::SAmmoParams(const IItemParamsNode* pItemParams_, const IEntityClass* pEntityClass_)
 	: flags(0)
 	, serverSpawn(0)
@@ -179,6 +196,7 @@ SAmmoParams::SAmmoParams(const IItemParamsNode* pItemParams_, const IEntityClass
 	, pExplosion(0)
 	, pFlashbang(0)
 	, pWhiz(0)
+	, pMissileApproach(0)
 	, pRicochet(0)
 	, pTrail(0)
 	, pTrailUnderWater(0)
@@ -196,6 +214,7 @@ SAmmoParams::~SAmmoParams()
 	delete pExplosion;
 	delete pFlashbang;
 	delete pWhiz;
+	delete pMissileApproach;
 	delete pRicochet;
 	delete pTrail;
 	delete pTrailUnderWater;
@@ -223,7 +242,7 @@ void SAmmoParams::Init(const IItemParamsNode* pItemParams_, const IEntityClass* 
 	LoadCollision();
 	LoadExplosion();
 	LoadFlashbang();
-	LoadTrailsAndWhizzes();
+	LoadSoundParams();
 }
 
 int SAmmoParams::GetMemorySize() const
@@ -439,7 +458,7 @@ void SAmmoParams::LoadFlashbang()
 		pFlashbang = new SFlashbangParams(flashbang);
 }
 
-void SAmmoParams::LoadTrailsAndWhizzes()
+void SAmmoParams::LoadSoundParams()
 {
 	const IItemParamsNode* whiz = pItemParams->GetChild("whiz");
 	if (whiz)
@@ -482,6 +501,18 @@ void SAmmoParams::LoadTrailsAndWhizzes()
 		{
 			delete pTrailUnderWater;
 			pTrailUnderWater = 0;
+		}
+	}
+
+	const IItemParamsNode* missileApproach = pItemParams->GetChild("missile_approach");
+	if (missileApproach)
+	{
+		pMissileApproach = new SMissileApproachParams(missileApproach);
+
+		if (!pMissileApproach->sound)
+		{
+			delete pMissileApproach;
+			pMissileApproach = 0;
 		}
 	}
 }

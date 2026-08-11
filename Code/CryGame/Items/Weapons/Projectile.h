@@ -156,6 +156,9 @@ protected:
 	void DestroyObstructObject();
 
 	IEntitySoundProxy *GetSoundProxy();
+	void UpdateMissileApproach(const float frameTime);
+	void MissileApproachSound();
+
 	template<typename T> T GetParam(const char *name, T &def)
 	{
 		T v(def);
@@ -212,6 +215,10 @@ protected:
 	float m_spawnTime = 0.0f;
 	bool m_netUpdateReceived = false;
 	bool m_ghost = false;
+
+	bool m_missileApproachArmed = false;
+	float m_missileApproachCooldown = 0.0f;
+
 };
 
 #endif

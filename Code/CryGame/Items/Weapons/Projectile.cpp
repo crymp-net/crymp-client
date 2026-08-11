@@ -401,7 +401,8 @@ void CProjectile::Update(SEntityUpdateContext& ctx, int updateSlot)
 
 	ScaledEffect(m_pAmmoParams->pScaledEffect);
 
-	UpdateWhiz();
+	UpdateWhiz(); 
+	UpdateMissileApproach(ctx.fFrameTime);
 
 	if (m_trailSoundId == INVALID_SOUNDID)
 		TrailSound(true);
@@ -1519,3 +1520,126 @@ void CProjectile::InitWithAI()
 	GetGameObject()->SetAIActivation(eGOAIAM_Always);
 }
 
+//------------------------------------------------------------------------
+void CProjectile::UpdateMissileApproach(const float frameTime)
+{
+	if (!gEnv->bClient || !g_pGameCVars->mp_missileApproachSound || !m_pAmmoParams->pMissileApproach)
+		return;
+
+	if (m_missileApproachCooldown > 0.0f)
+	{
+		m_missileApproachCooldown -= frameTime;
+		return;
+	}
+
+	if (!g_pGame->GetIGameFramework()->GetClientActor() || !m_pPhysicalEntity)
+		return;
+
+	pe_status_dynamics dynamics;
+	if (!m_pPhysicalEntity->GetStatus(&dynamics))
+		return;
+
+	const Vec3 velocity = dynamics.v;
+	const float speedSq = velocity.GetLengthSquared();
+
+	if (speedSq < 1.0f)
+		return;
+
+	const float speed = sqrt_tpl(speedSq);
+
+	const Vec3 listenerPos = gEnv->pSystem->GetViewCamera().GetPosition();
+	const Vec3 missilePos = GetEntity()->GetWorldPos();
+	const Vec3 toListener = listenerPos - missilePos;
+
+	const float distanceSq = toListener.GetLengthSquared();
+
+	//CryMP: Don't trigger right after firing
+	const float armDistance = 30.0f;
+
+	if (!m_missileApproachArmed)
+	{
+		if (distanceSq < armDistance * armDistance)
+			return;
+
+		m_missileApproachArmed = true;
+	}
+
+	const SMissileApproachParams* pParams = m_pAmmoParams->pMissileApproach;
+	const float predictionTime = pParams->prediction;
+
+	//CryMP: Detect fast missiles further away
+	const float triggerRange = speed * predictionTime;
+
+	if (distanceSq > triggerRange * triggerRange)
+		return;
+
+	const float distance = sqrt_tpl(distanceSq);
+
+	if (distance <= 0.0f)
+		return;
+
+	const float approachDot = toListener.Dot(velocity);
+
+	if (approachDot <= 0.0f)
+		return;
+
+	const float directionDot = approachDot / (distance * speed);
+	const float minimumDirectionDot = 0.5f;
+
+	if (directionDot < minimumDirectionDot)
+		return;
+
+	const float closestTime = approachDot / speedSq;
+
+	if (closestTime <= 0.0f || closestTime > predictionTime)
+		return;
+
+	const Vec3 closestOffset = toListener - velocity * closestTime;
+	const float passRadius = pParams->passRadius;
+
+	if (closestOffset.GetLengthSquared() > passRadius * passRadius)
+		return;
+
+	MissileApproachSound();
+
+	m_missileApproachCooldown = 3.5f;
+}
+
+//------------------------------------------------------------------------
+void CProjectile::MissileApproachSound()
+{
+	IEntitySoundProxy* pSoundProxy = GetSoundProxy();
+	if (!pSoundProxy)
+		return;
+
+	const SMissileApproachParams* params = m_pAmmoParams->pMissileApproach;
+	const char* soundName = params->sound;
+	const float baseDistanceMultiplier = params->distanceMultiplier;
+
+	ISound* pSound = gEnv->pSoundSystem->CreateSound(
+		soundName,
+		FLAG_SOUND_DEFAULT_3D | FLAG_SOUND_NO_3D_VELOCITY); //CryMP: Disable Doppler effect
+
+	if (!pSound)
+		return;
+
+	pSound->SetSemantic(eSoundSemantic_Projectile);
+
+	const Vec3 listenerPos = gEnv->pSystem->GetViewCamera().GetPosition();
+	const float currentDistance = (GetEntity()->GetWorldPos() - listenerPos).GetLength();
+
+	const float originalMaxDistance = pSound->GetMaxDistance();
+
+	float distanceMultiplier = baseDistanceMultiplier;
+
+	//CryMP: Increase the sound range if a fast missile triggers further away
+	if (originalMaxDistance > 0.0f)
+	{
+		const float requiredMultiplier = (currentDistance + 25.0f) / originalMaxDistance;
+		distanceMultiplier = max(distanceMultiplier, requiredMultiplier);
+	}
+
+	pSound->SetDistanceMultiplier(distanceMultiplier);
+
+	pSoundProxy->PlaySound(pSound, Vec3(), FORWARD_DIRECTION, 1.0f, false);
+}
