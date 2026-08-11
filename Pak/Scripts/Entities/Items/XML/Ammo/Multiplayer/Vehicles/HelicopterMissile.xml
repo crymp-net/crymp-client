@@ -48,4 +48,11 @@
 		<param name="scale" value="1" />
 	</trail>	
 	
+	<missile_approach>
+		<param name="sound" value="sounds/physics:bullet_whiz:missile_approach" />
+		<param name="prediction" value="2.0" />
+		<param name="pass_radius" value="150" />
+		<param name="distance_multiplier" value="2.5" />
+	</missile_approach>
+	
 </ammo>

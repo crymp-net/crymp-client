@@ -724,6 +724,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_abandonTime", &mp_abandonTime, 10.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds after which vehicles explode");
 	pConsole->Register("mp_explosiveRemovalTime", &mp_explosiveRemovalTime, 30.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds for explosive removal after death");
 	pConsole->Register("mp_explosion_mfx", &mp_explosion_mfx, 1, VF_NOT_NET_SYNCED, "Enable mfx via ClExplosion rmi for server controlled missiles");
+	pConsole->Register("mp_missileApproachSound", &mp_missileApproachSound, 1, VF_NOT_NET_SYNCED, "Enable missile approach sound");
 
 	pConsole->Register("cl_hud_chat", &cl_hud_chat, 1, VF_NOT_NET_SYNCED, "Shows / hides chat");
 	pConsole->Register("ads", &ads, 1, VF_NOT_NET_SYNCED, "Enable or disable (100h+) ads");

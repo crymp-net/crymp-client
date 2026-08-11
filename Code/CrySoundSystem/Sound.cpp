@@ -667,7 +667,7 @@ void CSound::Update()
 
 		UpdatePositionAndVelocity();
 
-		if (m_nFlags & FLAG_SOUND_DOPPLER_PARAM || true)
+		//if (m_nFlags & FLAG_SOUND_DOPPLER_PARAM || true)  //CryMP: Always called
 		{
 			Vec3 vRelativeVelocity = pListener->GetVelocity() - m_vSpeed;
 			float fDoppler = vRelativeVelocity.GetLength() * 3.6f; // Kmh
@@ -2131,22 +2131,27 @@ void CSound::UpdatePositionAndVelocity()
 
 	if (m_nFlags & FLAG_SOUND_SELFMOVING)
 	{
-		float fTimeDelta = gEnv->pTimer->GetFrameTime();
-		Vec3 vNewPos = (m_vPosition + m_vDirection * fTimeDelta);
-		SetPosition(vNewPos);
+		const float timeDelta = gEnv->pTimer->GetFrameTime();
+		const Vec3 newPos = m_vPosition + m_vDirection * timeDelta;
+		SetPosition(newPos);
 	}
 
 	if (m_nFlags & FLAG_SOUND_RELATIVE)
 		SetPosition(m_vPosition);
 
 	if (IsActive() && (m_nFlags & FLAG_SOUND_3D) && m_pPlatformSound)
-	// if (m_nFlags & FLAG_SOUND_RELATIVE)
-	//{
-	//	m_pPlatformSound->Set3DPosition(&m_vPosition, &m_vSpeed);
-	// }
-	// else
 	{
-		m_pPlatformSound->Set3DPosition(&m_vPlaybackPos, &m_vSpeed, m_vDirection.IsZero() ? 0 : &m_vDirection);
+		Vec3 velocity = m_vSpeed;
+
+		//CryMP: Some sounds already contain their own movement/Doppler effect.
+		//Keep updating the 3D position, but don't pass source velocity to FMOD.
+		if (m_nFlags & FLAG_SOUND_NO_3D_VELOCITY)
+			velocity = {};
+
+		m_pPlatformSound->Set3DPosition(
+			&m_vPlaybackPos,
+			&velocity,
+			m_vDirection.IsZero() ? nullptr : &m_vDirection);
 	}
 }
 
@@ -2341,46 +2346,49 @@ void CSound::SetDirection(const Vec3& vDir)
 {
 	m_vDirection = vDir;
 }
+
 float CSound::GetRatioByDistance(const float fDistance)
 {
 	assert(m_pPlatformSound);
 
 	// Sounds without a radius always play at full volume
 	if (!(m_nFlags & FLAG_SOUND_RADIUS) || !m_pPlatformSound)
+	{
 		return 1.0f;
+	}
 
 	// Events attenuate using their distance parameter
 	if (m_nFlags & FLAG_SOUND_EVENT)
 	{
+		const float eventDistance = fDistance / m_RadiusSpecs.fDistanceMultiplier;
+
 		if (m_pPlatformSound->GetSoundHandle())
 		{
-			ptParamF32 fParam(fDistance / m_RadiusSpecs.fDistanceMultiplier);
+			ptParamF32 fParam(eventDistance);
 			m_pPlatformSound->SetParamByType(pspDISTANCE, &fParam);
 		}
 
 		if (m_nFlags & FLAG_SOUND_SPREAD)
 		{
-			ptParamF32 fParam((fDistance / m_RadiusSpecs.fDistanceMultiplier) / m_RadiusSpecs.fMaxRadius);
+			ptParamF32 fParam(eventDistance / m_RadiusSpecs.fMaxRadius);
+
 			m_pPlatformSound->SetParamByType(pspSPREAD, &fParam);
 		}
 
-		return (1.0f);
+		return 1.0f;
 	}
 	else
 	{
 		if (!(m_nFlags & FLAG_SOUND_NO_SW_ATTENUATION))
 		{
-			float fSquaredDistance = fDistance * fDistance;
-			float fMinFactor =
-			    __min(fSquaredDistance, (m_RadiusSpecs.fMaxRadius2 - m_RadiusSpecs.fMinRadius2));
-			float fMaxFactor =
-			    __max(0.f, ((fMinFactor - m_RadiusSpecs.fMinRadius2) / m_RadiusSpecs.fMaxRadius2));
-			// fRatio = 1.0f - max(0,((fDist2-cs->GetSquardedMinRadius())/cs->GetSquardedMaxRadius()));
-			float fRatio = 1.0f - fMaxFactor;
-			return fRatio;
+			const float fSquaredDistance = fDistance * fDistance;
+			const float fMinFactor = __min(fSquaredDistance, (m_RadiusSpecs.fMaxRadius2 - m_RadiusSpecs.fMinRadius2));
+			const float fMaxFactor = __max(0.f, ((fMinFactor - m_RadiusSpecs.fMinRadius2) / m_RadiusSpecs.fMaxRadius2));
+
+			return 1.0f - fMaxFactor;
 		}
-		else
-			return (1.0f);
+
+		return 1.0f;
 	}
 }
 

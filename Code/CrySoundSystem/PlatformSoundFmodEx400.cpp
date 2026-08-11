@@ -147,8 +147,15 @@ bool CPlatformSoundFmodEx400::Set3DPosition(Vec3* pvPosition, Vec3* pvVelocity, 
 			return false;
 		}
 
-		m_ExResult =
-		    m_pExChannel->set3DAttributes((pvPosition ? &vExPos : NULL), (pvPosition ? &vExVel : NULL));
+		//CryMP: This must be a bug?
+		//m_ExResult =
+		//    m_pExChannel->set3DAttributes((pvPosition ? &vExPos : NULL), (pvPosition ? &vExVel : NULL));
+
+		//CryMP: Fix
+		m_pExChannel->set3DAttributes(
+			pvPosition ? &vExPos : nullptr,
+			pvVelocity ? &vExVel : nullptr);
+
 		if (m_ExResult != FMOD_OK)
 		{
 			FmodErrorOutput("set 3d channel position failed! ", ILog::eWarning);
