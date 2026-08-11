@@ -562,6 +562,8 @@ add_library(Base OBJECT
 	Code/CryMP/Common/Executor.h
 	Code/CryMP/Common/ServerPAK.cpp
 	Code/CryMP/Common/ServerPAK.h
+	Code/CryMP/Common/Utilities.cpp
+	Code/CryMP/Common/Utilities.h
 	Code/CryMP/Common/GSMasterHook.cpp
 	Code/CryMP/Common/GSMasterHook.h
 	Code/CryMP/Common/HTTP.cpp
@@ -840,6 +842,11 @@ if(MSVC AND CRYMP_ASAN)
 
     target_link_options(Base PUBLIC
         /fsanitize=address
+    )
+
+	target_compile_definitions(Base PUBLIC
+        _DISABLE_VECTOR_ANNOTATION
+        _DISABLE_STRING_ANNOTATION
     )
 endif()
 

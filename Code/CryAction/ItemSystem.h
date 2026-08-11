@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <set>
 
 #include "CryCommon/CryAction/IGameFramework.h"
 #include "CryCommon/CryAction/IItemSystem.h"
@@ -52,6 +53,8 @@ class ItemSystem final : public ILevelSystemListener, public IItemSystem
 	std::vector<EntityId> m_garbage;
 	std::vector<IItemSystemListener*> m_listeners;
 	std::vector<std::string> m_folders;
+
+	std::set<std::string> m_extensions;
 
 	std::unique_ptr<EquipmentManager> m_pEquipmentManager;
 

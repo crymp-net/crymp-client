@@ -1100,9 +1100,16 @@ void ItemSystem::ScanXml(XmlNodeRef& root, const char* xmlFile)
 			entityClass.sScriptFile = defaultScript;
 		}
 
-		if (!m_reloading)
+		IGameObjectSystem* pGOS = m_pGameFramework->GetIGameObjectSystem();
+		if (m_reloading)
 		{
-			m_pGameFramework->GetIGameObjectSystem()->RegisterExtension(itemName, pCreator, &entityClass);
+			if (!m_extensions.contains(itemName)) {
+				pGOS->RegisterExtension(itemName, pCreator, &entityClass);
+				m_extensions.insert(itemName);
+			}
+		} else {
+			pGOS->RegisterExtension(itemName, pCreator, &entityClass);
+			m_extensions.insert(itemName);
 		}
 	}
 
