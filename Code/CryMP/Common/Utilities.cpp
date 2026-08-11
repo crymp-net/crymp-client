@@ -108,7 +108,5 @@ void ResetGameObjectSystem() {
 		);
 	*pDispatchSafety = false;
 #endif
-	// Merely calling Reload doesn't create new classes in the Network system, that's why
-	// Scan(...) must be called instead
 	gEnv->pGame->GetIGameFramework()->GetIItemSystem()->Reload();
 }
