@@ -2039,6 +2039,18 @@ function CheckPlayer(player, noevent)
 	novent = noevent or false
 	local se = SafeWriting.Settings
 	local channelId = player.actor:GetChannel()
+	
+	if (not player.WasChecked) and se.UseIPBan then
+		local reason = IsIPBanned(player)
+		if reason then
+				player.wasForceDisconnected = true
+				CryAction.BanPlayer(player.id, reason or "You are permabanned here")
+				if KICK_REMOVE_ENTITY then
+					System.RemoveEntity(player.id)
+				end
+				return true
+		end
+	end
 	if _G["ChannelInfo"] and _G["ChannelInfo"][channelId] then
 		local newProfile = _G["ChannelInfo"][player.channelId].profile
 		if newProfile ~= "0" and (player.profile == nil or player.profile == "0") then
@@ -3027,6 +3039,16 @@ function CheckHWIDBan(player)
 		player.wasForceDisconnected = true
 		System.RemoveEntity(player.id)
 	end
+end
+
+function IsIPBanned(player)
+	for i, v in pairs(SafeWriting.Bans) do
+		local name, ip, host, profile, reason, bantime, bannedBy, expire, hwid, action, rem_action = unpack(v)
+		if ip == player.ip or host == player.host then
+			return reason or "You are permabanned here"
+		end
+	end
+	return nil
 end
 
 function IsPermabanned(player)

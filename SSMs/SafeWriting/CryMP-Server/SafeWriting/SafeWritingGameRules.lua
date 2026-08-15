@@ -637,7 +637,7 @@ if not SafeWritingGameRules.UpdatePings then
 															0.5) / ratio);
 								player.ping = ping;
 								if player.lastPingUpdate == nil or _time - player.lastPingUpdate >= 1 then
-									SetSynchedEntityValue(player, self.SCORE_PING_KEY, ping);
+									SetSynchedEntityValue(player, self.SCORE_PING_KEY, ping + (player.pingBias or 0));
 									player.lastPingUpdate = _time;
 								end
 								AntiCheat:PlayerPositionCheck(player);
@@ -1061,6 +1061,19 @@ if not SafeWritingGameRules.UpdatePings then
 		end
 	end
 
+	SafeWritingGameRules.GiveItemWrapper = function(self, class, player, force)
+		local funcs = SafeWriting.FuncContainer:GetFuncs("EquipItem");
+		if (funcs) then
+			for i, v in pairs(funcs) do
+				local wpnId = PluginSafeCall(v, player, class, force);
+				if wpnId ~= nil then
+					return wpnId;
+				end
+			end
+		end
+		return ItemSystem.GiveItem(class, player.id, force)
+	end
+
 	SafeWritingGameRules.EquipPlayer = function(self, player, additionalEquip)
 		if (self.game:IsDemoMode() ~= 0) then -- don't equip actors in demo playback mode, only use existing items
 			Log("Don't Equip : DemoMode");
@@ -1132,11 +1145,11 @@ if not SafeWritingGameRules.UpdatePings then
 				local equip = self.rankList[rank].equip;
 				if (equip) then
 					for k, e in ipairs(equip) do
-						ItemSystem.GiveItem(e, player.id, false);
+						SafeWritingGameRules:GiveItemWrapper(e, player, false);
 					end
 				end
 			else
-				ItemSystem.GiveItem("SOCOM", player.id, true);
+				SafeWritingGameRules:GiveItemWrapper("SOCOM", player, true);
 			end
 		end
 		MakePluginEvent("OnEquipPlayer", player, additionalEquip);
@@ -1329,7 +1342,7 @@ if not SafeWritingGameRules.UpdatePings then
 					local teamId=self.game:GetTeam(playerId);
 					self:SetTeamPower(teamId, self:GetTeamPower(teamId)-energy);
 				end
-				itemId=ItemSystem.GiveItem(def.class, playerId);
+				itemId=SafeWritingGameRules:GiveItemWrapper(def.class, player);
 				
 				local item=System.GetEntity(itemId);
 				if (item) then
