@@ -2013,7 +2013,10 @@ void CWeapon::PatchFireModeWithAccessory(IFireMode* pFireMode, const char* firem
 	{
 
 		//Attach silencer (and LAM)
-		if (ait->first == g_pItemStrings->Silencer || ait->first == g_pItemStrings->SOCOMSilencer)
+		if (
+			ait->first == g_pItemStrings->Silencer
+			|| ait->first == g_pItemStrings->SOCOMSilencer
+			|| std::string_view{ ait->first.c_str() }.ends_with("Silencer"))
 			silencerAttached = true;
 
 		SAccessoryParams* params = GetAccessoryParams(ait->first);
@@ -2535,7 +2538,10 @@ EntityId CWeapon::GetLAMAttachment()
 {
 	for (const auto &it : m_accessories)
 	{
-		if (it.first == g_pItemStrings->LAM || it.first == g_pItemStrings->LAMRifle)
+		if (
+			it.first == g_pItemStrings->LAM 
+			|| it.first == g_pItemStrings->LAMRifle 
+			|| std::string_view{ it.first.c_str() }.starts_with("LAM"))
 			return it.second;
 	}
 
