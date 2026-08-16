@@ -2016,7 +2016,8 @@ void CWeapon::PatchFireModeWithAccessory(IFireMode* pFireMode, const char* firem
 		if (
 			ait->first == g_pItemStrings->Silencer
 			|| ait->first == g_pItemStrings->SOCOMSilencer
-			|| std::string_view{ ait->first.c_str() }.ends_with("Silencer"))
+			// CryMP: allow custom attachments
+			|| ait->first.sv().ends_with("Silencer"))
 			silencerAttached = true;
 
 		SAccessoryParams* params = GetAccessoryParams(ait->first);
@@ -2541,7 +2542,9 @@ EntityId CWeapon::GetLAMAttachment()
 		if (
 			it.first == g_pItemStrings->LAM 
 			|| it.first == g_pItemStrings->LAMRifle 
-			|| std::string_view{ it.first.c_str() }.starts_with("LAM"))
+			// CryMP: allow custom LAM attachments (laser-only here)
+			|| (it.first.sv().starts_with("LAM") && !it.first.sv().ends_with("FlashLight"))
+		)
 			return it.second;
 	}
 
@@ -2559,7 +2562,12 @@ EntityId CWeapon::GetFlashlightAttachment()
 {
 	for (const auto& it : m_accessories)
 	{
-		if (it.first == g_pItemStrings->LAMFlashLight || it.first == g_pItemStrings->LAMRifleFlashLight)
+		if (
+			it.first == g_pItemStrings->LAMFlashLight 
+			|| it.first == g_pItemStrings->LAMRifleFlashLight
+			// CryMP: allow custom LAM attachments (flashlight-only here)
+			|| (it.first.sv().starts_with("LAM") && it.first.sv().ends_with("FlashLight"))
+		)
 			return it.second;
 	}
 

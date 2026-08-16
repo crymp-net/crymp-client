@@ -55,7 +55,8 @@ void CItem::OnEnterFirstPerson()
 			|| accessory.first == g_pItemStrings->LAMRifle 
 			|| accessory.first == g_pItemStrings->LAMFlashLight 
 			|| accessory.first == g_pItemStrings->LAMRifleFlashLight 
-			|| std::string_view{ accessory.first.c_str() }.starts_with("LAM")
+			// CryMP: allow custom attachments
+			|| accessory.first.sv().starts_with("LAM")
 		)
 		{
 			CItem* pItem = static_cast<CItem*>(m_pGameFramework->GetIItemSystem()->GetItem(accessory.second));
@@ -85,7 +86,8 @@ void CItem::OnEnterThirdPerson()
 			|| accessory.first == g_pItemStrings->LAMRifle 
 			|| accessory.first == g_pItemStrings->LAMFlashLight 
 			|| accessory.first == g_pItemStrings->LAMRifleFlashLight 
-			|| std::string_view{ accessory.first.c_str() }.starts_with("LAM"))
+			// CryMP: allow custom attachments
+			|| accessory.first.sv().starts_with("LAM"))
 		{
 			CItem* pItem = static_cast<CItem*>(m_pGameFramework->GetIItemSystem()->GetItem(accessory.second));
 			if (pItem)
