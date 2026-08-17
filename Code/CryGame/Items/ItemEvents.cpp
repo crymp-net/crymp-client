@@ -50,7 +50,14 @@ void CItem::OnEnterFirstPerson()
 
 	for (auto const& accessory : m_accessories)
 	{
-		if (accessory.first == g_pItemStrings->LAM || accessory.first == g_pItemStrings->LAMRifle || accessory.first == g_pItemStrings->LAMFlashLight || accessory.first == g_pItemStrings->LAMRifleFlashLight)
+		if (
+			accessory.first == g_pItemStrings->LAM 
+			|| accessory.first == g_pItemStrings->LAMRifle 
+			|| accessory.first == g_pItemStrings->LAMFlashLight 
+			|| accessory.first == g_pItemStrings->LAMRifleFlashLight 
+			// CryMP: allow custom attachments
+			|| accessory.first.sv().starts_with("LAM")
+		)
 		{
 			CItem* pItem = static_cast<CItem*>(m_pGameFramework->GetIItemSystem()->GetItem(accessory.second));
 			if (pItem)
@@ -74,7 +81,13 @@ void CItem::OnEnterThirdPerson()
 
 	for (auto const& accessory : m_accessories)
 	{
-		if (accessory.first == g_pItemStrings->LAM || accessory.first == g_pItemStrings->LAMRifle || accessory.first == g_pItemStrings->LAMFlashLight || accessory.first == g_pItemStrings->LAMRifleFlashLight)
+		if (
+			accessory.first == g_pItemStrings->LAM 
+			|| accessory.first == g_pItemStrings->LAMRifle 
+			|| accessory.first == g_pItemStrings->LAMFlashLight 
+			|| accessory.first == g_pItemStrings->LAMRifleFlashLight 
+			// CryMP: allow custom attachments
+			|| accessory.first.sv().starts_with("LAM"))
 		{
 			CItem* pItem = static_cast<CItem*>(m_pGameFramework->GetIItemSystem()->GetItem(accessory.second));
 			if (pItem)
