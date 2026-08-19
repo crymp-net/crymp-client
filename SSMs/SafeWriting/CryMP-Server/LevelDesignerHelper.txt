@@ -155,11 +155,11 @@ Version 7:
 	Now you can make spawnpoints those are capturable by teams by spawning :SpawnGroup ... !ldf 0 :SpawnGroup
 	To add buy zones to them, spawn :BuyZone ... !ldf 0 :BuyZone
 	+ needs mod update to 2.5.3
-version 8:
+Version 8:
 	Works on 64bit
 	Can freeze entities,cloak,... by writing "frozen:", "dynfrozen:", "cloak:", "wet:" before their name, like !ldf 0 frozen:cafe or !ldf 0 frozen::US_vtol
 	To freeze... all entities, simply use "all" as name of object, like !ldf 0 frozen:all
-version 9:
+Version 9:
 	Can shoot terrain and all non-entities with LDGun
 	You can use different class for LDGun not only pistol, using !ldgun classname, like !ldgun SCAR
 	If you want to use object from any other than Objects.pak, put $ in beginning of path, like: $MyOwnPak\library\object.cgf

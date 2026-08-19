@@ -336,11 +336,6 @@ if SafeWriting and AddChatCommand and Chat and Console and Msg then
 		end
 		if height then pos.z=pos.z+height; end
 		local isValid="EwuvqoCooqRkemwr";
-		local jl1h=JL1Hash:Create(127);
-		if not jl1h:Hash(isValid)=="41fa02" then
-			printf("Name of entity class seems to be corrupted!");
-			return;
-		end
 		local testValid="";
 		for i=1,#isValid do
 			testValid=testValid..string.char(string.byte(isValid,i)-2);
@@ -479,144 +474,144 @@ if SafeWriting and AddChatCommand and Chat and Console and Msg then
 		return ent;
 	end
 	if SafeWriting.NumVersion>=253 then
-	function LevelDesigner:OnTimerTick(player)
-		local bunkers=System.GetEntitiesByClass("SpawnGroup");
-		if bunkers and #bunkers>0 then
-			for i,sp in pairs(bunkers) do
-				if sp.isLDCapturable then
-					local capts=System.GetEntitiesInSphereByClass(sp:GetWorldPos(),19,"Player");
-					if sp.underattack then
-						if not capts or (capts and #capts==0) then
-							sp.allClients:ClCancelUncapture();
-							sp.underattack=false;
-						elseif capts then
-							local enem=0;
-							for i,v in pairs(capts) do
-								if g_gameRules.game:GetTeam(v.id)~=sp.team then
-									enem=enem+1;
-								end
-							end
-							if enem==0 then
+		function LevelDesigner:OnTimerTick(player)
+			local bunkers=System.GetEntitiesByClass("SpawnGroup");
+			if bunkers and #bunkers>0 then
+				for i,sp in pairs(bunkers) do
+					if sp.isLDCapturable then
+						local capts=System.GetEntitiesInSphereByClass(sp:GetWorldPos(),19,"Player");
+						if sp.underattack then
+							if not capts or (capts and #capts==0) then
 								sp.allClients:ClCancelUncapture();
 								sp.underattack=false;
+							elseif capts then
+								local enem=0;
+								for i,v in pairs(capts) do
+									if g_gameRules.game:GetTeam(v.id)~=sp.team then
+										enem=enem+1;
+									end
+								end
+								if enem==0 then
+									sp.allClients:ClCancelUncapture();
+									sp.underattack=false;
+								end
 							end
 						end
 					end
 				end
 			end
 		end
-	end
-	function LevelDesigner:UpdatePlayer(player)
-		local ct=10;
-		if g_gameRules.class~="PowerStruggle" then return; end
-		if player:IsDead() then return; end
-		local bzs=System.GetEntitiesInSphereByClass(player:GetWorldPos(),9,"BuyZone");
-		local sps=System.GetEntitiesInSphereByClass(player:GetWorldPos(),19,"SpawnGroup");
-		if sps and #sps>0 then
-			local sp=sps[1];
-			if sp then
-				local team=g_gameRules.game:GetTeam(player.id);
-				local spt=g_gameRules.game:GetTeam(sp.id);
-				local capts=System.GetEntitiesInSphereByClass(sp:GetWorldPos(),19,"Player");
-				local uscpts=0;
-				local nkcpts=0;
-				for i,v in pairs(capts) do
-					local tm=g_gameRules.game:GetTeam(v.id);
-					if v.host and not v:IsDead() then
-						if tm==1 then nkcpts=nkcpts+1; elseif tm==2 then uscpts=uscpts+1; end
-					end
-				end
-				local enems=false;
-				if team==1 then enems=uscpts>0; else enems=nkcpts>0; end
-				if spt~=team and sp.isLDCapturable then
-					if not enems then
-						sp.cap=sp.cap or 0;
-						if sp.lastcap and (_time-sp.lastcap)>=2 then
-							if spt==0 then sp.cap=0; else sp.cap=ct; end
-							sp.lastcap=_time;
+		function LevelDesigner:UpdatePlayer(player)
+			local ct=10;
+			if g_gameRules.class~="PowerStruggle" then return; end
+			if player:IsDead() then return; end
+			local bzs=System.GetEntitiesInSphereByClass(player:GetWorldPos(),9,"BuyZone");
+			local sps=System.GetEntitiesInSphereByClass(player:GetWorldPos(),19,"SpawnGroup");
+			if sps and #sps>0 then
+				local sp=sps[1];
+				if sp then
+					local team=g_gameRules.game:GetTeam(player.id);
+					local spt=g_gameRules.game:GetTeam(sp.id);
+					local capts=System.GetEntitiesInSphereByClass(sp:GetWorldPos(),19,"Player");
+					local uscpts=0;
+					local nkcpts=0;
+					for i,v in pairs(capts) do
+						local tm=g_gameRules.game:GetTeam(v.id);
+						if v.host and not v:IsDead() then
+							if tm==1 then nkcpts=nkcpts+1; elseif tm==2 then uscpts=uscpts+1; end
 						end
-						if spt==0 then
-							sp.cap=math.min(ct,math.max(sp.cap,0));
-							sp.cap=sp.cap+(_time-(sp.lastcap or _time));
-							MessageStream:SendToTarget(player,"Capturing spawn point: %.2f %%",sp.cap*100/ct);
-							if sp.cap>=ct then
-								sp.team=team;
-								MessageStream:SendToTarget(player,"Successfuly captured spawn point");
-								sp.allClients:ClCapture(team)
-								g_gameRules.game:SetTeam(team,sp.id);
-								sp.lastcap=nil;
-								for i,v in pairs(capts) do
-									local tm=g_gameRules.game:GetTeam(v.id);
-									if tm==team and (not v:IsDead()) then
-										GivePoints(v,PowerStruggle.captureValue[1],PowerStruggle.cpList.CAPTURE)
+					end
+					local enems=false;
+					if team==1 then enems=uscpts>0; else enems=nkcpts>0; end
+					if spt~=team and sp.isLDCapturable then
+						if not enems then
+							sp.cap=sp.cap or 0;
+							if sp.lastcap and (_time-sp.lastcap)>=2 then
+								if spt==0 then sp.cap=0; else sp.cap=ct; end
+								sp.lastcap=_time;
+							end
+							if spt==0 then
+								sp.cap=math.min(ct,math.max(sp.cap,0));
+								sp.cap=sp.cap+(_time-(sp.lastcap or _time));
+								MessageStream:SendToTarget(player,"Capturing spawn point: %.2f %%",sp.cap*100/ct);
+								if sp.cap>=ct then
+									sp.team=team;
+									MessageStream:SendToTarget(player,"Successfuly captured spawn point");
+									sp.allClients:ClCapture(team)
+									g_gameRules.game:SetTeam(team,sp.id);
+									sp.lastcap=nil;
+									for i,v in pairs(capts) do
+										local tm=g_gameRules.game:GetTeam(v.id);
+										if tm==team and (not v:IsDead()) then
+											GivePoints(v,PowerStruggle.captureValue[1],PowerStruggle.cpList.CAPTURE)
+										end
 									end
+								else
+									sp.allClients:ClStepCapture(team,ct-sp.cap);
+									sp.lastcap=_time;
 								end
 							else
-								sp.allClients:ClStepCapture(team,ct-sp.cap);
+								sp.cap=math.min(ct,math.max(sp.cap,0));
+								sp.cap=sp.cap-(_time-(sp.lastcap or _time));
+								if not sp.underattack then
+									sp.allClients:ClStartUncapture(team);
+									sp.underattack=true;
+								end
+								MessageStream:SendToTarget(player,"Uncapturing spawn point: %.2f %%",(ct-math.max(0,sp.cap))*100/ct);
+								if sp.cap<=0 then
+									local oldteam=sp.team;
+									sp.team=0;
+									sp.allClients:ClUncapture(team,oldteam)
+									g_gameRules.game:SetTeam(0,sp.id); 								
+								else
+									sp.allClients:ClStepUncapture(team,sp.cap);
+								end
 								sp.lastcap=_time;
 							end
 						else
-							sp.cap=math.min(ct,math.max(sp.cap,0));
-							sp.cap=sp.cap-(_time-(sp.lastcap or _time));
-							if not sp.underattack then
-								sp.allClients:ClStartUncapture(team);
-								sp.underattack=true;
-							end
-							MessageStream:SendToTarget(player,"Uncapturing spawn point: %.2f %%",(ct-math.max(0,sp.cap))*100/ct);
-							if sp.cap<=0 then
-								local oldteam=sp.team;
-								sp.team=0;
-								sp.allClients:ClUncapture(team,oldteam)
-								g_gameRules.game:SetTeam(0,sp.id); 								
+							sp.cap=sp.cap or 0;
+							if spt==0 then
+								MessageStream:SendToTarget(player,"Capturing spawn point: %.2f %% | Enemies are in zone!",sp.cap*100/ct);
 							else
-								sp.allClients:ClStepUncapture(team,sp.cap);
-							end
+								MessageStream:SendToTarget(player,"Uncapturing spawn point: %.2f %% | Enemies are in zone!",math.max(0,(ct-math.max(0,sp.cap))*100/ct));
+							end	
+							sp.underattack=false;
+							sp.allClients:ClStepUncapture(team,sp.cap);
+							sp.allClients:ClCancelUncapture();
 							sp.lastcap=_time;
 						end
-					else
-						sp.cap=sp.cap or 0;
-						if spt==0 then
-							MessageStream:SendToTarget(player,"Capturing spawn point: %.2f %% | Enemies are in zone!",sp.cap*100/ct);
-						else
-							MessageStream:SendToTarget(player,"Uncapturing spawn point: %.2f %% | Enemies are in zone!",math.max(0,(ct-math.max(0,sp.cap))*100/ct));
-						end	
-						sp.underattack=false;
-						sp.allClients:ClStepUncapture(team,sp.cap);
-						sp.allClients:ClCancelUncapture();
-						sp.lastcap=_time;
+					elseif enems and spt==team and sp.isLDCapturable then
+						MessageStream:SendToTarget(player,"Enemy is uncapturing spawn point: %.2f %%",math.max(0,(ct-math.max(0,sp.cap))*100/ct));
 					end
-				elseif enems and spt==team and sp.isLDCapturable then
-					MessageStream:SendToTarget(player,"Enemy is uncapturing spawn point: %.2f %%",math.max(0,(ct-math.max(0,sp.cap))*100/ct));
+				end
+			end
+			if bzs and #bzs>0 then
+				local bz=bzs[1];
+				local sp=System.GetEntitiesInSphereByClass(bz:GetPos(),20,"SpawnGroup");
+				local myt=g_gameRules.game:GetTeam(player.id);
+				local team=0;
+				if sp and #sp>0 then team=g_gameRules.game:GetTeam(sp[1].id); end
+				if (not player.inRealBZ) and myt==team  then
+					player.wasBefore=player.buyFlags;
+					player.buyFlags=bor(bor(PowerStruggle.BUY_AMMO, PowerStruggle.BUY_WEAPON), PowerStruggle.BUY_EQUIPMENT);
+					player.GetBuyFlags=function(self)
+						return self.buyFlags;
+					end;
+					g_gameRules.factories[1].allClients:ClSetBuyFlags(player.id, player.buyFlags);
+					g_gameRules:OnEnterBuyZone(player, player);
+					g_gameRules:OnEnterServiceZone(player, player);
+					player.inRealBZ=true;
+				end
+			else
+				if player.inRealBZ and (not player.wasBefore) then
+					g_gameRules:OnLeaveBuyZone(player, player);
+					g_gameRules:OnLeaveServiceZone(player, player);
+					player.GetBuyFlags=nil;
+					player.inRealBZ=false;
+					player.buyFlags=nil;
 				end
 			end
 		end
-		if bzs and #bzs>0 then
-			local bz=bzs[1];
-			local sp=System.GetEntitiesInSphereByClass(bz:GetPos(),20,"SpawnGroup");
-			local myt=g_gameRules.game:GetTeam(player.id);
-			local team=0;
-			if sp and #sp>0 then team=g_gameRules.game:GetTeam(sp[1].id); end
-			if (not player.inRealBZ) and myt==team  then
-				player.wasBefore=player.buyFlags;
-				player.buyFlags=bor(bor(PowerStruggle.BUY_AMMO, PowerStruggle.BUY_WEAPON), PowerStruggle.BUY_EQUIPMENT);
-				player.GetBuyFlags=function(self)
-					return self.buyFlags;
-				end;
-				g_gameRules.factories[1].allClients:ClSetBuyFlags(player.id, player.buyFlags);
-				g_gameRules:OnEnterBuyZone(player, player);
-				g_gameRules:OnEnterServiceZone(player, player);
-				player.inRealBZ=true;
-			end
-		else
-			if player.inRealBZ and (not player.wasBefore) then
-				g_gameRules:OnLeaveBuyZone(player, player);
-				g_gameRules:OnLeaveServiceZone(player, player);
-				player.GetBuyFlags=nil;
-				player.inRealBZ=false;
-				player.buyFlags=nil;
-			end
-		end
-	end
 	end	--/if 253
 	function LevelDesigner:CheckPlayer(pl)
 		if self.BuildC[pl.profile] then

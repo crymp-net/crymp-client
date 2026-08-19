@@ -245,63 +245,6 @@ function __qt(p, m)
 	end
 end
 
-JL1Hash = {
-	Seed = 1
-};
-
-function JL1Hash:Create(seed)
-	local tbl = {
-		Seed = seed
-	};
-	setmetatable(tbl, self);
-	self.__index = self;
-	self.Seed = seed;
-	return tbl;
-end
-
-function JL1Hash:SetSeed(seed)
-	self.Seed = seed;
-end
-
-function JL1Hash:bleft(num, p)
-	return (num * 2 ^ p);
-end
-
-function JL1Hash:bright(num, p)
-	return math.floor(num / 2 ^ p);
-end
-
-function JL1Hash:band(num, p)
-	return band(num, p);
-end
-
-function JL1Hash:Hash(text)
-	local hash = 0;
-	local len = (text:len()) + 2;
-	local c = 0;
-	local tmp = text .. "jl";
-	for i = 0, len - 1 do
-		local c = string.byte(tmp, i + 1);
-		if (c % 2 == 0) then
-			c = c + 256;
-		end
-		hash = hash + (c * (i + 1) * self.Seed);
-		if (i > 0 and c > 0) then
-			if (i > c) then
-				if (i % c == 2) then
-					hash = self:bright(hash, 1);
-				end
-			else
-				if (c % i == 2) then
-					hash = self:bright(hash, 1);
-				end
-			end
-		end
-		hash = self:band(hash, 0xFFFFFFFFFFFFFFFF);
-	end
-	return string.format("%x", hash);
-end
-
 ScheduleBase = {
 	Events = {}
 };

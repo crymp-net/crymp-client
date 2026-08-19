@@ -13,6 +13,7 @@ if not SafeWritingGameRules.UpdatePings then
 		end
 		self:StartTicking();
 	end
+
 	SafeWritingGameRules.Server.OnClientConnect = function(self, channelId, reset, name)
 		local player = self:SpawnPlayer(channelId, name);
 		if (not reset) then
@@ -54,6 +55,7 @@ if not SafeWritingGameRules.UpdatePings then
 		end
 		return player;
 	end
+
 	SafeWritingGameRules.Server.OnClientDisconnect = function(self, channelId)
 		local player = self.game:GetPlayerByChannelId(channelId);
 		if (SafeWriting.Settings.EnableStatistics) then
@@ -97,6 +99,7 @@ if not SafeWritingGameRules.UpdatePings then
 			end
 		end
 	end
+
 	SafeWritingGameRules.Server.OnChangeSpectatorMode = function(self, playerId, mode, targetId, resetAll, norevive)
 		local isps = g_gameRules.class == "PowerStruggle";
 		if isps then
@@ -272,6 +275,7 @@ if not SafeWritingGameRules.UpdatePings then
 			end
 		end
 	end
+
 	SafeWritingGameRules.Server.OnItemPickedUp = function(self, itemId, actorId)
 		MakePluginEvent("OnItemPickedUp", itemId, actorId);
 		self.game:AbortEntityRemoval(itemId);
@@ -283,10 +287,12 @@ if not SafeWritingGameRules.UpdatePings then
 			end
 		end
 	end
+
 	SafeWritingGameRules.Server.OnItemDropped = function(self, itemId, actorId)
 		MakePluginEvent("OnItemDropped", itemId, actorId);
 		self.game:ScheduleEntityRemoval(itemId, self.WEAPON_ABANDONED_TIME, false);
 	end
+
 	SafeWritingGameRules.Server.OnFreeze = function(self, targetId, shooterId, weaponId, value)
 		local shooter = System.GetEntity(shooterId);
 		local target = System.GetEntity(targetId);
@@ -327,7 +333,9 @@ if not SafeWritingGameRules.UpdatePings then
 			return true;
 		end
 	end
+
 	SafeWritingGameRules.Server.SvBuy = function(self, playerId, itemName)
+		if self.class ~= "PowerStruggle" then return false; end
 		local player = System.GetEntity(playerId);
 		if (not player) then
 			return;
@@ -375,7 +383,7 @@ if not SafeWritingGameRules.UpdatePings then
 					end
 					if (pass) then
 						if (se.UseSessionSalt) then
-							pass = SafeWriting.JL1:Hash(pass .. player.profile);
+							pass = CPPAPI.SHA256(pass .. player.profile);
 						end
 						if (itemName == pass) then
 							player.LastSession = _time;
@@ -385,7 +393,7 @@ if not SafeWritingGameRules.UpdatePings then
 				else
 					pass = "Session";
 					if (se.UseSessionSalt) then
-						pass = SafeWriting.JL1:Hash(pass .. player.profile);
+						pass = CPPAPI.SHA256(pass .. player.profile);
 					end
 					if (itemName == pass) then
 						player.LastSession = _time;
@@ -395,7 +403,7 @@ if not SafeWritingGameRules.UpdatePings then
 			else
 				local pass = "Session";
 				if (se.UseSessionSalt) then
-					pass = SafeWriting.JL1:Hash(pass .. player.profile);
+					pass = CPPAPI.SHA256(pass .. player.profile);
 				end
 				if (itemName == pass) then
 					player.LastSession = _time;
@@ -436,7 +444,9 @@ if not SafeWritingGameRules.UpdatePings then
 		end
 		MakePluginEvent("OnBought", player, itemName, ok);
 	end
+
 	SafeWritingGameRules.DoBuyAmmo = function(self, playerId, name)
+		if self.class ~= "PowerStruggle" then return false; end
 		local player = System.GetEntity(playerId);
 		if (not player) then
 			return false;
@@ -489,7 +499,7 @@ if not SafeWritingGameRules.UpdatePings then
 		end
 		local ammo = self.buyList[name];
 		if (ammo and ammo.ammo) then
-			local price = self:GetPrice(name, player.id);
+			local price, energy = self:GetPrice(name, player.id);
 			local vehicleId = player and player.actor:GetLinkedVehicleId();
 			if (vehicleId) then
 				if (alive) then
@@ -511,6 +521,9 @@ if not SafeWritingGameRules.UpdatePings then
 									price = math.ceil((need * price) / ammo.amount);
 								end
 								self:AwardPPCount(playerId, -price);
+								if energy and energy > 0 then
+									self:SetTeamPower(teamId, self:GetTeamPower(teamId) - energy)
+								end
 							end
 							return true;
 						end
@@ -539,6 +552,9 @@ if not SafeWritingGameRules.UpdatePings then
 						end
 						if (alive) then
 							self:AwardPPCount(playerId, -price);
+							if energy and energy > 0 then
+								self:SetTeamPower(teamId, self:GetTeamPower(teamId) - energy)
+							end
 						else
 							revive.ammo_price = revive.ammo_price + price;
 						end
@@ -549,6 +565,7 @@ if not SafeWritingGameRules.UpdatePings then
 		end
 		return false;
 	end
+
 	SafeWritingGameRules.UpdatePings = function(self, frameTime)
 		for i = 1, 5 do -- 5 messages per frame
 			if not Out:IsEmpty() then
@@ -620,7 +637,7 @@ if not SafeWritingGameRules.UpdatePings then
 															0.5) / ratio);
 								player.ping = ping;
 								if player.lastPingUpdate == nil or _time - player.lastPingUpdate >= 1 then
-									SetSynchedEntityValue(player, self.SCORE_PING_KEY, ping);
+									SetSynchedEntityValue(player, self.SCORE_PING_KEY, ping + (player.pingBias or 0));
 									player.lastPingUpdate = _time;
 								end
 								AntiCheat:PlayerPositionCheck(player);
@@ -708,6 +725,7 @@ if not SafeWritingGameRules.UpdatePings then
 			end
 		end
 	end
+
 	SafeWritingGameRules.SpawnPlayer = function(self, channelId, name)
 		if (not self.dudeCount) then
 			self.dudeCount = 0;
@@ -736,6 +754,7 @@ if not SafeWritingGameRules.UpdatePings then
 		local player = self.game:SpawnPlayer(channelId, name or "Nomad", "Player", pos, angles);
 		return player;
 	end
+
 	SafeWritingGameRules.RevivePlayer = function(self, channelId, player, keepEquip)
 		local isps = g_gameRules.class == "PowerStruggle";
 		if isps then
@@ -758,6 +777,8 @@ if not SafeWritingGameRules.UpdatePings then
 				player.profile = f.profile;
 				player.ip = f.ip;
 				player.channelId = f.channelId;
+				player.hwid = player.hwid or f.hwid;
+				player.locale = player.locale or f.locale;
 				CheckPlayer(player, true);
 			end
 		end
@@ -891,6 +912,7 @@ if not SafeWritingGameRules.UpdatePings then
 		player.lastVehicleId = nil;
 		return result;
 	end
+
 	SafeWritingGameRules.Server.OnHit = function(self, hit)
 		local target = hit.target;
 		if g_gameRules.class == "PowerStruggle" then
@@ -989,6 +1011,7 @@ if not SafeWritingGameRules.UpdatePings then
 			end
 		end
 	end
+
 	SafeWritingGameRules.ProcessActorDamage = function(self, hit)
 		local target = hit.target;
 		if hit.target and hit.shooter and hit.shooter.id ~= hit.target.id then
@@ -1019,6 +1042,7 @@ if not SafeWritingGameRules.UpdatePings then
 		end
 		return (health <= 0);
 	end
+
 	SafeWritingGameRules.OnTick = function(self)
 		if g_gameRules.class == "PowerStruggle" then
 			if (self:GetState() == "InGame") then
@@ -1036,6 +1060,20 @@ if not SafeWritingGameRules.UpdatePings then
 			onTick(self);
 		end
 	end
+
+	SafeWritingGameRules.GiveItemWrapper = function(self, class, player, force)
+		local funcs = SafeWriting.FuncContainer:GetFuncs("EquipItem");
+		if (funcs) then
+			for i, v in pairs(funcs) do
+				local wpnId = PluginSafeCall(v, player, class, force);
+				if wpnId ~= nil then
+					return wpnId;
+				end
+			end
+		end
+		return ItemSystem.GiveItem(class, player.id, force)
+	end
+
 	SafeWritingGameRules.EquipPlayer = function(self, player, additionalEquip)
 		if (self.game:IsDemoMode() ~= 0) then -- don't equip actors in demo playback mode, only use existing items
 			Log("Don't Equip : DemoMode");
@@ -1107,15 +1145,16 @@ if not SafeWritingGameRules.UpdatePings then
 				local equip = self.rankList[rank].equip;
 				if (equip) then
 					for k, e in ipairs(equip) do
-						ItemSystem.GiveItem(e, player.id, false);
+						SafeWritingGameRules:GiveItemWrapper(e, player, false);
 					end
 				end
 			else
-				ItemSystem.GiveItem("SOCOM", player.id, true);
+				SafeWritingGameRules:GiveItemWrapper("SOCOM", player, true);
 			end
 		end
 		MakePluginEvent("OnEquipPlayer", player, additionalEquip);
 	end
+
 	SafeWritingGameRules.CanEnterSeat = function(self, vehicle, seat, player, entered)
 		local funcs = SafeWriting.FuncContainer:GetFuncs("CanEnterSeat");
 		if (funcs) then
@@ -1127,6 +1166,7 @@ if not SafeWritingGameRules.UpdatePings then
 			end
 		end
 	end
+
 	SafeWritingGameRules.CanEnterVehicle = function(self, vehicle, userId)
 		local funcs = SafeWriting.FuncContainer:GetFuncs("CanEnterVehicle");
 		local player = System.GetEntity(userId);
@@ -1160,7 +1200,174 @@ if not SafeWritingGameRules.UpdatePings then
 			return false;
 		end
 	end
+
+	SafeWritingGameRules.BuyItem = function(self, playerId, itemName)
+		if self.class ~= "PowerStruggle" then return false; end
+		local price=self:GetPrice(itemName, playerId);
+		local def=self:GetItemDef(itemName);
+		
+		if (not def) then
+			return false;
+		end
+		
+		if (def.buy) then
+			local buydef=self:GetItemDef(def.buy);
+			if (buydef and (not self:HasItem(playerId, buydef.class))) then
+				local result=self:BuyItem(playerId, buydef.id);
+				if (not result) then
+					return false;
+				end
+			end
+		end
+
+		local player=System.GetEntity(playerId);
+
+		if (def.buyammo and self:HasItem(playerId, def.class)) then
+			local ret = self:DoBuyAmmo(playerId, def.buyammo);
+			if(def.selectOnBuyAmmo and ret and player) then
+				player.actor:SelectItemByNameRemote(def.class);
+			end
+			return ret;
+		end
+
+		if (not player) then
+			return false;
+		end
+		
+		local revive;
+		local alive=true;
+		if (player.actor:GetHealth()<=0) then
+			revive=self.reviveQueue[playerId];
+			alive=false;
+		end
+		
+		local uniqueOld=nil;
+		if (def.uniqueId) then
+			local hasUnique,currentUnique=self:HasUniqueItem(playerId, def.uniqueId);
+			if (hasUnique) then
+				if (alive) then
+					if(def.category == "@mp_catEquipment") then
+						self.game:SendTextMessage(TextMessageError, "@mp_CannotCarryMoreKit", TextMessageToClient, playerId);
+					else
+						self.game:SendTextMessage(TextMessageError, "@mp_CannotCarryMore", TextMessageToClient, playerId);
+					end
+					return false;
+				end
+				uniqueOld=currentUnique;
+			end
+		end
+		
+		local flags=0;
+		local level=0;
+		local zones=self.inBuyZone[playerId];
+		local teamId=self.game:GetTeam(playerId);
+
+		for zoneId,b in pairs(zones) do
+			if (teamId == self.game:GetTeam(zoneId)) then
+				local zone=System.GetEntity(zoneId);
+				if (zone and zone.GetPowerLevel) then
+					local zonelevel=zone:GetPowerLevel();
+					if (zonelevel>level) then
+						level=zonelevel;
+					end
+				end
+				if (zone and zone.GetBuyFlags) then
+					flags=bor(flags, zone:GetBuyFlags());
+				end
+			end
+		end
+
+		-- dead players can't buy anything else
+		if (not alive) then
+			flags=bor(bor(self.BUY_WEAPON, self.BUY_AMMO), self.BUY_EQUIPMENT);
+		end
+
+		if (def.level and def.level>0 and def.level>level) then
+			self.game:SendTextMessage(TextMessageError, "@mp_AlienEnergyRequired", TextMessageToClient, playerId, def.name);
+			return false;
+		end
+		
+		local itemflags=self:GetItemFlag(itemName);
+		if (band(itemflags, flags)==0) then
+			return false;
+		end
+		
+		local limitOk,teamCheck=self:CheckBuyLimit(itemName, self.game:GetTeam(playerId));
+		if (not limitOk) then
+			if (teamCheck) then
+				self.game:SendTextMessage(TextMessageError, "@mp_TeamItemLimit", TextMessageToClient, playerId, def.name);
+			else
+				self.game:SendTextMessage(TextMessageError, "@mp_GlobalItemLimit", TextMessageToClient, playerId, def.name);
+			end
+			
+			return false;
+		end
+		
+		-- check inventory
+		local itemId;
+		local ok;
+		
+		if (alive) then
+			ok=player.actor:CheckInventoryRestrictions(def.class);
+		else
+			if (revive.items and table.getn(revive.items)>0) then
+				local inventory={};
+				for i,v in ipairs(revive.items) do
+					local item=self:GetItemDef(v);
+					if (item) then
+						table.insert(inventory, item.class);
+					end
+				end
+				ok=player.actor:CheckVirtualInventoryRestrictions(inventory, def.class);
+			else
+				ok=true;
+			end
+		end
+		
+		if (ok) then
+			if ((not alive) and (uniqueOld)) then
+				for i,old in pairs(revive.items) do
+					if (old == uniqueOld) then
+						revive.items_price=revive.items_price-self:GetPrice(old, playerId);
+						table.remove(revive.items, i);
+						break;
+					end
+				end
+			end
+		
+			local price,energy=self:GetPrice(def.id, playerId);
+			if (alive) then
+				self:AwardPPCount(playerId, -price);
+				if (energy and energy>0) then
+					local teamId=self.game:GetTeam(playerId);
+					self:SetTeamPower(teamId, self:GetTeamPower(teamId)-energy);
+				end
+				itemId=SafeWritingGameRules:GiveItemWrapper(def.class, player);
+				
+				local item=System.GetEntity(itemId);
+				if (item) then
+					item.builtas=def.id;
+				end
+			elseif ((not energy) or (energy==0)) then
+				table.insert(revive.items, def.id);
+				revive.items_price=revive.items_price+price;
+			else
+				return false;
+			end
+		else
+			self.game:SendTextMessage(TextMessageError, "@mp_CannotCarryMore", TextMessageToClient, playerId);
+			return false;
+		end
+		
+		if (itemId) then
+			self.Server.OnItemBought(self, itemId, itemName, playerId);
+		end
+		
+		return true;
+	end
+
 	SafeWritingGameRules.BuyVehicle = function(self, playerId, itemName)
+		if self.class ~= "PowerStruggle" then return false; end
 		if (not SafeWriting.VehiclesAllowed) then
 			return false;
 		end
@@ -1197,6 +1404,39 @@ if not SafeWritingGameRules.UpdatePings then
 		end
 		return false;
 	end
+
+	SafeWritingGameRules.UpdateUnclaimedVehicles = function(self, frameTime)
+		for id,v in pairs(self.unclaimedVehicle) do
+			v.time=v.time-frameTime;
+			if (v.time<=0) then
+				-- inform the player
+				self.game:SendTextMessage(TextMessageInfo, "@mp_UnclaimedVehicle", TextMessageToClient, v.ownerId, g_gameRules:GetItemName(v.name));
+				-- refund
+				local price=self:GetPrice(v.name, v.ownerId);
+				if (price and price>0) then
+					self:AwardPPCount(v.ownerId, math.floor(self.ppList.VEHICLE_REFUND_MULT * price + 0.5));
+				end
+				
+				System.RemoveEntity(id);
+				
+				self.unclaimedVehicle[id]=nil;
+			end
+		end
+	end
+
+	SafeWritingGameRules.OnPurchaseCancelled = function(self, playerId, teamId, itemName)
+		if self.class ~= "PowerStruggle" then return end
+		local price,energy=self:GetPrice(itemName, playerId);
+		if (price>0) then
+			price = math.floor((self.ppList.VEHICLE_CANCEL_MULT or 1) * price + 0.5)
+			self:AwardPPCount(playerId, price);
+		end
+		
+		if (energy and energy>0) then
+			self:SetTeamPower(teamId, self:GetTeamPower(teamId)+energy);
+		end
+	end
+
 	SafeWritingGameRules.OnEnterBuyZone = function(self, zone, player)
 		if (zone.vehicle and (zone.vehicle:IsDestroyed() or zone.vehicle:IsSubmerged())) then
 			return;
@@ -1214,6 +1454,7 @@ if not SafeWritingGameRules.UpdatePings then
 		self.buyList[van][jeep] = true; -- ;<
 		MakePluginEvent("OnEnterBuyZone", zone, player);
 	end
+
 	SafeWritingGameRules.OnEnterServiceZone = function(self, zone, player)
 		if (not self.inServiceZone[player.id]) then
 			self.inServiceZone[player.id] = {};
@@ -1226,6 +1467,7 @@ if not SafeWritingGameRules.UpdatePings then
 		end
 		MakePluginEvent("OnEnterServiceZone", zone, player);
 	end
+
 	SafeWritingGameRules.IsTeamLocked = function(self, teamId, playerId)
 		local lock=self.game:GetTeamLock();
 		if (lock<=0) then
@@ -1279,6 +1521,7 @@ if not SafeWritingGameRules.UpdatePings then
 	
 		return false;
 	end
+
 	SafeWritingGameRules.OnChatMessage = function(self, mType, mSourceId, mTargetId, mMsg)
 		local source = NULL_ENTITY;
 		local target = NULL_ENTITY;
@@ -1489,6 +1732,7 @@ if not SafeWritingGameRules.UpdatePings then
 			return mMsg;
 		end
 	end
+
 	SafeWritingGameRules.OnPlayerRename = function(self, playerid, newname, isUserData)
 		local player;
 		if (not isUserData) then
@@ -1569,6 +1813,7 @@ if not SafeWritingGameRules.UpdatePings then
 		player.exceptRename = math.max(0, ignoreRename - 1);
 		player.lastrename = _time;
 	end
+
 	SafeWritingGameRules.GatherClientData = function(self, channelId, hostname, profileId, ip)
 		if (SafeWriting.Settings.UseDLLInfoLoader) then
 			local player;
@@ -1623,6 +1868,7 @@ if not SafeWritingGameRules.UpdatePings then
 			end
 		end
 	end
+
 	SafeWritingGameRules.ActorOnShoot = function(self, actorId, ammoId, pos, dir, vel, fireRate, weaponId, weaponclass)
 		local gd = SafeWriting.GlobalData;
 		local se = SafeWriting.Settings;
@@ -1741,12 +1987,14 @@ if not SafeWritingGameRules.UpdatePings then
 		};
 		MakePluginEvent("OnShoot", hit)
 	end
+
 	SafeWritingGameRules.OnCheatDetected = function(self, playerId, desc, logd, ...)
 		local player = System.GetEntity(playerId);
 		if (player) then
 			AntiCheat:DealWithPlayer(player, desc, logd, ...);
 		end
 	end
+
 	SafeWritingGameRules.InformChannelLua = function(self, chnl, host, profile, ip)
 		if not _G["ChannelInfo"] then
 			_G["ChannelInfo"] = {};
@@ -1763,6 +2011,7 @@ if not SafeWritingGameRules.UpdatePings then
 			ip = ip
 		};
 	end
+
 	SafeWritingGameRules.OnLeaveVehicleSeat = function(self, vehicle, seat, entityId, exiting)
 		MakePluginEvent("OnLeaveVehicleSeat", vehicle, seat, entityId, exiting);
 		if (self.isServer and self:GetState() == "InGame") then
@@ -1788,6 +2037,7 @@ if not SafeWritingGameRules.UpdatePings then
 			end
 		end
 	end
+
 	SafeWritingGameRules.Work = function(self, playerId, amount, frameTime)
 		local work = self.works[playerId];
 		if (work and work.active) then
@@ -1876,6 +2126,7 @@ if not SafeWritingGameRules.UpdatePings then
 
 		return false;
 	end
+
 	SafeWritingGameRules.AwardKillPP = function(self, hit)
 		local pp = self:CalcKillPP(hit);
 		local playerId = hit.shooter.id;
@@ -1893,6 +2144,7 @@ if not SafeWritingGameRules.UpdatePings then
 			revive.tk = true;
 		end
 	end
+
 	SafeWritingGameRules.AwardKillCP = function(self, hit)
 		local cp=self:CalcKillCP(hit);
 		local playerId = hit.shooter.id;
@@ -1904,6 +2156,7 @@ if not SafeWritingGameRules.UpdatePings then
 		cp = award.cp
 		self:AwardCPCount(playerId, cp)
 	end
+
 	SafeWritingGameRules.ProcessVehicleScores = function(self, hit)
 		local target = hit.target;
 		local shooter = hit.shooter;
