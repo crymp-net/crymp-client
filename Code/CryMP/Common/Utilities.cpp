@@ -3,6 +3,7 @@
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 #include "CryAction/ItemSystem.h"
 #include "CryGame/Game.h"
+#include "CryGame/Items/Weapons/WeaponSystem.h"
 #include "CrySystem/CryPak.h"
 
 extern std::uintptr_t CRYACTION_BASE;
@@ -108,5 +109,12 @@ void ResetGameObjectSystem() {
 		);
 	*pDispatchSafety = false;
 #endif
+	//CryMP: Load ammo definitions first, so new ammo classes are available
+	//when newly imported weapons are loaded.
+	if (g_pGame && g_pGame->GetWeaponSystem())
+	{
+		g_pGame->GetWeaponSystem()->Reload();
+	}
+
 	gEnv->pGame->GetIGameFramework()->GetIItemSystem()->Reload();
 }

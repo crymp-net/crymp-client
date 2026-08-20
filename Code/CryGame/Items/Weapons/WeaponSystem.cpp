@@ -573,13 +573,19 @@ bool CWeaponSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
 
 	IEntityClass* pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
 
-	if (!m_reloading && !pClass)
+	// CryMP: Allow newly mounted server/client PAKs to introduce new ammo classes.
+	if (!pClass)
 	{
 		m_pGame->GetIGameFramework()->GetIGameObjectSystem()->RegisterExtension(name, it->second, &classDesc);
-		pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
-		assert(pClass);
-	}
 
+		pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
+
+		if (!pClass)
+		{
+			CryLogWarningAlways("Failed to register ammo entity class '%s' from XML '%s'! Skipping...", name, xmlFile);
+			return false;
+		}
+	}
 
 	TAmmoTypeParams::iterator ait = m_ammoparams.find(pClass);
 	if (ait == m_ammoparams.end())
