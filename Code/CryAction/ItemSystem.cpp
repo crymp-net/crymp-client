@@ -1103,11 +1103,14 @@ void ItemSystem::ScanXml(XmlNodeRef& root, const char* xmlFile)
 		IGameObjectSystem* pGOS = m_pGameFramework->GetIGameObjectSystem();
 		if (m_reloading)
 		{
-			if (!m_extensions.contains(itemName)) {
+			if (!m_extensions.contains(itemName))
+			{
 				pGOS->RegisterExtension(itemName, pCreator, &entityClass);
 				m_extensions.insert(itemName);
 			}
-		} else {
+		}
+		else
+		{
 			pGOS->RegisterExtension(itemName, pCreator, &entityClass);
 			m_extensions.insert(itemName);
 		}
