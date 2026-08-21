@@ -1,6 +1,7 @@
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 #include "CryCommon/CryScriptSystem/IScriptSystem.h"
+#include "CryCommon/CrySystem/IConsole.h"
 #include "CryCommon/CryNetwork/INetwork.h"
 #include "CryCommon/CryAction/IVehicleSystem.h"
 #include "CryCommon/CryAction/IItemSystem.h"
@@ -8,7 +9,9 @@
 #include "CryGame/Game.h"
 #include "CryGame/Items/ItemSharedParams.h"
 #include "CryGame/Items/Weapons/WeaponSystem.h"
+#include "CryGame/Actors/Player/NanoSuit.h" 
 #include "CrySystem/CryPak.h"
+
 
 #include "ServerPAK.h"
 #include "Utilities.h"
@@ -51,6 +54,7 @@ bool ServerPAK::Unload()
 	{
 		CryLogAlways("$3[CryMP] [ServerPAK] Unloaded $6%s", m_path.c_str());
 		m_path.clear();
+		m_reloadResources = true;
 	}
 	else
 	{
@@ -62,6 +66,29 @@ bool ServerPAK::Unload()
 
 void ServerPAK::OnLoadingStart(ILevelInfo* pLevel)
 {
+	if (m_reloadResources)
+	{
+		CNanoSuit::ResetCachedMaterials();
+
+		if (ICVar* pReloadShaders = gEnv->pConsole->GetCVar("r_ReloadShaders"))
+		{
+			if (pReloadShaders->GetIVal() == 0)
+			{
+				CryLogAlways("$3[CryMP] [ServerPAK] Reloading shaders");
+				pReloadShaders->Set(1);
+			}
+		}
+	}
+}
+
+void ServerPAK::OnInGame()
+{
+	if (m_reloadResources)
+	{
+		CryLogAlways("$3[CryMP] [ServerPAK] Reloading textures");
+		gEnv->pRenderer->EF_ReloadTextures();
+		m_reloadResources = false;
+	}
 }
 
 void ServerPAK::OnConnect()
