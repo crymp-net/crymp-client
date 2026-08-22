@@ -1993,9 +1993,7 @@ void CSound::SetFrequency(int nFreq)
 	if (!m_pSoundBuffer || !m_pPlatformSound)
 		return;
 
-	const float fFreq =
-		(float)m_pSoundBuffer->GetInfo()->nBaseFreq *
-		((float)(m_nRelativeFreq + m_nCurrPitch) / 1000.0f);
+	const float fFreq = (float)m_pSoundBuffer->GetInfo()->nBaseFreq * ((float)(m_nRelativeFreq + m_nCurrPitch) / 1000.0f);
 
 	ptParamINT32 NewParam((int)fFreq);
 	m_pPlatformSound->SetParamByType(pspFREQUENCY, &NewParam);
@@ -2440,8 +2438,7 @@ void CSound::SetPitch(int nPitch)
 	if (!m_pPlatformSound)
 		return;
 
-	const int nEffectivePitch =
-		clamp_tpl(m_nRelativeFreq + m_nCurrPitch, 100, 4000);
+	const int nEffectivePitch =	clamp_tpl(m_nRelativeFreq + m_nCurrPitch, 100, 4000);
 
 	ptParamINT32 param(nEffectivePitch);
 	m_pPlatformSound->SetParamByType(pspPITCH, &param);

@@ -620,12 +620,7 @@ int ScriptBind_Sound::SetParameterValue(IFunctionHandler *pH)
 	{
 		if (strcmp(paramName, "pitch") == 0)
 		{
-			const int pitch = clamp_tpl(
-				(int)(paramValue * 1000.0f),
-				100,
-				4000);
-
-			pSound->SetPitch(pitch);
+			pSound->SetPitch((int)(paramValue * 1000.0f));
 		}
 		else
 		{

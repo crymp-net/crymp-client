@@ -203,12 +203,9 @@ bool CPlatformSoundFmodEx400::GetParamByType(enumPlatformSoundParamSemantics eSe
 			if (!pBuffer || !pBuffer->GetInfo())
 				return false;
 
-			const float fFrequency =
-				(float)pBuffer->GetInfo()->nBaseFreq *
-				((float)nPitch / 1000.0f);
+			const float fFrequency = (float)pBuffer->GetInfo()->nBaseFreq * ((float)nPitch / 1000.0f);
 
-			m_ExResult = m_pExChannel->setFrequency(
-				__max(fFrequency, 100.0f));
+			m_ExResult = m_pExChannel->setFrequency(__max(fFrequency, 100.0f));
 
 			if (m_ExResult != FMOD_OK)
 			{
