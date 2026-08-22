@@ -228,34 +228,34 @@ bool CItem::ReadActions(const IItemParamsNode *actions)
 }
 
 //------------------------------------------------------------------------
-bool CItem::ReadAction(const IItemParamsNode *actionparams, SAction *pAction)
+bool CItem::ReadAction(const IItemParamsNode* actionparams, SAction* pAction)
 {
-	const char *actionName = actionparams->GetAttribute("name");
+	const char* actionName = actionparams->GetAttribute("name");
 	if (!actionName)
 	{
 		CryLogWarning("Missing action name for item '%s'! Skipping...", GetEntity()->GetName());
 		return false;
 	}
 
-	int children=0;
+	int children = 0;
 	actionparams->GetAttribute("children", children);
-	pAction->children=children!=0;
+	pAction->children = children != 0;
 
 	int n = actionparams->GetChildCount();
-	for (int i=0; i<n; i++)
+	for (int i = 0; i < n; i++)
 	{
-		const IItemParamsNode *child = actionparams->GetChild(i);
-		const char *childName = actionparams->GetChildName(i);
+		const IItemParamsNode* child = actionparams->GetChild(i);
+		const char* childName = actionparams->GetChildName(i);
 		if (!_stricmp(childName, "sound"))
 		{
-			const char *name = child->GetAttribute("name");
+			const char* name = child->GetAttribute("name");
 			if (!name)
 			{
 				CryLogWarning("Missing name of sound for action '%s' in item '%s'! Skipping...", actionName, GetEntity()->GetName());
 				return false;
 			}
 
-			const char *slot = child->GetAttribute("target");
+			const char* slot = child->GetAttribute("target");
 			int islot = TargetToSlot(slot);
 
 			if ((islot != eIGS_FirstPerson) && (islot != eIGS_ThirdPerson))
@@ -272,26 +272,29 @@ bool CItem::ReadAction(const IItemParamsNode *actionparams, SAction *pAction)
 
 			float radius = 1.0f; child->GetAttribute("radius", radius);
 			float sphere = 0.0f; child->GetAttribute("sphere", sphere);
+			float pitch = 1.0f; child->GetAttribute("pitch", pitch); //CryMP
 			int isstatic = 0; child->GetAttribute("static", isstatic);
-			int issynched =0; child->GetAttribute("synched", issynched);
+			int issynched = 0; child->GetAttribute("synched", issynched);
+
 			pAction->sound[islot].name = name;
 			pAction->sound[islot].airadius = radius;
 			pAction->sound[islot].sphere = sphere;
-			pAction->sound[islot].isstatic = isstatic!=0;
-			pAction->sound[islot].issynched = issynched!=0;
+			pAction->sound[islot].pitch = pitch; //CryMP
+			pAction->sound[islot].isstatic = isstatic != 0;
+			pAction->sound[islot].issynched = issynched != 0;
 		}
 		else if (!_stricmp(childName, "animation"))
 		{
-			const char *name = child->GetAttribute("name");
+			const char* name = child->GetAttribute("name");
 			if (!name)
 			{
 				CryLogWarning("Missing name of animation for action '%s' in item '%s'! Skipping...", actionName, GetEntity()->GetName());
 				return false;
 			}
 
-			const char *slot = child->GetAttribute("target");
+			const char* slot = child->GetAttribute("target");
 			int islot = TargetToSlot(slot);
-			
+
 			if (islot == eIGS_Last)
 			{
 				CryLogWarning("Invalid animation target '%s' for action '%s' in item '%s'! Skipping...", slot, actionName, GetEntity()->GetName());
@@ -302,57 +305,57 @@ bool CItem::ReadAction(const IItemParamsNode *actionparams, SAction *pAction)
 			float blend = 0.125f; child->GetAttribute("blendTime", blend);
 			SAnimation animation;
 
-			const char *camera_helper = child->GetAttribute("camera_helper");
+			const char* camera_helper = child->GetAttribute("camera_helper");
 			if (camera_helper && camera_helper[0])
 			{
-				int pos=1; child->GetAttribute("camera_position", pos);
-				int rot=1; child->GetAttribute("camera_rotation", rot);
-				int follow=0; child->GetAttribute("camera_follow", follow);
-				int reorient=0; child->GetAttribute("camera_reorient", reorient);
+				int pos = 1; child->GetAttribute("camera_position", pos);
+				int rot = 1; child->GetAttribute("camera_rotation", rot);
+				int follow = 0; child->GetAttribute("camera_follow", follow);
+				int reorient = 0; child->GetAttribute("camera_reorient", reorient);
 
 				animation.camera_helper = camera_helper;
-				animation.camera_pos=pos!=0;
-				animation.camera_rot=rot!=0;
-				animation.camera_follow=follow!=0;
-				animation.camera_reorient=reorient!=0;
+				animation.camera_pos = pos != 0;
+				animation.camera_rot = rot != 0;
+				animation.camera_follow = follow != 0;
+				animation.camera_reorient = reorient != 0;
 			}
-			
+
 			animation.name = name;
 			animation.speed = speed;
 			animation.blend = blend;
 
 			pAction->animation[islot].push_back(animation);
 		}
-    else if (!_stricmp(childName, "effect"))
-    {
-      const char *name = child->GetAttribute("name");
-      if (!name)
-      {
-        CryLogWarning("Missing name of effect for action '%s' in item '%s'! Skipping...", actionName, GetEntity()->GetName());
-        return false;
-      }
+		else if (!_stricmp(childName, "effect"))
+		{
+			const char* name = child->GetAttribute("name");
+			if (!name)
+			{
+				CryLogWarning("Missing name of effect for action '%s' in item '%s'! Skipping...", actionName, GetEntity()->GetName());
+				return false;
+			}
 
-      const char *slot = child->GetAttribute("target");
-      int islot = TargetToSlot(slot);
+			const char* slot = child->GetAttribute("target");
+			int islot = TargetToSlot(slot);
 
-      if ((islot != eIGS_FirstPerson) && (islot != eIGS_ThirdPerson))
-      {
-        CryLogWarning("Invalid effect target '%s' for action '%s' in item '%s'! Skipping...", slot, actionName, GetEntity()->GetName());
-        return false;
-      }
+			if ((islot != eIGS_FirstPerson) && (islot != eIGS_ThirdPerson))
+			{
+				CryLogWarning("Invalid effect target '%s' for action '%s' in item '%s'! Skipping...", slot, actionName, GetEntity()->GetName());
+				return false;
+			}
 
-      if (!pAction->effect[islot].name.empty())
-      {
-        CryLogWarning("Effect target '%s' for action '%s' in item '%s' already specified! Skipping...", slot, actionName, GetEntity()->GetName());
-        return false;
-      }
-      
-      pAction->effect[islot].name = name;
-      
-      const char *helper = child->GetAttribute("helper");
-      if (helper && helper[0])
-        pAction->effect[islot].helper = helper;      
-    }
+			if (!pAction->effect[islot].name.empty())
+			{
+				CryLogWarning("Effect target '%s' for action '%s' in item '%s' already specified! Skipping...", slot, actionName, GetEntity()->GetName());
+				return false;
+			}
+
+			pAction->effect[islot].name = name;
+
+			const char* helper = child->GetAttribute("helper");
+			if (helper && helper[0])
+				pAction->effect[islot].helper = helper;
+		}
 		else
 		{
 			CryLogWarning("Unknown param '%s' for action '%s' in item '%s'! Skipping...", childName, actionName, GetEntity()->GetName());

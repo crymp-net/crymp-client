@@ -870,10 +870,8 @@ bool CPlatformSoundFmodEx400Event::SetParamByType(enumPlatformSoundParamSemantic
 			if (m_State == pssINFOONLY)
 				return false;
 
-			const float fNormalized =
-				((float)nPitch / 1000.0f) - 1.0f;
-
-			const float fPitch = fNormalized * 0.25f;
+			//CryMP: Convert 1000 pitch to FMOD event octave 
+			const float fPitch = ((float)nPitch / 1000.0f) - 1.0f;
 
 			m_ExResult = m_pEvent->setPitch(fPitch);
 
