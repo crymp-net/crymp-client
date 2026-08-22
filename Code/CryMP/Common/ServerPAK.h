@@ -7,6 +7,7 @@ struct ILevelInfo;
 class ServerPAK
 {
 	std::string m_path;
+	bool m_reloadResources = false;
 
 public:
 	ServerPAK();
@@ -16,6 +17,7 @@ public:
 	bool Unload();
 	void OnLoadingStart(ILevelInfo* pLevel);
 	void OnConnect();
+	void OnInGame();
 	void OnDisconnect(int reason, const char* message);
 	void ResetSubSystems();
 };

@@ -97,6 +97,20 @@ static void PrecacheMaterials(bool bCacheAsian)
 	}
 }
 
+void CNanoSuit::ResetCachedMaterials()
+{
+	for (int i = 0; i < NANOMODE_LAST; ++i)
+	{
+		SAFE_RELEASE(g_USNanoMats[i].body);
+		SAFE_RELEASE(g_USNanoMats[i].helmet);
+		SAFE_RELEASE(g_USNanoMats[i].arms);
+
+		SAFE_RELEASE(g_AsianNanoMats[i].body);
+		SAFE_RELEASE(g_AsianNanoMats[i].helmet);
+		SAFE_RELEASE(g_AsianNanoMats[i].arms);
+	}
+}
+
 CNanoSuit::SNanoMaterial* CNanoSuit::GetNanoMaterial(ENanoMode mode, bool bAsian)
 {
 	const int nIndex = mode;
