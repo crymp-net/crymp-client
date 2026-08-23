@@ -58,7 +58,7 @@ static void PrecacheMaterials(bool bCacheAsian)
 		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].body = matMan->LoadMaterial("objects/characters/human/us/nanosuit/nanosuit_us_defense.mtl");
 		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].helmet = matMan->LoadMaterial("objects/characters/human/us/nanosuit/nanosuit_us_helmet_defense.mtl");
 		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].arms = matMan->LoadMaterial("objects/weapons/arms_global/arms_nanosuit_us_defense.mtl");
-		// strategically leak it
+		// Keep materials referenced while cached
 		for (int i = 0; i < NANOMODE_LAST; ++i)
 		{
 			g_USNanoMats[i].body->AddRef();
@@ -87,7 +87,7 @@ static void PrecacheMaterials(bool bCacheAsian)
 		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].body = matMan->LoadMaterial("objects/characters/human/asian/nanosuit/nanosuit_asian_defense.mtl");
 		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].helmet = matMan->LoadMaterial("objects/characters/human/asian/nanosuit/nanosuit_asian_helmet_defense.mtl");
 		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].arms = matMan->LoadMaterial("objects/weapons/arms_global/arms_nanosuit_asian_defense.mtl");
-		// strategically leak it
+		// Keep materials referenced while cached
 		for (int i = 0; i < NANOMODE_LAST; ++i)
 		{
 			g_AsianNanoMats[i].body->AddRef();

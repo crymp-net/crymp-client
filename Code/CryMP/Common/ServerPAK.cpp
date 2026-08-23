@@ -66,18 +66,20 @@ bool ServerPAK::Unload()
 
 void ServerPAK::OnLoadingStart(ILevelInfo* pLevel)
 {
-	if (m_reloadResources)
-	{
-		CNanoSuit::ResetCachedMaterials();
+	if (!m_reloadResources)
+		return;
 
-		if (ICVar* pReloadShaders = gEnv->pConsole->GetCVar("r_ReloadShaders"))
-		{
-			if (pReloadShaders->GetIVal() == 0)
-			{
-				CryLogAlways("$3[CryMP] [ServerPAK] Reloading shaders");
-				pReloadShaders->Set(1);
-			}
-		}
+	CNanoSuit::ResetCachedMaterials();
+
+	if (ICVar* pReloadShaders = gEnv->pConsole->GetCVar("r_ReloadShaders"))
+	{
+		const int flags = pReloadShaders->GetFlags();
+
+		pReloadShaders->SetFlags((flags & ~VF_CHEAT) | VF_NOT_NET_SYNCED);
+		pReloadShaders->Set(1);
+		pReloadShaders->SetFlags(flags);
+
+		CryLogAlways("$3[CryMP] [ServerPAK] Reloading shaders");
 	}
 }
 
