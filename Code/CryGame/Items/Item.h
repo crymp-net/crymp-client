@@ -534,18 +534,17 @@ public:
 
 	struct SAudio
 	{
-		SAudio():	isstatic(false), sphere(0.0f), airadius(0.0f),issynched(false) {};
+		ItemString name{};
+		float airadius{};
+		float sphere{};
+		float pitch{1.0f}; //CryMP
+		bool isstatic{};
+		bool issynched{};
 
-		void GetMemoryStatistics(ICrySizer * s)
+		void GetMemoryStatistics(ICrySizer* s)
 		{
 			s->Add(name);
 		}
-
-		ItemString		name;
-		float			    airadius;
-		float			    sphere;
-		bool			    isstatic;
-		bool          issynched;
 	};
 
 	struct SInstanceAudio

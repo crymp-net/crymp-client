@@ -40,6 +40,8 @@ enum enumPlatformSoundParamSemantics
 	pspSPAWNEDINSTANCES,
 	pspCHANNELSUSED,
 	pspSTEALBEHAVIOUR,
+	//CryMP
+	pspPITCH,
 };
 
 enum enumPlatformSoundStates

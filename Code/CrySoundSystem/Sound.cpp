@@ -1988,22 +1988,15 @@ void CSound::SetFrequency(int nFreq)
 	assert(m_pPlatformSound);
 	assert(m_pSoundBuffer);
 
-	// TODO
-	// rework the whole pitch thing
-
 	m_nRelativeFreq = nFreq;
 
 	if (!m_pSoundBuffer || !m_pPlatformSound)
 		return;
 
-	float fFreq = (float)m_pSoundBuffer->GetInfo()->nBaseFreq * ((float)(m_nRelativeFreq + m_nCurrPitch) / 1000.0f);
+	const float fFreq = (float)m_pSoundBuffer->GetInfo()->nBaseFreq * ((float)(m_nRelativeFreq + m_nCurrPitch) / 1000.0f);
+
 	ptParamINT32 NewParam((int)fFreq);
 	m_pPlatformSound->SetParamByType(pspFREQUENCY, &NewParam);
-
-	int32 nTestFreq = 0;
-	ptParamINT32 NewParam2(nTestFreq);
-	m_pPlatformSound->GetParamByType(pspFREQUENCY, &NewParam2);
-	NewParam2.GetValue(nTestFreq);
 }
 
 void CSound::SetMinMaxDistance(float fMinDist, float fMaxDist)
@@ -2445,30 +2438,18 @@ void CSound::GetConeAngles(float& fInnerAngle, float& fOuterAngle)
 	fOuterAngle = m_fOuterAngle;
 }
 
-void CSound::SetPitch(int nValue)
+void CSound::SetPitch(int nPitch)
 {
-	assert(m_pPlatformSound);
-	assert(m_pSoundBuffer);
+	nPitch = clamp_tpl(nPitch, 100, 4000);
+	m_nRelativeFreq = nPitch;
 
-	if (!m_pSoundBuffer || !m_pPlatformSound)
+	if (!m_pPlatformSound)
 		return;
 
-	// freq = The frequency to set. Valid ranges are from 100 to 705600.
-	// Scale from 0 - 1000 to FMOD range
-	int iReScaledValue;
+	const int nEffectivePitch =	clamp_tpl(m_nRelativeFreq + m_nCurrPitch, 100, 4000);
 
-	iReScaledValue = (int)((float)nValue / 1000.0f * (float)m_pSoundBuffer->GetInfo()->nBaseFreq);
-	iReScaledValue = __max(iReScaledValue, 100);
-
-	// if (m_pPlatformSound->GetSoundHandle() && (m_pSoundBuffer->GetType() == btSAMPLE)) // Was restrictied to
-	// sanple only
-	if (m_pPlatformSound->GetSoundHandle() && (m_pSoundBuffer->GetProps()->eBufferType == btSAMPLE))
-	{
-		// GUARD_HEAP;
-
-		ptParamINT32 NewParam(iReScaledValue);
-		m_pPlatformSound->SetParamByType(pspFREQUENCY, &NewParam);
-	}
+	ptParamINT32 param(nEffectivePitch);
+	m_pPlatformSound->SetParamByType(pspPITCH, &param);
 }
 
 /*
