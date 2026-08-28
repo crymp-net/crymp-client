@@ -1445,6 +1445,7 @@ public:
 	}
 
 	bool m_fpMasterHidden = false;
+	std::string m_skin;
 };
 
 #endif //__ITEM_H__

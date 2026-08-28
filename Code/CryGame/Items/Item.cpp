@@ -410,6 +410,24 @@ void CItem::Update(SEntityUpdateContext& ctx, int slot)
 		m_bPostPostSerialize = false;
 	}
 
+	int SKIN_KEY = m_stats.viewmode == eIVM_FirstPerson ? 1001 : 1002;
+	CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
+	if (pSSS) {
+		IEntity* pEntity = GetEntity();
+		std::string skin;
+		if (pEntity && pSSS->GetEntityValue(pEntity->GetId(), SKIN_KEY, skin) && skin != m_skin) {
+			m_skin = skin;
+			IMaterialManager* pMM = gEnv->p3DEngine->GetMaterialManager();
+			IMaterial *pMaterial = pMM->LoadMaterial(skin.c_str());
+			if (pMaterial) {
+				pEntity->SetMaterial(pMaterial);
+				CryLog("Loaded item skin '%s' onto entityId %u", skin.c_str(), pEntity->GetId());
+			} else {
+				CryLogWarning("Couldn't find material '%s'", skin.c_str());
+			}
+		}
+	}
+
 	if (m_frozen || IsDestroyed())
 		return;
 
