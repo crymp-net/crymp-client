@@ -755,6 +755,8 @@ struct FSystemAlloc
 #include "FrameProfiler.h"
 
 
+extern bool g_bProfilerEnabled;
+
 //////////////////////////////////////////////////////////////////////////
 // CryEngine 2 compatibility helpers used by the source-built Wars CrySystem.
 // These are inline/non-virtual and therefore do not change ISystem ABI.

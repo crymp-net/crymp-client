@@ -40,51 +40,18 @@ const SFileVersion& CSystem::GetProductVersion()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::QueryVersionInfo()   
+void CSystem::QueryVersionInfo()
 {
-#ifndef WIN32
-	#ifndef CRYTEK_BUILD_VERSION
-		#error CRYTEK_BUILD_VERSION should have been defined on the compiler command line.
-	#endif
-	
-	//do we need some other values here?
-	m_fileVersion.v[0] = CRYTEK_BUILD_VERSION;
-	m_fileVersion.v[1] = 1;
+	// CryMP: CrySystem is embedded in CryMP-Client.exe, so querying
+	// CrySystem.dll is no longer reliable (and fails under Wine/Linux).
+	// Keep the engine ABI/version exposed to the rest of Crysis fixed to
+	// the supported Crysis 1.1.1.6156 version.
+	m_fileVersion.v[3] = 1;
 	m_fileVersion.v[2] = 1;
-	m_fileVersion.v[3] = VERSION_INFO;
- 
-	m_productVersion.v[0] = CRYTEK_BUILD_VERSION;
-	m_productVersion.v[1] = 1;
-	m_productVersion.v[2] = 1;
-	m_productVersion.v[3] = VERSION_INFO;
-#else  //WIN32
-	char moduleName[_MAX_PATH];
-	DWORD dwHandle;
-	UINT len;
+	m_fileVersion.v[1] = 1;
+	m_fileVersion.v[0] = 6156;
 
-	char ver[1024*8];
-
-//	GetModuleFileName( NULL, moduleName, _MAX_PATH );//retrieves the PATH for the current module
-	strcpy(moduleName,"CrySystem.dll");	// we want to version from the system dll
-
-	int verSize = GetFileVersionInfoSize( moduleName,&dwHandle );
-	if (verSize > 0)
-	{
-		GetFileVersionInfo( moduleName,dwHandle,1024*8,ver );
-		VS_FIXEDFILEINFO *vinfo;
-		VerQueryValue( ver,"\\",(void**)&vinfo,&len );
-
-		m_fileVersion.v[0] = vinfo->dwFileVersionLS & 0xFFFF;
-		m_fileVersion.v[1] = vinfo->dwFileVersionLS >> 16;
-		m_fileVersion.v[2] = vinfo->dwFileVersionMS & 0xFFFF;
-		m_fileVersion.v[3] = vinfo->dwFileVersionMS >> 16;
-
-		m_productVersion.v[0] = vinfo->dwProductVersionLS & 0xFFFF;
-		m_productVersion.v[1] = vinfo->dwProductVersionLS >> 16;
-		m_productVersion.v[2] = vinfo->dwProductVersionMS & 0xFFFF;
-		m_productVersion.v[3] = vinfo->dwProductVersionMS >> 16;
-	}
-#endif //WIN32
+	m_productVersion = m_fileVersion;
 }
 
 //////////////////////////////////////////////////////////////////////////

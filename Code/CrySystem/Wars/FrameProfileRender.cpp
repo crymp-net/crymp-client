@@ -990,7 +990,7 @@ void CFrameProfileSystem::DrawGraph()
 		m_timeGraph[m_timeGraphCurrentPos] = (unsigned char)value;
 		if (m_displayQuantity != COUNT_INFO)
 		{
-			m_pRenderer->Graph( &m_timeGraph[0],0, h-280, w, 256, m_timeGraphCurrentPos,type,sFuncName,graphColor,fTextScale );
+			m_pRenderer->Graph( &m_timeGraph[0],0, h-280, w, 256, m_timeGraphCurrentPos,type,const_cast<char*>(sFuncName),graphColor,fTextScale );
 		}
 
 		if (m_pGraphProfiler)
@@ -1010,7 +1010,7 @@ void CFrameProfileSystem::DrawGraph()
 			if (w != m_timeGraph2.size())
 				m_timeGraph2.resize(w);
 			m_timeGraph2[m_timeGraphCurrentPos] = (unsigned char)value;
-			m_pRenderer->Graph( &m_timeGraph2[0],0, h-280, w, 256, m_timeGraphCurrentPos,type,sFuncName,graphColor,fTextScale );
+			m_pRenderer->Graph( &m_timeGraph2[0],0, h-280, w, 256, m_timeGraphCurrentPos,type,const_cast<char*>(sFuncName),graphColor,fTextScale );
 		}
 	}
 	else
@@ -1025,7 +1025,7 @@ void CFrameProfileSystem::DrawGraph()
 		if (value > 255) value = 255;
 
 		m_timeGraph[m_timeGraphCurrentPos] = (unsigned char)value;
-		m_pRenderer->Graph( &m_timeGraph[0],0, h-280, w, 256, m_timeGraphCurrentPos,type,sFuncName,graphColor,fTextScale );
+		m_pRenderer->Graph( &m_timeGraph[0],0, h-280, w, 256, m_timeGraphCurrentPos,type,const_cast<char*>(sFuncName),graphColor,fTextScale );
 	}
 	
 	if (!m_bCollectionPaused)

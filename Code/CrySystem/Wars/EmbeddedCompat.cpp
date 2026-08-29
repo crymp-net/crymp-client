@@ -12,6 +12,9 @@
 // DllMain to provide this legacy module handle.
 HMODULE gDLLHandle = GetModuleHandleW(nullptr);
 
+// CryMP: global fast-path switch used by the legacy frame-profiler macros.
+bool g_bProfilerEnabled = false;
+
 // CryMP: the custom memory manager remains authoritative.  The Wars callers
 // only use these legacy helpers for budgeting/debug statistics, so provide
 // process-memory based compatibility implementations instead of linking the

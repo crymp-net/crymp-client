@@ -1578,6 +1578,9 @@ void CSystem::OpenLanguagePak( const char *sLanguage )
 		GetLocalizationManager()->LoadExcelXmlSpreadsheet( "Languages/dialog_recording_list.xml" );
 		GetLocalizationManager()->LoadExcelXmlSpreadsheet( "Languages/ai_dialog_recording_list.xml" );
 		GetLocalizationManager()->LoadExcelXmlSpreadsheet( "Languages/ui_dialog_recording_list.xml" );
+		// CryMP/Crysis 1: these two files are used by the menu and multiplayer UI.
+		GetLocalizationManager()->LoadExcelXmlSpreadsheet( "Languages/ui_text_messages.xml" );
+		GetLocalizationManager()->LoadExcelXmlSpreadsheet( "Languages/mp_text_messages.xml" );
 		GetLocalizationManager()->LoadExcelXmlSpreadsheet( "Languages/game_text_messages.xml" );
 		GetLocalizationManager()->LoadExcelXmlSpreadsheet( "Languages/game_controls.xml" );
 		GetLocalizationManager()->LoadExcelXmlSpreadsheet( "Languages/ps_basic_tutorial_subtitles.xml" );

@@ -715,7 +715,7 @@ float CFrameProfileSystem::TranslateToDisplayValue( int64 val )
 const char* CFrameProfileSystem::GetFullName( CFrameProfiler *pProfiler )
 {
 	if (pProfiler->m_threadId == GetMainThreadId())
-		return pProfiler->m_name.c_str();
+		return pProfiler->m_name;
 
 	// Add thread name.
 	static char sFullName[256];
@@ -736,7 +736,7 @@ const char* CFrameProfileSystem::GetFullName( CFrameProfiler *pProfiler )
 //////////////////////////////////////////////////////////////////////////
 const char* CFrameProfileSystem::GetModuleName( CFrameProfiler *pProfiler )
 {
-	return m_subsystems[pProfiler->m_subsystem].name.c_str();
+	return m_subsystems[pProfiler->m_subsystem].name;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -14,6 +14,7 @@
 #include "System.h"
 #include "CryLibrary.h"
 #include "CryCommon/CryCore/StringUtils.h"
+#include <filesystem>
 
 // CryMP: CopyProtection is not required for the embedded CrySystem build
 
@@ -78,6 +79,7 @@ using CREATESCRIPTSYSTEM_FNCPTR = IScriptSystem* (*)(ISystem*, bool);
 #include "CryCommon/CryGame/IGame.h"
 #include "CryCommon/CryAction/IGameFramework.h"
 
+#include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 #include "Launcher/Resources.h"
 
@@ -1747,34 +1749,111 @@ void CSystem::InitVTuneProfiler()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::InitLocalization()
+static bool CryMPLanguagePakExists(std::string_view language)
 {
-	SCryEngineLanguageConfigLoader defaultLanguageLoader(this);
-	defaultLanguageLoader.Load( CRYENGINE_DEFAULT_LANGUAGE_CONFIG_FILE );
-	string language = defaultLanguageLoader.m_language;
-	if (language.empty())
+	std::filesystem::path path = "Game";
+	path /= "Localized";
+	path /= language;
+	path += ".pak";
+
+	return std::filesystem::exists(path);
+}
+
+static std::string_view CryMPChooseLanguage(std::string_view defaultLanguage, ICVar* pLanguageCVar)
+{
+	std::string_view language = WinAPI::CmdLine::GetArgValue("-language");
+
+	if (!language.empty())
+		return language;
+
+	if (pLanguageCVar)
 	{
-		language = "english";
+		const std::string_view value = pLanguageCVar->GetString();
+		if (!value.empty())
+			return value;
 	}
 
-	// CryMP: use the existing Crysis 1 localization implementation.
-	// The Wars localization manager is not compatible with our C1 localized data/paks.
-	if (m_pLocalizationManager == NULL)
-		m_pLocalizationManager = reinterpret_cast<CLocalizedStringsManager*>(&LocalizationManager::GetInstance());
+	language = defaultLanguage;
 
-	ICVar *pCVar = m_env.pConsole->GetCVar( "g_language" );
-	if (pCVar)
+	if (language.empty())
 	{
-		if (strlen(pCVar->GetString()) == 0)
+		CryLogAlways("$4[CryMP] Missing or invalid Game/Localized/Default.lng file!");
+		CryLogAlways("$4[CryMP] Trying to guess language from the system!");
+		language = LocalizationManager::GetLanguageFromSystem();
+
+		if (language.empty())
 		{
-			pCVar->Set(language.c_str());
+			CryLogAlways("$4[CryMP] Failed to guess language from the system!");
+			CryLogAlways("$4[CryMP] Falling back to English language!");
+			language = "English";
+		}
+	}
+
+	bool exists = CryMPLanguagePakExists(language);
+	if (!exists)
+	{
+		if (StringTools::IsEqualNoCase(language, "English"))
+		{
+			CryLogAlways("$4[CryMP] Not even English language exists!");
 		}
 		else
 		{
-			language = pCVar->GetString();
+			CryLogAlways("$4[CryMP] %s language does not exist!", language.data());
+			CryLogAlways("$4[CryMP] Falling back to English language!");
+			language = "English";
+
+			exists = CryMPLanguagePakExists(language);
+			if (!exists)
+				CryLogAlways("$4[CryMP] Not even English language exists!");
 		}
 	}
-	GetLocalizationManager()->SetLanguage(language.c_str());
+
+	if (!exists)
+	{
+		CryLogAlways("$4[CryMP] No suitable language found!");
+
+		WinAPI::ErrorBox(
+			"No suitable language found!\n"
+			"\n"
+			"Localization files are incomplete!\n"
+			"This is a known issue in the Steam version of Crysis.\n"
+			"\n"
+			"You can try the following:\n"
+			"    1. Go to Game/Localized\n"
+			"    2. Choose a suitable *.lng file\n"
+			"    3. Make a copy of that file\n"
+			"    4. Rename the copy to Default.lng\n"
+			"\n"
+			"One or more *.pak files of the chosen language must exist!"
+		);
+
+		std::exit(1);
+	}
+
+	return language;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::InitLocalization()
+{
+	SCryEngineLanguageConfigLoader defaultLanguageLoader(this);
+	defaultLanguageLoader.Load(CRYENGINE_DEFAULT_LANGUAGE_CONFIG_FILE);
+
+	// CryMP: reproduce the language-selection path that ReplaceLocalizationManager()
+	// used before CrySystem became source-built. Do not use the Wars fallback here.
+	ICVar* pLanguageCVar = m_env.pConsole->GetCVar("g_language");
+	const std::string_view language = CryMPChooseLanguage(defaultLanguageLoader.m_language.c_str(), pLanguageCVar);
+
+	CryLogAlways("$3[CryMP] Initializing Localization Manager");
+	CryLogAlways("$3[CryMP] Using %s language", language.data());
+
+	if (pLanguageCVar)
+		pLanguageCVar->Set(language.data());
+
+	if (m_pLocalizationManager == NULL)
+		m_pLocalizationManager = reinterpret_cast<CLocalizedStringsManager*>(&LocalizationManager::GetInstance());
+
+	LocalizationManager::GetInstance().SetLanguage(language.data());
 }
 
 
