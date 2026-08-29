@@ -169,3 +169,105 @@ public:
 		return gEnv->pCryPak->GetFileArchivePath(m_file.get());
 	}
 };
+
+
+//////////////////////////////////////////////////////////////////////////
+// CryEngine 2 / Crysis Wars compatibility wrapper.
+// Kept alongside CryMP's modern CryFile so imported engine code can compile
+// without replacing existing CryMP call sites.
+//////////////////////////////////////////////////////////////////////////
+class CCryFile
+{
+public:
+    CCryFile() : m_file(nullptr), m_pIPak(gEnv ? gEnv->pCryPak : nullptr) {}
+
+    CCryFile(const char* filename, const char* mode)
+        : m_file(nullptr), m_pIPak(gEnv ? gEnv->pCryPak : nullptr)
+    {
+        Open(filename, mode);
+    }
+
+    virtual ~CCryFile() { Close(); }
+
+    virtual bool Open(const char* filename, const char* mode, int nOpenFlagsEx = 0)
+    {
+        Close();
+        if (!m_pIPak && gEnv)
+            m_pIPak = gEnv->pCryPak;
+        if (!m_pIPak)
+            return false;
+        m_filename = filename ? filename : "";
+        m_file = m_pIPak->FOpen(filename, mode, nOpenFlagsEx);
+        return m_file != nullptr;
+    }
+
+    virtual void Close()
+    {
+        if (m_file && m_pIPak)
+            m_pIPak->FClose(m_file);
+        m_file = nullptr;
+        m_filename.clear();
+    }
+
+    virtual std::size_t Write(const void* data, std::size_t size)
+    {
+        return m_pIPak->FWrite(data, 1, size, m_file);
+    }
+
+    virtual std::size_t ReadRaw(void* data, std::size_t size)
+    {
+        return m_pIPak->FReadRaw(data, 1, size, m_file);
+    }
+
+    template<class T>
+    std::size_t ReadTypeRaw(T* dest, std::size_t count = 1)
+    {
+        return ReadRaw(dest, sizeof(T) * count);
+    }
+
+    template<class T>
+    std::size_t ReadType(T* dest, std::size_t count = 1)
+    {
+        const std::size_t read = ReadRaw(dest, sizeof(T) * count);
+        SwapEndian(dest, count);
+        return read;
+    }
+
+    virtual std::size_t GetLength()
+    {
+        if (!m_file)
+            return 0;
+        const long current = m_pIPak->FTell(m_file);
+        m_pIPak->FSeek(m_file, 0, SEEK_END);
+        const long size = m_pIPak->FTell(m_file);
+        m_pIPak->FSeek(m_file, current, SEEK_SET);
+        return size > 0 ? static_cast<std::size_t>(size) : 0;
+    }
+
+    virtual std::size_t Seek(std::size_t seek, int mode)
+    {
+        return static_cast<std::size_t>(m_pIPak->FSeek(m_file, static_cast<long>(seek), mode));
+    }
+
+    void SeekToBegin() { Seek(0, SEEK_SET); }
+    std::size_t SeekToEnd() { return Seek(0, SEEK_END); }
+    std::size_t GetPosition() { return static_cast<std::size_t>(m_pIPak->FTell(m_file)); }
+    virtual bool IsEof() { return m_pIPak->FEof(m_file) != 0; }
+    virtual void Flush() { m_pIPak->FFlush(m_file); }
+    FILE* GetHandle() const { return m_file; }
+    const char* GetFilename() const { return m_filename.c_str(); }
+    const char* GetAdjustedFilename() const
+    {
+        static thread_local char adjusted[_MAX_PATH];
+        return (m_pIPak && !m_filename.empty())
+            ? m_pIPak->AdjustFileName(m_filename.c_str(), adjusted, 0)
+            : m_filename.c_str();
+    }
+    bool IsInPak() const { return m_file && m_pIPak && m_pIPak->IsInPak(m_file); }
+    const char* GetPakPath() const { return (m_file && m_pIPak) ? m_pIPak->GetFileArchivePath(m_file) : ""; }
+
+private:
+    string m_filename;
+    FILE* m_file;
+    ICryPak* m_pIPak;
+};

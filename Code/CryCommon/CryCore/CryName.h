@@ -16,6 +16,9 @@
 #pragma once
 
 #include "CryCommon/CrySystem/ISystem.h"
+#include <map>
+#include <cstdlib>
+#include <cstring>
 
 struct INameTable
 {
@@ -59,6 +62,52 @@ struct INameTable
 	// Release existing name table entry.
 	virtual void Release(SNameEntry *pEntry) = 0;
 	virtual int GetMemoryUsage() = 0;
+};
+
+class CNameTable : public INameTable
+{
+public:
+    SNameEntry* FindEntry(const char* str) override
+    {
+        auto it = m_nameMap.find(str);
+        return it != m_nameMap.end() ? it->second : nullptr;
+    }
+
+    SNameEntry* GetEntry(const char* str) override
+    {
+        if (SNameEntry* entry = FindEntry(str))
+            return entry;
+        const size_t len = std::strlen(str);
+        auto* entry = static_cast<SNameEntry*>(std::malloc(sizeof(SNameEntry) + len + 1));
+        entry->nRefCount = 0;
+        entry->nLength = static_cast<int>(len);
+        entry->nAllocSize = static_cast<int>(sizeof(SNameEntry) + len + 1);
+        std::memcpy(entry->GetStr(), str, len + 1);
+        m_nameMap.emplace(entry->GetStr(), entry);
+        return entry;
+    }
+
+    void Release(SNameEntry* entry) override
+    {
+        if (!entry) return;
+        m_nameMap.erase(entry->GetStr());
+        std::free(entry);
+    }
+
+    int GetMemoryUsage() override
+    {
+        int size = 0;
+        for (const auto& [name, entry] : m_nameMap)
+            size += static_cast<int>(std::strlen(name)) + entry->GetMemoryUsage();
+        return size;
+    }
+
+private:
+    struct LessNoCase
+    {
+        bool operator()(const char* a, const char* b) const { return _stricmp(a, b) < 0; }
+    };
+    std::map<const char*, SNameEntry*, LessNoCase> m_nameMap;
 };
 
 class CCryName

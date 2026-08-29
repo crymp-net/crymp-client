@@ -1,0 +1,17 @@
+LIBRARY      CrySystem
+EXPORTS
+	CreateSystemInterface @1
+	CryMalloc             @2
+	CryFree               @3
+	CryRealloc            @4
+	CryGetMemSize         @5
+	CryStats              @6
+	CryFlushAll           @7
+	CryModuleGetMemoryInfo @8
+	CryMemoryGetAllocatedSize @9
+	CryMemoryGetPoolSize @10
+	CryRandom @11
+	CryRandomSeed @12
+	CrySystemCrtSize @13
+	
+	

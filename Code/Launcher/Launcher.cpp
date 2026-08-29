@@ -27,6 +27,10 @@
 #include "CrySystem/Logger.h"
 #include "CrySystem/RandomGenerator.h"
 #include "CrySystem/StreamEngine.h"
+
+#ifdef CRYMP_EMBEDDED_CRYSYSTEM
+extern "C" ISystem* CreateSystemInterface(const SSystemInitParams& startupParams);
+#endif
 #include "Library/CrashLogger.h"
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
@@ -64,6 +68,16 @@ bool g_hasWarheadWarsFmod = false;
 
 static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
 {
+#ifdef CRYMP_EMBEDDED_CRYSYSTEM
+	(void)pCrySystem;
+	ISystem* pSystem = CreateSystemInterface(params);
+	if (pSystem)
+	{
+		// CryMP: the stock CrySystem.dll used to invoke this through a binary hook.
+		// With CrySystem embedded there is no DLL code to hook, so run it directly.
+		Launcher::OnEarlyEngineInit(pSystem);
+	}
+#else
 	using CrySystemEntry = ISystem* (*)(SSystemInitParams&);
 
 	auto entry = static_cast<CrySystemEntry>(WinAPI::DLL::GetSymbol(pCrySystem, "CreateSystemInterface"));
@@ -72,7 +86,10 @@ static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
 		throw StringTools::ErrorFormat("The CrySystem DLL is not valid!");
 	}
 
-	if (!entry(params))
+	ISystem* pSystem = entry(params);
+#endif
+
+	if (!pSystem)
 	{
 		throw StringTools::ErrorFormat("CrySystem initialization failed!");
 	}
@@ -1103,6 +1120,7 @@ void Launcher::LoadEngine()
 		}
 	}
 
+#ifndef CRYMP_EMBEDDED_CRYSYSTEM
 	g_pCrySystem = WinAPI::DLL::Load("CrySystem.dll");
 	if (!g_pCrySystem)
 	{
@@ -1178,6 +1196,10 @@ void Launcher::LoadEngine()
 			throw StringTools::ErrorFormat("Unknown game build %d!", gameBuild);
 		}
 	}
+
+#else
+	g_pCrySystem = nullptr;
+#endif
 
 	struct SLoadEntry
 	{

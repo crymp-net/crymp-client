@@ -65,6 +65,7 @@ option(CRYMP_TRACY_ENABLED "Enable Tracy profiler." OFF)
 option(CRYMP_ASAN "Enable AddressSanitizer (MSVC)" OFF)
 
 option(CRYMP_PAK_HOT_RELOADING_ENABLED "Use the Pak folder directly for hot reloading. For development only." OFF)
+option(CRYMP_EMBEDDED_CRYSYSTEM "Compile Wars CrySystem directly into CryMP-Client." ON)
 
 if(CRYMP_PAK_HOT_RELOADING_ENABLED)
 	set(CRYMP_PAK_HOT_RELOADING_PATH ${PROJECT_SOURCE_DIR}/Pak)
@@ -1655,6 +1656,54 @@ add_executable(${CRYMP_CLIENT_EXE} WIN32
 	Resources/ClientLauncher.rc
 	Resources/Launcher.manifest
 )
+
+
+if(CRYMP_EMBEDDED_CRYSYSTEM)
+	# CrySystem is compiled directly into the client executable -- no CrySystem library target.
+	file(GLOB_RECURSE CRYMP_WARS_CRYSYSTEM_SOURCES CONFIGURE_DEPENDS
+		Code/CrySystem/Wars/*.cpp
+		Code/CrySystem/Wars/*.c
+	)
+
+	# These are DLL/platform/private-SDK implementations or services already replaced by CryMP.
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/DllMain\.cpp$")
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/CrySystem_PRX\.cpp$")
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/CryPak\.cpp$")
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/StreamEngine\.cpp$")
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/RefStreamEngine\.cpp$")
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/RefReadStream.*\.cpp$")
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/AutoDetectSpec\.cpp$")
+	# Boot-pass exclusions: legacy diagnostics/tests depend on private SDK interfaces
+	# that CryMP no longer ships. They are nonessential for CrySystem startup.
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/StdAfx\.cpp$")
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/Statistics\.cpp$")
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/TestSystem\.cpp$")
+	# ThreadProfiler.cpp includes ThreadSampler.cpp directly in the original Wars source.
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/ThreadSampler\.cpp$")
+
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/HardwareMouse\.cpp$")
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/CryMemoryManager\.cpp$")
+	list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/UnixConsole\.cpp$")
+list(FILTER CRYMP_WARS_CRYSYSTEM_SOURCES EXCLUDE REGEX "/StdAfx\.cpp$")
+
+	target_sources(${CRYMP_CLIENT_EXE} PRIVATE ${CRYMP_WARS_CRYSYSTEM_SOURCES})
+	target_include_directories(${CRYMP_CLIENT_EXE} PRIVATE
+		Code/CrySystem/Wars
+		Code/CrySystem/Wars/XML
+		SDKs/Scaleform/Include
+	)
+	target_compile_definitions(${CRYMP_CLIENT_EXE} PRIVATE
+		CRYMP_EMBEDDED_CRYSYSTEM
+		_DATAPROBE
+		EXCLUDE_GPU_PARTICLE_PHYSICS
+		NOMINMAX
+	)
+	# Scaleform's original ConfigScaleform.h uses pragma comment(lib, ...); expose the SDK lib directory.
+	target_link_directories(${CRYMP_CLIENT_EXE} PRIVATE SDKs/Scaleform/Lib)
+
+	# Wars code is ported to the project's global C++20 standard; do not lower /std here.
+	target_link_libraries(${CRYMP_CLIENT_EXE} PRIVATE wininet version psapi legacy_stdio_definitions)
+endif()
 
 add_executable(${CRYMP_SERVER_EXE} WIN32
 	Code/Launcher/Launcher.cpp

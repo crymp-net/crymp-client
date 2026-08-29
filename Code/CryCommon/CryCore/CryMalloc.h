@@ -13,3 +13,4 @@
 CRYMALLOC_API void* CryMalloc(std::size_t size, std::size_t& allocatedSize);
 CRYMALLOC_API void* CryRealloc(void* oldPtr, std::size_t newSize, std::size_t& allocatedSize);
 CRYMALLOC_API std::size_t CryFree(void* ptr);
+CRYMALLOC_API std::size_t CryGetMemSize(void* ptr, std::size_t sourceSize);

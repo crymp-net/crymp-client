@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include <cstdarg>
+#include <cstdio>
+
 #include "CryCommon/CryCore/platform.h"
 #include "CryCommon/CryCore/smartptr.h"
 
@@ -13,6 +16,7 @@
 #include "CryVersion.h"
 
 #include "gEnv.h"
+#include "ILog.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // Forward declarations
@@ -749,3 +753,38 @@ struct FSystemAlloc
 // Additional headers.
 //////////////////////////////////////////////////////////////////////////
 #include "FrameProfiler.h"
+
+
+//////////////////////////////////////////////////////////////////////////
+// CryEngine 2 compatibility helpers used by the source-built Wars CrySystem.
+// These are inline/non-virtual and therefore do not change ISystem ABI.
+//////////////////////////////////////////////////////////////////////////
+inline void ModuleInitISystem(ISystem* pSystem)
+{
+    if (pSystem)
+        gEnv = pSystem->GetGlobalEnvironment();
+}
+
+inline void CryWarning(EValidatorModule module, EValidatorSeverity severity, const char* format, ...)
+{
+    if (!gEnv || !gEnv->pSystem || !format)
+        return;
+
+    va_list args;
+    va_start(args, format);
+    char buffer[4096];
+    std::vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    gEnv->pSystem->Warning(module, severity, 0, nullptr, "%s", buffer);
+}
+
+inline void CryComment(const char* format, ...)
+{
+    if (!gEnv || !gEnv->pLog || !format)
+        return;
+
+    va_list args;
+    va_start(args, format);
+    gEnv->pLog->LogV(ILog::eComment, format, args);
+    va_end(args);
+}

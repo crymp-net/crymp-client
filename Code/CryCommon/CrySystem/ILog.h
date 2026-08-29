@@ -27,6 +27,16 @@ struct ILog
 
 	virtual void LogV(ELogType type, const char* format, va_list args) = 0;
 
+
+    // CryEngine 2 compatibility helper. Non-virtual so it does not alter ILog ABI.
+    void LogWithType(ELogType type, const char* format, ...)
+    {
+        va_list args;
+        va_start(args, format);
+        LogV(type, format, args);
+        va_end(args);
+    }
+
 	virtual ~ILog()
 	{
 	}

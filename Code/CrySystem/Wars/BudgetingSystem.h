@@ -1,0 +1,76 @@
+#ifndef _C_BUDGETING_SYSTEM_
+#define _C_BUDGETING_SYSTEM_
+
+#pragma once
+
+
+#include "CryCommon/CrySystem/IBudgetingSystem.h"
+
+
+struct IRenderer;
+struct IRenderAuxGeom;
+struct ITimer;
+struct ISoundSystem;
+
+
+class CBudgetingSystem : public IBudgetingSystem
+{
+public:
+	CBudgetingSystem();
+
+	// interface
+	virtual void SetSysMemLimit( int sysMemLimitInMB );
+	virtual void SetVideoMemLimit( int videoMemLimitInMB );
+	virtual void SetFrameTimeLimit( float frameLimitInMS );
+	virtual void SetSoundChannelsPlayingLimit( int soundChannelsPlayingLimit );
+	virtual void SetSoundMemLimit( int SoundMemLimit );
+	virtual void SetNumDrawCallsLimit( int numDrawCallsLimit );
+	virtual void SetBudget( int sysMemLimitInMB, int videoMemLimitInMB, 
+		float frameTimeLimitInMS, int soundChannelsPlayingLimit, int SoundMemLimitInMB, int numDrawCallsLimit );
+
+	virtual int GetSysMemLimit() const;
+	virtual int GetVideoMemLimit() const;
+	virtual float GetFrameTimeLimit() const;
+	virtual int GetSoundChannelsPlayingLimit() const;
+	virtual int GetSoundMemLimit() const;
+	virtual int GetNumDrawCallsLimit() const;
+	virtual void GetBudget( int& sysMemLimitInMB, int& videoMemLimitInMB, 
+		float& frameTimeLimitInMS, int& soundChannelsPlayingLimit, int& SoundMemLimitInMB, int& numDrawCallsLimit ) const;
+
+	virtual void MonitorBudget();
+
+	virtual void Release();
+
+protected:
+	virtual ~CBudgetingSystem();
+	
+	void DrawText( float& x, float& y, float* pColor, const char * format, ... ) PRINTF_PARAMS(5, 6);
+	
+	void MonitorSystemMemory( float& x, float& y );
+	void MonitorVideoMemory( float& x, float& y );
+	void MonitorFrameTime( float& x, float& y );
+	void MonitorSoundChannels( float& x, float& y );
+	void MonitorSoundMemory( float& x, float& y );
+	void MonitorDrawCalls( float& x, float& y );
+
+	void GetColor( float scale, float* pColor );
+	void DrawMeter( float& x, float& y, float scale );
+
+protected:
+	IRenderer* m_pRenderer;
+	IRenderAuxGeom* m_pAuxRenderer;
+	ITimer* m_pTimer;
+	ISoundSystem* m_pISoundSystem; 
+
+	int m_sysMemLimitInMB;
+	int m_videoMemLimitInMB;
+	float m_frameTimeLimitInMS;
+	int m_soundChannelsPlayingLimit;
+	int m_soundMemLimitInMB;
+	int m_numDrawCallsLimit;
+	int m_width;
+	int m_height;
+};
+
+
+#endif // #ifndef _C_BUDGETING_SYSTEM_

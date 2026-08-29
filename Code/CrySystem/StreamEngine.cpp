@@ -23,12 +23,12 @@ void StreamEngine::Job::Release()
 
 bool StreamEngine::Job::IsError()
 {
-	return this->state.Get() == JobState::ERROR;
+	return this->state.Get() == JobState::Error;
 }
 
 bool StreamEngine::Job::IsFinished()
 {
-	return this->state.Get() == JobState::CALLBACK_DONE;
+	return this->state.Get() == JobState::CallbackDone;
 }
 
 unsigned int StreamEngine::Job::GetBytesRead(bool wait)
@@ -48,7 +48,7 @@ const void* StreamEngine::Job::GetBuffer()
 
 void StreamEngine::Job::Abort()
 {
-	this->state.Set(JobState::ABORTED);
+	this->state.Set(JobState::Aborted);
 }
 
 void StreamEngine::Job::RaisePriority(unsigned int priority)
@@ -200,7 +200,7 @@ void StreamEngine::WorkerThreadLoop()
 
 void StreamEngine::ExecuteJob(Job& job)
 {
-	if (job.state.Get() != JobState::PENDING)
+	if (job.state.Get() != JobState::Pending)
 	{
 		return;
 	}
@@ -208,7 +208,7 @@ void StreamEngine::ExecuteJob(Job& job)
 	CryFile file(job.filename.c_str(), "rb");
 	if (!file)
 	{
-		job.state.Set(JobState::ERROR);
+		job.state.Set(JobState::Error);
 		return;
 	}
 
@@ -241,7 +241,7 @@ void StreamEngine::ExecuteJob(Job& job)
 	const unsigned int bytesRead = static_cast<unsigned int>(file.ReadRaw(job.userBuffer, size));
 
 	job.bytesRead.store(bytesRead, std::memory_order_relaxed);
-	job.state.Set(JobState::FINISHED);
+	job.state.Set(JobState::Finished);
 }
 
 void StreamEngine::DoCallback(Job& job)
@@ -250,22 +250,22 @@ void StreamEngine::DoCallback(Job& job)
 
 	switch (job.state.Get())
 	{
-		case JobState::ERROR:
+		case JobState::Error:
 		{
 			error = ERROR_CANT_OPEN_FILE;
 			break;
 		}
-		case JobState::ABORTED:
+		case JobState::Aborted:
 		{
 			error = ERROR_USER_ABORT;
 			break;
 		}
-		case JobState::FINISHED:
+		case JobState::Finished:
 		{
 			break;
 		}
-		case JobState::PENDING:
-		case JobState::CALLBACK_DONE:
+		case JobState::Pending:
+		case JobState::CallbackDone:
 		{
 			return;
 		}
@@ -276,7 +276,7 @@ void StreamEngine::DoCallback(Job& job)
 		job.callback->StreamOnComplete(&job, error);
 	}
 
-	job.state.Set(JobState::CALLBACK_DONE);
+	job.state.Set(JobState::CallbackDone);
 
 	CryLogComment("StreamEngine(\"%s\", \"%s\", size=0x%x, offset=0x%x, flags=0x%x): Finished",
 		job.source.c_str(), job.filename.c_str(), job.requestedSize, job.requestedOffset, job.flags);

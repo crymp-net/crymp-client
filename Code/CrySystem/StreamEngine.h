@@ -15,12 +15,12 @@ class StreamEngine final : public IStreamEngine
 {
 	enum class JobState
 	{
-		PENDING, ERROR, ABORTED, FINISHED, CALLBACK_DONE
+		Pending, Error, Aborted, Finished, CallbackDone
 	};
 
 	class WaitableJobState
 	{
-		std::atomic<JobState> state{JobState::PENDING};
+		std::atomic<JobState> state{JobState::Pending};
 		std::mutex mutex;
 		std::condition_variable cv;
 
@@ -40,7 +40,7 @@ class StreamEngine final : public IStreamEngine
 		void WaitUntilExecuted()
 		{
 			std::unique_lock lock(this->mutex);
-			this->cv.wait(lock, [this]() { return this->Get() != JobState::PENDING; });
+			this->cv.wait(lock, [this]() { return this->Get() != JobState::Pending; });
 		}
 	};
 
