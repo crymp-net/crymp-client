@@ -12,7 +12,6 @@
 #include "CryGame/Actors/Player/NanoSuit.h" 
 #include "CrySystem/CryPak.h"
 
-
 #include "ServerPAK.h"
 #include "Utilities.h"
 
@@ -24,7 +23,7 @@ ServerPAK::~ServerPAK()
 {
 }
 
-bool ServerPAK::Load(const std::string & path)
+bool ServerPAK::Load(const std::string& path)
 {
 	Unload();
 
@@ -54,7 +53,6 @@ bool ServerPAK::Unload()
 	{
 		CryLogAlways("$3[CryMP] [ServerPAK] Unloaded $6%s", m_path.c_str());
 		m_path.clear();
-		m_reloadResources = true;
 	}
 	else
 	{
@@ -66,41 +64,29 @@ bool ServerPAK::Unload()
 
 void ServerPAK::OnLoadingStart(ILevelInfo* pLevel)
 {
-	if (!m_reloadResources)
-		return;
-
 	CNanoSuit::ResetCachedMaterials();
 
 	if (ICVar* pReloadShaders = gEnv->pConsole->GetCVar("r_ReloadShaders"))
 	{
-		const int flags = pReloadShaders->GetFlags();
-
-		pReloadShaders->SetFlags((flags & ~VF_CHEAT) | VF_NOT_NET_SYNCED);
-		pReloadShaders->Set(1);
-		pReloadShaders->SetFlags(flags);
-
 		CryLogAlways("$3[CryMP] [ServerPAK] Reloading shaders");
-	}
-}
 
-void ServerPAK::OnInGame()
-{
-	if (m_reloadResources)
-	{
-		CryLogAlways("$3[CryMP] [ServerPAK] Reloading textures");
-		gEnv->pRenderer->EF_ReloadTextures();
-		m_reloadResources = false;
+		const int flags = pReloadShaders->GetFlags();
+		pReloadShaders->SetFlags((flags & ~VF_CHEAT) | VF_NOT_NET_SYNCED);
+		pReloadShaders->Set(0x10); // FRO_FORCERELOAD
+		pReloadShaders->SetFlags(flags);
 	}
-}
-
-void ServerPAK::OnConnect()
-{
-	Unload();
 }
 
 void ServerPAK::OnDisconnect(int reason, const char* message)
 {
 	gEnv->pScriptSystem->ResetTimers();
+
+	IGameFramework* pGameFrameWork = gEnv->pGame->GetIGameFramework();
+	IItemSystem* pItemSystem = pGameFrameWork->GetIItemSystem();
+	pItemSystem->ClearGeometryCache();
+	pItemSystem->ClearSoundCache();
+
+	Unload();
 }
 
 void ServerPAK::ResetSubSystems()
