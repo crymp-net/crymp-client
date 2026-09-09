@@ -196,6 +196,7 @@ public:
 
 	static SNanoMaterial* GetNanoMaterial(ENanoMode mode, bool bAsian=false);
 	static bool AssignNanoMaterialToEntity(IEntity* pEntity, SNanoMaterial* pNanoMaterial);
+	static void ResetCachedMaterials();
 
 	CNanoSuit();
 	~CNanoSuit();
