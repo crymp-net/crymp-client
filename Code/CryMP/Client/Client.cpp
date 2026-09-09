@@ -527,6 +527,7 @@ void Client::OnActionEvent(const SActionEvent & event)
 			const char *message = event.m_description;
 
 			m_pScriptCallbacks->OnDisconnect(reason, message);
+			m_pEngineCache->OnDisconnect();
 			m_pServerPAK->OnDisconnect(reason, message);
 			m_pDrawTools->OnDisconnect(reason, message);
 			m_pServerConnector->OnDisconnect();
@@ -549,11 +550,6 @@ void Client::OnActionEvent(const SActionEvent & event)
 			ReloadLocalizationLua();
 			break;
 		}
-		case eAE_inGame:
-		{
-			m_pServerPAK->OnInGame();
-			break;
-		}
 		case eAE_channelCreated:
 		case eAE_channelDestroyed:
 		case eAE_connectFailed:
@@ -563,6 +559,7 @@ void Client::OnActionEvent(const SActionEvent & event)
 		case eAE_resetProgress:
 		case eAE_preSaveGame:
 		case eAE_postSaveGame:
+		case eAE_inGame:
 		case eAE_serverName:
 		case eAE_serverIp:
 		case eAE_earlyPreUpdate:

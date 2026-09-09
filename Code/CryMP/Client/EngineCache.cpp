@@ -46,111 +46,80 @@ EngineCache::~EngineCache()
 int EngineCache::ScanFolder(const char* folderName)
 {
 	int counter = 0;
-	const string folder = folderName;
-	string search = folder;
-	search += "/*.*";
+	std::string wildcard = folderName;
+	wildcard += "/*.*";
 
-	for (auto& entry : CryFind(search.c_str()))
+	for (auto& entry : CryFind(wildcard.c_str()))
 	{
+		std::string entryPath = folderName;
+		entryPath += '/';
+		entryPath += entry.name;
+
 		if (entry.IsDirectory())
 		{
-			string subName = folder + "/" + entry.name;
-			if (m_recursing)
-			{
-				int c = ScanFolder(subName.c_str());
-				counter += c;
-			}
-			else
-			{
-				m_recursing = true;
-				int c = ScanFolder(subName.c_str());
-				counter += c;
-				m_recursing = false;
-			}
-			continue;
+			counter += ScanFolder(entryPath.c_str());
 		}
-
-		const char* ext = CryPath::GetExt(entry.name);
-
-		//supported file ext
-		if (_stricmp(ext, "cdf") && _stricmp(ext, "cgf") && _stricmp(ext, "cga") && _stricmp(ext, "chr"))
-			continue;
-
-		//skip folders
-		if (folder == "Objects/Characters/Human/asian/infantry/camp" || folder == "Objects/Characters/Human/asian/infantry/jungle" ||
-			folder == "Objects/Characters/Human/asian/infantry/elite")
-			continue;
-
-		if (string(entry.name) == "nanosuit_us_parachute.cdf" || string(entry.name) == "nanosuit_us_with_weapon.cdf" ||
-			string(entry.name) == "rifleman_light.chr" || string(entry.name) == "rifleman_heavy.chr")
-			continue;
-
-		string cdfFile = folder + string("/") + string(entry.name);
-
-		if (Cache(folder, cdfFile))
-			++counter;
+		else
+		{
+			counter += Cache(entryPath.c_str());
+		}
 	}
 
 	return counter;
 }
 
-bool EngineCache::Cache(string folder, string file)
+bool EngineCache::Cache(const char* file)
 {
-	float color[] = { 1.0, 1.0, 1.0, 1.0 };
-	//CryLogAlways("Caching %s... (%s)", file.c_str(), folder.c_str());
+	const char* ext = CryPath::GetExt(file);
 
-	const char* ext = CryPath::GetExt(file.c_str());
 	if (!_stricmp(ext, "cdf") || !_stricmp(ext, "chr") || !_stricmp(ext, "cga"))
 	{
-		ICharacterInstance* pChar = gEnv->pCharacterManager->CreateInstance(file.c_str());
+		ICharacterInstance* pChar = gEnv->pCharacterManager->CreateInstance(file);
 		if (pChar && pChar->GetFilePath())
 		{
 			pChar->AddRef();
+			m_cachedCharacterInstances.emplace_back(pChar);
 			return true;
 		}
 	}
 	else if (!_stricmp(ext, "cgf"))
 	{
-		IStatObj* pStatObj = gEnv->p3DEngine->LoadStatObj(file.c_str());
+		IStatObj* pStatObj = gEnv->p3DEngine->LoadStatObj(file);
 		if (pStatObj && pStatObj->GetFilePath())
 		{
 			pStatObj->AddRef();
+			m_cachedStatObjs.emplace_back(pStatObj);
 			return true;
 		}
 	}
 	else if (!_stricmp(ext, "mtl"))
 	{
-		IMaterial* pMat = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(file.c_str());
+		IMaterial* pMat = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(file);
 		if (pMat)
 		{
 			pMat->AddRef();
+			m_cachedMaterials.emplace_back(pMat);
 		}
 	}
+
 	return false;
 }
 
 void EngineCache::OnLoadingStart(ILevelInfo* pLevel)
 {
-	m_isCaching = false;
+	m_isCached = false;
 }
 
 void EngineCache::OnLoadingProgress(ILevelInfo* pLevel, int progressAmount)
 {
-	if (pLevel && !m_isCaching && cl_engineCacheLevel)
+	if (m_isCached)
 	{
-		m_isCaching = true;
-
-		Start();
-	}
-}
-
-void EngineCache::Start()
-{
-	if (!cl_engineCacheLevel || cl_engineCacheLevel <= static_cast<int>(m_cacheStatus))
 		return;
+	}
+
+	m_isCached = true;
 
 	int counter = 0;
-
 	std::vector<std::string> folders = {};
 
 	if (cl_engineCacheLevel == MINIMUM)
@@ -189,13 +158,19 @@ void EngineCache::Start()
 
 	for (const std::string& folder : folders)
 	{
-		int c = ScanFolder(folder.c_str());
-		counter += c;
+		counter += ScanFolder(folder.c_str());
 	}
 
-	m_cacheStatus = static_cast<ECacheLevel>(cl_engineCacheLevel);
-
-	if (counter)
+	if (counter > 0)
+	{
 		CryLogAlways("$3[CryMP] Successfully cached %d objects", counter);
+	}
 }
 
+void EngineCache::OnDisconnect()
+{
+	// flush the cache
+	m_cachedCharacterInstances.clear();
+	m_cachedMaterials.clear();
+	m_cachedStatObjs.clear();
+}

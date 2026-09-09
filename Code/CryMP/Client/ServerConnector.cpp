@@ -304,8 +304,6 @@ void ServerConnector::Reconnect()
 			m_server.name.empty() ? m_server.CreateEndpointString().c_str() : m_server.name.c_str());
 	}
 
-	gClient->GetServerPAK()->OnConnect();
-
 	IConsole *pConsole = gEnv->pConsole;
 
 	pConsole->GetCVar("cl_serveraddr")->Set(m_server.GetPreferredHost().c_str());
