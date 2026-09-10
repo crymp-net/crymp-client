@@ -5,7 +5,6 @@
 
 struct ICharacterInstance;
 struct ILevelInfo;
-struct IMaterial;
 struct IStatObj;
 
 class EngineCache
@@ -26,11 +25,9 @@ class EngineCache
 	};
 
 	using SmartCharacterInstance = std::unique_ptr<ICharacterInstance, Releaser<ICharacterInstance>>;
-	using SmartMaterial = std::unique_ptr<IMaterial, Releaser<IMaterial>>;
 	using SmartStatObj = std::unique_ptr<IStatObj, Releaser<IStatObj>>;
 
 	std::vector<SmartCharacterInstance> m_cachedCharacterInstances;
-	std::vector<SmartMaterial> m_cachedMaterials;
 	std::vector<SmartStatObj> m_cachedStatObjs;
 
 	bool m_isCached = false;
