@@ -92,15 +92,6 @@ bool EngineCache::Cache(const char* file)
 			return true;
 		}
 	}
-	else if (!_stricmp(ext, "mtl"))
-	{
-		IMaterial* pMat = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(file);
-		if (pMat)
-		{
-			pMat->AddRef();
-			m_cachedMaterials.emplace_back(pMat);
-		}
-	}
 
 	return false;
 }
@@ -171,6 +162,5 @@ void EngineCache::OnDisconnect()
 {
 	// flush the cache
 	m_cachedCharacterInstances.clear();
-	m_cachedMaterials.clear();
 	m_cachedStatObjs.clear();
 }
