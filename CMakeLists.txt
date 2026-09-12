@@ -526,8 +526,6 @@ add_library(Base OBJECT
 	Code/CryMP/Client/Client.h
 	Code/CryMP/Client/DrawTools.cpp
 	Code/CryMP/Client/DrawTools.h
-	Code/CryMP/Client/EngineCache.cpp
-	Code/CryMP/Client/EngineCache.h
 	Code/CryMP/Client/FFontHooks.cpp
 	Code/CryMP/Client/FFontHooks.h
 	Code/CryMP/Client/FileCache.cpp

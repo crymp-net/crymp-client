@@ -29,7 +29,6 @@
 #include "ScriptCallbacks.h"
 #include "ServerBrowser.h"
 #include "ServerConnector.h"
-#include "EngineCache.h"
 #include "ParticleManager.h"
 #include "DrawTools.h"
 #include "FFontHooks.h"
@@ -214,7 +213,6 @@ void Client::Init(IGameFramework *pGameFramework)
 	m_pServerBrowser     = std::make_unique<ServerBrowser>();
 	m_pServerConnector   = std::make_unique<ServerConnector>();
 	m_pServerPAK         = std::make_unique<ServerPAK>();
-	m_pEngineCache       = std::make_unique<EngineCache>();
 	m_pParticleManager   = std::make_unique<ParticleManager>();
 	m_pDrawTools         = std::make_unique<DrawTools>();
 
@@ -527,7 +525,6 @@ void Client::OnActionEvent(const SActionEvent & event)
 			const char *message = event.m_description;
 
 			m_pScriptCallbacks->OnDisconnect(reason, message);
-			m_pEngineCache->OnDisconnect();
 			m_pServerPAK->OnDisconnect(reason, message);
 			m_pDrawTools->OnDisconnect(reason, message);
 			m_pServerConnector->OnDisconnect();
@@ -580,7 +577,6 @@ void Client::OnLoadingStart(ILevelInfo *pLevel)
 	gEnv->pScriptSystem->ForceGarbageCollection();
 
 	m_pServerPAK->OnLoadingStart(pLevel);
-	m_pEngineCache->OnLoadingStart(pLevel);
 	m_pScriptCallbacks->OnLoadingStart();
 }
 
@@ -594,7 +590,6 @@ void Client::OnLoadingError(ILevelInfo *pLevel, const char *error)
 
 void Client::OnLoadingProgress(ILevelInfo *pLevel, int progressAmount)
 {
-	m_pEngineCache->OnLoadingProgress(pLevel, progressAmount);
 }
 
 bool Client::OnBeforeSpawn(SEntitySpawnParams& params)
