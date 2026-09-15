@@ -198,7 +198,7 @@ public:
 				IEntityScriptProxy *pScriptProxy=static_cast<IEntityScriptProxy *>(g_pGame->GetGameRules()->GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT));
 				if (pScriptProxy)
 				{
-					inGame = (stricmp(pScriptProxy->GetState(), "InGame") == 0);
+					inGame = (_stricmp(pScriptProxy->GetState(), "InGame") == 0);
 				}
 
 				if((pPlayer->GetSpectatorMode() == 0 && m_localPlayerSpectatorMode != 0)
