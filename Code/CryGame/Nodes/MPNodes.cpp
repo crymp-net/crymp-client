@@ -49,6 +49,7 @@ public:
 		m_localPlayerSpectatorMode = 0;
 		m_endGameNear = false;
 		m_timeRemainingTriggered = true;		// default to true so it won't be triggered again until player enters game.
+		m_gameStarted = false;
 	}
 
 	~CFlowNode_MP()
@@ -193,15 +194,25 @@ public:
 				}
 
 				// also check whether the local player is in game yet
-  				if(pPlayer->GetSpectatorMode() == 0 && m_localPlayerSpectatorMode != 0)
-  				{
-						if(g_pGame->GetCVars()->i_debug_mp_flowgraph != 0)
-						{
-							CryLog("--MP flowgraph: EnteredGame");
-						}
-  					ActivateOutput(&m_actInfo, EOP_EnteredGame, true);
-  					m_localPlayerSpectatorMode = pPlayer->GetSpectatorMode();
-  				}
+				bool inGame = false;
+				IEntityScriptProxy *pScriptProxy=static_cast<IEntityScriptProxy *>(g_pGame->GetGameRules()->GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT));
+				if (pScriptProxy)
+				{
+					inGame = (stricmp(pScriptProxy->GetState(), "InGame") == 0);
+				}
+
+				if((pPlayer->GetSpectatorMode() == 0 && m_localPlayerSpectatorMode != 0)
+					|| (!m_gameStarted && inGame) )
+				{
+					if(g_pGame->GetCVars()->i_debug_mp_flowgraph != 0)
+					{
+						CryLog("--MP flowgraph: EnteredGame");
+					}
+					ActivateOutput(&m_actInfo, EOP_EnteredGame, true);
+					m_localPlayerSpectatorMode = pPlayer->GetSpectatorMode();
+				}
+
+				m_gameStarted = inGame;
 			}
 			break;
 		}
@@ -258,6 +269,7 @@ protected:
 	int m_localPlayerSpectatorMode;
 	bool m_endGameNear;
 	bool m_timeRemainingTriggered;
+	bool m_gameStarted;
 
 	std::list<EntityId> m_MDList;
 };
@@ -348,13 +360,17 @@ public:
 		{
 			const char* gameRulesName = g_pGame->GetGameRules()->GetEntity()->GetClass()->GetName();
 			if(!strcmp(gameRulesName, "PowerStruggle"))
+			{
 				ActivateOutput(&m_actInfo, EOP_PowerStruggle, true);
+			}
 			else if(!strcmp(gameRulesName, "InstantAction"))
+			{
 				ActivateOutput(&m_actInfo, EOP_InstantAction, true);
-	//		else if(!strcmp(gameRulesName, "TeamInstantAction"))
-	//			ActivateOutput(&m_actInfo, EOP_TeamInstantAction, true);
-			else if(!strcmp(gameRulesName, "TeamAction"))
+			}
+			else if(!strcmp(gameRulesName, "TeamInstantAction") || !strcmp(gameRulesName, "TeamAction"))
+			{
 				ActivateOutput(&m_actInfo, EOP_TeamAction, true);
+			}
 
 			// output the name as well (for supporting any additional modes that might be added)
 			ActivateOutput(&m_actInfo, EOP_GameRulesName, string(gameRulesName));

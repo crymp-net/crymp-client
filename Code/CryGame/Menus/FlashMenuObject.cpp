@@ -1191,7 +1191,12 @@ void CFlashMenuObject::OnLoadingComplete(ILevel* pLevel)
 	}
 
 	//CryMP : Stop loading music
-	m_pMusicSystem->EndTheme(EThemeFade_FadeOut, 0, true);
+	m_fMusicFirstTime = -1.0f;
+	if (m_pMusicSystem)
+	{
+		m_pMusicSystem->EndTheme(EThemeFade_StopAtOnce, 0, true);
+		m_pMusicSystem->SetTheme("");
+	}
 
 	this->ShowMouseCursor(false);
 
