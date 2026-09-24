@@ -1,3 +1,4 @@
+#include "CryCommon/CryAnimation/ICryAnimation.h"
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 #include "CryCommon/CryScriptSystem/IScriptSystem.h"
@@ -62,8 +63,10 @@ bool ServerPAK::Unload()
 	return closed;
 }
 
-void ServerPAK::OnLoadingStart(ILevelInfo* pLevel)
+void ServerPAK::OnFirstLoadingProgress()
 {
+	this->ReloadCgaCache();
+
 	CNanoSuit::ResetCachedMaterials();
 
 	if (ICVar* pReloadShaders = gEnv->pConsole->GetCVar("r_ReloadShaders"))
@@ -158,4 +161,61 @@ void ServerPAK::ResetSubSystems()
 	}
 
 	CryLogAlways("$3[CryMP] Reset subsystems and %d scripts", counter);
+}
+
+void ServerPAK::ReloadCgaCache()
+{
+	// Instantiate all vehicle CGAs to preload vehicle assets
+	static constexpr const char* VEHICLE_CGAS[] = {
+		//"objects/characters/alien/warrior/warrior_wb_v2.cga",
+		"Objects/Library/Architecture/Aircraftcarrier/props/trolley/bigtrolley_useable.cga",
+		"Objects/Vehicles/Asian_AAA/asian_aaa_damaged.cga",
+		"Objects/Vehicles/Asian_AAA/asian_aaa.cga",
+		"Objects/Vehicles/asian_apc/asian_apc_damaged.cga",
+		"Objects/Vehicles/asian_apc/asian_apc.cga",
+		//"Objects/Vehicles/asian_helicopter_low_budget/asian_helicopter_low_budget_flying.cga",
+		"Objects/Vehicles/Asian_Helicopter/asian_helicopter_destroyed.cga",
+		"Objects/Vehicles/Asian_Helicopter/asian_helicopter.cga",
+		"Objects/Vehicles/Asian_patrolboat/asian_patrolboat_damaged.cga",
+		"Objects/Vehicles/Asian_patrolboat/asian_patrolboat.cga",
+		"objects/vehicles/asian_smallboat/asian_smallboat_damaged.cga",
+		"objects/vehicles/asian_smallboat/asian_smallboat.cga",
+		"Objects/Vehicles/asian_tank/asian_tank_damaged.cga",
+		"Objects/Vehicles/asian_tank/asian_tank.cga",
+		"Objects/Vehicles/Asian_Truck_B/Asian_Truck_b_damaged.cga",
+		"Objects/Vehicles/Asian_Truck_B/Asian_Truck_b.cga",
+		"Objects/Vehicles/Civ_car1/Civ_car_damaged.cga",
+		"Objects/Vehicles/Civ_car1/Civ_car.cga",
+		"Objects/Vehicles/ltv/ltv_damaged.cga",
+		"Objects/Vehicles/ltv/ltv.cga",
+		"Objects/Vehicles/speedboat/speedboat_asian_damaged.cga",
+		"Objects/Vehicles/speedboat/speedboat_asian.cga",
+		"Objects/Vehicles/speedboat/speedboat_damaged.cga",
+		"Objects/Vehicles/speedboat/speedboat.cga",
+		"Objects/Vehicles/us_apc/us_apc_damaged.cga",
+		"Objects/Vehicles/us_apc/us_apc.cga",
+		"Objects/Vehicles/US_Hovercraft_B/US_Hovercraft_B_destroyed.cga",
+		"Objects/Vehicles/US_Hovercraft_B/US_Hovercraft_B.cga",
+		"Objects/Vehicles/US_Smallboat/US_Smallboat_damaged.cga",
+		"Objects/Vehicles/US_Smallboat/US_Smallboat.cga",
+		"Objects/Vehicles/us_tank/us_tank_damaged.cga",
+		"Objects/Vehicles/us_tank/us_tank.cga",
+		"Objects/Vehicles/US_VTOL_Transport/US_VTOL_Transport_destroyed.cga",
+		"Objects/Vehicles/US_VTOL_Transport/US_VTOL_Transport.cga",
+		"Objects/Vehicles/US_Vtol/US_Vtol_destroyed.cga",
+		"Objects/Vehicles/US_Vtol/US_Vtol.cga",
+	};
+
+	m_cgaCache.clear();
+	m_cgaCache.reserve(std::size(VEHICLE_CGAS));
+
+	for (const char* cga : VEHICLE_CGAS)
+	{
+		ICharacterInstance* pInstance = gEnv->pCharacterManager->CreateInstance(cga);
+		if (pInstance)
+		{
+			pInstance->AddRef();
+			m_cgaCache.emplace_back(pInstance);
+		}
+	}
 }

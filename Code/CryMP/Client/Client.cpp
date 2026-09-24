@@ -572,11 +572,12 @@ void Client::OnLevelNotFound(const char *levelName)
 
 void Client::OnLoadingStart(ILevelInfo *pLevel)
 {
+	m_isLoadingInProgress = false;
+
 	this->FixCVars();
 
 	gEnv->pScriptSystem->ForceGarbageCollection();
 
-	m_pServerPAK->OnLoadingStart(pLevel);
 	m_pScriptCallbacks->OnLoadingStart();
 }
 
@@ -590,6 +591,12 @@ void Client::OnLoadingError(ILevelInfo *pLevel, const char *error)
 
 void Client::OnLoadingProgress(ILevelInfo *pLevel, int progressAmount)
 {
+	// Put heavy stuff here to avoid lags before level loading screen
+	if (!m_isLoadingInProgress)
+	{
+		m_isLoadingInProgress = true;
+		m_pServerPAK->OnFirstLoadingProgress();
+	}
 }
 
 bool Client::OnBeforeSpawn(SEntitySpawnParams& params)
