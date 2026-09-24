@@ -25,7 +25,6 @@ class ScriptBind_CPPAPI;
 class ServerBrowser;
 class ServerConnector;
 class ServerPAK;
-class EngineCache;
 class ParticleManager;
 class DrawTools;
 
@@ -47,7 +46,6 @@ class Client : public IGameFrameworkListener, public ILevelSystemListener, publi
 	std::unique_ptr<ServerBrowser> m_pServerBrowser;
 	std::unique_ptr<ServerConnector> m_pServerConnector;
 	std::unique_ptr<ServerPAK> m_pServerPAK;
-	std::unique_ptr<EngineCache> m_pEngineCache;
 	std::unique_ptr<ParticleManager> m_pParticleManager;
 	std::unique_ptr<DrawTools> m_pDrawTools;
 
@@ -188,11 +186,6 @@ public:
 	ServerPAK *GetServerPAK()
 	{
 		return m_pServerPAK.get();
-	}
-
-	EngineCache* GetEngineCache()
-	{
-		return m_pEngineCache.get();
 	}
 
 	DrawTools* GetDrawTools()
