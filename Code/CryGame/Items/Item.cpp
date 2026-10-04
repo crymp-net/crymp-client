@@ -424,7 +424,7 @@ void CItem::Update(SEntityUpdateContext& ctx, int slot)
 		m_bPostPostSerialize = false;
 	}
 
-	if (m_stats.viewmode != m_viewBefore) {
+	if (m_stats.viewmode != m_viewBefore && !gEnv->bServer) {
 		m_viewBefore = (eViewMode)m_stats.viewmode;
 		CryLog("Item viewmode changed, checking for skin");
 		CheckSkin(g_pGame->GetSynchedStorage());
