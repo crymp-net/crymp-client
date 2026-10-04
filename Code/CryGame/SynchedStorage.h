@@ -255,6 +255,13 @@ public:
 		m_entityCallbacks[id] = cb;
 	}
 
+	void UnregisterEntityCallback(EntityId id) {
+		auto it = m_entityCallbacks.find(id);
+		if (it != m_entityCallbacks.end()) {
+			m_entityCallbacks.erase(it);
+		}
+	}
+
 protected:
 	virtual void OnGlobalChanged(TSynchedKey key)
 	{

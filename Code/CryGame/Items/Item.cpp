@@ -194,6 +194,13 @@ CItem::~CItem()
 		for (TAccessoryMap::iterator it = m_accessories.begin(); it != m_accessories.end(); ++it)
 			gEnv->pEntitySystem->RemoveEntity(it->second);
 
+	if (!gEnv->bServer) {
+		CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
+		if (pSSS) {
+			pSSS->UnregisterEntityCallback(GetEntityId());
+		}
+	}
+
 	if (m_pItemSystem)
 		m_pItemSystem->RemoveItem(GetEntityId());
 
@@ -317,7 +324,7 @@ bool CItem::Init(IGameObject* pGameObject)
 					// esp. when dealing with multi-threaded calls from network
 					//
 					// ensure the entity actually exists and it is registered to this item
-					if (GetEntityId() == id && pIS->GetItem(id) == this) {
+					if (pIS && pIS->GetItem(id) == this && GetEntityId() == id) {
 						CryLog("Item skin value changed", key);
 						CheckSkin(pSS);
 					}
