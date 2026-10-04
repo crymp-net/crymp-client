@@ -159,3 +159,15 @@ void CSynchedStorage::SerializeEntityValue(TSerialize ser, EntityId id, TSynched
 		}
 	}
 }
+
+void CSynchedStorage::OnEntityChanged(EntityId id, TSynchedKey key) {
+	auto it = m_entityCallbacks.find(id);
+	if (it != m_entityCallbacks.end()) {
+		IEntity *pEntity = gEnv->pEntitySystem->GetEntity(id);
+		if (pEntity) {
+			it->second(this, id, key);
+		} else {
+			m_entityCallbacks.erase(it);
+		}
+	}
+}

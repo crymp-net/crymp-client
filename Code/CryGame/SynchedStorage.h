@@ -5,6 +5,7 @@
 #include <mutex>
 #include <string>
 #include <variant>
+#include <functional>
 
 #include "CryCommon/CryNetwork/INetwork.h"
 
@@ -37,6 +38,7 @@ protected:
 
 	TStorage m_globalStorage;
 	TEntityStorageMap m_entityStorage;
+	std::map<EntityId, std::function<void(CSynchedStorage*, EntityId, TSynchedKey)>> m_entityCallbacks;
 
 	IGameFramework* m_pGameFramework = nullptr;
 
@@ -249,12 +251,14 @@ public:
 	void SerializeValue(TSerialize ser, TSynchedKey& key, TSynchedValue& value, SynchedValueType type);
 	void SerializeEntityValue(TSerialize ser, EntityId id, TSynchedKey& key, TSynchedValue& value, SynchedValueType type);
 
+	void RegisterEntityCallback(EntityId id, std::function<void(CSynchedStorage*, EntityId, TSynchedKey)> cb) {
+		m_entityCallbacks[id] = cb;
+	}
+
 protected:
 	virtual void OnGlobalChanged(TSynchedKey key)
 	{
 	}
 
-	virtual void OnEntityChanged(EntityId id, TSynchedKey key)
-	{
-	}
+	virtual void OnEntityChanged(EntityId id, TSynchedKey key);
 };

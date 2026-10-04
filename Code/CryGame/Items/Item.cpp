@@ -307,6 +307,20 @@ bool CItem::Init(IGameObject* pGameObject)
 	if (!IsMounted())
 		GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_ON_RADAR);
 
+	if (!gEnv->bServer) {
+		CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
+		if (pSSS) {
+			pSSS->RegisterEntityCallback(GetEntityId(), [this](CSynchedStorage* pSS, EntityId id, TSynchedKey key) -> void {
+				if (key == 1001 || key == 1002) {
+					CryLog("Item skin value changed", key);
+					if (GetEntityId() == id) {
+						CheckSkin(pSS);
+					}
+				}
+			});
+		}
+	}
+
 	return true;
 }
 
@@ -410,22 +424,10 @@ void CItem::Update(SEntityUpdateContext& ctx, int slot)
 		m_bPostPostSerialize = false;
 	}
 
-	int SKIN_KEY = m_stats.viewmode == eIVM_FirstPerson ? 1001 : 1002;
-	CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
-	if (pSSS) {
-		IEntity* pEntity = GetEntity();
-		std::string skin;
-		if (pEntity && pSSS->GetEntityValue(pEntity->GetId(), SKIN_KEY, skin) && skin != m_skin) {
-			m_skin = skin;
-			IMaterialManager* pMM = gEnv->p3DEngine->GetMaterialManager();
-			IMaterial *pMaterial = pMM->LoadMaterial(skin.c_str());
-			if (pMaterial) {
-				pEntity->SetMaterial(pMaterial);
-				CryLog("Loaded item skin '%s' onto entityId %u", skin.c_str(), pEntity->GetId());
-			} else {
-				CryLogWarning("Couldn't find material '%s'", skin.c_str());
-			}
-		}
+	if (m_stats.viewmode != m_viewBefore) {
+		m_viewBefore = (eViewMode)m_stats.viewmode;
+		CryLog("Item viewmode changed, checking for skin");
+		CheckSkin(g_pGame->GetSynchedStorage());
 	}
 
 	if (m_frozen || IsDestroyed())
@@ -3119,6 +3121,24 @@ void CItem::GetMemoryStatistics(ICrySizer* s)
 		iter->second.GetMemoryStatistics(s);
 	for (TInstanceActionMap::iterator iter = m_instanceActions.begin(); iter != m_instanceActions.end(); ++iter)
 		iter->second.GetMemoryStatistics(s);
+}
+
+void CItem::CheckSkin(CSynchedStorage *pSSS) {
+	int SKIN_KEY = m_stats.viewmode == eIVM_FirstPerson ? 1001 : 1002;
+	IEntity* pEntity = GetEntity();
+	std::string skin;
+	if (pEntity && pSSS->GetEntityValue(pEntity->GetId(), SKIN_KEY, skin) && skin != m_skin) {
+		m_skin = skin;
+		IMaterialManager* pMM = gEnv->p3DEngine->GetMaterialManager();
+		IMaterial* pMaterial = pMM->LoadMaterial(skin.c_str());
+		if (pMaterial) {
+			pEntity->SetMaterial(pMaterial);
+			CryLog("Loaded item skin '%s' onto entityId %u", skin.c_str(), pEntity->GetId());
+		}
+		else {
+			CryLogWarning("Couldn't find material '%s'", skin.c_str());
+		}
+	}
 }
 
 

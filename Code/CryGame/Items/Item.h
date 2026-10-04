@@ -44,6 +44,7 @@ struct ICharacterInstance;
 struct AnimEventInstance;
 struct IAttachmentObject;
 class CPlayer;
+class CSynchedStorage;
 
 enum EItemUpdateSlots
 {
@@ -1445,7 +1446,11 @@ public:
 	}
 
 	bool m_fpMasterHidden = false;
+	eViewMode m_viewBefore = eViewMode::eIVM_ThirdPerson;
 	std::string m_skin;
+
+private:
+	void CheckSkin(CSynchedStorage* pSSS);
 };
 
 #endif //__ITEM_H__
