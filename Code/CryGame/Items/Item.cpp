@@ -312,8 +312,13 @@ bool CItem::Init(IGameObject* pGameObject)
 		if (pSSS) {
 			pSSS->RegisterEntityCallback(GetEntityId(), [this](CSynchedStorage* pSS, EntityId id, TSynchedKey key) -> void {
 				if (key == 1001 || key == 1002) {
-					CryLog("Item skin value changed", key);
-					if (GetEntityId() == id) {
+					IItemSystem* pIS = static_cast<IItemSystem*>(gEnv->pGame->GetIGameFramework()->GetIItemSystem());
+					// this is a bit defensive, but it's better to be safe than sorry, 
+					// esp. when dealing with multi-threaded calls from network
+					//
+					// ensure the entity actually exists and it is registered to this item
+					if (GetEntityId() == id && pIS->GetItem(id) == this) {
+						CryLog("Item skin value changed", key);
 						CheckSkin(pSS);
 					}
 				}
