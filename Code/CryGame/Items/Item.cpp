@@ -325,7 +325,6 @@ bool CItem::Init(IGameObject* pGameObject)
 					//
 					// ensure the entity actually exists and it is registered to this item
 					if (pIS && pIS->GetItem(id) == this && GetEntityId() == id) {
-						CryLog("Item skin value changed", key);
 						CheckSkin(pSS);
 					}
 				}
@@ -437,9 +436,10 @@ void CItem::Update(SEntityUpdateContext& ctx, int slot)
 	}
 
 	if (m_stats.viewmode != m_viewBefore && !gEnv->bServer) {
-		m_viewBefore = (eViewMode)m_stats.viewmode;
-		CryLog("Item viewmode changed, checking for skin");
-		CheckSkin(g_pGame->GetSynchedStorage());
+		if (CSynchedStorage* pSSS = g_pGame->GetSynchedStorage()) {
+			m_viewBefore = (eViewMode)m_stats.viewmode;
+			CheckSkin(pSSS);
+		}
 	}
 
 	if (m_frozen || IsDestroyed())
@@ -3145,7 +3145,6 @@ void CItem::CheckSkin(CSynchedStorage *pSSS) {
 		IMaterial* pMaterial = pMM->LoadMaterial(skin.c_str());
 		if (pMaterial) {
 			pEntity->SetMaterial(pMaterial);
-			CryLog("Loaded item skin '%s' onto entityId %u", skin.c_str(), pEntity->GetId());
 		}
 		else {
 			CryLogWarning("Couldn't find material '%s'", skin.c_str());
