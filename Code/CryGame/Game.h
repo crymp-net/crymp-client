@@ -18,6 +18,8 @@
 # pragma once
 #endif
 
+#include <functional>
+
 #include "CryCommon/CryGame/IGame.h"
 #include "CryCommon/CryAction/IGameFramework.h"
 #include "CryCommon/CryAction/IGameObjectSystem.h"

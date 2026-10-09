@@ -194,6 +194,13 @@ CItem::~CItem()
 		for (TAccessoryMap::iterator it = m_accessories.begin(); it != m_accessories.end(); ++it)
 			gEnv->pEntitySystem->RemoveEntity(it->second);
 
+	if (!gEnv->bServer) {
+		CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
+		if (pSSS) {
+			pSSS->UnregisterEntityCallback(GetEntityId());
+		}
+	}
+
 	if (m_pItemSystem)
 		m_pItemSystem->RemoveItem(GetEntityId());
 
@@ -307,6 +314,24 @@ bool CItem::Init(IGameObject* pGameObject)
 	if (!IsMounted())
 		GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_ON_RADAR);
 
+	if (!gEnv->bServer) {
+		CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
+		if (pSSS) {
+			pSSS->RegisterEntityCallback(GetEntityId(), [this](CSynchedStorage* pSS, EntityId id, TSynchedKey key) -> void {
+				if (key == 1001 || key == 1002) {
+					IItemSystem* pIS = static_cast<IItemSystem*>(gEnv->pGame->GetIGameFramework()->GetIItemSystem());
+					// this is a bit defensive, but it's better to be safe than sorry, 
+					// esp. when dealing with multi-threaded calls from network
+					//
+					// ensure the entity actually exists and it is registered to this item
+					if (pIS && pIS->GetItem(id) == this && GetEntityId() == id) {
+						CheckSkin(pSS);
+					}
+				}
+			});
+		}
+	}
+
 	return true;
 }
 
@@ -408,24 +433,6 @@ void CItem::Update(SEntityUpdateContext& ctx, int slot)
 	{
 		PostPostSerialize();
 		m_bPostPostSerialize = false;
-	}
-
-	int SKIN_KEY = m_stats.viewmode == eIVM_FirstPerson ? 1001 : 1002;
-	CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
-	if (pSSS) {
-		IEntity* pEntity = GetEntity();
-		std::string skin;
-		if (pEntity && pSSS->GetEntityValue(pEntity->GetId(), SKIN_KEY, skin) && skin != m_skin) {
-			m_skin = skin;
-			IMaterialManager* pMM = gEnv->p3DEngine->GetMaterialManager();
-			IMaterial *pMaterial = pMM->LoadMaterial(skin.c_str());
-			if (pMaterial) {
-				pEntity->SetMaterial(pMaterial);
-				CryLog("Loaded item skin '%s' onto entityId %u", skin.c_str(), pEntity->GetId());
-			} else {
-				CryLogWarning("Couldn't find material '%s'", skin.c_str());
-			}
-		}
 	}
 
 	if (m_frozen || IsDestroyed())
@@ -3119,6 +3126,23 @@ void CItem::GetMemoryStatistics(ICrySizer* s)
 		iter->second.GetMemoryStatistics(s);
 	for (TInstanceActionMap::iterator iter = m_instanceActions.begin(); iter != m_instanceActions.end(); ++iter)
 		iter->second.GetMemoryStatistics(s);
+}
+
+void CItem::CheckSkin(CSynchedStorage *pSSS) {
+	int SKIN_KEY = m_stats.viewmode == eIVM_FirstPerson ? 1001 : 1002;
+	IEntity* pEntity = GetEntity();
+	std::string skin;
+	if (pEntity && pSSS->GetEntityValue(pEntity->GetId(), SKIN_KEY, skin) && skin != m_skin) {
+		m_skin = skin;
+		IMaterialManager* pMM = gEnv->p3DEngine->GetMaterialManager();
+		IMaterial* pMaterial = pMM->LoadMaterial(skin.c_str());
+		if (pMaterial) {
+			pEntity->SetMaterial(pMaterial);
+		}
+		else {
+			CryLogWarning("Couldn't find material '%s'", skin.c_str());
+		}
+	}
 }
 
 
