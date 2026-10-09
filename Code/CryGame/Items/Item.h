@@ -1446,7 +1446,6 @@ public:
 	}
 
 	bool m_fpMasterHidden = false;
-	eViewMode m_viewBefore = eViewMode::eIVM_ThirdPerson;
 	std::string m_skin;
 
 private:

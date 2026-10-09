@@ -435,13 +435,6 @@ void CItem::Update(SEntityUpdateContext& ctx, int slot)
 		m_bPostPostSerialize = false;
 	}
 
-	if (m_stats.viewmode != m_viewBefore && !gEnv->bServer) {
-		if (CSynchedStorage* pSSS = g_pGame->GetSynchedStorage()) {
-			m_viewBefore = (eViewMode)m_stats.viewmode;
-			CheckSkin(pSSS);
-		}
-	}
-
 	if (m_frozen || IsDestroyed())
 		return;
 
