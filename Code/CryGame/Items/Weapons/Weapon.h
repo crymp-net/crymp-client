@@ -525,8 +525,8 @@ public:
 	DECLARE_SERVER_RMI_NOATTACH_FAST(SvRequestMeleeAttack, RequestMeleeAttackParams, eNRT_ReliableUnordered);
 	DECLARE_CLIENT_RMI_NOATTACH_FAST(ClMeleeAttack, ClMeleeAttackParams, eNRT_UnreliableOrdered);
 
-	DECLARE_SERVER_RMI_NOATTACH_FAST(SvRequestZoom, ZoomParams, eNRT_ReliableUnordered);
-	DECLARE_CLIENT_RMI_NOATTACH_FAST(ClZoom, ZoomParams, eNRT_UnreliableOrdered);
+	DECLARE_SERVER_RMI_NOATTACH_FAST(SvRequestZoom, ZoomParams, eNRT_ReliableOrdered);
+	DECLARE_CLIENT_RMI_NOATTACH_FAST(ClZoom, ZoomParams, eNRT_ReliableOrdered);
 
 	DECLARE_SERVER_RMI_NOATTACH(SvRequestFireMode, SvRequestFireModeParams, eNRT_ReliableOrdered);
 	DECLARE_CLIENT_RMI_POSTATTACH(ClSetFireMode, ClSetFireModeParams, eNRT_ReliableOrdered);

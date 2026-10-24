@@ -72,6 +72,8 @@ private:
 	bool m_bShowBinoculars;
 	//zoom level
 	int m_iZoomLevel;
+	//CryMP: Zoom step received before showing the scope.
+	bool m_bScopeZoomPending = false;
 	//scope visible
 	EScopeMode m_eShowScope;
 	// show binoculars without HUD being visible, e.g. cutscenes

@@ -425,7 +425,8 @@ bool CWeapon::OnActionModify(EntityId actorId, const ActionId& actionId, int act
 //---------------------------------------------------------
 bool CWeapon::OnActionZoomIn(EntityId actorId, const ActionId& actionId, int activationMode, float value)
 {
-	if(m_zm && m_zm->IsZoomed())
+	//CryMP: Ignore wheel zoom during scope exit.
+	if (m_zm && m_zm->IsZoomed() && m_zm->GetCurrentStep() > 0)
 	{
 		//int numSteps = m_zm->GetMaxZoomSteps();
 		//if((numSteps>1) && (m_zm->GetCurrentStep()<numSteps))

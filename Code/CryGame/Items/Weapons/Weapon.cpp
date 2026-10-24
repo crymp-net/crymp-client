@@ -3368,7 +3368,7 @@ void CWeapon::OnZoomOut()
 		}
 	}
 
-	if (!hasSniperScope)
+	if (!hasSniperScope && IsSelected())
 		Hide(false);
 }
 
