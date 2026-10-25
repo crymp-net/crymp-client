@@ -203,24 +203,6 @@ void CIronSight::Update(float frameTime, unsigned int frameId)
 		keepUpdating = true;
 	}
 
-	if (m_pendingNetZoomStep > 1)
-	{
-		CActor* pActor = m_pWeapon->GetOwnerActor();
-		if (pActor && pActor->IsFpSpectatorTarget())
-		{
-			if (m_zoomed && m_currentStep == 1 && !IsZooming())
-			{
-				const int targetStep = m_pendingNetZoomStep;
-				m_pendingNetZoomStep = 0;
-
-				for (int i = 1; i < targetStep; ++i)
-				{
-					ZoomIn();
-				}
-			}
-		}
-	}
-
 	if (keepUpdating)
 	{
 		m_pWeapon->RequireUpdate(eIUS_Zooming);
@@ -268,14 +250,25 @@ void CIronSight::PatchParams(const struct IItemParamsNode* patch)
 //------------------------------------------------------------------------
 void CIronSight::Activate(bool activate)
 {
-	if (!activate && m_zoomed && m_zoomingIn && m_zoomparams.dof)
-		ClearDoF();
+	if (m_zoomed || m_zoomTime > 0.0f || m_zoomTimer > 0.0f)
+	{
+		//CryMP: Clear zoom effects without restarting scope timers.
+		CIronSight::OnLeaveZoom();
+		OnZoomedOut();
+
+		//CryMP: Sync cancelled zoom with spectators.
+		SendZoomRequest(1.0f);
+	}
 
 	if (!activate && !m_zoomparams.suffix.empty())
 		m_pWeapon->SetActionSuffix("");
 
 	m_zoomed = false;
 	m_zoomingIn = false;
+
+	m_zoomTime = 0.0f;
+	m_zoomTimer = 0.0f;
+	m_skipRequestZoomOnce = false;
 
 	m_currentStep = 0;
 	m_lastRecoil = 0.0f;
@@ -623,9 +616,26 @@ void CIronSight::TurnOff(bool enable, bool smooth, bool anim)
 }
 
 //------------------------------------------------------------------------
+void CIronSight::SendZoomRequest(float fov)
+{
+	CActor* pActor = m_pWeapon->GetOwnerActor();
+	if (pActor && pActor->IsClient())
+	{
+		if (!m_skipRequestZoomOnce || m_endFoV != fov)
+			m_pWeapon->RequestZoom(fov);
+		m_skipRequestZoomOnce = true;
+	}
+}
+
+//------------------------------------------------------------------------
 void CIronSight::ZoomIn(float time, float from, float to, bool smooth)
 {
+	SendZoomRequest(to);
+
 	//CryLogAlways("ZoomIn: time %f | from %f | to %f", time, from, to);
+
+	const bool wasEntering = m_zoomFromHip && m_zoomTime > 0.0f && m_zoomingIn;
+	m_zoomFromHip = m_currentStep == 0 || wasEntering;
 
 	m_zoomTime = time;
 	m_zoomTimer = m_zoomTime;
@@ -648,8 +658,11 @@ void CIronSight::ZoomIn(float time, float from, float to, bool smooth)
 
 	m_zoomingIn = true;
 
-	if (!m_zoomed)
+	if (!m_zoomed && !wasEntering)
 		m_initialNearFov = *(float*)gEnv->pRenderer->EF_Query(EFQ_DrawNearFov);
+
+	if (m_zoomTime <= 0.0f)
+		OnZoomedIn();
 
 	m_pWeapon->RequireUpdate(eIUS_Zooming);
 }
@@ -657,6 +670,8 @@ void CIronSight::ZoomIn(float time, float from, float to, bool smooth)
 //------------------------------------------------------------------------
 void CIronSight::ZoomOut(float time, float from, float to, bool smooth)
 {
+	SendZoomRequest(to);
+
 	m_zoomTimer = time;
 	m_zoomTime = m_zoomTimer;
 
@@ -679,6 +694,9 @@ void CIronSight::ZoomOut(float time, float from, float to, bool smooth)
 	}
 
 	m_zoomingIn = false;
+
+	if (m_zoomTime <= 0.0f)
+		OnZoomedOut();
 
 	m_pWeapon->RequireUpdate(eIUS_Zooming);
 }
@@ -1038,7 +1056,7 @@ void CIronSight::AdjustScopePosition(float time, bool zoomIn)
 {
 	Vec3 offset(g_pGameCVars->i_offset_right, g_pGameCVars->i_offset_front, g_pGameCVars->i_offset_up);
 
-	if (zoomIn && (m_currentStep == 1))
+	if (zoomIn && (m_currentStep == 1 || (m_zoomFromHip && m_currentStep > 0)))
 	{
 		if (time > 1.0f)
 			time = 1.0f;
@@ -1061,7 +1079,7 @@ void CIronSight::AdjustScopePosition(float time, bool zoomIn)
 void CIronSight::AdjustNearFov(float time, bool zoomIn)
 {
 	float newFov = -1.0f;
-	if (zoomIn && (m_currentStep == 1))
+	if (zoomIn && (m_currentStep == 1 || (m_zoomFromHip && m_currentStep > 0)))
 	{
 		if (time > 1.0f)
 			time = 1.0f;
@@ -1328,29 +1346,24 @@ void CIronSight::NetSetZoomStep(int step)
 	if (!pActor || !pActor->IsFpSpectatorTarget())
 		return;
 
-	const int maxStep = (int)m_zoomparams.stages.size();
-	step = CLAMP(step, 0, maxStep);
+	step = CLAMP(step, 0, (int)m_zoomparams.stages.size());
+	if (step > 0 && (m_pWeapon->IsDestroyed() || pActor->GetHealth() <= 0))
+		return;
+	if (step == m_currentStep && (m_zoomTime > 0.0f || m_zoomed == (step > 0)))
+		return;
 
 	m_skipRequestZoomOnce = true;
-	m_pendingNetZoomStep = 0;
-
-	if (step <= 0)
+	if (step == 0)
 	{
 		ExitZoom();
 		return;
 	}
 
-	m_zoomTime = 0.0f;
-	m_zoomTimer = 0.0f;
-	m_zoomed = false;
-	m_zoomingIn = false;
-	m_currentStep = 0;
+	//CryMP: Apply the received step even during a zoom transition.
+	if (m_currentStep == 0 || (!m_zoomed && m_zoomTime <= 0.0f))
+		EnterZoom(m_zoomparams.zoom_in_time, m_zoomparams.layer.c_str(), true, step);
+	else
+		ZoomIn(m_zoomparams.stage_time, GetZoomFoVScale(m_currentStep), GetZoomFoVScale(step), true);
 
-	StartZoom(true, false, 1);
-
-	if (step > 1)
-	{
-		m_pendingNetZoomStep = step;
-		m_pWeapon->RequireUpdate(eIUS_Zooming);
-	}
+	m_currentStep = step;
 }

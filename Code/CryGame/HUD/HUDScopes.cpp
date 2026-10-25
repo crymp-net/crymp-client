@@ -560,13 +560,16 @@ void CHUDScopes::ShowScope(int iVisible)
 	{
 		m_animSniperScope.Invoke("setVisible", false);
 		m_eShowScope = ESCOPE_NONE;
+		m_bScopeZoomPending = false;
 		return;
 	}
 
 	SFlashVarValue args[2] = { true, iVisible };
 	m_animSniperScope.Invoke("setVisible", args, 2);
 	m_eShowScope = (EScopeMode)iVisible;
-	m_iZoomLevel = 0;
+	if (!m_bScopeZoomPending)
+		m_iZoomLevel = 0;
+	m_bScopeZoomPending = false;
 
 	IFlashPlayer* pScopePlayer = m_animSniperScope.GetFlashPlayer();
 	if (pScopePlayer)
@@ -577,23 +580,36 @@ void CHUDScopes::ShowScope(int iVisible)
 
 void CHUDScopes::SetScopeZoomMode(int iZoomMode, string& scopeType)
 {
+	int previousZoomLevel = m_iZoomLevel;
+	if (m_eShowScope == ESCOPE_NONE && iZoomMode > 0)
+	{
+		if (!m_bScopeZoomPending)
+			previousZoomLevel = 0;
+		m_bScopeZoomPending = true;
+	}
+
+	if (iZoomMode == previousZoomLevel)
+		return;
+
 	int type = 1;
 	if (!_stricmp(scopeType.c_str(), "scope_assault"))	//assault scope has no sound atm.
 		type = 0;
 	else if (!_stricmp(scopeType.c_str(), "scope_sniper"))
 		type = 2;
 
-	if (type && m_iZoomLevel != iZoomMode)
+	if (type)
 	{
-		if (iZoomMode > m_iZoomLevel)
+		if (iZoomMode > previousZoomLevel)
 			g_pHUD->PlaySound((type == 2) ? ESound_SniperZoomIn : ESound_BinocularsZoomIn);
 		else
 			g_pHUD->PlaySound((type == 2) ? ESound_SniperZoomOut : ESound_BinocularsZoomOut);
 	}
 
+	//CryMP: Mode 0 skips the 10x -> 4x animation on entry.
+	const int flashZoomMode = (iZoomMode == 1 && previousZoomLevel == 0) ? 0 : iZoomMode;
 	m_iZoomLevel = iZoomMode;
 
-	m_animSniperScope.Invoke("setZoomMode", iZoomMode);
+	m_animSniperScope.Invoke("setZoomMode", flashZoomMode);
 }
 
 //-----------------------------------------------------------------------------------------------------

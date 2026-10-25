@@ -328,6 +328,8 @@ public:
 	void ResetFovAndPosition();
 
 protected:
+	void SendZoomRequest(float fov);
+
 	virtual void EnterZoom(float time, const char *zoom_layer=0, bool smooth=true, int zoomStep = 1);
 	virtual void LeaveZoom(float time, bool smooth=true);
 
@@ -408,7 +410,7 @@ protected:
 	bool m_FilterMaskedBlurring_Active = false;
 	bool m_Dof_Active = false;
 	bool m_skipRequestZoomOnce = false;
-	int m_pendingNetZoomStep = 0;
+	bool m_zoomFromHip = false;
 
 
 };

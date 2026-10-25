@@ -40,6 +40,7 @@ void CScope::Update(float frameTime, unsigned int frameId)
 			//m_pWeapon->Hide(false);
 			m_pWeapon->SendMusicLogicEvent(eMUSICLOGICEVENT_SNIPERMODE_LEAVE);
 			m_pWeapon->OnZoomOut();
+			m_scopeViewActive = false;
 		}
 
 		m_pWeapon->RequireUpdate(eIUS_Zooming);
@@ -50,12 +51,14 @@ void CScope::Update(float frameTime, unsigned int frameId)
 		m_hideTimer -= frameTime;
 		if (m_hideTimer <= 0.0f)
 		{
+			m_hideTimer = -1.0f;
 			CActor* pOwner = m_pWeapon->GetOwnerActor();
-			if (pOwner && (pOwner->IsClient() || pOwner->IsFpSpectatorTarget())) //CryMP Fp spec mode
+			if (pOwner && (pOwner->IsClient() || pOwner->IsFpSpectatorTarget()) &&
+				m_pWeapon->IsSelected() && m_pWeapon->GetActiveZoomMode() == this && m_zoomingIn)
 			{
-				m_hideTimer = -1.0f;
 				//m_pWeapon->Hide(true);
 				m_pWeapon->OnZoomIn();
+				m_scopeViewActive = true;
 				int iZoom = 0;
 				if (!strcmp(m_scopeparams.scope.c_str(), "scope_assault"))
 					iZoom = 1;
@@ -96,9 +99,17 @@ void CScope::PatchParams(const struct IItemParamsNode* patch)
 //------------------------------------------------------------------------
 void CScope::Activate(bool activate)
 {
-	if (!activate)
+	m_showTimer = -1.0f;
+	m_hideTimer = -1.0f;
+
+	if (m_scopeViewActive)
 	{
-		if (m_zoomed || m_zoomTimer > 0.0f)
+		m_pWeapon->OnZoomOut();
+		m_pWeapon->SendMusicLogicEvent(eMUSICLOGICEVENT_SNIPERMODE_LEAVE);
+		m_scopeViewActive = false;
+
+		CActor* pOwner = m_pWeapon->GetOwnerActor();
+		if (pOwner && (pOwner->IsClient() || pOwner->IsFpSpectatorTarget()))
 		{
 			if (!strcmp(m_scopeparams.scope.c_str(), "scope_default") ||
 				!strcmp(m_scopeparams.scope.c_str(), "scope_assault") ||

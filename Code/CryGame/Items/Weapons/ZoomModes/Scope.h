@@ -75,6 +75,7 @@ protected:
 	float					m_showTimer;
 	float					m_hideTimer;
 	SScopeParams	m_scopeparams;
+	bool m_scopeViewActive = false;
 };
 
 
