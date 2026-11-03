@@ -41,7 +41,14 @@ void CItem::OnSelected(bool selected)
 //------------------------------------------------------------------------
 void CItem::OnEnterFirstPerson()
 {
-	EnableUpdate(true, eIUS_General);
+	if (m_stats.mounted || !m_stats.selected || GetEntity()->GetClass() == sOffHandClass)
+	{
+		EnableUpdate(true, eIUS_General);
+	}
+	else
+	{
+		UpdateFPAnimationUpdates();
+	}
 	//EnableHiddenSkinning(true); //unused
 	SetViewMode(eIVM_FirstPerson);
 	AttachToHand(false);
@@ -71,6 +78,7 @@ void CItem::OnEnterFirstPerson()
 //------------------------------------------------------------------------
 void CItem::OnEnterThirdPerson()
 {
+	UpdateFPAnimationUpdates();
 	//EnableHiddenSkinning(false); //unused
 	AttachToHand(true);
 	AttachArms(false, false);

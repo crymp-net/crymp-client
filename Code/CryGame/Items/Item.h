@@ -916,6 +916,7 @@ public:
 	bool AttachToHand(bool attach, bool checkAttachment = false);
 	bool AttachToBack(bool attach);
 	void EnableUpdate(bool enable, int slot=-1);
+	void UpdateFPAnimationUpdates();
 	void RequireUpdate(int slot=-1);
 	void Hide(bool hide);
 	void HideArms(bool hide);
@@ -1275,6 +1276,7 @@ protected:
 	SParams								m_params;
 	SMountParams					m_mountparams;
 	SStats								m_stats;
+	bool m_fpAnimationUpdates = false;
 	SEditorStats					m_editorstats;
 	SCameraAnimationStats	m_camerastats;
 	TEffectInfoMap				m_effects;

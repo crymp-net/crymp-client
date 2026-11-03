@@ -1198,6 +1198,10 @@ void CItem::Select(bool select)
 	m_stats.selected = select;
 
 	CheckViewChange();
+	if (select)
+	{
+		UpdateFPAnimationUpdates();
+	}
 
 	for (TAccessoryMap::iterator it = m_accessories.begin(); it != m_accessories.end(); it++)
 	{
@@ -1339,7 +1343,9 @@ void CItem::PlaySelectAnimation(CActor* pOwner, bool thirdpersonOnly)
 	{
 		ENanoMode curMode = pNanoSuit->GetMode();
 		if (curMode == NANOMODE_SPEED)
+		{
 			speedOverride = 1.75f;
+		}
 	}
 
 	// only LAW has 2 different select animations
@@ -1348,14 +1354,21 @@ void CItem::PlaySelectAnimation(CActor* pOwner, bool thirdpersonOnly)
 		: g_pItemStrings->select;
 
 	// Base flags
-	int flags = eIPAF_Default | eIPAF_NoBlend;
+	//CryMP: Client visual fix: restart selection instead of resuming a retained animation
+	int flags = eIPAF_Default | eIPAF_NoBlend | eIPAF_RestartAnimation;
 	if (thirdpersonOnly)
+	{
 		flags |= eIPAF_ForceThirdPerson;
+	}
 
 	if (speedOverride > 0.0f)
+	{
 		PlayAction(select_animation, 0, false, flags, speedOverride);
+	}
 	else
+	{
 		PlayAction(select_animation, 0, false, flags);
+	}
 }
 
 //------------------------------------------------------------------------
@@ -2677,8 +2690,45 @@ void CItem::RequireUpdate(int slot)
 }
 
 //------------------------------------------------------------------------
+//CryMP: Client visual fix: own one update reference for the local player or spectator target
+//Refresh even when a spectator target changes without changing its camera mode
+void CItem::UpdateFPAnimationUpdates()
+{
+	//Deselect already releases this reference through EnableUpdate(false)
+	//OffHand owns carry/grenade updates, including remote players
+	if (!m_stats.selected || GetEntity()->GetClass() == sOffHandClass)
+	{
+		return;
+	}
+	CActor* pOwner = GetOwnerActor();
+	const bool enable = gEnv->bClient && m_stats.selected && !m_stats.mounted && pOwner && (pOwner->IsClient() || pOwner->IsFpSpectatorTarget() || pOwner->IsTpSpectatorTarget());
+	if (enable != m_fpAnimationUpdates)
+	{
+		m_fpAnimationUpdates = enable;
+		if (enable)
+		{
+			GetGameObject()->EnableUpdateSlot(this, eIUS_General);
+		}
+		else
+		{
+			GetGameObject()->DisableUpdateSlot(this, eIUS_General);
+		}
+	}
+
+	if (CItem* pSlave = static_cast<CItem*>(GetDualWieldSlave()))
+	{
+		pSlave->UpdateFPAnimationUpdates();
+	}
+}
+
+//------------------------------------------------------------------------
 void CItem::EnableUpdate(bool enable, int slot)
 {
+	//CryMP: Disabling the general slot also releases our view-animation reference
+	if (!enable && (slot == -1 || slot == eIUS_General))
+	{
+		m_fpAnimationUpdates = false;
+	}
 	if (enable)
 	{
 		if (slot == -1)
