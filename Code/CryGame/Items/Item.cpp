@@ -1769,13 +1769,17 @@ void CItem::PickUp(EntityId pickerId, bool sound, bool select, bool keepHistory)
 		}
 	}
 
+	//CryMP: Client/server fix: grants enter inventory without replacing the mounted weapon
+	const SActorStats* pActorStats = pActor->GetActorStats();
+	const bool usingMountedWeapon = pActorStats && pActorStats->mountedWeaponID != 0;
+
 	if (itemToSelect)
 	{
 		SPlayerStats* pStats = nullptr;
 		if (pActor->GetActorClassType() == CPlayer::GetActorClassType())
 			pStats = static_cast<SPlayerStats*>(pActor->GetActorStats());
 
-		if (select)
+		if (select && !usingMountedWeapon)
 		{
 			if (!pActor->GetLinkedVehicle() && !pActor->ShouldSwim() && (!pStats || !pStats->isOnLadder.Value()))
 			{
@@ -1800,9 +1804,8 @@ void CItem::PickUp(EntityId pickerId, bool sound, bool select, bool keepHistory)
 		GetGameObject()->SetNetworkParent(pickerId);
 		if ((GetEntity()->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY)) == 0)
 		{
-			bool remoteSelect = m_stats.selected;
-			if (m_params.select_on_pickup)
-				remoteSelect = true;
+			//CryMP: Server fix: select_on_pickup must not force remote clients off a mounted weapon
+			const bool remoteSelect = !usingMountedWeapon && (m_stats.selected || m_params.select_on_pickup);
 			pActor->GetGameObject()->InvokeRMIWithDependentObject(CActor::ClPickUp(), CActor::PickItemParams(GetEntityId(), remoteSelect, sound), eRMI_ToAllClients | eRMI_NoLocalCalls, GetEntityId());
 
 			const char* displayName = GetDisplayName();
@@ -2298,40 +2301,64 @@ void CItem::StartUse(EntityId userId)
 //------------------------------------------------------------------------
 void CItem::StopUse(EntityId userId)
 {
-	if (userId != m_ownerId)
+	//CryMP: Client/server fix: clear use state even when the owner is being removed
+	if (!m_ownerId || userId != m_ownerId)
+	{
 		return;
+	}
 
 	CActor* pActor = GetOwnerActor();
-	if (!pActor)
-		return;
+	const bool ownerRemoved = !pActor || pActor->GetEntity()->IsGarbage();
 
-	/* Handled in UpdateDraw() now 
-	//Draw legs again for the FP player
-	if (pActor->IsClient())
+	if (!ownerRemoved)
 	{
-		pActor->m_hideMaster = false;
+		if (pActor->GetHealth() > 0)
+		{
+			pActor->SelectLastItem(true);
+		}
+		else
+		{
+			Select(false);
+		}
+
+		if (IAnimationGraphState* pGraph = pActor->GetAnimationGraphState())
+		{
+			pGraph->SetInput("Action", "idle");
+		}
+
+		ApplyViewLimit(userId, false);
 	}
-	*/
-
-	if (pActor->GetHealth() > 0)
-		pActor->SelectLastItem(true);
-
-	pActor->GetAnimationGraphState()->SetInput("Action", "idle");
-
-	ApplyViewLimit(userId, false);
+	else
+	{
+		//Cancel pending actions without selecting another
+		//item or accessing actor extensions that are being destroyed
+		GetScheduler()->Reset(true);
+		ReleaseStaticSounds();
+	}
 
 	if (m_stats.mounted)
 	{
-		AttachArms(false, false);
+		if (m_params.arms)
+		{
+			ResetCharacterAttachment(eIGS_FirstPerson, ITEM_ARMS_ATTACHMENT_NAME);
+		}
+		SetViewMode(eIVM_FirstPerson);
 	}
 
 	EnableUpdate(false);
 
 	m_stats.used = false;
+	m_stats.selected = false;
+	m_stats.fp = false;
 
 	SetOwnerId(0);
 
-	CloakEnable(false, pActor->IsCloaked());
+	CloakEnable(false, !ownerRemoved && pActor->IsCloaked());
+
+	if (ownerRemoved)
+	{
+		return;
+	}
 
 	// TODO: precreate this table
 	SmartScriptTable locker(gEnv->pScriptSystem);
@@ -2343,10 +2370,14 @@ void CItem::StopUse(EntityId userId)
 	pActor->LinkToMountedWeapon(0);
 
 	if (pActor->GetAnimatedCharacter())
+	{
 		pActor->GetAnimatedCharacter()->SetNoMovementOverride(false);
+	}
 
 	if (IsServer())
+	{
 		pActor->GetGameObject()->InvokeRMI(CActor::ClStopUse(), CActor::ItemIdParam(GetEntityId()), eRMI_ToAllClients | eRMI_NoLocalCalls);
+	}
 }
 
 //------------------------------------------------------------------------

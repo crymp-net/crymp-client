@@ -280,6 +280,25 @@ CActor::CActor()
 }
 
 //------------------------------------------------------------------------
+void CActor::Release()
+{
+	//CryMP: Client/server fix: release mounted weapons before actor destruction
+	//Clients may lose the stop-use RMI when its actor is removed, and the
+	//replicated current item may already have changed
+	const SActorStats* pStats = GetActorStats();
+	CItem* pItem = static_cast<CItem*>(pStats && pStats->mountedWeaponID ? m_pItemSystem->GetItem(pStats->mountedWeaponID) : GetCurrentItem());
+	if (pItem)
+	{
+		if (pItem->IsMounted() && pItem->GetOwnerId() == GetEntityId())
+		{
+			pItem->StopUse(GetEntityId());
+		}
+	}
+
+	delete this;
+}
+
+//------------------------------------------------------------------------
 CActor::~CActor()
 {
 	ClearExtensionCache();
@@ -1417,21 +1436,31 @@ void CActor::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_HIDE:
 	case ENTITY_EVENT_INVISIBLE:
 	{
-		IItem* pItem = GetCurrentItem();
-		if (pItem)
+		CItem* pItem = static_cast<CItem*>(GetCurrentItem());
+		//CryMP: Client/server fix: hiding the user must not hide a mounted weapon
+		if (pItem && !pItem->IsMounted())
+		{
 			pItem->GetEntity()->Hide(true);
+		}
 		if (!IsPlayer() && m_pWeaponAM)
+		{
 			m_pWeaponAM->HideAllAttachments(true);
+		}
 	}
 	break;
 	case ENTITY_EVENT_UNHIDE:
 	case ENTITY_EVENT_VISIBLE:
 	{
-		IItem* pItem = GetCurrentItem();
-		if (pItem)
+		CItem* pItem = static_cast<CItem*>(GetCurrentItem());
+		//CryMP: Client/server fix: mounted visibility is independent of the user
+		if (pItem && !pItem->IsMounted())
+		{
 			pItem->GetEntity()->Hide(false);
+		}
 		if (!IsPlayer() && m_pWeaponAM)
+		{
 			m_pWeaponAM->HideAllAttachments(false);
+		}
 		GetGameObject()->RequestRemoteUpdate(eEA_Physics | eEA_GameClientDynamic | eEA_GameServerDynamic | eEA_GameClientStatic | eEA_GameServerStatic);
 	}
 	break;

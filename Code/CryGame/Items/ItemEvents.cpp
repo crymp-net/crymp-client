@@ -74,10 +74,13 @@ void CItem::OnEnterThirdPerson()
 	//EnableHiddenSkinning(false); //unused
 	AttachToHand(true);
 	AttachArms(false, false);
-	SetViewMode(eIVM_ThirdPerson);
+	//CryMP: Client visual fix: mounted weapons use first-person geometry in both camera modes
+	SetViewMode(m_stats.mounted ? eIVM_FirstPerson : eIVM_ThirdPerson);
 
 	if (CItem* pSlave = static_cast<CItem*>(GetDualWieldSlave()))
+	{
 		pSlave->OnEnterThirdPerson();
+	}
 
 	for (auto const& accessory : m_accessories)
 	{
