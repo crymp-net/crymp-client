@@ -780,7 +780,7 @@ public:
 
 	// IActor
 	virtual void ProcessEvent(SEntityEvent& event);
-	virtual void Release() { delete this; };
+	virtual void Release();
 	virtual void ResetAnimGraph();
 	virtual void FullSerialize(TSerialize ser);
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags);

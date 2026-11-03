@@ -640,6 +640,16 @@ void CGameRules::OnClientDisconnect(int channelId, EDisconnectionCause cause, co
 	if (!pActor)
 		return;
 
+	//CryMP: Server fix: release standalone mounted weapons before disconnect/on-hold
+	//StopUse replicates the release through the existing ClStopUse RMI
+	if (CItem* pItem = static_cast<CItem*>(pActor->GetCurrentItem()))
+	{
+		if (pItem->IsMounted() && pItem->GetOwnerId() == pActor->GetEntityId())
+		{
+			pItem->StopUse(pActor->GetEntityId());
+		}
+	}
+
 	if (pActor)
 		m_pGameplayRecorder->Event(pActor->GetEntity(), GameplayEvent(eGE_Disconnected, "", keepClient ? 1.0f : 0.0f));
 

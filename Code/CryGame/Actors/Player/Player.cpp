@@ -5346,7 +5346,9 @@ void CPlayer::SetInput(const char* action, bool looping)
 void CPlayer::PlayAction(const char* action, const char* extension, bool looping)
 {
 	if (!m_pAnimatedCharacter)
+	{
 		return;
+	}
 
 	bool skipAction = false;
 	const ObjectHoldType holdType = GetHeldObjectType();
@@ -5376,12 +5378,18 @@ void CPlayer::PlayAction(const char* action, const char* extension, bool looping
 	}
 
 	if (skipAction)
+	{
 		return;
+	}
 
 	if (looping)
+	{
 		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput("Action", action);
+	}
 	else
+	{
 		m_pAnimatedCharacter->GetAnimationGraphState()->SetInput("Signal", action);
+	}
 }
 
 void CPlayer::AnimationControlled(bool activate)
@@ -6187,6 +6195,11 @@ void CPlayer::ActivateNanosuit(bool active)
 void CPlayer::SetSpectatorTargetType(SpectatorTargetType type)
 {
 	m_stats.spectatorTargetType = type;
+	//CryMP: Client visual fix: TP target changes do not necessarily call CheckViewChange
+	if (CItem* pItem = static_cast<CItem*>(GetCurrentItem()))
+	{
+		pItem->UpdateFPAnimationUpdates();
+	}
 	if (type == SpectatorTargetType::NONE)
 	{
 		SAFE_SOUNDMOODS_FUNC(DisableAllSoundMoods());

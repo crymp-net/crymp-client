@@ -41,7 +41,14 @@ void CItem::OnSelected(bool selected)
 //------------------------------------------------------------------------
 void CItem::OnEnterFirstPerson()
 {
-	EnableUpdate(true, eIUS_General);
+	if (m_stats.mounted || !m_stats.selected || GetEntity()->GetClass() == sOffHandClass)
+	{
+		EnableUpdate(true, eIUS_General);
+	}
+	else
+	{
+		UpdateFPAnimationUpdates();
+	}
 	//EnableHiddenSkinning(true); //unused
 	SetViewMode(eIVM_FirstPerson);
 	AttachToHand(false);
@@ -71,13 +78,17 @@ void CItem::OnEnterFirstPerson()
 //------------------------------------------------------------------------
 void CItem::OnEnterThirdPerson()
 {
+	UpdateFPAnimationUpdates();
 	//EnableHiddenSkinning(false); //unused
 	AttachToHand(true);
 	AttachArms(false, false);
-	SetViewMode(eIVM_ThirdPerson);
+	//CryMP: Client visual fix: mounted weapons use first-person geometry in both camera modes
+	SetViewMode(m_stats.mounted ? eIVM_FirstPerson : eIVM_ThirdPerson);
 
 	if (CItem* pSlave = static_cast<CItem*>(GetDualWieldSlave()))
+	{
 		pSlave->OnEnterThirdPerson();
+	}
 
 	for (auto const& accessory : m_accessories)
 	{
