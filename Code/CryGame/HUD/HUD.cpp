@@ -28,7 +28,6 @@ History:
 #include "CryGame/MPTutorial.h"
 
 #include "HUD.h"
-#include "HUDTeamSelectionPreview.h"
 #include "TeamSelectionPreview.h"
 #include "HUDObituary.h"
 #include "HUDRadar.h"
@@ -307,7 +306,7 @@ CHUD::CHUD()
 
 CHUD::~CHUD()
 {
-	CTeamSelectionPreview::Get().Suspend();
+	TeamSelectionPreview::Suspend();
 	ShowDeathFX(0);
 
 	if (m_bCutscenePlaying)
@@ -3181,12 +3180,12 @@ void CHUD::OnPostUpdate(float frameTime)
 		if (!m_bInMenu && !IsScoreboardActive() && m_animTeamSelection.GetVisible())
 		{
 			m_animTeamSelection.GetFlashPlayer()->Advance(frameTime);
-			CTeamSelectionPreview::Get().Draw(m_animTeamSelection.GetFlashPlayer(), frameTime);
+			TeamSelectionPreview::Draw(m_animTeamSelection.GetFlashPlayer(), frameTime);
 			m_animTeamSelection.GetFlashPlayer()->Render();
 		}
 		else
 		{
-			CTeamSelectionPreview::Get().Suspend();
+			TeamSelectionPreview::Suspend();
 		}
 	}
 
@@ -5574,18 +5573,4 @@ void CHUD::OnMaxGrenadeIndicatorsChanged()
 		UpdateProjectileTracker(m_animFriendlyProjectileTrackers[i], nullptr, m_friendlyTrackerStatus[i], Vec3());
 		UpdateProjectileTracker(m_animHostileProjectileTrackers[i], nullptr, m_hostileTrackerStatus[i], Vec3());
 	}
-}
-
-//-----------------------------------------------------------------------------------------------------
-
-void TeamSelectionPreview::Preload()
-{
-	CTeamSelectionPreview::Get().Preload();
-}
-
-//-----------------------------------------------------------------------------------------------------
-
-void TeamSelectionPreview::Reset()
-{
-	CTeamSelectionPreview::Get().Reset();
 }

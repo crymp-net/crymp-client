@@ -1,4 +1,9 @@
-#pragma once
+#include "TeamSelectionPreview.h"
+
+#include "CryGame/Game.h"
+#include "CryGame/GameCVars.h"
+#include "CryCommon/CrySystem/ISystem.h"
+
 #include <algorithm>
 #include <vector>
 #include "CrySystem/RandomGenerator.h"
@@ -8,6 +13,8 @@
 #include "CryCommon/CrySystem/IFlashPlayer.h"
 #include "CryCommon/CrySystem/IHardwareMouse.h"
 
+namespace
+{
 //CryMP Cache standalone characters across HUD reloads
 class CTeamSelectionPreview
 {
@@ -46,9 +53,15 @@ public:
 			ICharacterInstance* pCharacter = m_pCharacters[side];
 			if (pCharacter)
 			{
+				pCharacter->GetISkeletonAnim()->StopAnimationInLayer(2, 0.f);
+				pCharacter->GetISkeletonAnim()->StopAnimationInLayer(3, 0.f);
 				pCharacter->SetFlags(0);
 				pCharacter->GetISkeletonPose()->SetForceSkeletonUpdate(0);
 			}
+			m_wasHovered[side] = false;
+			m_hoverWeight[side] = 0.f;
+			m_headActive[side][1] = false;
+			m_flagHover[side] = 0.f;
 		}
 		m_active = false;
 	}
@@ -229,7 +242,7 @@ private:
 	bool Prepare()
 	{
 		BindVariables();
-		bool ready = m_pEnabled->GetIVal() != 0;
+		bool ready = m_pEnabled && m_pEnabled->GetIVal() != 0;
 		const char* models[2] = {"objects/characters/human/us/nanosuit/nanosuit_us_multiplayer.cdf",
 								  "objects/characters/human/asian/nanosuit/nanosuit_asian_multiplayer.cdf"};
 		for (int side = 0; ready && side < 2; ++side)
@@ -417,3 +430,32 @@ private:
 	bool m_valid = false;
 	bool m_active = false;
 };
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void TeamSelectionPreview::Preload()
+{
+	CTeamSelectionPreview::Get().Preload();
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void TeamSelectionPreview::Reset()
+{
+	CTeamSelectionPreview::Get().Reset();
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void TeamSelectionPreview::Draw(IFlashPlayer* pFlash, float frameTime)
+{
+	CTeamSelectionPreview::Get().Draw(pFlash, frameTime);
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void TeamSelectionPreview::Suspend()
+{
+	CTeamSelectionPreview::Get().Suspend();
+}

@@ -999,6 +999,7 @@ add_library(CryGame OBJECT
 	Code/CryGame/HUD/HUDVehicleInterface.h
 	Code/CryGame/HUD/HUDWeaponAccessories.cpp
 	Code/CryGame/HUD/ScriptBind_HUD.cpp
+	Code/CryGame/HUD/TeamSelectionPreview.cpp
 	Code/CryGame/HUD/ScriptBind_HUD.h
 	Code/CryGame/Items/FlowItemAnimation.cpp
 	Code/CryGame/Items/FlowItemAnimation.h
