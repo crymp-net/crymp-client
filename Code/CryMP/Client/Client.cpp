@@ -9,6 +9,7 @@
 #include "CryCommon/Cry3DEngine/I3DEngine.h"
 #include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryGame/Game.h"
+#include "CryGame/HUD/TeamSelectionPreview.h"
 #include "CryMP/Common/Executor.h"
 #include "CryMP/Common/GSMasterHook.h"
 #include "CryMP/Common/ScriptBind_CPPAPI.h"
@@ -572,6 +573,7 @@ void Client::OnLevelNotFound(const char *levelName)
 
 void Client::OnLoadingStart(ILevelInfo *pLevel)
 {
+	TeamSelectionPreview::Reset();
 	m_isLoadingInProgress = false;
 
 	this->FixCVars();
@@ -583,10 +585,12 @@ void Client::OnLoadingStart(ILevelInfo *pLevel)
 
 void Client::OnLoadingComplete(ILevel *pLevel)
 {
+	TeamSelectionPreview::Preload();
 }
 
 void Client::OnLoadingError(ILevelInfo *pLevel, const char *error)
 {
+	TeamSelectionPreview::Reset();
 }
 
 void Client::OnLoadingProgress(ILevelInfo *pLevel, int progressAmount)

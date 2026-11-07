@@ -120,6 +120,10 @@ void ServerConnector::ResetCVars()
 	pGameCVars->mp_fpsLimit = 0;
 	pGameCVars->mp_soundSpeed = 0.0f;
 	pGameCVars->mp_cloakVisibility = 1.0f;
+	pGameCVars->pHudTeamUSAnim->Set("combat_idle_nw_01");
+	pGameCVars->pHudTeamNKAnim->Set("combat_idle_nw_01");
+	pGameCVars->pHudTeamUSHover->Set("combat_weaponPunchIdleUB_nw_01");
+	pGameCVars->pHudTeamNKHover->Set("combat_weaponPunchIdleUB_nw_01");
 }
 
 void ServerConnector::Step1_RequestServerInfo()

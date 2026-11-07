@@ -495,6 +495,11 @@ struct SCVars
 
 	int			ads;
 
+	ICVar* pHudTeamUSAnim;
+	ICVar* pHudTeamNKAnim;
+	ICVar* pHudTeamUSHover;
+	ICVar* pHudTeamNKHover;
+
 	float       hud_scale;
 	int         hud_maxGrenadeIndicators;
 
