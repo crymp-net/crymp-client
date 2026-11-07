@@ -28,6 +28,7 @@ History:
 #include "CryGame/MPTutorial.h"
 
 #include "HUD.h"
+#include "TeamSelectionPreview.h"
 #include "HUDObituary.h"
 #include "HUDRadar.h"
 #include "HUDScore.h"
@@ -305,6 +306,7 @@ CHUD::CHUD()
 
 CHUD::~CHUD()
 {
+	TeamSelectionPreview::Suspend();
 	ShowDeathFX(0);
 
 	if (m_bCutscenePlaying)
@@ -3178,7 +3180,12 @@ void CHUD::OnPostUpdate(float frameTime)
 		if (!m_bInMenu && !IsScoreboardActive() && m_animTeamSelection.GetVisible())
 		{
 			m_animTeamSelection.GetFlashPlayer()->Advance(frameTime);
+			TeamSelectionPreview::Draw(m_animTeamSelection.GetFlashPlayer(), frameTime);
 			m_animTeamSelection.GetFlashPlayer()->Render();
+		}
+		else
+		{
+			TeamSelectionPreview::Suspend();
 		}
 	}
 

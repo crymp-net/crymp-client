@@ -599,6 +599,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	//CryMP CVars 
 	const int OPTIONAL_SYNC = 0;	
 
+
 	pConsole->Register("mp_crymp", &mp_crymp, 0, OPTIONAL_SYNC, "Enable high precision look direction serialization");
 	pConsole->Register("mp_circleJump", &mp_circleJump, 0.0f, OPTIONAL_SYNC, "Enable circle jumping as in 5767");
 	pConsole->Register("mp_wallJump", &mp_wallJump, 1.0f, OPTIONAL_SYNC, "WallJump multiplier");
@@ -728,6 +729,15 @@ void SCVars::InitCVars(IConsole* pConsole)
 
 	pConsole->Register("cl_hud_chat", &cl_hud_chat, 1, VF_NOT_NET_SYNCED, "Shows / hides chat");
 	pConsole->Register("ads", &ads, 1, VF_NOT_NET_SYNCED, "Enable or disable (100h+) ads");
+
+	//CryMP
+	pHudTeamUSAnim = pConsole->RegisterString("hud_teamUSAnim", "combat_idle_nw_01", OPTIONAL_SYNC, "US team preview idle animation or comma-separated random pool; unknown clips are skipped, empty pools use the default");
+	pHudTeamNKAnim = pConsole->RegisterString("hud_teamNKAnim", "combat_idle_nw_01", OPTIONAL_SYNC, "NK team preview idle animation or comma-separated random pool; unknown clips are skipped, empty pools use the default");
+	pHudTeamUSHover = pConsole->RegisterString("hud_teamUSHover", "combat_weaponPunchIdleUB_nw_01", OPTIONAL_SYNC, "US team preview hover animation or comma-separated random pool; each hover chooses another valid clip");
+	pHudTeamNKHover = pConsole->RegisterString("hud_teamNKHover", "combat_weaponPunchIdleUB_nw_01", OPTIONAL_SYNC, "NK team preview hover animation or comma-separated random pool; each hover chooses another valid clip");
+
+	pConsole->RegisterInt("hud_teamPreview3D", 1, VF_NOT_NET_SYNCED, "Live team characters; 0 restores Flash animation");
+	pConsole->RegisterFloat("hud_teamPreviewDistance", 3.5f, VF_NOT_NET_SYNCED, "Fixed preview camera distance; increase to leave more room for wide animations");
 
 	pConsole->Register("hud_scale", &hud_scale, 1.0f, VF_NOT_NET_SYNCED,
 		"Scale of the HUD",
@@ -1149,6 +1159,12 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("aim_assistCrosshairSize", true);
 	pConsole->UnregisterVariable("aim_assistCrosshairDebug", true);
 
+	pConsole->UnregisterVariable("hud_teamPreview3D", true);
+	pConsole->UnregisterVariable("hud_teamPreviewDistance", true);
+	pConsole->UnregisterVariable("hud_teamUSAnim", true);
+	pConsole->UnregisterVariable("hud_teamNKAnim", true);
+	pConsole->UnregisterVariable("hud_teamUSHover", true);
+	pConsole->UnregisterVariable("hud_teamNKHover", true);
 	pConsole->UnregisterVariable("mp_crymp", true);
 	pConsole->UnregisterVariable("mp_circleJump", true);
 	pConsole->UnregisterVariable("mp_wallJump", true);

@@ -24,6 +24,7 @@
 #include "BulletTime.h"
 #include "SoundMoods.h"
 #include "HUD/HUD.h"
+#include "HUD/TeamSelectionPreview.h"
 #include "Items/Weapons/WeaponSystem.h"
 
 #include "CryCommon/CrySystem/CryPath.h"
@@ -126,6 +127,7 @@ CGame::CGame()
 
 CGame::~CGame()
 {
+	TeamSelectionPreview::Reset();
 	m_pFramework->EndGameContext();
 	m_pFramework->UnregisterListener(this);
 	ReleaseScriptBinds();
