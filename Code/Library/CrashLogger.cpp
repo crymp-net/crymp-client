@@ -1,3 +1,4 @@
+#include <csignal>
 #include <cstdlib>
 #include <cstring>
 
@@ -7,6 +8,8 @@
 #include <dbghelp.h>
 #include <psapi.h>
 
+#include <vector>
+
 #include "CrashLogger.h"
 
 #ifdef BUILD_64BIT
@@ -15,6 +18,7 @@
 #define ADDR_FMT "%08X"
 #endif
 
+#define CRASH_LOGGER_ABORT 0xE0C1C100
 #define CRASH_LOGGER_PURE_CALL 0xE0C1C101
 #define CRASH_LOGGER_INVALID_PARAM 0xE0C1C102
 #define CRASH_LOGGER_ENGINE_ERROR 0xE0C1C103
@@ -22,6 +26,8 @@
 static CrashLogger::LogFileProvider g_logFileProvider;
 static CrashLogger::HeapInfoProvider g_heapInfoProvider;
 static const char* g_banner;
+
+static std::vector<CrashLogger::ExtraProvider*> g_extraProviders;
 
 void DumpLuaStackTrace(std::FILE *file);
 
@@ -70,6 +76,7 @@ static const char* ExceptionCodeToName(unsigned int code)
 		case EXCEPTION_SINGLE_STEP:              return "Single step";
 		case EXCEPTION_STACK_OVERFLOW:           return "Stack overflow";
 		case 0xE06D7363:                         return "C++ exception";
+		case CRASH_LOGGER_ABORT:                 return "Abnormal program termination";
 		case CRASH_LOGGER_PURE_CALL:             return "Pure virtual function call";
 		case CRASH_LOGGER_INVALID_PARAM:         return "Invalid parameter detected by CRT";
 		case CRASH_LOGGER_ENGINE_ERROR:          return "Engine error";
@@ -82,23 +89,19 @@ static void DumpExceptionInfo(std::FILE* file, const EXCEPTION_RECORD* info)
 {
 	const unsigned int code = info->ExceptionCode;
 	const std::size_t address = reinterpret_cast<std::size_t>(info->ExceptionAddress);
+	std::size_t dataAddress = 0;
 
 	std::fprintf(file, "%s (0x%08X) at 0x" ADDR_FMT, ExceptionCodeToName(code), code, address);
 
 	if (code == EXCEPTION_ACCESS_VIOLATION || code == EXCEPTION_IN_PAGE_ERROR)
 	{
-		const std::size_t dataAddress = info->ExceptionInformation[1];
+		dataAddress = info->ExceptionInformation[1];
 
 		switch (info->ExceptionInformation[0])
 		{
 			case 0: std::fprintf(file, ": Read from 0x"  ADDR_FMT " failed", dataAddress); break;
 			case 1: std::fprintf(file, ": Write to 0x"   ADDR_FMT " failed", dataAddress); break;
 			case 8: std::fprintf(file, ": Execute at 0x" ADDR_FMT " failed", dataAddress); break;
-		}
-
-		if (g_heapInfoProvider)
-		{
-			g_heapInfoProvider(file, reinterpret_cast<void*>(dataAddress));
 		}
 	}
 	else if (code == CRASH_LOGGER_ENGINE_ERROR)
@@ -107,13 +110,15 @@ static void DumpExceptionInfo(std::FILE* file, const EXCEPTION_RECORD* info)
 
 		std::fprintf(file, ": %s", message);
 	}
-	else if (g_heapInfoProvider)
-	{
-		// let debug allocator log its error message
-		g_heapInfoProvider(file, nullptr);
-	}
 
 	std::fprintf(file, "\n");
+
+	if (g_heapInfoProvider)
+	{
+		// let debug allocator log its error message
+		g_heapInfoProvider(file, reinterpret_cast<void*>(dataAddress));
+	}
+
 	std::fflush(file);
 }
 
@@ -439,6 +444,14 @@ static void WriteCrashDump(std::FILE* file, EXCEPTION_POINTERS* exception)
 
 	DumpLuaStackTrace(file);
 
+	for (CrashLogger::ExtraProvider* provider : g_extraProviders)
+{
+    if (provider)
+    {
+        provider->OnCrash(file);
+    }
+}
+
 	WriteDumpFooter(file);
 }
 
@@ -460,6 +473,12 @@ static LONG __stdcall CrashHandler(EXCEPTION_POINTERS* exception)
 	}
 
 	return EXCEPTION_CONTINUE_SEARCH;
+}
+
+static void AbortHandler(int)
+{
+	RaiseException(CRASH_LOGGER_ABORT, EXCEPTION_NONCONTINUABLE, 0, NULL);
+	ExitProcess(1);
 }
 
 static void PureCallHandler()
@@ -494,12 +513,29 @@ void CrashLogger::Enable(LogFileProvider logFileProvider, HeapInfoProvider heapI
 
 	SetUnhandledExceptionFilter(&CrashHandler);
 
+	std::signal(SIGABRT, &AbortHandler);
+	_set_abort_behavior(0, _WRITE_ABORT_MSG);  // suppress abort message (console) and dialog (GUI)
+
 	_set_purecall_handler(&PureCallHandler);
 	_set_invalid_parameter_handler(&InvalidParameterHandler);
 
 	HMODULE msvcr80 = LoadLibraryA("msvcr80.dll");
 	if (msvcr80)
 	{
+		void* vs2005_signal = GetProcAddress(msvcr80, "signal");
+		if (vs2005_signal)
+		{
+			static_cast<void(*(*)(int, void(*)(int)))(int)>
+				(vs2005_signal)(SIGABRT, &AbortHandler);
+		}
+
+		void* vs2005_set_abort_behavior = GetProcAddress(msvcr80, "_set_abort_behavior");
+		if (vs2005_set_abort_behavior)
+		{
+			static_cast<unsigned int(*)(unsigned int, unsigned int)>
+				(vs2005_set_abort_behavior)(0, _WRITE_ABORT_MSG);
+		}
+
 		void* vs2005_set_purecall_handler = GetProcAddress(msvcr80, "_set_purecall_handler");
 		if (vs2005_set_purecall_handler)
 		{
@@ -514,4 +550,12 @@ void CrashLogger::Enable(LogFileProvider logFileProvider, HeapInfoProvider heapI
 				(vs2005_set_invalid_parameter_handler)(&InvalidParameterHandler);
 		}
 	}
+}
+
+void CrashLogger::AddExtraProvider(ExtraProvider* provider)
+{
+    if (provider)
+    {
+        g_extraProviders.push_back(provider);
+    }
 }
