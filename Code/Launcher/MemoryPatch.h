@@ -18,6 +18,7 @@ namespace MemoryPatch
 		void AllowDX9ImmersiveMultiplayer(void* pCryAction);
 		void AllowMultiplayerRegisterWithAI(void* pCryAction);
 		void DisableBreakLog(void* pCryAction);
+		void DisableGameplayStats(void* pCryAction);
 		void DisableTimeOfDayLengthLowerLimit(void* pCryAction);
 		void HookGameWarning(void* pCryAction, void (*handler)(const char* format, ...));
 		void HookCryWarning(void* pCryAction, void (*handler)(int, int, const char* format, ...));
@@ -79,10 +80,28 @@ namespace MemoryPatch
 			// ...
 		};
 
+		struct SystemAPI
+		{
+			void* pDXGI;
+			void* pCreateDXGIFactory;
+			void* pD3D10;
+			void* pD3D10CreateStateBlock;              // unused
+			void* pD3D10CreateDevice;
+			void* pD3D10StateBlockMaskUnion;           // unused
+			void* pD3D10StateBlockMaskIntersect;       // unused
+			void* pD3D10StateBlockMaskDifference;      // unused
+			void* pD3D10StateBlockMaskEnableCapture;   // unused
+			void* pD3D10StateBlockMaskDisableCapture;  // unused
+			void* pD3D10StateBlockMaskEnableAll;       // unused
+			void* pD3D10StateBlockMaskDisableAll;      // unused
+			void* pD3D10StateBlockMaskGetSetting;      // unused
+		};
+
 		void FixLowRefreshRateBug(void* pCryRenderD3D10);
 		void FixUseAfterFreeInShaderParser(void* pCryRenderD3D10);
 		void HookWindowNameD3D10(void* pCryRenderD3D10, const char* name);
 		void HookAdapterInfo(void* pCryRenderD3D10, void (*handler)(AdapterInfo* info));
+		void HookInitAPI(void* pCryRenderD3D10, bool (*handler)(SystemAPI* api));
 	}
 
 	namespace CryRenderNULL
@@ -109,4 +128,29 @@ namespace MemoryPatch
 	{
 		void Fix64BitHeapAddressTruncation(void* pFMODEx);
 	}
+
+	namespace Editor
+{
+    struct Version
+    {
+        int file_tweak;
+        int file_patch;
+        int file_minor;
+        int file_major;
+
+        int product_tweak;
+        int product_patch;
+        int product_minor;
+        int product_major;
+    };
+
+    void FixBrokenPanels(void* pEditor, int editorBuild);
+
+    void HookVersionInit(
+        void* pEditor,
+        int editorBuild,
+        void (*handler)(Version* version)
+    );
+}
+
 }
