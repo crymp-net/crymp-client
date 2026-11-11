@@ -14,7 +14,9 @@
 #include "CryCommon/CrySystem/ICryPak.h"
 #include "CryMP/Client/Client.h"
 #include "CryMP/Server/Server.h"
+#include "CryPhysics/CryPhysics.h"
 #include "CryScriptSystem/ScriptSystem.h"
+#include "CrySoundSystem/CrySoundSystem.h"
 #include "CrySystem/CPUInfo.h"
 #include "CrySystem/CrashTest.h"
 #include "CrySystem/CryMemoryManager.h"
@@ -29,16 +31,49 @@
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
+#include "DsoalDeployer.h"
 #include "Launcher.h"
 #include "MemoryPatch.h"
 #include "Resources.h"
 #include "StartupTime.h"
 
+#ifdef EDITOR_LAUNCHER //for editor
+#include "CryMallocHook.h"
+#include "LauncherCommon.h"
+#endif
+
 #include "config.h"
 
 std::uintptr_t CRYACTION_BASE = 0;
 
-static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
+void* g_pCry3DEngine = nullptr;
+void* g_pCryAction = nullptr;
+void* g_pCryAISystem = nullptr;
+void* g_pCryNetwork = nullptr;
+void* g_pCrySystem = nullptr;
+void* g_pCryRenderD3D9 = nullptr;
+void* g_pCryRenderD3D10 = nullptr;
+void* g_pCryRenderNULL = nullptr;
+void* g_pCryMovie = nullptr;
+void* g_pCryInput = nullptr;
+void* g_pCryFont = nullptr;
+void* g_pCryAnimation = nullptr;
+void* g_pCryEntitySystem = nullptr;
+void* g_pCrySoundSystem = nullptr;
+void* g_pCryPhysics = nullptr;
+void* g_pFmodEx = nullptr;
+void* g_pFmodEvent = nullptr;
+void* g_pFmodEventNet = nullptr;
+bool g_hasC1Fmod = false;
+bool g_hasWarheadWarsFmod = false;
+
+#ifdef EDITOR_LAUNCHER
+void* g_pEditor = nullptr;
+void* g_pCryGame = nullptr;
+void* g_pXToolkitPro = nullptr;
+#endif
+
+/*static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
 {
 	using CrySystemEntry = ISystem* (*)(SSystemInitParams&);
 
@@ -52,6 +87,25 @@ static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
 	{
 		throw StringTools::ErrorFormat("CrySystem initialization failed!");
 	}
+}*/
+
+static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
+{
+    using CrySystemEntry = ISystem* (*)(SSystemInitParams&);
+
+    auto entry = reinterpret_cast<CrySystemEntry>(
+        WinAPI::DLL::GetSymbol(pCrySystem, "CreateSystemInterface")
+    );
+
+    if (!entry)
+    {
+        throw StringTools::ErrorFormat("The CrySystem DLL is not valid!");
+    }
+
+    if (!entry(params))
+    {
+        throw StringTools::ErrorFormat("CrySystem initialization failed!");
+    }
 }
 
 static void LogBytes(const char* message, std::size_t bytes)
@@ -84,6 +138,31 @@ static void OnD3D10Info(MemoryPatch::CryRenderD3D10::AdapterInfo* info)
 	LogBytes("D3D10 Adapter: Dedicated video memory = ", info->dedicated_video_memory);
 	LogBytes("D3D10 Adapter: Dedicated system memory = ", info->dedicated_system_memory);
 	LogBytes("D3D10 Adapter: Shared system memory = ", info->shared_system_memory);
+}
+
+static bool OnD3D10Init(MemoryPatch::CryRenderD3D10::SystemAPI* api)
+{
+	void* d3d10 = WinAPI::DLL::Load("d3d10.dll");
+	if (!d3d10)
+	{
+		WinAPI::ErrorBox(StringTools::SysErrorFormat("Failed to load the D3D10 DLL!").what());
+		return false;
+	}
+
+	api->pD3D10 = d3d10;
+	api->pD3D10CreateDevice = WinAPI::DLL::GetSymbol(d3d10, "D3D10CreateDevice");
+
+	void* dxgi = WinAPI::DLL::Load("dxgi.dll");
+	if (!dxgi)
+	{
+		WinAPI::ErrorBox(StringTools::SysErrorFormat("Failed to load the DXGI DLL!").what());
+		return false;
+	}
+
+	api->pDXGI = dxgi;
+	api->pCreateDXGIFactory = WinAPI::DLL::GetSymbol(dxgi, "CreateDXGIFactory");
+
+	return true;
 }
 
 static void OnCryWarning(int, int, const char* format, ...)
@@ -123,7 +202,7 @@ static void EarlyEngineInitHook(ISystem* pSystem, IConsole* pConsole, ISystemUse
 		pUserCallback->OnInit(pSystem);
 	}
 
-	gLauncher->OnEarlyEngineInit(pSystem);
+	Launcher::OnEarlyEngineInit(pSystem);
 }
 
 static void InstallEarlyEngineInitHook(void* pCrySystem)
@@ -324,6 +403,112 @@ static void ReplaceStreamEngine(void* pCrySystem)
 #endif
 }
 
+static IPhysicalWorld* CreateNewPhysics(ISystem* pSystem)
+{
+	CryLogAlways("$3[CryMP] Initializing Physics");
+
+	return CreatePhysicalWorld(pSystem);
+}
+
+static void ReplacePhysics(void* pCrySystem)
+{
+	void* pFactory = CreateNewPhysics;
+
+#ifdef BUILD_64BIT
+	const std::size_t codeOffset = 0x43392;
+	const std::size_t codeMaxSize = 0x53;
+
+	unsigned char code[] = {
+		0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, 0x0
+		0x48, 0x8B, 0xCE,                                            // mov rcx, rsi
+		0xFF, 0xD0,                                                  // call rax
+	};
+
+	std::memcpy(&code[2], &pFactory, 8);
+#else
+	const std::size_t codeOffset = 0x556CF;
+	const std::size_t codeMaxSize = 0x49;
+
+	unsigned char code[] = {
+		0xB8, 0x00, 0x00, 0x00, 0x00,  // mov eax, 0x0
+		0x55,                          // push ebp
+		0xFF, 0xD0,                    // call eax
+		0x83, 0xC4, 0x04,              // add esp, 0x4
+	};
+
+	std::memcpy(&code[1], &pFactory, 4);
+#endif
+
+	static_assert(sizeof(code) <= codeMaxSize);
+
+	WinAPI::FillMem(WinAPI::RVA(pCrySystem, codeOffset), code, sizeof(code));
+	WinAPI::FillNOP(WinAPI::RVA(pCrySystem, codeOffset + sizeof(code)), codeMaxSize - sizeof(code));
+}
+
+#ifdef CLIENT_LAUNCHER
+
+static void InitNewSoundSystem(ISystem* pSystem, void* hWnd)
+{
+	CryLogAlways("$3[CryMP] Initializing Sound System");
+
+	if (g_hasC1Fmod)
+	{
+		CryLogAlways("$3[CryMP] Using C1 FMOD");
+	}
+	else if (g_hasWarheadWarsFmod)
+	{
+		CryLogAlways("$3[CryMP] Using Warhead/Wars FMOD");
+	}
+	else
+	{
+		CryLogAlways("$3[CryMP] Using unknown FMOD");
+	}
+
+	ISoundSystem* pSoundSystem = CreateSoundSystem(pSystem, hWnd);
+	gEnv->pSoundSystem = pSoundSystem;
+	gEnv->pMusicSystem = pSoundSystem->CreateMusicSystem();
+}
+
+static void ReplaceSoundSystem(void* pCrySystem)
+{
+	void* pInitFunc = InitNewSoundSystem;
+
+#ifdef BUILD_64BIT
+	const std::size_t codeOffset = 0x42E29;
+	const std::size_t codeMaxSize = 0xD4;
+
+	unsigned char code[] = {
+		0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, 0x0
+		0x48, 0x8B, 0xCB,                                            // mov rcx, rbx
+		0x48, 0x8B, 0xD7,                                            // mov rdx, rdi
+		0xFF, 0xD0,                                                  // call rax
+	};
+
+	std::memcpy(&code[2], &pInitFunc, 8);
+#else
+	const std::size_t codeOffset = 0x55229;
+	const std::size_t codeMaxSize = 0xA6;
+
+	unsigned char code[] = {
+		0xB8, 0x00, 0x00, 0x00, 0x00,  // mov eax, 0x0
+		0x8B, 0x54, 0x24, 0x08,        // mov edx, dword ptr ss:[esp+0x8]
+		0x52,                          // push edx
+		0x56,                          // push esi
+		0xFF, 0xD0,                    // call eax
+		0x83, 0xC4, 0x08,              // add esp, 0x8
+	};
+
+	std::memcpy(&code[1], &pInitFunc, 4);
+#endif
+
+	static_assert(sizeof(code) <= codeMaxSize);
+
+	WinAPI::FillMem(WinAPI::RVA(pCrySystem, codeOffset), code, sizeof(code));
+	WinAPI::FillNOP(WinAPI::RVA(pCrySystem, codeOffset + sizeof(code)), codeMaxSize - sizeof(code));
+}
+
+#endif // CLIENT_LAUNCHER
+
 static IScriptSystem* CreateNewScriptSystem(ISystem* pSystem, bool)
 {
 	CryLogAlways("$3[CryMP] Initializing Script System");
@@ -505,27 +690,6 @@ static std::string_view ChooseLanguage(std::string_view defaultLanguage, ICVar* 
 	return language;
 }
 
-static void PatchFlashFont()
-{
-	const std::string_view lang = LocalizationManager::GetInstance().GetCurrentLanguage().name;
-
-	// these languages have their own special font
-	if (lang != "japanese" && lang != "korean" && lang != "chinese" && lang != "thai")
-	{
-		CryPak& cryPak = CryPak::GetInstance();
-
-		// the same font for all other languages
-		cryPak.AddRedirect(
-			"Languages/HUD_Font_LocFont.gfx",
-			"Languages/HUD_Font_LocFont_override.gfx"
-		);
-		cryPak.AddRedirect(
-			"Languages/HUD_Font_LocFont_glyphs.gfx",
-			"Languages/HUD_Font_LocFont_glyphs_override.gfx"
-		);
-	}
-}
-
 static void ReplaceLocalizationManager(void* pCrySystem)
 {
 	struct DummyCSystem
@@ -550,8 +714,6 @@ static void ReplaceLocalizationManager(void* pCrySystem)
 			}
 
 			LocalizationManager::GetInstance().SetLanguage(language.data());
-
-			PatchFlashFont();
 		}
 	};
 
@@ -593,14 +755,14 @@ static void ReplaceLocalizationManager(void* pCrySystem)
 
 	// vtable hook
 	TGetLocalizationManager newFunc = &DummyCSystem::GetLocalizationManager;
-	WinAPI::FillMem(&vtable[105], &reinterpret_cast<void*&>(newFunc), sizeof(void*));
+	WinAPI::FillMem(&vtable[105], &reinterpret_cast<void*&>(newFunc), sizeof(void*), false);
 }
 
 static ITimeOfDay* CreateTimeOfDay()
 {
 	CryLogAlways("$3[CryMP] Initializing Time Of Day");
 
-	return new TimeOfDay(gLauncher->GetDLLs().pCry3DEngine);
+	return new TimeOfDay;
 }
 
 static void DestroyTimeOfDay(void* pTimeOfDay)
@@ -738,7 +900,7 @@ static void HookNetworkGetService(void* pCryNetwork)
 
 	// vtable hook
 	auto pNewGetService = &DummyCNetwork::GetService;
-	WinAPI::FillMem(&pCNetworkVTable[7], &reinterpret_cast<void*&>(pNewGetService), sizeof(void*));
+	WinAPI::FillMem(&pCNetworkVTable[7], &reinterpret_cast<void*&>(pNewGetService), sizeof(void*), false);
 }
 
 struct DummyCSystem
@@ -803,7 +965,7 @@ static void HookSystemWarning(void* pCrySystem)
 
 	// vtable hook
 	auto pNewWarning = &DummyCSystem::Warning;
-	WinAPI::FillMem(&pCSystemVTable[21], &reinterpret_cast<void*&>(pNewWarning), sizeof(void*));
+	WinAPI::FillMem(&pCSystemVTable[21], &reinterpret_cast<void*&>(pNewWarning), sizeof(void*), false);
 }
 
 static void LogRealWindowsBuild(Logger& logger)
@@ -890,16 +1052,24 @@ static std::FILE* ProvideLogFile()
 
 void Launcher::SetCmdLine()
 {
-	const std::string_view cmdLine = WinAPI::CmdLine::GetFull();
+	std::string cmdLine = WinAPI::CmdLine::GetFull();
+
+#ifdef SERVER_LAUNCHER
+	const std::filesystem::path defaultServerRoot = std::filesystem::absolute("CryMP-Server");
+	if (!WinAPI::CmdLine::HasArg("-root") && std::filesystem::is_directory(defaultServerRoot))
+	{
+		cmdLine += " -root \"";
+		cmdLine += defaultServerRoot.string();
+		cmdLine += "\" +exec server.cfg";
+	}
+#endif
 
 	if (cmdLine.length() >= sizeof(m_params.cmdLine))
 	{
 		throw StringTools::ErrorFormat("Command line is too long!");
 	}
 
-	std::memcpy(m_params.cmdLine, cmdLine.data(), cmdLine.length());
-
-	m_params.cmdLine[cmdLine.length()] = '\0';
+	std::memcpy(m_params.cmdLine, cmdLine.c_str(), cmdLine.length() + 1);
 }
 
 void Launcher::InitWorkingDirectory()
@@ -944,6 +1114,58 @@ void Launcher::InitWorkingDirectory()
 	WinAPI::SetWorkingDirectory(dir);
 }
 
+
+#ifdef EDITOR_LAUNCHER //new
+
+static WinAPI::VersionResource g_editorVersion;
+
+static void OnEditorVersionInit(MemoryPatch::Editor::Version* version)
+{
+    version->file_major = g_editorVersion.major;
+    version->file_minor = g_editorVersion.minor;
+    version->file_patch = g_editorVersion.patch;
+    version->file_tweak = g_editorVersion.tweak;
+
+    version->product_major = g_editorVersion.major;
+    version->product_minor = g_editorVersion.minor;
+    version->product_patch = g_editorVersion.patch;
+    version->product_tweak = g_editorVersion.tweak;
+}
+
+static int CallAfxWinMain(void* instance, char* cmdLine)
+{
+    using TAfxWinMain = int(__stdcall*)(void*, void*, char*, int);
+
+#ifdef BUILD_64BIT
+    constexpr std::size_t ordinal = 1225;
+#else
+    constexpr std::size_t ordinal = 1207;
+#endif
+
+    void* mfc80 = WinAPI::DLL::Get("mfc80.dll");
+
+    if (!mfc80)
+        throw StringTools::ErrorFormat("Failed to load MFC80.dll!");
+
+    void* function = WinAPI::DLL::GetSymbol(
+        mfc80,
+        reinterpret_cast<const char*>(ordinal)
+    );
+
+    if (!function)
+        throw StringTools::ErrorFormat("Failed to load MFC80.dll!");
+
+    return reinterpret_cast<TAfxWinMain>(function)(
+        instance,
+        nullptr,
+        cmdLine,
+        10
+    );
+}
+
+#endif
+
+
 void Launcher::LoadEngine()
 {
 	void* msvcr80 = WinAPI::DLL::Load("msvcr80.dll");
@@ -963,12 +1185,12 @@ void Launcher::LoadEngine()
 		}
 	}
 
-	m_dlls.pCrySystem = WinAPI::DLL::Load("CrySystem.dll");
-	if (!m_dlls.pCrySystem)
+	g_pCrySystem = WinAPI::DLL::Load("CrySystem.dll");
+	if (!g_pCrySystem)
 	{
 		if (WinAPI::GetCurrentErrorCode() == 193)  // ERROR_BAD_EXE_FORMAT
 		{
-			throw StringTools::ErrorFormat("Failed to load the CrySystem DLL!\n\n"
+			throw StringTools::ErrorFormat("Failed to load CrySystem.dll\n\n"
 #ifdef BUILD_64BIT
 				"It seems you have 32-bit DLLs in your Bin64 directory! Please fix it."
 #else
@@ -983,7 +1205,7 @@ void Launcher::LoadEngine()
 	}
 
 	WinAPI::VersionResource version;
-	if (!WinAPI::GetVersionResource(m_dlls.pCrySystem, version))
+	if (!WinAPI::GetVersionResource(g_pCrySystem, version))
 	{
 		throw StringTools::SysErrorFormat("Failed to get the game version!");
 	}
@@ -1039,167 +1261,424 @@ void Launcher::LoadEngine()
 		}
 	}
 
-	CryMemoryManager::Init(m_dlls.pCrySystem);
-
-	m_dlls.pCryAction = WinAPI::DLL::Load("CryAction.dll");
-	if (!m_dlls.pCryAction)
+	struct SLoadEntry
 	{
-		throw StringTools::SysErrorFormat("Failed to load the CryAction DLL!");
-	}
+		const char* dllName;
+		void** outPtr;
+	};
 
-	CRYACTION_BASE = reinterpret_cast<std::uintptr_t>(m_dlls.pCryAction);
-
-	m_dlls.pCryAISystem = WinAPI::DLL::Load("CryAISystem.dll");
-	if (!m_dlls.pCryAISystem)
+	std::vector<SLoadEntry> loadList =
 	{
-		throw StringTools::SysErrorFormat("Failed to load the CryAISystem DLL!");
-	}
+		{ "CryAction.dll",       &g_pCryAction },
+		{ "CryAISystem.dll",     &g_pCryAISystem },
+		{ "CryNetwork.dll",      &g_pCryNetwork },
+		{ "Cry3DEngine.dll",     &g_pCry3DEngine },
+		{ "CryFont.dll",         &g_pCryFont },
+		{ "CryAnimation.dll",    &g_pCryAnimation },
+		{ "CryEntitySystem.dll", &g_pCryEntitySystem },
+	};
 
-	m_dlls.pCryNetwork = WinAPI::DLL::Load("CryNetwork.dll");
-	if (!m_dlls.pCryNetwork)
+	if (WinAPI::CmdLine::HasArg("-oldphysics"))
 	{
-		throw StringTools::SysErrorFormat("Failed to load the CryNetwork DLL!");
-	}
-
-	m_dlls.pCry3DEngine = WinAPI::DLL::Load("Cry3DEngine.dll");
-	if (!m_dlls.pCry3DEngine)
-	{
-		throw StringTools::SysErrorFormat("Failed to load the Cry3DEngine DLL!");
+		loadList.push_back({ "CryPhysics.dll", &g_pCryPhysics });
 	}
 
 	if (m_params.isDedicatedServer)
 	{
-		m_dlls.pCryRenderNULL = WinAPI::DLL::Load("CryRenderNULL.dll");
-		if (!m_dlls.pCryRenderNULL)
-		{
-			throw StringTools::SysErrorFormat("Failed to load the CryRenderNULL DLL!");
-		}
+		loadList.push_back({ "CryRenderNULL.dll", &g_pCryRenderNULL });
 	}
 	else
 	{
-		if (!WinAPI::CmdLine::HasArg("-dx9") && (WinAPI::CmdLine::HasArg("-dx10") || WinAPI::IsVistaOrLater()))
+		loadList.push_back({ "CryMovie.dll", &g_pCryMovie });
+		loadList.push_back({ "CryInput.dll", &g_pCryInput });
+
+		if (WinAPI::CmdLine::HasArg("-oldsound")) {
+			loadList.push_back({ "CrySoundSystem.dll", &g_pCrySoundSystem });
+		}
+
+		if (!WinAPI::CmdLine::HasArg("-dx9") &&
+			(WinAPI::CmdLine::HasArg("-dx10") || WinAPI::IsVistaOrLater()))
 		{
-			m_dlls.pCryRenderD3D10 = WinAPI::DLL::Load("CryRenderD3D10.dll");
-			if (!m_dlls.pCryRenderD3D10)
-			{
-				throw StringTools::SysErrorFormat("Failed to load the CryRenderD3D10 DLL!");
-			}
+			loadList.push_back({ "CryRenderD3D10.dll", &g_pCryRenderD3D10 });
 		}
 		else
 		{
-			m_dlls.pCryRenderD3D9 = WinAPI::DLL::Load("CryRenderD3D9.dll");
-			if (!m_dlls.pCryRenderD3D9)
-			{
-				throw StringTools::SysErrorFormat("Failed to load the CryRenderD3D9 DLL!");
-			}
+			loadList.push_back({ "CryRenderD3D9.dll", &g_pCryRenderD3D9 });
 		}
 
-#ifdef BUILD_64BIT
-		m_dlls.pFmodEx = WinAPI::DLL::Load("fmodex64.dll");
-#else
-		m_dlls.pFmodEx = WinAPI::DLL::Load("fmodex.dll");
-#endif
-		if (!m_dlls.pFmodEx)
+	#ifdef BUILD_64BIT
+		loadList.push_back({ "fmodex64.dll", &g_pFmodEx });
+		loadList.push_back({ "fmod_event64.dll", &g_pFmodEvent });
+		loadList.push_back({ "fmod_event_net64.dll", &g_pFmodEventNet });
+	#else
+		loadList.push_back({ "fmodex.dll", &g_pFmodEx });
+		loadList.push_back({ "fmod_event.dll", &g_pFmodEvent });
+		loadList.push_back({ "fmod_event_net.dll", &g_pFmodEventNet });
+	#endif
+	}
+
+	for (const SLoadEntry& entry : loadList)
+	{
+		*entry.outPtr = WinAPI::DLL::Load(entry.dllName);
+
+		if (!*entry.outPtr)
 		{
-#ifdef BUILD_64BIT
-			throw StringTools::SysErrorFormat("Failed to load the fmodex64 DLL!");
-#else
-			throw StringTools::SysErrorFormat("Failed to load the fmodex DLL!");
-#endif
+			throw StringTools::SysErrorFormat("Failed to load %s", entry.dllName);
 		}
+	}
+
+	CRYACTION_BASE = reinterpret_cast<std::uintptr_t>(g_pCryAction);
+
+	if (!m_params.isDedicatedServer) {
+		WinAPI::VersionResource fmodVer;
+		if (!WinAPI::GetVersionResource(g_pFmodEx, fmodVer))
+		{
+			throw StringTools::SysErrorFormat("Failed to get FMOD version!");
+		}
+
+		g_hasC1Fmod = (
+			fmodVer.major == 0 &&
+			fmodVer.minor == 4 &&
+			fmodVer.patch == 7 &&
+			fmodVer.tweak == 23
+		);
+		g_hasWarheadWarsFmod = (!g_hasC1Fmod &&
+			fmodVer.major == 0 &&
+			fmodVer.minor == 4 &&
+			fmodVer.patch == 14 &&
+			fmodVer.tweak == 3
+		);
 	}
 }
 
+
+#ifdef EDITOR_LAUNCHER
+
+void Launcher::LoadEditor()
+{
+    // Load CrySystem.dll
+    g_pCrySystem = LauncherCommon::LoadDLL("CrySystem.dll");
+
+    const int gameBuild = LauncherCommon::GetGameBuild(g_pCrySystem);
+    LauncherCommon::VerifyGameBuild(gameBuild);
+
+    // Load the Crysis Editor executable
+    g_pEditor = LauncherCommon::LoadEXE("Editor.exe");
+
+    WinAPI::VersionResource editorVersion;
+
+    if (!WinAPI::GetVersionResource(g_pEditor, editorVersion))
+    {
+        throw StringTools::SysErrorFormat(
+            "Failed to get the Editor version!"
+        );
+    }
+
+    if (editorVersion.tweak != 5767)
+    {
+        throw StringTools::ErrorFormat(
+            "Unsupported Crysis 1 Editor build %d!",
+            editorVersion.tweak
+        );
+    }
+
+    g_editorVersion = editorVersion;
+
+    // Load required engine DLLs
+    g_pCryGame = LauncherCommon::LoadDLL("CryGame.dll");
+    g_pCryAction = LauncherCommon::LoadDLL("CryAction.dll");
+    g_pCryNetwork = LauncherCommon::LoadDLL("CryNetwork.dll");
+
+    // Load renderer
+    if (LauncherCommon::IsDX10())
+    {
+        g_pCryRenderD3D10 =
+            LauncherCommon::LoadDLL("CryRenderD3D10.dll");
+    }
+    else
+    {
+        g_pCryRenderD3D9 =
+            LauncherCommon::LoadDLL("CryRenderD3D9.dll");
+    }
+
+    // Load FMOD
+#ifdef BUILD_64BIT
+    g_pFmodEx = LauncherCommon::LoadDLL("fmodex64.dll");
+    g_pXToolkitPro =
+        LauncherCommon::LoadDLL("ToolkitPro1042vc80x64.dll");
+#else
+    g_pFmodEx = LauncherCommon::LoadDLL("fmodex.dll");
+    g_pXToolkitPro =
+        LauncherCommon::LoadDLL("ToolkitPro1042vc80.dll");
+#endif
+
+    // Load sound system
+    g_pCrySoundSystem =
+        LauncherCommon::LoadDLL("CrySoundSystem.dll");
+}
+
+#endif
+
+
 void Launcher::PatchEngine()
 {
-	if (m_dlls.pCryAction)
+	if (g_pCryAction)
 	{
-		MemoryPatch::CryAction::AllowDX9ImmersiveMultiplayer(m_dlls.pCryAction);
-		MemoryPatch::CryAction::AllowMultiplayerRegisterWithAI(m_dlls.pCryAction);
-		MemoryPatch::CryAction::DisableBreakLog(m_dlls.pCryAction);
-		MemoryPatch::CryAction::DisableTimeOfDayLengthLowerLimit(m_dlls.pCryAction);
-		MemoryPatch::CryAction::HookCryWarning(m_dlls.pCryAction, &OnCryWarning);
-		MemoryPatch::CryAction::HookGameWarning(m_dlls.pCryAction, &OnGameWarning);
+		MemoryPatch::CryAction::AllowDX9ImmersiveMultiplayer(g_pCryAction);
+		MemoryPatch::CryAction::AllowMultiplayerRegisterWithAI(g_pCryAction);
+		MemoryPatch::CryAction::DisableBreakLog(g_pCryAction);
+		MemoryPatch::CryAction::DisableGameplayStats(g_pCryAction);
+		MemoryPatch::CryAction::DisableTimeOfDayLengthLowerLimit(g_pCryAction);
+		MemoryPatch::CryAction::HookCryWarning(g_pCryAction, &OnCryWarning);
+		MemoryPatch::CryAction::HookGameWarning(g_pCryAction, &OnGameWarning);
 	}
 
-	if (m_dlls.pCryAISystem)
+	if (g_pCryAISystem)
 	{
-		MemoryPatch::CryAISystem::AllowMultiplayerAI(m_dlls.pCryAISystem);
+		MemoryPatch::CryAISystem::AllowMultiplayerAI(g_pCryAISystem);
 	}
 
-	if (m_dlls.pCryNetwork)
+	if (g_pCryNetwork)
 	{
-		MemoryPatch::CryNetwork::AllowSameCDKeys(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::DisableServerProfile(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::EnablePreordered(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::FixFileCheckCrash(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::FixInternetConnect(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::FixLanServerBrowser(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::RemoveGameSpyAvailableCheck(m_dlls.pCryNetwork);
-		MemoryPatch::CryNetwork::HookCryWarning(m_dlls.pCryNetwork, &OnCryWarning);
+		MemoryPatch::CryNetwork::AllowSameCDKeys(g_pCryNetwork);
+		MemoryPatch::CryNetwork::DisableServerProfile(g_pCryNetwork);
+		MemoryPatch::CryNetwork::EnablePreordered(g_pCryNetwork);
+		MemoryPatch::CryNetwork::FixFileCheckCrash(g_pCryNetwork);
+		MemoryPatch::CryNetwork::FixInternetConnect(g_pCryNetwork);
+		MemoryPatch::CryNetwork::FixLanServerBrowser(g_pCryNetwork);
+		MemoryPatch::CryNetwork::RemoveGameSpyAvailableCheck(g_pCryNetwork);
+		MemoryPatch::CryNetwork::HookCryWarning(g_pCryNetwork, &OnCryWarning);
 
-		HookNetworkGetService(m_dlls.pCryNetwork);
+		HookNetworkGetService(g_pCryNetwork);
 	}
 
-	if (m_dlls.pCrySystem)
+	if (g_pCrySystem)
 	{
-		MemoryPatch::CrySystem::AllowDX9VeryHighSpec(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::AllowMultipleInstances(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::FixCPUInfoOverflow(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::FixFlashAllocatorUnderflow(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::HookCPUDetect(m_dlls.pCrySystem, &CPUInfo::Detect);
-		MemoryPatch::CrySystem::HookError(m_dlls.pCrySystem, &CrashLogger::OnEngineError);
-		//MemoryPatch::CrySystem::MakeDX9Default(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::RemoveSecuROM(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::UnhandledExceptions(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::EnableServerPhysicsThread(m_dlls.pCrySystem);
-		MemoryPatch::CrySystem::HookCryWarning(m_dlls.pCrySystem, &OnCryWarning);
+		MemoryPatch::CrySystem::AllowDX9VeryHighSpec(g_pCrySystem);
+		MemoryPatch::CrySystem::AllowMultipleInstances(g_pCrySystem);
+		MemoryPatch::CrySystem::FixCPUInfoOverflow(g_pCrySystem);
+		MemoryPatch::CrySystem::FixFlashAllocatorUnderflow(g_pCrySystem);
+		MemoryPatch::CrySystem::HookCPUDetect(g_pCrySystem, &CPUInfo::Detect);
+		if (!WinAPI::CmdLine::HasArg("-rawdump")) {
+			MemoryPatch::CrySystem::HookError(g_pCrySystem, &CrashLogger::OnEngineError);
+		}
+		//MemoryPatch::CrySystem::MakeDX9Default(g_pCrySystem);
+		MemoryPatch::CrySystem::RemoveSecuROM(g_pCrySystem);
+		MemoryPatch::CrySystem::UnhandledExceptions(g_pCrySystem);
+		//MemoryPatch::CrySystem::EnableServerPhysicsThread(g_pCrySystem);
+		MemoryPatch::CrySystem::HookCryWarning(g_pCrySystem, &OnCryWarning);
 
-		InstallEarlyEngineInitHook(m_dlls.pCrySystem);
-		HookSystemWarning(m_dlls.pCrySystem);
+		InstallEarlyEngineInitHook(g_pCrySystem);
+		HookSystemWarning(g_pCrySystem);
 
-		ReplaceCryPak(m_dlls.pCrySystem);
-		ReplaceStreamEngine(m_dlls.pCrySystem);
-		ReplaceScriptSystem(m_dlls.pCrySystem);
-		ReplaceHardwareMouse(m_dlls.pCrySystem);
-		ReplaceLocalizationManager(m_dlls.pCrySystem);
+		ReplaceCryPak(g_pCrySystem);
+		ReplaceStreamEngine(g_pCrySystem);
+		ReplaceScriptSystem(g_pCrySystem);
+		ReplaceHardwareMouse(g_pCrySystem);
+		ReplaceLocalizationManager(g_pCrySystem);
+
+		if (!WinAPI::CmdLine::HasArg("-oldphysics"))
+		{
+			ReplacePhysics(g_pCrySystem);
+		}
+
+#ifdef CLIENT_LAUNCHER
+		if (!WinAPI::CmdLine::HasArg("-oldsound"))
+		{
+			ReplaceSoundSystem(g_pCrySystem);
+		}
+#endif
 	}
 
-	if (m_dlls.pCry3DEngine)
+	if (g_pCry3DEngine)
 	{
-		MemoryPatch::Cry3DEngine::EnableBigDecalsOnDynamicObjects(m_dlls.pCry3DEngine);
-		MemoryPatch::Cry3DEngine::FixGetObjectsByType(m_dlls.pCry3DEngine);
+		MemoryPatch::Cry3DEngine::EnableBigDecalsOnDynamicObjects(g_pCry3DEngine);
+		MemoryPatch::Cry3DEngine::FixGetObjectsByType(g_pCry3DEngine);
 
-		ReplaceTimeOfDay(m_dlls.pCry3DEngine);
+		ReplaceTimeOfDay(g_pCry3DEngine);
 	}
 
 	const char* GAME_WINDOW_NAME = "CryMP Client " CRYMP_VERSION_STRING;
 
-	if (m_dlls.pCryRenderD3D9)
+	if (g_pCryRenderD3D9)
 	{
-		MemoryPatch::CryRenderD3D9::FixUseAfterFreeInShaderParser(m_dlls.pCryRenderD3D9);
-		MemoryPatch::CryRenderD3D9::HookWindowNameD3D9(m_dlls.pCryRenderD3D9, GAME_WINDOW_NAME);
-		MemoryPatch::CryRenderD3D9::HookAdapterInfo(m_dlls.pCryRenderD3D9, &OnD3D9Info);
+		MemoryPatch::CryRenderD3D9::FixUseAfterFreeInShaderParser(g_pCryRenderD3D9);
+		MemoryPatch::CryRenderD3D9::HookWindowNameD3D9(g_pCryRenderD3D9, GAME_WINDOW_NAME);
+		MemoryPatch::CryRenderD3D9::HookAdapterInfo(g_pCryRenderD3D9, &OnD3D9Info);
 	}
 
-	if (m_dlls.pCryRenderD3D10)
+	if (g_pCryRenderD3D10)
 	{
-		MemoryPatch::CryRenderD3D10::FixLowRefreshRateBug(m_dlls.pCryRenderD3D10);
-		MemoryPatch::CryRenderD3D10::FixUseAfterFreeInShaderParser(m_dlls.pCryRenderD3D10);
-		MemoryPatch::CryRenderD3D10::HookWindowNameD3D10(m_dlls.pCryRenderD3D10, GAME_WINDOW_NAME);
-		MemoryPatch::CryRenderD3D10::HookAdapterInfo(m_dlls.pCryRenderD3D10, &OnD3D10Info);
+		MemoryPatch::CryRenderD3D10::FixLowRefreshRateBug(g_pCryRenderD3D10);
+		MemoryPatch::CryRenderD3D10::FixUseAfterFreeInShaderParser(g_pCryRenderD3D10);
+		MemoryPatch::CryRenderD3D10::HookWindowNameD3D10(g_pCryRenderD3D10, GAME_WINDOW_NAME);
+		MemoryPatch::CryRenderD3D10::HookAdapterInfo(g_pCryRenderD3D10, &OnD3D10Info);
+		MemoryPatch::CryRenderD3D10::HookInitAPI(g_pCryRenderD3D10, &OnD3D10Init);
 	}
 
-	if (m_dlls.pCryRenderNULL)
+	if (g_pCryRenderNULL)
 	{
-		MemoryPatch::CryRenderNULL::DisableDebugRenderer(m_dlls.pCryRenderNULL);
+		MemoryPatch::CryRenderNULL::DisableDebugRenderer(g_pCryRenderNULL);
 	}
 
-	if (m_dlls.pFmodEx)
+	if (g_pFmodEx)
 	{
-		MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(m_dlls.pFmodEx);
+		if (g_hasC1Fmod)
+		{
+			// only C1 FMOD is affected
+			MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(g_pFmodEx);
+		}
+
+#ifdef CLIENT_LAUNCHER
+		if (WinAPI::CmdLine::HasArg("-dsoal") && (g_hasC1Fmod || g_hasWarheadWarsFmod))
+		{
+			DsoalDeployer::Init(g_pFmodEx, g_hasC1Fmod);
+		}
+#endif
 	}
 }
+
+
+#ifdef EDITOR_LAUNCHER
+
+void Launcher::PatchEditor()
+{
+    if (g_pEditor)
+    {
+        MemoryPatch::Editor::FixBrokenPanels(
+            g_pEditor,
+            g_editorVersion.tweak
+        );
+
+        MemoryPatch::Editor::HookVersionInit(
+            g_pEditor,
+            g_editorVersion.tweak,
+            &OnEditorVersionInit
+        );
+    }
+
+    if (g_pCryAction)
+    {
+        MemoryPatch::CryAction::HookCryWarning(
+            g_pCryAction,
+            &LauncherCommon::OnCryWarning
+        );
+
+        MemoryPatch::CryAction::HookGameWarning(
+            g_pCryAction,
+            &LauncherCommon::OnGameWarning
+        );
+    }
+
+    if (g_pCryNetwork)
+    {
+        MemoryPatch::CryNetwork::HookCryWarning(
+            g_pCryNetwork,
+            &LauncherCommon::OnCryWarning
+        );
+    }
+
+    if (g_pCrySystem)
+    {
+        MemoryPatch::CrySystem::AllowDX9VeryHighSpec(g_pCrySystem);
+
+        MemoryPatch::CrySystem::FixCPUInfoOverflow(g_pCrySystem);
+
+        MemoryPatch::CrySystem::HookError(
+            g_pCrySystem,
+            &CrashLogger::OnEngineError
+        );
+
+        MemoryPatch::CrySystem::HookCryWarning(
+            g_pCrySystem,
+            &LauncherCommon::OnCryWarning
+        );
+    }
+
+    if (g_pCryRenderD3D9)
+    {
+        MemoryPatch::CryRenderD3D9::HookAdapterInfo(
+            g_pCryRenderD3D9,
+            &LauncherCommon::OnD3D9Info
+        );
+    }
+
+    if (g_pCryRenderD3D10)
+    {
+        MemoryPatch::CryRenderD3D10::FixLowRefreshRateBug(
+            g_pCryRenderD3D10
+        );
+
+        MemoryPatch::CryRenderD3D10::HookAdapterInfo(
+            g_pCryRenderD3D10,
+            &LauncherCommon::OnD3D10Info
+        );
+
+        MemoryPatch::CryRenderD3D10::HookInitAPI(
+            g_pCryRenderD3D10,
+            &LauncherCommon::OnD3D10Init
+        );
+    }
+
+    if (g_pFmodEx &&
+        LauncherCommon::IsFMODExVersionCorrect(
+            g_pFmodEx,
+            LauncherCommon::GetGameBuild(nullptr)
+        ))
+    {
+        MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(
+            g_pFmodEx
+        );
+    }
+}
+
+#endif
+
+
+
+#ifdef EDITOR_LAUNCHER
+
+int Launcher::StartEditor(char* cmdLine)
+{
+    using TAfxWinMain = int(__stdcall*)(void*, void*, char*, int);
+
+#ifdef BUILD_64BIT
+    constexpr std::size_t ordinal = 1225;
+#else
+    constexpr std::size_t ordinal = 1207;
+#endif
+
+    void* mfc80 = WinAPI::DLL::Get("mfc80.dll");
+
+    if (!mfc80)
+    {
+        throw StringTools::ErrorFormat(
+            "Failed to load MFC80.dll!"
+        );
+    }
+
+    void* function = WinAPI::DLL::GetSymbol(
+        mfc80,
+        reinterpret_cast<const char*>(ordinal)
+    );
+
+    if (!function)
+    {
+        throw StringTools::ErrorFormat(
+            "Failed to find AfxWinMain in MFC80.dll!"
+        );
+    }
+
+    return reinterpret_cast<TAfxWinMain>(function)(
+        g_pEditor,
+        nullptr,
+        cmdLine,
+        10
+    );
+}
+
+#endif
+
 
 void Launcher::StartEngine()
 {
@@ -1211,7 +1690,10 @@ void Launcher::StartEngine()
 	{
 		using CryActionEntry = IGameFramework::TEntryFunction;
 
-		auto entry = static_cast<CryActionEntry>(WinAPI::DLL::GetSymbol(m_dlls.pCryAction, "CreateGameFramework"));
+		auto entry = reinterpret_cast<CryActionEntry>(
+			WinAPI::DLL::GetSymbol(g_pCryAction, "CreateGameFramework")
+		);
+
 		if (!entry)
 		{
 			throw StringTools::ErrorFormat("The CryAction DLL is not valid!");
@@ -1245,7 +1727,7 @@ void Launcher::StartEngine()
 	{
 		// initialize CryEngine without CryAction
 		// Launcher::OnEarlyEngineInit is called here
-		InitCrySystem(m_dlls.pCrySystem, m_params);
+		InitCrySystem(g_pCrySystem, m_params);
 
 		// initialize our CryAction
 		if (!pGameFramework->Init(m_params))
@@ -1291,13 +1773,6 @@ void Launcher::StartEngine()
 	gEnv->pSystem->ExecuteCommandLine();
 }
 
-Launcher::Launcher()
-{
-}
-
-Launcher::~Launcher()
-{
-}
 
 void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 {
@@ -1328,7 +1803,9 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 	const char* banner = "CryMP Server " CRYMP_VERSION_STRING " " CRYMP_BITS " " CRYMP_BUILD_TYPE;
 #endif
 
-	CrashLogger::Enable(&ProvideLogFile, &CryMemoryManager::ProvideHeapInfo, banner);
+	if (!WinAPI::CmdLine::HasArg("-rawdump")) {
+		CrashLogger::Enable(&ProvideLogFile, &CryMemoryManager::ProvideHeapInfo, banner);
+	}
 
 	logger.LogAlways("Log begins at %s", Logger::FormatPrefix("%F %T%z").c_str());
 
@@ -1349,7 +1826,7 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 	logger.LogAlways("%s", banner);
 	logger.LogAlways("Compiled by " CRYMP_COMPILER);
 	logger.LogAlways("Copyright (C) 2001-2008 Crytek GmbH");
-	logger.LogAlways("Copyright (C) 2014-2025 CryMP");
+	logger.LogAlways("Copyright (C) 2014-2026 CryMP");
 	logger.LogAlways("");
 
 	logger.SetPrefix(logPrefix);
@@ -1365,6 +1842,10 @@ void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 	gEnv->pConsole->AddCommand("LocalizationManagerInfo", [](IConsoleCmdArgs* args) {
 		LocalizationManager::GetInstance().LogInfo();
 	});
+
+	gEnv->pConsole->AddCommand("CryMemoryManagerInfo", [](IConsoleCmdArgs* args) {
+		CryMemoryManager::LogInfo();
+	});
 }
 
 struct DummySystemCallback : public ISystemUserCallback
@@ -1379,61 +1860,80 @@ struct DummySystemCallback : public ISystemUserCallback
 	void GetMemoryUsage(ICrySizer*) override {}
 };
 
-void Launcher::Run()
+
+int Launcher::Run(char* cmdLine)
 {
-	DummySystemCallback dummyCallback;
+    DummySystemCallback dummyCallback;
 
-	m_params.hInstance = WinAPI::DLL::Get(nullptr);  // EXE handle
-	m_params.pLog = &Logger::GetInstance();
-#ifdef SERVER_LAUNCHER
-	m_params.isDedicatedServer = true;
+    m_params.hInstance = WinAPI::DLL::Get(nullptr);
+    m_params.pLog = &Logger::GetInstance();
+
+    if (WinAPI::GetApplicationPath().filename().string().find("CryMP") != 0)
+    {
+        throw StringTools::ErrorFormat("Invalid name of the executable!");
+    }
+
+    if (WinAPI::CmdLine::HasArg("-mod"))
+    {
+        throw StringTools::ErrorFormat("Mods are not supported!");
+    }
+
+    this->InitWorkingDirectory();
+    this->SetCmdLine();
+
+#ifdef EDITOR_LAUNCHER
+
+    // Crysis Editor startup
+    this->LoadEditor();
+    this->PatchEditor();
+
+    return this->StartEditor(cmdLine);
+
 #else
-	m_params.isDedicatedServer = WinAPI::CmdLine::HasArg("-dedicated");
+
+    // Client / Server startup
+#ifdef SERVER_LAUNCHER
+    m_params.isDedicatedServer = true;
+#else
+    m_params.isDedicatedServer = WinAPI::CmdLine::HasArg("-dedicated");
 #endif
 
-	if (WinAPI::CmdLine::HasArg("-headless"))
-	{
-		m_params.pUserCallback = &dummyCallback;
-		m_params.isDedicatedServer = true;
-	}
+    if (WinAPI::CmdLine::HasArg("-headless"))
+    {
+        m_params.pUserCallback = &dummyCallback;
+        m_params.isDedicatedServer = true;
+    }
 
-	this->SetCmdLine();
+    CryMemoryManager::Init();
 
-	if (WinAPI::GetApplicationPath().filename().string().find("CryMP") != 0)
-	{
-		throw StringTools::ErrorFormat("Invalid name of the executable!");
-	}
+    this->LoadEngine();
+    this->PatchEngine();
 
-	if (WinAPI::CmdLine::HasArg("-mod"))
-	{
-		throw StringTools::ErrorFormat("Mods are not supported!");
-	}
+    RandomGenerator::Init();
 
-	this->InitWorkingDirectory();
+    if (m_params.isDedicatedServer)
+    {
+        Server server;
+        gServer = &server;
 
-	this->LoadEngine();
-	this->PatchEngine();
+        this->StartEngine();
 
-	RandomGenerator::Init();
-
-	if (m_params.isDedicatedServer)
-	{
-		Server server;
-		gServer = &server;
-
-		this->StartEngine();
-
-		gServer->UpdateLoop();
-	}
-	else
-	{
+        gServer->UpdateLoop();
+    }
+    else
+    {
 #ifdef CLIENT_LAUNCHER
-		Client client;
-		gClient = &client;
+        Client client;
+        gClient = &client;
 
-		this->StartEngine();
+        this->StartEngine();
 
-		gClient->UpdateLoop();
+        gClient->UpdateLoop();
 #endif
-	}
+    }
+
+    return 0;
+
+#endif
 }
+
