@@ -11,11 +11,11 @@ static void FillNop(void* base, std::size_t offset, std::size_t size)
 	WinAPI::FillNOP(address, size);
 }
 
-static void FillMem(void* base, std::size_t offset, const void* data, std::size_t dataSize)
+static void FillMem(void* base, std::size_t offset, const void* data, std::size_t dataSize, bool executable = true)
 {
 	void* address = static_cast<unsigned char*>(base) + offset;
 
-	WinAPI::FillMem(address, data, dataSize);
+	WinAPI::FillMem(address, data, dataSize, executable);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -93,6 +93,28 @@ void MemoryPatch::CryAction::DisableBreakLog(void* pCryAction)
 	FillNop(pCryAction, 0x2D183F, 0x5);
 #else
 	FillNop(pCryAction, 0x1E987D, 0x5);
+#endif
+}
+
+/**
+ * Disables automatic creation of "gameplaystatsXXX.txt" files.
+ *
+ * The "dump_stats" console command can still be used to create these files manually.
+ */
+void MemoryPatch::CryAction::DisableGameplayStats(void* pCryAction)
+{
+#ifdef BUILD_64BIT
+	const unsigned char code[] = {
+		0xC3,  // ret
+		0x90,  // nop
+		0x90,  // nop
+		0x90,  // nop
+		0x90   // nop
+	};
+
+	FillMem(pCryAction, 0x2FA976, code, sizeof(code));
+#else
+	FillNop(pCryAction, 0x20605D, 0x7);
 #endif
 }
 
@@ -710,6 +732,50 @@ void MemoryPatch::CryRenderD3D10::HookAdapterInfo(void* pCryRenderD3D10, void (*
 #endif
 }
 
+/**
+ * Hooks D3D10 API initialization.
+ *
+ * CryRenderD3D10 loads d3d10.dll and dxgi.dll with absolute paths (GetSystemDirectoryW) for some reason.
+ * This patch is used to load these DLLs normally, so placing them next to CryRenderD3D10.dll works as expected.
+ */
+void MemoryPatch::CryRenderD3D10::HookInitAPI(void* pCryRenderD3D10, bool (*handler)(SystemAPI* api))
+{
+#ifdef BUILD_64BIT
+	unsigned char code[] = {
+		0x48, 0x8D, 0x0D, 0xF3, 0xFF, 0xFF, 0xFF,                    // lea rcx, qword ptr ds:[rip-0xD]
+		0x03, 0x0D, 0xE8, 0xFF, 0xFF, 0xFF,                          // add ecx, dword ptr ds:[rip-0x18]
+		0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, 0x0
+		0xFF, 0xD0,                                                  // call rax
+		0x48, 0x81, 0xC4, 0x38, 0x02, 0x00, 0x00,                    // add rsp, 0x238
+		0xC3,                                                        // ret
+		0x90,                                                        // nop
+		0x90,                                                        // nop
+	};
+
+	std::memcpy(&code[15], &handler, 8);
+#else
+	unsigned char code[] = {
+		0xE8, 0x12, 0x00, 0x00, 0x00,        // call get_pc -----------------------+
+		0x8B, 0x40, 0xF0,                    // mov eax, dword ptr ds:[eax-0x10]   |
+		0x50,                                // push eax                           |
+		0xB8, 0x00, 0x00, 0x00, 0x00,        // mov eax, 0x0                       |
+		0xFF, 0xD0,                          // call eax                           |
+		0x81, 0xC4, 0x10, 0x02, 0x00, 0x00,  // add esp, 0x210                     |
+		0xC3,                                // ret                                |
+		0x8B, 0x04, 0x24,                    // mov eax, dword ptr ss:[esp]  <-----+
+		0xC3,                                // ret
+	};
+
+	std::memcpy(&code[10], &handler, 4);
+#endif
+
+#ifdef BUILD_64BIT
+	FillMem(pCryRenderD3D10, 0x1C99D3, &code, sizeof(code));
+#else
+	FillMem(pCryRenderD3D10, 0x171080, &code, sizeof(code));
+#endif
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // CryRenderNULL
 ////////////////////////////////////////////////////////////////////////////////
@@ -779,7 +845,7 @@ void MemoryPatch::CryRenderNULL::DisableDebugRenderer(void* pCryRenderNULL)
 		}
 
 		// install the new vtable
-		FillMem(pCryRenderNULL, renderAuxGeomVTableOffset, newVTable, sizeof(newVTable));
+		FillMem(pCryRenderNULL, renderAuxGeomVTableOffset, newVTable, sizeof(newVTable), false);
 	}
 }
 
@@ -1021,3 +1087,141 @@ void MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(void* pFMODEx)
 	FillMem(pFMODEx, 0x486B7, &code, sizeof(code));
 #endif
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Editor
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Fixes the top right and bottom left panels of the main viewport.
+ *
+ * In modern windows, these two panels have all their buttons stacked on top
+ * of each other.
+ */
+void MemoryPatch::Editor::FixBrokenPanels(void* pEditor, int editorBuild)
+{
+#ifdef BUILD_64BIT
+    static const unsigned char codeA[] = {
+        0x48, 0xC7, 0x44, 0x24, 0x58,
+        0x00, 0x00, 0x00, 0x00
+    };
+
+    static const unsigned char codeB[] = {
+        0x83, 0xC9, 0xFF,
+        0x48, 0x83, 0xC1, 0x02,
+        0x48, 0x89, 0x4C, 0x24, 0x60,
+        0x90
+    };
+#else
+    static const unsigned char codeA[] = {
+        0x33, 0xFF,
+        0x33, 0xC0,
+        0xB0, 0x01,
+        0x89, 0x45, 0xE8,
+        0x89, 0x45, 0xEC
+    };
+
+    static const unsigned char codeB[] = {
+        0x83, 0x65, 0xE0, 0x00,
+        0x83, 0x65, 0xE4, 0x00
+    };
+#endif
+
+    switch (editorBuild)
+    {
+#ifdef BUILD_64BIT
+        case 5767:
+        {
+            FillMem(pEditor, 0x36DB6, codeA, sizeof(codeA));
+            FillMem(pEditor, 0x36DCC, codeB, sizeof(codeB));
+            break;
+        }
+
+        case 6670:
+        {
+            FillMem(pEditor, 0x36336, codeA, sizeof(codeA));
+            FillMem(pEditor, 0x3634C, codeB, sizeof(codeB));
+            break;
+        }
+#else
+        case 5767:
+        {
+            FillMem(pEditor, 0x336CF, codeA, sizeof(codeA));
+            FillMem(pEditor, 0x336E0, codeB, sizeof(codeB));
+            break;
+        }
+
+        case 6670:
+        {
+            FillMem(pEditor, 0x32CC1, codeA, sizeof(codeA));
+            FillMem(pEditor, 0x32CD2, codeB, sizeof(codeB));
+            break;
+        }
+#endif
+    }
+}
+
+/**
+ * Hooks Editor version initialization.
+ *
+ * The original code reads the version resource of the main EXE.
+ * Since Editor EXE is loaded as a DLL, it reads the launcher's version
+ * resource instead of its own.
+ */
+void MemoryPatch::Editor::HookVersionInit(
+    void* pEditor,
+    int editorBuild,
+    void (*handler)(MemoryPatch::Editor::Version* version))
+{
+#ifdef BUILD_64BIT
+    static unsigned char code[] = {
+        0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x48, 0x81, 0xC1, 0x10, 0x01, 0x00, 0x00,
+        0xFF, 0xE0
+    };
+
+    std::memcpy(&code[2], &handler, 8);
+#else
+    static unsigned char code[] = {
+        0xB8, 0x00, 0x00, 0x00, 0x00,
+        0x81, 0xC1, 0xE4, 0x00, 0x00, 0x00,
+        0x51,
+        0xFF, 0xD0,
+        0x83, 0xC4, 0x04,
+        0xC3
+    };
+
+    std::memcpy(&code[1], &handler, 4);
+#endif
+
+    switch (editorBuild)
+    {
+#ifdef BUILD_64BIT
+        case 5767:
+        {
+            FillMem(pEditor, 0x28720, code, sizeof(code));
+            break;
+        }
+
+        case 6670:
+        {
+            FillMem(pEditor, 0x27BB0, code, sizeof(code));
+            break;
+        }
+#else
+        case 5767:
+        {
+            FillMem(pEditor, 0x2CBA4, code, sizeof(code));
+            break;
+        }
+
+        case 6670:
+        {
+            FillMem(pEditor, 0x2C1BC, code, sizeof(code));
+            break;
+        }
+#endif
+    }
+}
+
