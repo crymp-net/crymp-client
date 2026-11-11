@@ -4,48 +4,25 @@
 
 class Launcher
 {
-	struct DLLs
-	{
-		// do not try to unload these DLLs as it might crash
-		void* pCry3DEngine = nullptr;
-		void* pCryAction = nullptr;
-		void* pCryAISystem = nullptr;
-		void* pCryNetwork = nullptr;
-		void* pCrySystem = nullptr;
-		void* pCryRenderD3D9 = nullptr;
-		void* pCryRenderD3D10 = nullptr;
-		void* pCryRenderNULL = nullptr;
-		void* pFmodEx = nullptr;
-	};
+    SSystemInitParams m_params = {};
 
-	DLLs m_dlls;
-	SSystemInitParams m_params = {};
+    void SetCmdLine();
+    void InitWorkingDirectory();
 
-	void SetCmdLine();
-	void InitWorkingDirectory();
-	void LoadEngine();
-	void PatchEngine();
-	void StartEngine();
+    void LoadEngine();
+    void PatchEngine();
+    void StartEngine();
+
+#ifdef EDITOR_LAUNCHER
+    void LoadEditor();
+    void PatchEditor();
+    int StartEditor(char* cmdLine);
+#endif
 
 public:
-	Launcher();
-	~Launcher();
+    Launcher() = default;
 
-	void OnEarlyEngineInit(ISystem* pSystem);
+    int Run(char* cmdLine = nullptr);
 
-	const DLLs& GetDLLs()
-	{
-		return m_dlls;
-	}
-
-	const SSystemInitParams& GetParams() const
-	{
-		return m_params;
-	}
-
-	void Run();
+    static void OnEarlyEngineInit(ISystem* pSystem);
 };
-
-///////////////////////////
-inline Launcher* gLauncher;
-///////////////////////////
