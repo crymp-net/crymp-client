@@ -343,6 +343,15 @@ void CPlayer::ResetAnimGraph()
 
 void CPlayer::ProcessEvent(SEntityEvent& event)
 {
+	if (event.event == ENTITY_EVENT_TIMER && event.nParam[0] == CNanoSuit::CloakBlendTimer)
+	{
+		if (m_pNanoSuit)
+		{
+			m_pNanoSuit->FinishRemoteCloakBlend();
+		}
+		return;
+	}
+
 	if (event.event == ENTITY_EVENT_HIDE || event.event == ENTITY_EVENT_UNHIDE)
 	{
 		//
