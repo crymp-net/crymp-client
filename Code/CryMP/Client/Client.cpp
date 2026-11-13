@@ -522,6 +522,8 @@ void Client::OnActionEvent(const SActionEvent & event)
 	{
 		case eAE_disconnected:
 		{
+			m_pPendingPreloadLevel = nullptr;
+
 			EDisconnectionCause reason = static_cast<EDisconnectionCause>(event.m_value);
 			const char *message = event.m_description;
 
@@ -573,32 +575,35 @@ void Client::OnLevelNotFound(const char *levelName)
 
 void Client::OnLoadingStart(ILevelInfo *pLevel)
 {
+	m_pPendingPreloadLevel = nullptr;
 	TeamSelectionPreview::Reset();
-	m_isLoadingInProgress = false;
 
 	this->FixCVars();
 
 	gEnv->pScriptSystem->ForceGarbageCollection();
 
 	m_pScriptCallbacks->OnLoadingStart();
+	m_pPendingPreloadLevel = pLevel;
 }
 
 void Client::OnLoadingComplete(ILevel *pLevel)
 {
+	m_pPendingPreloadLevel = nullptr;
 	TeamSelectionPreview::Preload();
 }
 
 void Client::OnLoadingError(ILevelInfo *pLevel, const char *error)
 {
+	m_pPendingPreloadLevel = nullptr;
 	TeamSelectionPreview::Reset();
 }
 
 void Client::OnLoadingProgress(ILevelInfo *pLevel, int progressAmount)
 {
-	// Put heavy stuff here to avoid lags before level loading screen
-	if (!m_isLoadingInProgress)
+	if (pLevel && pLevel == m_pPendingPreloadLevel)
 	{
-		m_isLoadingInProgress = true;
+		// The preload can report more loading progress while creating CGA instances.
+		m_pPendingPreloadLevel = nullptr;
 		m_pServerPAK->OnFirstLoadingProgress();
 	}
 }
