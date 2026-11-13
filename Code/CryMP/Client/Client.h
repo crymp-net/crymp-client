@@ -66,7 +66,7 @@ class Client : public IGameFrameworkListener, public ILevelSystemListener, publi
 	std::vector<KeyBind> m_keyBinds;
 
 	EntityId m_lastSpawnId = 0;
-	bool m_isLoadingInProgress = false;
+	ILevelInfo *m_pPendingPreloadLevel = nullptr;
 
 	void InitMasters();
 	void SetVersionInLua();
