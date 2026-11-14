@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
+//#include <Windows.h>
 #include <string_view>
 #include <filesystem>
 #include <functional>
@@ -10,6 +11,14 @@
 
 namespace WinAPI
 {
+
+
+	std::size_t GetSysErrorDescription(
+    char* buffer,
+    std::size_t bufferSize,
+    unsigned long errorCode
+);
+
 	inline constexpr std::string_view NEWLINE = "\r\n";
 
 	/////////////
@@ -56,6 +65,16 @@ namespace WinAPI
 
 	uint64_t GetLastWriteTime(const std::filesystem::path& path);
 
+	std::size_t GetWorkingDirectory(char* buffer, std::size_t bufferSize);
+
+	std::size_t GetDocumentsPath(char* buffer, std::size_t bufferSize);
+
+	std::size_t PrettifyPath(
+    const char* path,
+    char* buffer,
+    std::size_t bufferSize
+);
+
 	/////////////
 	// Modules //
 	/////////////
@@ -68,6 +87,8 @@ namespace WinAPI
 		void* Load(const char* name);
 		void* GetSymbol(void* pDLL, const char* name);
 		void Unload(void* pDLL);
+
+		std::size_t GetPath(void* pDLL, char* buffer, std::size_t bufferSize);
 	}
 
 	/////////////////
@@ -97,7 +118,7 @@ namespace WinAPI
 	///////////
 
 	void FillNOP(void *address, size_t length);
-	void FillMem(void *address, const void *data, size_t length);
+	void FillMem(void *address, const void *data, size_t length, bool executable = true);
 
 	void HookWithJump(void* address, void* pNewFunc);
 
@@ -127,6 +148,8 @@ namespace WinAPI
 	DateTime GetCurrentDateTimeLocal();
 
 	long GetTimeZoneBias();
+
+	void Wait(double seconds);
 
 	/////////////
 	// Strings //
@@ -204,4 +227,10 @@ namespace WinAPI
 		void ConvertPosToWindow(void* window, long& x, long& y);
 		void ConvertPosToScreen(void* window, long& x, long& y);
 	}
+
+	/////////////
+	// Threads //
+	/////////////
+
+	void SetCurrentThreadName(const char* name);
 }
