@@ -1,9 +1,15 @@
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 
 #include <windows.h>
 #include <winhttp.h>
 #include <winnls.h>
+#include <shlobj.h>
+#include <string>
 
 #include "WinAPI.h"
 #include "StringTools.h"
@@ -11,6 +17,7 @@
 //////////////////
 // Command line //
 //////////////////
+
 
 static int FindArgIndex(const char* arg)
 {
@@ -97,7 +104,42 @@ const char* WinAPI::CmdLine::GetArgValue(const char* arg, const char* defaultVal
 
 unsigned long WinAPI::GetCurrentErrorCode()
 {
-	return GetLastError();
+    return GetLastError();
+}
+
+std::size_t WinAPI::GetSysErrorDescription(
+    char* buffer,
+    std::size_t bufferSize,
+    unsigned long errorCode)
+{
+    if (!buffer || bufferSize == 0)
+        return 0;
+
+    DWORD result = FormatMessageA(
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr,
+        errorCode,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        buffer,
+        static_cast<DWORD>(bufferSize),
+        nullptr
+    );
+
+    if (result == 0)
+    {
+        buffer[0] = '\0';
+        return 0;
+    }
+
+    // Remove trailing newline characters.
+    while (result > 0 &&
+        (buffer[result - 1] == '\r' || buffer[result - 1] == '\n'))
+    {
+        buffer[--result] = '\0';
+    }
+
+    return static_cast<std::size_t>(result);
 }
 
 ///////////
@@ -146,6 +188,173 @@ uint64_t WinAPI::GetLastWriteTime(const std::filesystem::path& path)
 	return time_value.QuadPart / 10000000ULL;
 }
 
+std::size_t WinAPI::GetWorkingDirectory(char* buffer, std::size_t bufferSize)
+{
+    if (!buffer || bufferSize == 0 || bufferSize > MAXDWORD)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+
+    DWORD length = GetCurrentDirectoryA(
+        static_cast<DWORD>(bufferSize),
+        buffer
+    );
+
+    if (length == 0)
+        return 0;
+
+    if (length >= bufferSize)
+    {
+        SetLastError(ERROR_INSUFFICIENT_BUFFER);
+        return 0;
+    }
+
+    return length;
+}
+
+
+std::size_t WinAPI::GetDocumentsPath(char* buffer, std::size_t bufferSize)
+{
+    if (!buffer || bufferSize == 0)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+
+    char path[MAX_PATH] = {};
+
+    HRESULT result = SHGetFolderPathA(
+        nullptr,
+        CSIDL_PERSONAL | CSIDL_FLAG_CREATE,
+        nullptr,
+        SHGFP_TYPE_CURRENT,
+        path
+    );
+
+    if (FAILED(result))
+    {
+        SetLastError(HRESULT_CODE(result));
+        return 0;
+    }
+
+    const std::size_t length = strlen(path);
+
+    if (length >= bufferSize)
+    {
+        SetLastError(ERROR_INSUFFICIENT_BUFFER);
+        return 0;
+    }
+
+    memcpy(buffer, path, length + 1);
+
+    return length;
+}
+
+
+std::size_t WinAPI::PrettifyPath(
+    const char* path,
+    char* buffer,
+    std::size_t bufferSize
+)
+{
+    if (!path || !buffer || bufferSize == 0)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+
+    using TGetFinalPathNameByHandleA =
+        DWORD(WINAPI*)(HANDLE, LPSTR, DWORD, DWORD);
+
+    static const auto pGetFinalPathNameByHandleA =
+        reinterpret_cast<TGetFinalPathNameByHandleA>(
+            GetProcAddress(
+                GetModuleHandleA("kernel32.dll"),
+                "GetFinalPathNameByHandleA"
+            )
+        );
+
+    if (!pGetFinalPathNameByHandleA)
+    {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+        return 0;
+    }
+
+    HANDLE file = CreateFileA(
+        path,
+        FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        nullptr,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        nullptr
+    );
+
+    if (file == INVALID_HANDLE_VALUE)
+        return 0;
+
+    struct HandleGuard
+    {
+        HANDLE handle;
+
+        ~HandleGuard()
+        {
+            CloseHandle(handle);
+        }
+    } guard{ file };
+
+    constexpr DWORD FLAGS =
+        FILE_NAME_NORMALIZED | VOLUME_NAME_DOS;
+
+    DWORD requiredSize = pGetFinalPathNameByHandleA(
+        file,
+        nullptr,
+        0,
+        FLAGS
+    );
+
+    if (requiredSize == 0)
+        return 0;
+
+    std::string finalPath(requiredSize, '\0');
+
+    DWORD length = pGetFinalPathNameByHandleA(
+        file,
+        finalPath.data(),
+        requiredSize,
+        FLAGS
+    );
+
+    if (length == 0 || length >= requiredSize)
+        return 0;
+
+    finalPath.resize(length);
+
+    // Convert \\?\UNC\server\share into \\server\share.
+    if (finalPath.compare(0, 8, "\\\\?\\UNC\\") == 0)
+    {
+        finalPath = "\\\\" + finalPath.substr(8);
+    }
+    // Remove the \\?\ prefix from normal drive paths.
+    else if (finalPath.compare(0, 4, "\\\\?\\") == 0 &&
+             finalPath.size() > 5 &&
+             finalPath[5] == ':')
+    {
+        finalPath.erase(0, 4);
+    }
+
+    if (finalPath.size() >= bufferSize)
+    {
+        SetLastError(ERROR_INSUFFICIENT_BUFFER);
+        return 0;
+    }
+
+    memcpy(buffer, finalPath.c_str(), finalPath.size() + 1);
+
+    return finalPath.size();
+}
+
 /////////////
 // Modules //
 /////////////
@@ -157,6 +366,7 @@ void WinAPI::DLL::AddSearchDirectory(const std::filesystem::path& path)
 		throw StringTools::SysErrorFormat("SetDllDirectoryW");
 	}
 }
+
 
 void *WinAPI::DLL::Get(const char* name)
 {
@@ -176,6 +386,36 @@ void *WinAPI::DLL::GetSymbol(void* pDLL, const char* name)
 void WinAPI::DLL::Unload(void* pDLL)
 {
 	FreeLibrary(static_cast<HMODULE>(pDLL));
+}
+
+std::size_t WinAPI::DLL::GetPath(
+    void* pDLL,
+    char* buffer,
+    std::size_t bufferSize
+)
+{
+    if (!buffer || bufferSize == 0 || bufferSize > MAXDWORD)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+
+    DWORD length = GetModuleFileNameA(
+        static_cast<HMODULE>(pDLL),
+        buffer,
+        static_cast<DWORD>(bufferSize)
+    );
+
+    if (length == 0)
+        return 0;
+
+    if (length >= bufferSize)
+    {
+        SetLastError(ERROR_INSUFFICIENT_BUFFER);
+        return 0;
+    }
+
+    return length;
 }
 
 /////////////////
@@ -321,13 +561,20 @@ void WinAPI::FillNOP(void *address, size_t length)
  * @param data The data.
  * @param length Size of the data in bytes.
  */
-void WinAPI::FillMem(void *address, const void *data, size_t length)
+void WinAPI::FillMem(void *address, const void *data, size_t length, bool executable)
 {
 	DWORD oldProtection;
 
-	if (!VirtualProtect(address, length, PAGE_EXECUTE_READWRITE, &oldProtection))
-	{
-		throw StringTools::SysErrorFormat("VirtualProtect");
+	if (executable) {
+		if (!VirtualProtect(address, length, PAGE_EXECUTE_READWRITE, &oldProtection))
+		{
+			throw StringTools::SysErrorFormat("VirtualProtect");
+		}
+	} else {
+		if (!VirtualProtect(address, length, PAGE_READWRITE, &oldProtection))
+		{
+			throw StringTools::SysErrorFormat("VirtualProtect");
+		}
 	}
 
 	memcpy(address, data, length);
@@ -336,6 +583,7 @@ void WinAPI::FillMem(void *address, const void *data, size_t length)
 	{
 		throw StringTools::SysErrorFormat("VirtualProtect");
 	}
+
 }
 
 void WinAPI::HookWithJump(void* address, void* pNewFunc)
@@ -1021,4 +1269,98 @@ std::string WinAPI::GetIP(const std::string& hostName) {
 		iaddr.s_addr=*(unsigned long*)result->h_addr;
 		return inet_ntoa(iaddr);
 	}
+}
+
+void WinAPI::Wait(double seconds) {
+	if (seconds <= 0.0) return;
+
+	LARGE_INTEGER frequency, start, current;
+	QueryPerformanceFrequency(&frequency);
+	QueryPerformanceCounter(&start);
+
+	// 1. Tell Windows we need higher timer resolution (1ms)
+	// This makes Sleep(1) much more reliable.
+	timeBeginPeriod(1);
+
+	double targetTime = seconds;
+	double elapsed = 0;
+
+	// 2. The "Lazy" Phase: Sleep until we are within 2ms of the target
+	while (true) {
+		QueryPerformanceCounter(&current);
+		elapsed = (double)(current.QuadPart - start.QuadPart) / (double)frequency.QuadPart;
+
+		double remaining = targetTime - elapsed;
+		if (remaining <= 0.002) break; // If less than 2ms left, stop sleeping
+
+		Sleep(1); // Give the CPU a break
+	}
+
+	// 3. The "Precision" Phase: Busy-wait for the final microseconds
+	do {
+		YieldProcessor(); // Low-power hint for the CPU
+		QueryPerformanceCounter(&current);
+		elapsed = (double)(current.QuadPart - start.QuadPart) / (double)frequency.QuadPart;
+	} while (elapsed < targetTime);
+
+	// 4. Restore system timer resolution
+	timeEndPeriod(1);
+}
+
+/////////////
+// Threads //
+/////////////
+
+static void SetCurrentThreadNameLegacy(const char* name)
+{
+	// http://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx
+#pragma pack(push,8)
+	struct THREADNAME_INFO
+	{
+		DWORD dwType; // Must be 0x1000.
+		LPCSTR szName; // Pointer to name (in user addr space).
+		DWORD dwThreadID; // Thread ID (-1=caller thread).
+		DWORD dwFlags; // Reserved for future use, must be zero.
+	};
+#pragma pack(pop)
+
+	THREADNAME_INFO info{};
+	info.dwType = 0x1000;
+	info.szName = name;
+	info.dwThreadID = static_cast<DWORD>(-1);
+	info.dwFlags = 0;
+
+	__try
+	{
+		RaiseException(0x406D1388, 0, sizeof(info) / sizeof(ULONG_PTR), reinterpret_cast<ULONG_PTR*>(&info));
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER)
+	{
+	}
+}
+
+static void SetCurrentThreadNameModern(const char* name)
+{
+	using TSetThreadDescription = HRESULT (WINAPI*)(HANDLE, PCWSTR);
+
+	static const TSetThreadDescription pSetThreadDescription = reinterpret_cast<TSetThreadDescription>(
+		GetProcAddress(GetModuleHandleA("kernel32.dll"), "SetThreadDescription")
+	);
+
+	if (pSetThreadDescription)
+	{
+		wchar_t wideName[128]{};
+		MultiByteToWideChar(CP_UTF8, 0, name, -1, wideName, 128);
+		wideName[127] = L'\0';
+		pSetThreadDescription(GetCurrentThread(), wideName);
+	}
+}
+
+void WinAPI::SetCurrentThreadName(const char* name)
+{
+	// the legacy approach first
+	SetCurrentThreadNameLegacy(name);
+
+	// now the modern approach (Win10+), if available
+	SetCurrentThreadNameModern(name);
 }
