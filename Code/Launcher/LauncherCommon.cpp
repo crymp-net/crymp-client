@@ -5,7 +5,7 @@
 #include "CryCommon/CrySystem/ISystem.h"
 
 #include "Library/EXELoader.h"
-#include "Library/OS.h"
+#include "Library/WinAPI.h"
 #include "Library/PathTools.h"
 #include "Library/StringFormat.h"
 #include "Library/StringView.h"
@@ -22,7 +22,7 @@ static std::string GetDocumentsPath()
     char buffer[512] = {};
 
     const std::size_t length =
-        OS::GetDocumentsPath(buffer, sizeof(buffer));
+        WinAPI::GetDocumentsPath(buffer, sizeof(buffer));
 
     if (length == 0)
         throw StringFormat_SysError("Failed to get Documents path!");
@@ -36,7 +36,7 @@ static std::string GetWorkingDirectory()
     char buffer[512] = {};
 
     const std::size_t length =
-        OS::GetWorkingDirectory(buffer, sizeof(buffer));
+        WinAPI::GetWorkingDirectory(buffer, sizeof(buffer));
 
     if (length == 0)
         throw StringFormat_SysError("Failed to get working directory!");
@@ -44,7 +44,7 @@ static std::string GetWorkingDirectory()
     return std::string(buffer, length);
 }
 
-// Normalizează o cale folosind implementarea existentă din OS.cpp.
+// Normalizează o cale folosind implementarea WinAPI.
 static std::string PrettifyPath(const char* path)
 {
     if (!path || !*path)
@@ -53,7 +53,7 @@ static std::string PrettifyPath(const char* path)
     char buffer[512] = {};
 
     const std::size_t length =
-        OS::PretiffyPath(path, buffer, sizeof(buffer));
+        WinAPI::PrettifyPath(path, buffer, sizeof(buffer));
 
     if (length == 0)
         return std::string(path);
@@ -81,7 +81,11 @@ std::string LauncherCommon::GetMainFolderPath()
     char exePathBuffer[512] = {};
 
     const std::size_t length =
-        OS::EXE::GetPath(exePathBuffer, sizeof(exePathBuffer));
+        WinAPI::DLL::GetPath(
+            nullptr,
+            exePathBuffer,
+            sizeof(exePathBuffer)
+        );
 
     if (length == 0)
         return std::string();
@@ -105,17 +109,17 @@ std::string LauncherCommon::GetMainFolderPath()
 
 std::string LauncherCommon::GetRootFolderPath()
 {
-	const char* rootArg = OS::CmdLine::GetArgValue("-root", NULL);
+	const char* rootArg = WinAPI::CmdLine::GetArgValue("-root", NULL);
 
 	return rootArg ? std::string(rootArg) : GetMainFolderPath();
 }
 
 void* LauncherCommon::LoadDLL(const char* name)
 {
-	void* dll = OS::DLL::Load(name);
+	void* dll = WinAPI::DLL::Load(name);
 	if (!dll)
 	{
-		const unsigned long sysError = OS::GetSysError();
+		const unsigned long sysError = WinAPI::GetCurrentErrorCode();
 
 		if (sysError == 193)  // ERROR_BAD_EXE_FORMAT
 		{
@@ -169,8 +173,8 @@ int LauncherCommon::GetGameBuild(void* pCrySystem)
 	{
 		return c_GameBuild;
 	}
-	OS::DLL::Version version;
-	if (!OS::DLL::GetVersion(pCrySystem, version))
+	WinAPI::VersionResource version;
+	if (!WinAPI::GetVersionResource(pCrySystem, version))
 	{
 		throw StringFormat_SysError("Failed to get the game version!");
 	}
@@ -213,9 +217,9 @@ void LauncherCommon::VerifyGameBuild(int gameBuild)
 
 bool LauncherCommon::IsFMODExVersionCorrect(void* pFMODEx, int gameBuild)
 {
-    OS::DLL::Version ver;
+    WinAPI::VersionResource ver;
 
-    if (!OS::DLL::GetVersion(pFMODEx, ver))
+    if (!WinAPI::GetVersionResource(pFMODEx, ver))
         return false;
 
     switch (gameBuild)
@@ -235,9 +239,9 @@ bool LauncherCommon::IsFMODExVersionCorrect(void* pFMODEx, int gameBuild)
 
 bool LauncherCommon::IsXToolkitProVersionCorrect(void* pXToolkitPro, int gameBuild)
 {
-    OS::DLL::Version ver;
+    WinAPI::VersionResource ver;
 
-    if (!OS::DLL::GetVersion(pXToolkitPro, ver))
+    if (!WinAPI::GetVersionResource(pXToolkitPro, ver))
         return false;
 
     switch (gameBuild)
@@ -257,7 +261,7 @@ bool LauncherCommon::IsXToolkitProVersionCorrect(void* pXToolkitPro, int gameBui
 
 bool LauncherCommon::IsDX10()
 {
-	return !OS::CmdLine::HasArg("-dx9") && (OS::CmdLine::HasArg("-dx10") || OS::IsVistaOrLater());
+	return !WinAPI::CmdLine::HasArg("-dx9") && (WinAPI::CmdLine::HasArg("-dx10") || WinAPI::IsVistaOrLater());
 }
 
 void LauncherCommon::SetParamsCmdLine(SSystemInitParams& params, const char* cmdLine)
@@ -274,7 +278,7 @@ void LauncherCommon::SetParamsCmdLine(SSystemInitParams& params, const char* cmd
 
 IGameStartup* LauncherCommon::StartEngine(void* pCryGame, SSystemInitParams& params)
 {
-	void* entry = OS::DLL::FindSymbol(pCryGame, "CreateGameStartup");
+	void* entry = WinAPI::DLL::GetSymbol(pCryGame, "CreateGameStartup");
 	if (!entry)
 	{
 		throw StringFormat_Error("The CryGame DLL is not valid!");
@@ -306,9 +310,9 @@ static void SetUserDirInMyGames(const char* name)
 {
     std::string path = GetDocumentsPath();
 
-    path += OS_PATH_SLASH;
+    path += "\\";
     path += "My Games";
-    path += OS_PATH_SLASH;
+    path += "\\";
     path += name;
 
     SetUserDir(path.c_str());
@@ -317,7 +321,7 @@ static void SetUserDirInMyGames(const char* name)
 static bool HandleUserPathArg()
 {
     const char* userPath =
-        OS::CmdLine::GetArgValue("-userpath", NULL);
+        WinAPI::CmdLine::GetArgValue("-userpath", NULL);
 
     if (!userPath)
         return false;
@@ -331,7 +335,7 @@ static bool HandleUserPathArg()
 
 static bool HandleUserDirNameArg()
 {
-	const char* userDirName = OS::CmdLine::GetArgValue("-userdirname", NULL);
+	const char* userDirName = WinAPI::CmdLine::GetArgValue("-userdirname", NULL);
 	if (!userDirName)
 	{
 		return false;
@@ -344,7 +348,7 @@ static bool HandleUserDirNameArg()
 
 static bool HandleModUserDirName()
 {
-	const char* mod = OS::CmdLine::GetArgValue("-mod", NULL);
+	const char* mod = WinAPI::CmdLine::GetArgValue("-mod", NULL);
 	if (!mod)
 	{
 		return false;
@@ -352,19 +356,19 @@ static bool HandleModUserDirName()
 
 	// absolute path is not needed because main directory is set as working directory at this point
 	std::string modDLLPath = "Mods";
-	modDLLPath += OS_PATH_SLASH;
+	modDLLPath += "\\";
 	modDLLPath += mod;
-	modDLLPath += OS_PATH_SLASH;
+	modDLLPath += "\\";
 #ifdef BUILD_64BIT
 	modDLLPath += "Bin64";
 #else
 	modDLLPath += "Bin32";
 #endif
-	modDLLPath += OS_PATH_SLASH;
+	modDLLPath += "\\";
 	modDLLPath += mod;
 	modDLLPath += ".dll";
 
-	void* modDLL = OS::DLL::Load(modDLLPath.c_str());
+	void* modDLL = WinAPI::DLL::Load(modDLLPath.c_str());
 	if (!modDLL)
 	{
 		// the mod has no DLL or it failed to load
@@ -374,7 +378,7 @@ static bool HandleModUserDirName()
 
 	typedef const char* (*TGetUserDirName)();
 
-	TGetUserDirName pGetUserDirName = static_cast<TGetUserDirName>(OS::DLL::FindSymbol(modDLL, "GetUserDirName"));
+	TGetUserDirName pGetUserDirName = static_cast<TGetUserDirName>(WinAPI::DLL::GetSymbol(modDLL, "GetUserDirName"));
 	if (!pGetUserDirName)
 	{
 		// the mod is not requesting a custom user directory
@@ -417,14 +421,14 @@ void LauncherCommon::OnChangeUserPath(
 
 static void LogRealWindowsBuild()
 {
-	void* kernel32 = OS::DLL::Get("kernel32.dll");
+	void* kernel32 = WinAPI::DLL::Get("kernel32.dll");
 	if (!kernel32)
 	{
 		return;
 	}
 
-	OS::DLL::Version ver;
-	if (!OS::DLL::GetVersion(kernel32, ver))
+	WinAPI::VersionResource ver;
+	if (!WinAPI::GetVersionResource(kernel32, ver))
 	{
 		return;
 	}
@@ -487,23 +491,23 @@ void LauncherCommon::OnD3D10Info(MemoryPatch::CryRenderD3D10::AdapterInfo* info)
 
 bool LauncherCommon::OnD3D10Init(MemoryPatch::CryRenderD3D10::SystemAPI* api)
 {
-	void* d3d10 = OS::DLL::Load("d3d10.dll");
+	void* d3d10 = WinAPI::DLL::Load("d3d10.dll");
 	if (!d3d10)
 	{
 		return false;
 	}
 
 	api->pD3D10 = d3d10;
-	api->pD3D10CreateDevice = OS::DLL::FindSymbol(d3d10, "D3D10CreateDevice");
+	api->pD3D10CreateDevice = WinAPI::DLL::GetSymbol(d3d10, "D3D10CreateDevice");
 
-	void* dxgi = OS::DLL::Load("dxgi.dll");
+	void* dxgi = WinAPI::DLL::Load("dxgi.dll");
 	if (!dxgi)
 	{
 		return false;
 	}
 
 	api->pDXGI = dxgi;
-	api->pCreateDXGIFactory = OS::DLL::FindSymbol(dxgi, "CreateDXGIFactory");
+	api->pCreateDXGIFactory = WinAPI::DLL::GetSymbol(dxgi, "CreateDXGIFactory");
 
 	return true;
 }
@@ -551,7 +555,7 @@ void LauncherCommon::LogBytes(const char* message, std::size_t bytes)
 std::FILE* LauncherCommon::OpenLogFile(const char* defaultFileName)
 {
     const StringView fileName =
-        OS::CmdLine::GetArgValue("-logfile", defaultFileName);
+        WinAPI::CmdLine::GetArgValue("-logfile", defaultFileName);
 
     const std::string_view fileNameView(
         fileName.data(),
