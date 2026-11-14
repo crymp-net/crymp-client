@@ -1,9 +1,15 @@
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 
 #include <windows.h>
 #include <winhttp.h>
 #include <winnls.h>
+#include <shlobj.h>
+#include <string>
 
 #include "WinAPI.h"
 #include "StringTools.h"
@@ -98,7 +104,42 @@ const char* WinAPI::CmdLine::GetArgValue(const char* arg, const char* defaultVal
 
 unsigned long WinAPI::GetCurrentErrorCode()
 {
-	return GetLastError();
+    return GetLastError();
+}
+
+std::size_t WinAPI::GetSysErrorDescription(
+    char* buffer,
+    std::size_t bufferSize,
+    unsigned long errorCode)
+{
+    if (!buffer || bufferSize == 0)
+        return 0;
+
+    DWORD result = FormatMessageA(
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr,
+        errorCode,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        buffer,
+        static_cast<DWORD>(bufferSize),
+        nullptr
+    );
+
+    if (result == 0)
+    {
+        buffer[0] = '\0';
+        return 0;
+    }
+
+    // Remove trailing newline characters.
+    while (result > 0 &&
+        (buffer[result - 1] == '\r' || buffer[result - 1] == '\n'))
+    {
+        buffer[--result] = '\0';
+    }
+
+    return static_cast<std::size_t>(result);
 }
 
 ///////////
@@ -147,6 +188,173 @@ uint64_t WinAPI::GetLastWriteTime(const std::filesystem::path& path)
 	return time_value.QuadPart / 10000000ULL;
 }
 
+std::size_t WinAPI::GetWorkingDirectory(char* buffer, std::size_t bufferSize)
+{
+    if (!buffer || bufferSize == 0 || bufferSize > MAXDWORD)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+
+    DWORD length = GetCurrentDirectoryA(
+        static_cast<DWORD>(bufferSize),
+        buffer
+    );
+
+    if (length == 0)
+        return 0;
+
+    if (length >= bufferSize)
+    {
+        SetLastError(ERROR_INSUFFICIENT_BUFFER);
+        return 0;
+    }
+
+    return length;
+}
+
+
+std::size_t WinAPI::GetDocumentsPath(char* buffer, std::size_t bufferSize)
+{
+    if (!buffer || bufferSize == 0)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+
+    char path[MAX_PATH] = {};
+
+    HRESULT result = SHGetFolderPathA(
+        nullptr,
+        CSIDL_PERSONAL | CSIDL_FLAG_CREATE,
+        nullptr,
+        SHGFP_TYPE_CURRENT,
+        path
+    );
+
+    if (FAILED(result))
+    {
+        SetLastError(HRESULT_CODE(result));
+        return 0;
+    }
+
+    const std::size_t length = strlen(path);
+
+    if (length >= bufferSize)
+    {
+        SetLastError(ERROR_INSUFFICIENT_BUFFER);
+        return 0;
+    }
+
+    memcpy(buffer, path, length + 1);
+
+    return length;
+}
+
+
+std::size_t WinAPI::PrettifyPath(
+    const char* path,
+    char* buffer,
+    std::size_t bufferSize
+)
+{
+    if (!path || !buffer || bufferSize == 0)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+
+    using TGetFinalPathNameByHandleA =
+        DWORD(WINAPI*)(HANDLE, LPSTR, DWORD, DWORD);
+
+    static const auto pGetFinalPathNameByHandleA =
+        reinterpret_cast<TGetFinalPathNameByHandleA>(
+            GetProcAddress(
+                GetModuleHandleA("kernel32.dll"),
+                "GetFinalPathNameByHandleA"
+            )
+        );
+
+    if (!pGetFinalPathNameByHandleA)
+    {
+        SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+        return 0;
+    }
+
+    HANDLE file = CreateFileA(
+        path,
+        FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        nullptr,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        nullptr
+    );
+
+    if (file == INVALID_HANDLE_VALUE)
+        return 0;
+
+    struct HandleGuard
+    {
+        HANDLE handle;
+
+        ~HandleGuard()
+        {
+            CloseHandle(handle);
+        }
+    } guard{ file };
+
+    constexpr DWORD FLAGS =
+        FILE_NAME_NORMALIZED | VOLUME_NAME_DOS;
+
+    DWORD requiredSize = pGetFinalPathNameByHandleA(
+        file,
+        nullptr,
+        0,
+        FLAGS
+    );
+
+    if (requiredSize == 0)
+        return 0;
+
+    std::string finalPath(requiredSize, '\0');
+
+    DWORD length = pGetFinalPathNameByHandleA(
+        file,
+        finalPath.data(),
+        requiredSize,
+        FLAGS
+    );
+
+    if (length == 0 || length >= requiredSize)
+        return 0;
+
+    finalPath.resize(length);
+
+    // Convert \\?\UNC\server\share into \\server\share.
+    if (finalPath.compare(0, 8, "\\\\?\\UNC\\") == 0)
+    {
+        finalPath = "\\\\" + finalPath.substr(8);
+    }
+    // Remove the \\?\ prefix from normal drive paths.
+    else if (finalPath.compare(0, 4, "\\\\?\\") == 0 &&
+             finalPath.size() > 5 &&
+             finalPath[5] == ':')
+    {
+        finalPath.erase(0, 4);
+    }
+
+    if (finalPath.size() >= bufferSize)
+    {
+        SetLastError(ERROR_INSUFFICIENT_BUFFER);
+        return 0;
+    }
+
+    memcpy(buffer, finalPath.c_str(), finalPath.size() + 1);
+
+    return finalPath.size();
+}
+
 /////////////
 // Modules //
 /////////////
@@ -158,6 +366,7 @@ void WinAPI::DLL::AddSearchDirectory(const std::filesystem::path& path)
 		throw StringTools::SysErrorFormat("SetDllDirectoryW");
 	}
 }
+
 
 void *WinAPI::DLL::Get(const char* name)
 {
@@ -177,6 +386,36 @@ void *WinAPI::DLL::GetSymbol(void* pDLL, const char* name)
 void WinAPI::DLL::Unload(void* pDLL)
 {
 	FreeLibrary(static_cast<HMODULE>(pDLL));
+}
+
+std::size_t WinAPI::DLL::GetPath(
+    void* pDLL,
+    char* buffer,
+    std::size_t bufferSize
+)
+{
+    if (!buffer || bufferSize == 0 || bufferSize > MAXDWORD)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+
+    DWORD length = GetModuleFileNameA(
+        static_cast<HMODULE>(pDLL),
+        buffer,
+        static_cast<DWORD>(bufferSize)
+    );
+
+    if (length == 0)
+        return 0;
+
+    if (length >= bufferSize)
+    {
+        SetLastError(ERROR_INSUFFICIENT_BUFFER);
+        return 0;
+    }
+
+    return length;
 }
 
 /////////////////

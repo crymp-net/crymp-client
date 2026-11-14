@@ -1087,3 +1087,141 @@ void MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(void* pFMODEx)
 	FillMem(pFMODEx, 0x486B7, &code, sizeof(code));
 #endif
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Editor
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Fixes the top right and bottom left panels of the main viewport.
+ *
+ * In modern windows, these two panels have all their buttons stacked on top
+ * of each other.
+ */
+void MemoryPatch::Editor::FixBrokenPanels(void* pEditor, int editorBuild)
+{
+#ifdef BUILD_64BIT
+    static const unsigned char codeA[] = {
+        0x48, 0xC7, 0x44, 0x24, 0x58,
+        0x00, 0x00, 0x00, 0x00
+    };
+
+    static const unsigned char codeB[] = {
+        0x83, 0xC9, 0xFF,
+        0x48, 0x83, 0xC1, 0x02,
+        0x48, 0x89, 0x4C, 0x24, 0x60,
+        0x90
+    };
+#else
+    static const unsigned char codeA[] = {
+        0x33, 0xFF,
+        0x33, 0xC0,
+        0xB0, 0x01,
+        0x89, 0x45, 0xE8,
+        0x89, 0x45, 0xEC
+    };
+
+    static const unsigned char codeB[] = {
+        0x83, 0x65, 0xE0, 0x00,
+        0x83, 0x65, 0xE4, 0x00
+    };
+#endif
+
+    switch (editorBuild)
+    {
+#ifdef BUILD_64BIT
+        case 5767:
+        {
+            FillMem(pEditor, 0x36DB6, codeA, sizeof(codeA));
+            FillMem(pEditor, 0x36DCC, codeB, sizeof(codeB));
+            break;
+        }
+
+        case 6670:
+        {
+            FillMem(pEditor, 0x36336, codeA, sizeof(codeA));
+            FillMem(pEditor, 0x3634C, codeB, sizeof(codeB));
+            break;
+        }
+#else
+        case 5767:
+        {
+            FillMem(pEditor, 0x336CF, codeA, sizeof(codeA));
+            FillMem(pEditor, 0x336E0, codeB, sizeof(codeB));
+            break;
+        }
+
+        case 6670:
+        {
+            FillMem(pEditor, 0x32CC1, codeA, sizeof(codeA));
+            FillMem(pEditor, 0x32CD2, codeB, sizeof(codeB));
+            break;
+        }
+#endif
+    }
+}
+
+/**
+ * Hooks Editor version initialization.
+ *
+ * The original code reads the version resource of the main EXE.
+ * Since Editor EXE is loaded as a DLL, it reads the launcher's version
+ * resource instead of its own.
+ */
+void MemoryPatch::Editor::HookVersionInit(
+    void* pEditor,
+    int editorBuild,
+    void (*handler)(MemoryPatch::Editor::Version* version))
+{
+#ifdef BUILD_64BIT
+    static unsigned char code[] = {
+        0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x48, 0x81, 0xC1, 0x10, 0x01, 0x00, 0x00,
+        0xFF, 0xE0
+    };
+
+    std::memcpy(&code[2], &handler, 8);
+#else
+    static unsigned char code[] = {
+        0xB8, 0x00, 0x00, 0x00, 0x00,
+        0x81, 0xC1, 0xE4, 0x00, 0x00, 0x00,
+        0x51,
+        0xFF, 0xD0,
+        0x83, 0xC4, 0x04,
+        0xC3
+    };
+
+    std::memcpy(&code[1], &handler, 4);
+#endif
+
+    switch (editorBuild)
+    {
+#ifdef BUILD_64BIT
+        case 5767:
+        {
+            FillMem(pEditor, 0x28720, code, sizeof(code));
+            break;
+        }
+
+        case 6670:
+        {
+            FillMem(pEditor, 0x27BB0, code, sizeof(code));
+            break;
+        }
+#else
+        case 5767:
+        {
+            FillMem(pEditor, 0x2CBA4, code, sizeof(code));
+            break;
+        }
+
+        case 6670:
+        {
+            FillMem(pEditor, 0x2C1BC, code, sizeof(code));
+            break;
+        }
+#endif
+    }
+}
+

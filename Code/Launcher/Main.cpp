@@ -1,12 +1,12 @@
+
 #ifdef CRYMP_CONSOLE_APP
 #include <cstdio>
 #endif
 
-#include "Library/StringTools.h"  // CryMP_Error
 #include "Library/WinAPI.h"
+#include "Library/StringTools.h"
 
 #include "Launcher.h"
-
 #include "config.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,27 +23,29 @@ extern "C" __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 #ifdef CRYMP_CONSOLE_APP
 int main()
 #else
-int __stdcall WinMain(void*, void*, char*, int)
+int __stdcall WinMain(void*, void*, char* cmdLine, int)
 #endif
 {
-	if (WinAPI::CmdLine::HasArg("-rawdump")) {
-		Launcher().Run();
-		return 0;
-	} else {
-		try
-		{
-			Launcher().Run();
-		}
-		catch (const CryMP_Error& error)
-		{
+    try
+    {
+#ifdef EDITOR_LAUNCHER
 #ifdef CRYMP_CONSOLE_APP
-			std::fprintf(stderr, "%s\n", error.what());
+        return Launcher().Run(nullptr);
 #else
-			WinAPI::ErrorBox(error.what());
+        return Launcher().Run(cmdLine);
 #endif
-			return 1;
-		}
-
-		return 0;
-	}
+#else
+        Launcher().Run();
+        return 0;
+#endif
+    }
+    catch (const CryMP_Error& error)
+    {
+#ifdef CRYMP_CONSOLE_APP
+        std::fprintf(stderr, "%s\n", error.what());
+#else
+        WinAPI::ErrorBox(error.what());
+#endif
+        return 1;
+    }
 }

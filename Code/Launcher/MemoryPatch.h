@@ -128,4 +128,29 @@ namespace MemoryPatch
 	{
 		void Fix64BitHeapAddressTruncation(void* pFMODEx);
 	}
+
+	namespace Editor
+{
+    struct Version
+    {
+        int file_tweak;
+        int file_patch;
+        int file_minor;
+        int file_major;
+
+        int product_tweak;
+        int product_patch;
+        int product_minor;
+        int product_major;
+    };
+
+    void FixBrokenPanels(void* pEditor, int editorBuild);
+
+    void HookVersionInit(
+        void* pEditor,
+        int editorBuild,
+        void (*handler)(Version* version)
+    );
+}
+
 }

@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.15)
 
 project(CryMP LANGUAGES C CXX RC)
 
+add_compile_definitions(NOMINMAX)
 ################################################################################
 
 if(NOT MSVC)
@@ -526,6 +527,8 @@ add_library(Base OBJECT
 	Code/CryMP/Client/Client.h
 	Code/CryMP/Client/DrawTools.cpp
 	Code/CryMP/Client/DrawTools.h
+	Code/CryMP/Client/EngineCache.cpp
+	Code/CryMP/Client/EngineCache.h
 	Code/CryMP/Client/FFontHooks.cpp
 	Code/CryMP/Client/FFontHooks.h
 	Code/CryMP/Client/FileCache.cpp
@@ -999,7 +1002,6 @@ add_library(CryGame OBJECT
 	Code/CryGame/HUD/HUDVehicleInterface.h
 	Code/CryGame/HUD/HUDWeaponAccessories.cpp
 	Code/CryGame/HUD/ScriptBind_HUD.cpp
-	Code/CryGame/HUD/TeamSelectionPreview.cpp
 	Code/CryGame/HUD/ScriptBind_HUD.h
 	Code/CryGame/Items/FlowItemAnimation.cpp
 	Code/CryGame/Items/FlowItemAnimation.h
@@ -1635,9 +1637,11 @@ target_link_libraries(DSOAL PUBLIC OpenAL)
 ################################################################################
 
 set(CRYMP_CLIENT_EXE "CryMP-Client${BUILD_BITS}")
+set(CRYMP_EDITOR_EXE "CryMP-Editor${BUILD_BITS}")
 set(CRYMP_SERVER_EXE "CryMP-Server${BUILD_BITS}")
 
 message(STATUS "Target client executable: ${CRYMP_CLIENT_EXE}.exe")
+message(STATUS "Target editor executable: ${CRYMP_EDITOR_EXE}.exe")
 message(STATUS "Target server executable: ${CRYMP_SERVER_EXE}.exe")
 
 add_executable(${CRYMP_CLIENT_EXE} WIN32
@@ -1655,6 +1659,26 @@ add_executable(${CRYMP_CLIENT_EXE} WIN32
 	Resources/Launcher.manifest
 )
 
+add_executable(${CRYMP_EDITOR_EXE} WIN32
+    Code/Launcher/Launcher.cpp
+    Code/Launcher/Launcher.h
+    Code/Launcher/Main.cpp
+    Code/Launcher/MemoryPatch.cpp
+    Code/Launcher/MemoryPatch.h
+
+    Code/Launcher/StartupTime.cpp
+    Code/Launcher/StartupTime.h
+
+    Code/Launcher/LauncherCommon.cpp
+    Code/Launcher/LauncherCommon.h
+
+    Code/Library/EXELoader.cpp
+    Code/Library/EXELoader.h
+    Code/Library/StringFormat.cpp
+    Code/Library/StringFormat.h
+    Code/Library/StringView.h
+)
+
 add_executable(${CRYMP_SERVER_EXE} WIN32
 	Code/Launcher/Launcher.cpp
 	Code/Launcher/Launcher.h
@@ -1670,10 +1694,12 @@ add_executable(${CRYMP_SERVER_EXE} WIN32
 
 target_link_libraries(${CRYMP_CLIENT_EXE} PRIVATE Base CryGame libogg libvorbis CrySoundSystem OpenAL DSOAL)
 target_link_libraries(${CRYMP_SERVER_EXE} PRIVATE Base CryGame)
+target_link_libraries(${CRYMP_EDITOR_EXE} PRIVATE Base CryGame)
 
 # use these only in Launcher code to avoid recompiling everything for each exe
 target_compile_definitions(${CRYMP_CLIENT_EXE} PRIVATE CLIENT_LAUNCHER)
 target_compile_definitions(${CRYMP_SERVER_EXE} PRIVATE SERVER_LAUNCHER)
+target_compile_definitions(${CRYMP_EDITOR_EXE} PRIVATE EDITOR_LAUNCHER)
 
 if(CRYMP_CONSOLE_APP)
 	set_target_properties(${CRYMP_CLIENT_EXE} PROPERTIES WIN32_EXECUTABLE FALSE)

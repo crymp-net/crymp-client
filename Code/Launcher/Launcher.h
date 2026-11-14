@@ -4,18 +4,25 @@
 
 class Launcher
 {
-	SSystemInitParams m_params = {};
+    SSystemInitParams m_params = {};
 
-	void SetCmdLine();
-	void InitWorkingDirectory();
-	void LoadEngine();
-	void PatchEngine();
-	void StartEngine();
+    void SetCmdLine();
+    void InitWorkingDirectory();
+
+    void LoadEngine();
+    void PatchEngine();
+    void StartEngine();
+
+#ifdef EDITOR_LAUNCHER
+    void LoadEditor();
+    void PatchEditor();
+    int StartEditor(char* cmdLine);
+#endif
 
 public:
-	Launcher() = default;
+    Launcher() = default;
 
-	void Run();
+    int Run(char* cmdLine = nullptr);
 
-	static void OnEarlyEngineInit(ISystem* pSystem);
+    static void OnEarlyEngineInit(ISystem* pSystem);
 };
