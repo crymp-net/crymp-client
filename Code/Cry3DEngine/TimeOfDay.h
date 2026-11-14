@@ -3,7 +3,9 @@
 #include <array>
 #include <variant>
 #include <vector>
+#include <string>
 #include <string_view>
+#include <functional>
 
 #include "CryCommon/Cry3DEngine/I3DEngine.h"
 #include "CryCommon/Cry3DEngine/ISplines.h"
@@ -125,13 +127,29 @@ private:
 	float* m_currentTimeCVarValue = nullptr;  // e_time_of_day
 	float* m_speedCVarValue = nullptr;        // e_time_of_day_speed
 
+	int m_debug = 0;
+	int m_highQualityTransitions = 0;
+
 	ITimer* m_timer = nullptr;
 	ITimer** m_someOtherTimer = nullptr;
 
 	XmlNodeRef m_defaultLevelSettings = nullptr;
 
+	bool m_isTransitioning = false;
+	float m_transitionTime = 0.0f;
+	float m_transitionDuration = 0.0f;
+	std::vector<Variable> m_transitionTargetVars;
+	float m_transitionTargetSpeed = 0.0f;
+	float m_transitionTargetStartTime = 0.0f;
+	float m_transitionTargetEndTime = 0.0f;
+
+	std::string m_activeCustomTodFile;
+
+	int m_updateCallbackCounter = 0;
+	std::vector<std::pair<int, std::function<void(bool, bool)>>> m_updateCallbacks;
+
 public:
-	explicit TimeOfDay(void* pCry3DEngine);
+	TimeOfDay();
 	~TimeOfDay();
 
 	float GetHDRMultiplier() const { return m_HDRMultiplier; }
@@ -166,21 +184,46 @@ public:
 
 	void NetSerialize(TSerialize ser, float lag, std::uint32_t flags) override;
 
+	bool IsPaused() const override
+	{
+		return m_paused;
+	}
+
+	void DebugDraw() override;
+	void LoadCustomSettings(const char* xmlPath, float blendDuration = 0.0f) override;
+	float GetTransitionTime() const override 
+	{ 
+		return m_transitionTime; 
+	} 
+	float GetTransitionDuration() const override 
+	{ 
+		return m_transitionDuration;
+	}
+	bool IsTransitioning() const override 
+	{
+		return m_transitionDuration > 0.0f && m_transitionTime < m_transitionDuration; 
+	}
+	const char* GetActiveCustomTodFile() const override
+	{
+		return m_activeCustomTodFile.c_str();
+	}
+
 	////////////////////////////////////////////////////////////////////////////////
 
-	bool IsPaused() const 
-	{ 
-		return m_paused; 
-	}
-	void LoadCustomSettings(string xmlPath);
-	void RestoreLevelDefaults();
+	int AddUpdateCallback(std::function<void(bool, bool)> callback);
+	void RemoveUpdateCallback(int id);
 
 private:
 	void InitVariables();
 	void InterpolateVariable(Variable& var, float time) const;
 	void SerializeVariable(Variable& var, XmlNodeRef node) const;
 	void DeserializeVariable(const XmlNodeRef& node);
+	void DeserializeVariable(const XmlNodeRef& node, std::vector<Variable>& vars);
 	int FindVariableIndex(const std::string_view& name) const;
+	int FindVariableIndex(const std::string_view& name, const std::vector<Variable>& vars) const;
+	void EvaluateVariables(std::vector<Variable>& outVars, const std::vector<Variable>& sourceVars, float time) const;
 
 	Vec3 CalculateSunDirection(const Vec3& sunRotation) const;
+
+	void RestoreLevelDefaults(float blendDuration = 0.0f);
 };

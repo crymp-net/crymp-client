@@ -367,7 +367,8 @@ void CGameRules::CullEntitiesInExplosion(const ExplosionInfo& explosionInfo)
 
 	IActor* pClientActor = m_pGameFramework->GetClientActor();
 
-	Vec3 radiusVec(radiusScale * explosionInfo.physRadius);
+	const float radius = radiusScale * explosionInfo.physRadius;
+	Vec3 radiusVec(radius, radius, radius);
 	int i = gEnv->pPhysicalWorld->GetEntitiesInBox(explosionInfo.pos - radiusVec, explosionInfo.pos + radiusVec, pents, ent_rigid | ent_sleeping_rigid);
 	int removedCount = 0;
 
@@ -946,7 +947,7 @@ bool CGameRules::PlayMFXFromExplosionInfo(const ExplosionInfo& info, const SAmmo
 	}
 
 	// Target velocity (if any) 
-	c.vloc[1] = Vec3(ZERO);
+	c.vloc[1] = {};
 	if (rh.pCollider)
 	{
 		pe_status_dynamics sdT;
@@ -1107,7 +1108,7 @@ bool CGameRules::OnCollisionLogged_MaterialFX(const EventPhys* pEvent, IEntityCl
 			return (i == PHYS_FOREIGN_ID_ENTITY) ? static_cast<IEntity*>(p) : nullptr;
 		};
 
-	Vec3 dir = ZERO;
+	Vec3 dir;
 	if (pCEvent->vloc[0].GetLengthSquared() > 1e-6f)
 	{
 		dir = pCEvent->vloc[0].GetNormalized();
@@ -1315,7 +1316,7 @@ bool CGameRules::OnCollisionLogged_MaterialFX(const EventPhys* pEvent, IEntityCl
 
 			if (isBullet && pActor && pActor->IsClient())
 			{
-				Vec3 proxyOffset(ZERO);
+				Vec3 proxyOffset;
 				Matrix34 tm = pActor->GetEntity()->GetWorldTM();
 				tm.Invert();
 
@@ -1917,7 +1918,7 @@ IMPLEMENT_RMI(CGameRules, ClHitIndicator)
 //------------------------------------------------------------------------
 IMPLEMENT_RMI(CGameRules, ClDamageIndicator)
 {
-	Vec3 dir(ZERO);
+	Vec3 dir;
 	bool vehicle = false;
 
 	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(params.shooterId))

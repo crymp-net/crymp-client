@@ -3201,49 +3201,6 @@ void CHUDRadar::ScanProximity(Vec3& pos, float& radius)
 	}
 }
 
-EntityId CHUDRadar::RayCastBinoculars(CPlayer* pPlayer, ray_hit* pRayHit)
-{
-	if (!pPlayer)
-		return 0;
-
-	Vec3 pos, dir, up, right;
-
-	const Matrix34& rmatCamera = gEnv->pSystem->GetViewCamera().GetMatrix();
-	pos = rmatCamera.GetTranslation();
-	dir = rmatCamera.GetColumn1();
-	up = rmatCamera.GetColumn2();
-	right = (dir % up).GetNormalizedSafe();
-
-	IPhysicalEntity* pPhysEnt = pPlayer->GetEntity()->GetPhysics();
-
-	if (!pPhysEnt)
-		return 0;
-
-	static const int obj_types = ent_all;
-	static const unsigned int flags = rwi_pierceability(1);
-
-	right = right * g_pGameCVars->hud_binocsScanningWidth;
-	up = up * g_pGameCVars->hud_binocsScanningWidth;
-
-	Vec3 positions[4];
-	positions[0] = pos + right + up;
-	positions[1] = pos + right - up;
-	positions[2] = pos - right - up;
-	positions[3] = pos - right + up;
-	for (int i = 0; i < 4; ++i)
-	{
-		memset(pRayHit, 0, sizeof(ray_hit));
-		if (gEnv->pPhysicalWorld->RayWorldIntersection(positions[i], 300.0f * dir, obj_types, (13 & rwi_pierceability_mask), pRayHit, 1, &pPhysEnt, 1))
-		{
-			IEntity* pLookAt = gEnv->pEntitySystem->GetEntityFromPhysics(pRayHit->pCollider);
-
-			if (pLookAt)
-				return pLookAt->GetId();
-		}
-	}
-	return 0;
-}
-
 bool CHUDRadar::IsEntityTagged(const EntityId& id) const
 {
 	for (int i = 0; i < NUM_TAGGED_ENTITIES; ++i)
@@ -3368,37 +3325,12 @@ bool CHUDRadar::RadarBounds_IntersectsLineFromOutside(const Vec2& A, const Vec2&
 	return intersects;
 }
 
-void CHUDRadar::UpdateBinoculars(CActor* pActor, float fDeltaTime)
+void CHUDRadar::UpdateBinoculars(CPlayer* pPlayer, float fDeltaTime)
 {
 	CHUDScopes* pScopes = m_pHUD->GetScopes();
 	if (pScopes && pScopes->IsBinocularsShown())
 	{
-		EntityId lookAtObjectID = pActor->GetGameObject()->GetWorldQuery()->GetLookAtEntityId();
-		ray_hit rayHit;
-		if (!lookAtObjectID)
-		{
-			CPlayer* pPlayer = static_cast<CPlayer*> (pActor);
-			lookAtObjectID = RayCastBinoculars(pPlayer, &rayHit);
-		}
-
-		// When in a cinematic, pActor view doesn't move (it's faked), so let's not use the lookAtEntityId
-		if (lookAtObjectID && !m_pHUD->IsInCinematic())
-		{
-			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(lookAtObjectID);
-			if (pEntity)
-			{
-				float fDistance = (pEntity->GetWorldPos() - pActor->GetEntity()->GetWorldPos()).GetLength();
-				pScopes->SetBinocularsDistance(fDistance);
-			}
-		}
-		else if (rayHit.pCollider)
-		{
-			pScopes->SetBinocularsDistance(rayHit.dist);
-		}
-		else
-		{
-			pScopes->SetBinocularsDistance(0);
-		}
+		const EntityId lookAtObjectID = pScopes->UpdateBinocularsDistance(pPlayer);
 
 		if (lookAtObjectID && lookAtObjectID != m_lookAtObjectID)
 		{

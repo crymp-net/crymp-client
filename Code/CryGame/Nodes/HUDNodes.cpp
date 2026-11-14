@@ -386,7 +386,7 @@ public:
 		{
 			InputPortConfig_Void  ( "Start", _HELP("Trigger this port to start scanning" )),
 			InputPortConfig_Void  ( "Stop",  _HELP("Trigger this port to stop scanning" )),
-			InputPortConfig<Vec3> ( "Pos", Vec3(ZERO), _HELP("Origin of scanning" )),
+			InputPortConfig<Vec3> ( "Pos", Vec3(), _HELP("Origin of scanning" )),
 			InputPortConfig<float>( "Radius", 100.0f, _HELP("Radius for scanning" )),
 			InputPortConfig<bool> ( "KeepExisting", true, _HELP("Keep already scanned entities on the radar." )),
 			{0}

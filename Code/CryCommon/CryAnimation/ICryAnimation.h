@@ -736,7 +736,7 @@ struct ISkeletonPose
 	virtual IPhysicalEntity *GetCharacterPhysics(const char *pRootBoneName) = 0;
 	virtual IPhysicalEntity *GetCharacterPhysics(int iAuxPhys) = 0;
 	virtual void SetCharacterPhysics(IPhysicalEntity *pent) = 0;
-	virtual void SynchronizeWithPhysicalEntity(IPhysicalEntity *pent, const Vec3& posMaster=Vec3(ZERO),const Quat& qMaster=Quat(1,0,0,0)) = 0;
+	virtual void SynchronizeWithPhysicalEntity(IPhysicalEntity *pent, const Vec3& posMaster = {}, const Quat& qMaster = Quat(1,0,0,0)) = 0;
 	virtual IPhysicalEntity* RelinquishCharacterPhysics(const Matrix34 &mtx, f32 stiffness=0.0f) = 0;
 	virtual void DestroyCharacterPhysics(int iMode=0) = 0;
 	virtual bool AddImpact(int partid, Vec3 point,Vec3 impact) = 0;
@@ -1252,7 +1252,7 @@ public:
 			else
 				m_loc.SetIdentity();
 			m_loc.AddTranslation(m_offset);
-			m_loc.Scale(Vec3(m_scale));
+			m_loc.Scale(Vec3(m_scale, m_scale, m_scale));
 
 			m_pEmitter = m_pEffect->Spawn( false, m_loc );
 		}
@@ -1301,7 +1301,7 @@ public:
 		}
 		else
 		{
-			return AABB(Vec3(-0.1f), Vec3(0.1f));
+			return AABB(Vec3(-0.1f, -0.1f, -0.1f), Vec3(0.1f, 0.1f, 0.1f));
 		}
 	};
 

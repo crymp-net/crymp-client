@@ -5,10 +5,9 @@
 #include <cstdlib>
 #include <memory>
 
-extern std::uintptr_t CRYACTION_BASE;
+#include "CryCommon/CryCore/CryMalloc.h"
 
-void* CryMalloc(std::size_t size);
-void CryFree(void* ptr);
+extern std::uintptr_t CRYACTION_BASE;
 
 template<class T>
 class NodeAlloc_CryAction
@@ -28,7 +27,16 @@ public:
 		// _M_allocate instead of allocate
 		AllocFunc alloc = reinterpret_cast<AllocFunc>(CRYACTION_BASE + 0x73A0);
 
-		void *p = (bytes > 0x200) ? CryMalloc(bytes) : alloc(bytes);
+		void *p = nullptr;
+		if (bytes > 0x200)
+		{
+			std::size_t allocatedSize = 0;
+			p = CryMalloc(bytes, allocatedSize);
+		}
+		else
+		{
+			p = alloc(bytes);
+		}
 #endif
 
 		if (!p)
@@ -53,7 +61,14 @@ public:
 		// _M_deallocate instead of deallocate
 		DeallocFunc dealloc = reinterpret_cast<DeallocFunc>(CRYACTION_BASE + 0x6C30);
 
-		(bytes > 0x200) ? CryFree(p) : dealloc(p, bytes);
+		if (bytes > 0x200)
+		{
+			CryFree(p);
+		}
+		else
+		{
+			dealloc(p, bytes);
+		}
 #endif
 	}
 };

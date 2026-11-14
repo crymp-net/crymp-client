@@ -63,13 +63,14 @@ IActor* ActorSystem::GetActor(EntityId entityId)
 		return nullptr;
 	}
 
-	return it->second;
+	return DecodeActor(it->second);
 }
 
 IActor* ActorSystem::GetActorByChannelId(std::uint16_t channelId)
 {
-	for (const auto& [id, pActor] : m_actors)
+	for (const auto& [id, pActorRef] : m_actors)
 	{
+		IActor* pActor = DecodeActor(pActorRef);
 		if (pActor->GetChannelId() == channelId)
 		{
 			return pActor;
@@ -186,7 +187,7 @@ void ActorSystem::SwitchDemoSpectator(EntityId id)
 			return;
 		}
 
-		nextActor = it->second;
+		nextActor = DecodeActor(it->second);
 	}
 	else
 	{
@@ -202,7 +203,7 @@ void ActorSystem::SwitchDemoSpectator(EntityId id)
 			it = m_actors.begin();
 		}
 
-		nextActor = it->second;
+		nextActor = DecodeActor(it->second);
 	}
 
 	IActor* lastActor = nullptr;
@@ -214,7 +215,7 @@ void ActorSystem::SwitchDemoSpectator(EntityId id)
 			return;
 		}
 
-		lastActor = it->second;
+		lastActor = DecodeActor(it->second);
 	}
 
 	if (nextActor == lastActor)
@@ -252,7 +253,7 @@ IActor* ActorSystem::GetOriginalDemoSpectator()
 
 void ActorSystem::AddActor(EntityId entityId, IActor* pActor)
 {
-	m_actors[entityId] = pActor;
+	m_actors[entityId] = EncodeActor(pActor);
 }
 
 void ActorSystem::RemoveActor(EntityId entityId)

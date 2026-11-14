@@ -110,7 +110,7 @@ protected:
 			m_painDelta = 0.0f; 
 			m_pain = 0.0f; 
 			m_rotate = false; 
-			m_target=Vec3(ZERO);
+			m_target = {};
 		}
 
 		bool HasTarget( CTimeValue now, CTimeValue timeout ) const 

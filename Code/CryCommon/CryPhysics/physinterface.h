@@ -10,11 +10,13 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#ifndef physinterface_h
-#define physinterface_h
+#pragma once
 
-#include "CryCommon/CryNetwork/SerializeFwd.h"
+#include "CryCommon/CryMath/Cry_Math.h"
 #include "CryCommon/CryMath/Cry_Geo.h"
+#include "CryCommon/CryNetwork/SerializeFwd.h"
+
+#include "primitives.h"
 
 //////////////////////////////////////////////////////////////////////////
 // Physics defines.
@@ -52,7 +54,7 @@ struct IPhysicsStreamer {
 /////////////////////////////////////////////////////////////////////////////////////
 
 struct IPhysRenderer {
-	virtual void DrawGeometry(IGeometry *pGeom, struct geom_world_data *pgwd, int idxColor=0, int bSlowFadein=0, const Vec3 &sweepDir=Vec3(0)) = 0;
+	virtual void DrawGeometry(IGeometry *pGeom, struct geom_world_data *pgwd, int idxColor=0, int bSlowFadein=0, const Vec3 &sweepDir={}) = 0;
 	virtual void DrawLine(const Vec3& pt0, const Vec3& pt1, int idxColor=0, int bSlowFadein=0) = 0;
 	virtual const char *GetForeignName(void *pForeignData,int iForeignData,int iForeignFlags) = 0;
 	virtual void DrawText(const Vec3 &pt, const char *txt, int idxColor, float saturation=0) = 0;
@@ -251,7 +253,7 @@ struct pe_params_part : pe_params {	// Sets geometrical parameters of entity par
 	int idmatBreakable;
 	ITetrLattice *pLattice;
 	int *pMatMapping;
-	int nMats;
+	int nMats = 0;
 	int bAddrefGeoms;
 
 	VALIDATORS_START
@@ -273,7 +275,8 @@ struct pe_params_sensors : pe_params { // Attaches optional sensors to entity (s
 struct pe_simulation_params : pe_params { // Sets gravity and maximum time step
 	enum entype { type_id=10 };
 	pe_simulation_params() { type=type_id; MARK_UNUSED maxTimeStep,gravity,minEnergy,damping,iSimClass,
-		softness,softnessAngular,dampingFreefall,gravityFreefall,mass,density,maxLoggedCollisions; }
+		softness,softnessAngular,dampingFreefall,gravityFreefall,mass,density,softnessGroup,
+		softnessAngularGroup,maxLoggedCollisions; }
 
 	int iSimClass;
 	float maxTimeStep; // maximum time step that entity can accept (larger steps will be split)
@@ -334,6 +337,8 @@ enum phentity_flags {
 	pef_override_impulse_scale=0x200000, pef_players_can_break=0x400000, pef_cannot_squash_players=0x10000000,
 	pef_ignore_areas=0x800000,
 	pef_log_state_changes=0x1000000, pef_log_collisions=0x2000000, pef_log_env_changes=0x4000000, pef_log_poststep=0x8000000,
+	//CryMP
+	pef_ignore_network_state = 0x20000000,
 };
 
 struct pe_params_flags : pe_params {
@@ -970,7 +975,7 @@ struct pe_status_sensors : pe_status { // Requests status of attached to the ent
 
 struct pe_status_dynamics : pe_status {
 	enum entype { type_id=8 };
-	pe_status_dynamics() : v(ZERO),w(ZERO),a(ZERO),wa(ZERO),centerOfMass(ZERO) {
+	pe_status_dynamics() : v(),w(),a(),wa(),centerOfMass() {
 		MARK_UNUSED partid,ipart; type=type_id; mass=energy=0; nContacts=0; time_interval=0; submergedFraction=0; 
 	}
 
@@ -1750,18 +1755,18 @@ struct IPhysicalEntity {
 		@params flags a combination of snapshot_flags
 		@return non0 if successful
 	*/
-	virtual int GetStateSnapshot(class CStream &stm, float time_back=0, int flags=0) = 0;
+	virtual int GetStateSnapshot(class CStream &stm, float time_back=0, int flags=0) { return 0; } // CryMP: unused
 	virtual int GetStateSnapshot(TSerialize ser, float time_back=0, int flags=0) = 0;
 	/*! Reads state from snapshot
 		@param stm stream
 		@return size of snapshot
 	*/
-	virtual int SetStateFromSnapshot(class CStream &stm, int flags=0) = 0;
+	virtual int SetStateFromSnapshot(class CStream &stm, int flags=0) { return 0; } // CryMP: unused
 	virtual int SetStateFromSnapshot(TSerialize ser, int flags=0) = 0;
 	virtual int SetStateFromTypedSnapshot(TSerialize ser, int type, int flags=0) = 0;
 	virtual int PostSetStateFromSnapshot() = 0;
-	virtual int GetStateSnapshotTxt(char *txtbuf,int szbuf, float time_back=0) = 0;
-	virtual void SetStateFromSnapshotTxt(const char *txtbuf,int szbuf) = 0;
+	virtual int GetStateSnapshotTxt(char *txtbuf,int szbuf, float time_back=0) { return 0; } // CryMP: unused
+	virtual void SetStateFromSnapshotTxt(const char *txtbuf,int szbuf) {} // CryMP: unused
 	virtual unsigned int GetStateChecksum() = 0;
 	/*! Evolves entity in time. Normally this is called from PhysicalWorld::TimeStep
 		@param time_interval time step
@@ -1920,6 +1925,8 @@ struct PhysicsVars : SolverSettings {
 	float netMinSnapDot;
 	float netAngSnapMul;
 	float netSmoothTime;
+	//CryMP
+	int nMaxBreakableGridCells;
 };
 
 struct ray_hit {
@@ -2318,7 +2325,7 @@ struct IPhysicalWorld {
 	//			if specified and pip->bThreadSafe==false, the caller must manually release the lock in pip->plock (but only if there were any contacts)
 	// Returns:
 	//		distance to the first hit for sweep checks and the number of hits for intersection checks (as float)
-	virtual float PrimitiveWorldIntersection(int itype, primitives::primitive *pprim, const Vec3 &sweepDir=Vec3(ZERO), int entTypes=ent_all, 
+	virtual float PrimitiveWorldIntersection(int itype, primitives::primitive *pprim, const Vec3 &sweepDir={}, int entTypes=ent_all,
 		geom_contact **ppcontact=0, int geomFlagsAll=0,int geomFlagsAny=geom_colltype0|geom_colltype_player, intersection_params *pip=0,
 		void *pForeignData=0, int iForeignData=0, IPhysicalEntity **pSkipEnts=0,int nSkipEnts=0, const char *pNameTag="PrimitiveWorldIntersection(Game)") = 0;
 
@@ -2337,14 +2344,14 @@ struct IPhysicalWorld {
 
 	virtual IPhysicalEntity *AddGlobalArea() = 0;
 	virtual IPhysicalEntity *AddArea(Vec3 *pt,int npt, float zmin,float zmax, const Vec3 &pos=Vec3(0,0,0), const quaternionf &q=quaternionf(IDENTITY),
-		float scale=1.0f, const Vec3 &normal=Vec3(ZERO), int *pTessIdx=0,int nTessTris=0,Vec3 *pFlows=0) = 0;
+		float scale=1.0f, const Vec3 &normal={}, int *pTessIdx=0,int nTessTris=0,Vec3 *pFlows=0) = 0;
 	virtual IPhysicalEntity *AddArea(IGeometry *pGeom, const Vec3& pos,const quaternionf &q,float scale) = 0;
 	virtual void RemoveArea(IPhysicalEntity *pArea) = 0;
 	virtual IPhysicalEntity *AddArea(Vec3 *pt,int npt, float r, const Vec3 &pos=Vec3(0,0,0),const quaternionf &q=quaternionf(IDENTITY),float scale=1) = 0;
 	// GetNextArea: iterates through all registered areas, if prevarea==0 returns the global area
 	virtual IPhysicalEntity *GetNextArea(IPhysicalEntity *pPrevArea=0) = 0;
 	// Checks areas for a given point
-	virtual int CheckAreas(const Vec3 &ptc, Vec3 &gravity, pe_params_buoyancy *pb, int nMaxBuoys=1, const Vec3 &vec=Vec3(ZERO), 
+	virtual int CheckAreas(const Vec3 &ptc, Vec3 &gravity, pe_params_buoyancy *pb, int nMaxBuoys=1, const Vec3 &vec={},
 		IPhysicalEntity *pent=0, int iCaller=1) = 0;
 
 	virtual void SetWaterMat(int imat) = 0;
@@ -2361,5 +2368,3 @@ struct IPhysicalWorld {
 
 	virtual void SerializeGarbageTypedSnapshot( TSerialize ser, int iSnapshotType, int flags ) = 0;
 };
-
-#endif

@@ -1,3 +1,5 @@
+#include "Library/WinAPI.h"
+
 #include "Executor.h"
 
 void ExecutorTaskQueue::Push(std::unique_ptr<IExecutorTask> && task)
@@ -43,6 +45,8 @@ std::unique_ptr<IExecutorTask> ExecutorTaskQueue::PopWait(std::condition_variabl
 
 void Executor::WorkerLoop()
 {
+	WinAPI::SetCurrentThreadName("CryMP-Executor");
+
 	while (m_isRunning)
 	{
 		std::unique_ptr<IExecutorTask> task = m_workerQueue.PopWait(m_workerCV);

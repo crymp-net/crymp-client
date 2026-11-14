@@ -84,14 +84,14 @@ struct SMFXRunTimeEffectParams
 		srcRenderNode(0),
 		trgRenderNode(0),
 		partID(0),
-		pos(ZERO),
-		decalPos(ZERO),
+		pos(),
+		decalPos(),
 		normal(0.0f,0.0f,1.0f),
 		angle(MFX_INVALID_ANGLE),			
 		scale(1.0f),
 		soundSemantic(eSoundSemantic_Physics_General),
 		soundProxyEntityId(0),
-		soundProxyOffset(ZERO),
+		soundProxyOffset(),
 		soundDistanceMult(1.0f),
 		numSoundParams(0)
 	{
@@ -174,9 +174,9 @@ struct SMFXBreakageParams
 	SMFXBreakageParams() : 
 		m_flags(0),
 		m_worldTM(IDENTITY),
-		m_vHitPos(ZERO),
-		m_vHitImpulse(IDENTITY),
-		m_vVelocity(ZERO),
+		m_vHitPos(),
+		m_vHitImpulse(),
+		m_vVelocity(),
 		m_fExplosionImpulse(1.0f),
 		m_fMass(0.0f),
 		m_nEntityId(0)

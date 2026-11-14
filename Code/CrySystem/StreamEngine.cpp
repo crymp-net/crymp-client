@@ -1,4 +1,5 @@
 #include "CryCommon/CrySystem/CryFile.h"
+#include "Library/WinAPI.h"
 
 #include "CryLog.h"
 #include "StreamEngine.h"
@@ -177,6 +178,8 @@ bool StreamEngine::IsMainThread()
 
 void StreamEngine::WorkerThreadLoop()
 {
+	WinAPI::SetCurrentThreadName("Streaming");
+
 	_smart_ptr<Job> job;
 
 	while (true)

@@ -1433,7 +1433,7 @@ int ScriptBind_System::SetWind(IFunctionHandler *pH)
 
 int ScriptBind_System::GetWind(IFunctionHandler *pH)
 {
-	return pH->EndFunction(gEnv->p3DEngine->GetWind(AABB(ZERO), false));
+	return pH->EndFunction(gEnv->p3DEngine->GetWind(AABB(AABB::RESET), false));
 }
 
 int ScriptBind_System::GetSurfaceTypeIdByName(IFunctionHandler *pH, const char *surfaceName)

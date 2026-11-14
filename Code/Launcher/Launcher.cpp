@@ -74,6 +74,7 @@ void* g_pXToolkitPro = nullptr;
 #endif
 
 /*static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
+static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
 {
 	using CrySystemEntry = ISystem* (*)(SSystemInitParams&);
 
@@ -1694,6 +1695,7 @@ void Launcher::StartEngine()
 			WinAPI::DLL::GetSymbol(g_pCryAction, "CreateGameFramework")
 		);
 
+		auto entry = static_cast<CryActionEntry>(WinAPI::DLL::GetSymbol(g_pCryAction, "CreateGameFramework"));
 		if (!entry)
 		{
 			throw StringTools::ErrorFormat("The CryAction DLL is not valid!");
@@ -1910,6 +1912,20 @@ int Launcher::Run(char* cmdLine)
     this->PatchEngine();
 
     RandomGenerator::Init();
+	if (WinAPI::GetApplicationPath().filename().string().find("CryMP") != 0)
+	{
+		throw StringTools::ErrorFormat("Invalid name of the executable!");
+	}
+
+	if (WinAPI::CmdLine::HasArg("-mod"))
+	{
+		throw StringTools::ErrorFormat("Mods are not supported!");
+	}
+
+	this->InitWorkingDirectory();
+	this->SetCmdLine();
+
+	CryMemoryManager::Init();
 
     if (m_params.isDedicatedServer)
     {

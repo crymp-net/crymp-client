@@ -24,7 +24,7 @@ BEGIN
 		BLOCK "040904E4"
 		BEGIN
 			VALUE "CompanyName",      "CryMP"
-			VALUE "LegalCopyright",   "(C) 2025 CryMP"
+			VALUE "LegalCopyright",   "(C) 2026 CryMP"
 			VALUE "ProductName",      "CryMP Client"
 			VALUE "ProductVersion",   CRYMP_VERSION_STRING
 			VALUE "FileVersion",      CRYMP_VERSION_STRING

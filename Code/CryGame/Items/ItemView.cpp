@@ -426,7 +426,7 @@ void CItem::SetViewMode(int mode)
 
 	CActor* pOwner = GetOwnerActor();
 	const bool isLocalOwner = pOwner && pOwner->IsClient();
-
+	
 	//////////////////////////////////////////////////////
 	// --- FIRST PERSON SLOT ---
 	//////////////////////////////////////////////////////
@@ -468,6 +468,10 @@ void CItem::SetViewMode(int mode)
 	else
 	{
 		DrawSlot(eIGS_ThirdPerson, false);
+	}
+
+	if (CSynchedStorage* pSSS = g_pGame->GetSynchedStorage()) {
+		CheckSkin(pSSS);
 	}
 }
 

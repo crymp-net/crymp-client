@@ -527,8 +527,6 @@ add_library(Base OBJECT
 	Code/CryMP/Client/Client.h
 	Code/CryMP/Client/DrawTools.cpp
 	Code/CryMP/Client/DrawTools.h
-	Code/CryMP/Client/EngineCache.cpp
-	Code/CryMP/Client/EngineCache.h
 	Code/CryMP/Client/FFontHooks.cpp
 	Code/CryMP/Client/FFontHooks.h
 	Code/CryMP/Client/FileCache.cpp
@@ -1002,6 +1000,7 @@ add_library(CryGame OBJECT
 	Code/CryGame/HUD/HUDVehicleInterface.h
 	Code/CryGame/HUD/HUDWeaponAccessories.cpp
 	Code/CryGame/HUD/ScriptBind_HUD.cpp
+	Code/CryGame/HUD/TeamSelectionPreview.cpp
 	Code/CryGame/HUD/ScriptBind_HUD.h
 	Code/CryGame/Items/FlowItemAnimation.cpp
 	Code/CryGame/Items/FlowItemAnimation.h

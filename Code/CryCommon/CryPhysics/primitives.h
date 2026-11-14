@@ -2,8 +2,8 @@
 // Crytek Source File.
 // Copyright (C) Crytek GmbH, 2001-2008.
 // -------------------------------------------------------------------------
-#ifndef primitives_h
-#define primitives_h
+
+#pragma once
 
 namespace primitives {
 
@@ -188,5 +188,3 @@ struct geom_contact {
 	bool bBorderConsecutive;
 	geom_contact_area *parea;
 };
-
-#endif

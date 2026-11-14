@@ -36,7 +36,7 @@ public:
 	virtual void HandleEvent(const SGameObjectEvent &event);
 	virtual void Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &velocity, float speedScale);
 	virtual void Update(SEntityUpdateContext &ctx, int updateSlot);
-	virtual void Explode(bool destroy, bool impact=false, const Vec3 &pos=ZERO, const Vec3 &normal=FORWARD_DIRECTION , const Vec3 &vel=ZERO, EntityId targetId=0);
+	virtual void Explode(bool destroy, bool impact=false, const Vec3 &pos={}, const Vec3 &normal=FORWARD_DIRECTION , const Vec3 &vel={}, EntityId targetId=0);
 
 	Vec3 GetTriggerDirection() {return m_triggerDirection; }
 

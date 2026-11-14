@@ -317,6 +317,7 @@ public:
 
 	void OnEnterFirstPerson() override;
 	void OnEnterThirdPerson() override;
+	void NetSetZoomStep(int step) override;
 	// ~IZoomMode
 
 	virtual void ResetTurnOff();
@@ -327,6 +328,8 @@ public:
 	void ResetFovAndPosition();
 
 protected:
+	void SendZoomRequest(float fov);
+
 	virtual void EnterZoom(float time, const char *zoom_layer=0, bool smooth=true, int zoomStep = 1);
 	virtual void LeaveZoom(float time, bool smooth=true);
 
@@ -407,6 +410,7 @@ protected:
 	bool m_FilterMaskedBlurring_Active = false;
 	bool m_Dof_Active = false;
 	bool m_skipRequestZoomOnce = false;
+	bool m_zoomFromHip = false;
 
 
 };

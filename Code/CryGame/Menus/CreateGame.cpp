@@ -129,6 +129,11 @@ CMultiPlayerMenu::SCreateGame::SCreateGame(IFlashPlayer* plr, CMPHub* hub, bool 
 {
 }
 
+void CMultiPlayerMenu::SCreateGame::SetFlashPlayer(IFlashPlayer* pPlayer)
+{
+	m_player = pPlayer;
+}
+
 bool CMultiPlayerMenu::SCreateGame::HandleFSCommand(EGsUiCommand cmd, const char* pArgs)
 {
 	switch (cmd)

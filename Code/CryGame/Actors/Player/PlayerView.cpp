@@ -57,7 +57,7 @@ PlayerView::~PlayerView()
 
 void PlayerView::Reset()
 {
-	m_lastPos = Vec3(ZERO);
+	m_lastPos = {};
 	m_lastQuat = Quat(IDENTITY);
 	m_lastSeatId = 0;
 	m_ColDistance = 0.0f;
@@ -76,21 +76,21 @@ void PlayerView::Reset()
 	m_standSpeed = 0.0f;
 	m_standSpeedMax = 0.0f;
 	m_viewQuatForWeapon = Quat(IDENTITY);
-	m_eyeOffsetViewGoal = Vec3(ZERO);
-	m_wAngles = Ang3(ZERO);
+	m_eyeOffsetViewGoal = {};
+	m_wAngles = {};
 	m_viewQuatFinal = Quat(IDENTITY);
 	m_viewQuat = Quat(IDENTITY);
 	m_baseQuat = Quat(IDENTITY);
-	m_eyeOffsetView = Vec3(ZERO);
-	m_localEyePos = (ZERO);
-	m_worldEyePos = (ZERO);
-	m_entityWorldPos = Vec3(ZERO);
-	m_vFPWeaponAngleOffset = Ang3(ZERO);
-	m_vFPWeaponLastDirVec = Vec3(ZERO);
-	m_vFPWeaponOffset = Vec3(ZERO);
-	m_bobOffset = Vec3(ZERO);
-	m_angleOffset = Ang3(ZERO);
-	m_viewAngleOffset = Ang3(ZERO);
+	m_eyeOffsetView = {};
+	m_localEyePos = {};
+	m_worldEyePos = {};
+	m_entityWorldPos = {};
+	m_vFPWeaponAngleOffset = {};
+	m_vFPWeaponLastDirVec = {};
+	m_vFPWeaponOffset = {};
+	m_bobOffset = {};
+	m_angleOffset = {};
+	m_viewAngleOffset = {};
 	m_entityWorldMatrix = Matrix34(IDENTITY);
 	m_headMtxLocal = Matrix33(IDENTITY);
 }
@@ -1637,7 +1637,7 @@ void PlayerView::ViewShakePostProcess(SViewParams& viewParams)
 
 	IView *pView = g_pGame->GetIGameFramework()->GetIViewSystem()->GetViewByEntityId(GetEntityId());
 	if (pView)
-	pView->SetViewShake(ZERO,Vec3(m_stats.speedFlat*0.0035f,0,m_stats.speedFlat*0.0035f) * shake,0.1f,0.05f,0.5f,1);
+	pView->SetViewShake({},Vec3(m_stats.speedFlat*0.0035f,0,m_stats.speedFlat*0.0035f) * shake,0.1f,0.05f,0.5f,1);
 	}*/
 }
 

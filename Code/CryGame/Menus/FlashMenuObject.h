@@ -119,7 +119,7 @@ public:
 
 	void ShowMainMenu();
 	void ShowInGameMenu(bool bShow=true);
-  void HideInGameMenuNextFrame(bool bRestoreGameMusic);
+  void HideInGameMenuNextFrame(bool bRestoreGameMusic, bool doNotUnload = false);
   void UnloadHUDMovies();
   void ReloadHUDMovies();
   bool PlayFlashAnim(const char* pFlashFile);
@@ -136,8 +136,9 @@ public:
 	void ShowMenuMessage(const char *message);
   bool IsOnScreen(EMENUSCREEN screen);
 	bool IsControllerConnected() const { return m_bControllerConnected; }
-	void InitStartMenu();
+	void InitStartMenu(bool fromDisconnect = false);
 	void InitIngameMenu();
+	void PreloadIngameMenu();
 	void DestroyMenusAtNextFrame();
 
 	ILINE bool WaitingForStart() const { return m_bLoadingDone; }
@@ -154,7 +155,7 @@ public:
 	void SetDifficulty(int level = 0);
 
 	void DestroyStartMenu();
-	void DestroyIngameMenu();
+	void DestroyIngameMenu(bool unload = true);
 	FSAAMode GetFSAAMode(const char* name);
 	string GetFSAAMode(int samples, int quality);
 
@@ -259,6 +260,7 @@ private:
 
 	// subtitle display for video player
 	void DisplaySubtitles(float fDeltaTime);
+	void DisplayLoadingMessage(float fDeltaTime, const char* message);
 
 	void SetDisplayFormats();
 	void SetAntiAliasingModes();
@@ -310,6 +312,7 @@ private:
 	CFlashMenuScreen *m_apFlashMenuScreens[MENUSCREEN_COUNT];
 	CFlashMenuScreen *m_pCurrentFlashMenuScreen;
 	CFlashMenuScreen *m_pSubtitleScreen;
+	CFlashMenuScreen* m_pLoadingMessage = nullptr;
 
 	IPlayerProfileManager* m_pPlayerProfileManager;
 
@@ -354,6 +357,7 @@ private:
 	bool m_bCatchNextInput;
 	bool m_bDestroyStartMenuPending;
 	bool m_bDestroyInGameMenuPending;
+	bool m_doNotUnloadInGameMenu = false;
 	bool m_bIgnorePendingEvents;
 	bool m_bVirtualKeyboardFocus;
 	bool m_bVKMouseDown;
@@ -384,7 +388,7 @@ private:
 	//last known savegame
 	string	m_sLastSaveGame;
 
-	CMPHub*      m_multiplayerMenu;
+	CMPHub*      m_mpHub;
 
 	// key repeat
 	float					m_repeatTimer;
@@ -399,13 +403,11 @@ private:
 
 	std::map<string, FSAAMode> m_fsaaModes;
 
-
-
-
-
 private:
 	unsigned int m_dotCounter = 0;
-
+	bool m_returnToStartMenu = false;
+	bool m_creditsPlaying = false;
+	bool m_firstTimeMusic = false;
 
 };
 

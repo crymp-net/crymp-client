@@ -44,6 +44,7 @@ struct ICharacterInstance;
 struct AnimEventInstance;
 struct IAttachmentObject;
 class CPlayer;
+class CSynchedStorage;
 
 enum EItemUpdateSlots
 {
@@ -534,18 +535,17 @@ public:
 
 	struct SAudio
 	{
-		SAudio():	isstatic(false), sphere(0.0f), airadius(0.0f),issynched(false) {};
+		ItemString name{};
+		float airadius{};
+		float sphere{};
+		float pitch{1.0f}; //CryMP
+		bool isstatic{};
+		bool issynched{};
 
-		void GetMemoryStatistics(ICrySizer * s)
+		void GetMemoryStatistics(ICrySizer* s)
 		{
 			s->Add(name);
 		}
-
-		ItemString		name;
-		float			    airadius;
-		float			    sphere;
-		bool			    isstatic;
-		bool          issynched;
 	};
 
 	struct SInstanceAudio
@@ -669,7 +669,7 @@ public:
 
 	struct SGeometry
 	{
-		SGeometry(): position(ZERO), angles(ZERO), scale(1.0f) {};
+		SGeometry(): position(), angles(), scale(1.0f) {};
 
 		void GetMemoryStatistics(ICrySizer * s)
 		{
@@ -896,17 +896,17 @@ public:
 
 	// effects
 	unsigned int AttachEffect(int slot, unsigned int id, bool attach, const char *effectName=0, const char *helper=0,
-		const Vec3 &offset=Vec3Constants<float>::fVec3_Zero, const Vec3 &dir=Vec3Constants<float>::fVec3_OneY, float scale=1.0f, bool prime=true);
-  unsigned int AttachLight(int slot, unsigned int id, bool attach, float radius=5.0f, const Vec3 &color=Vec3Constants<float>::fVec3_One,
+		const Vec3 &offset={}, const Vec3 &dir=Vec3(0, 1, 0), float scale=1.0f, bool prime=true);
+  unsigned int AttachLight(int slot, unsigned int id, bool attach, float radius=5.0f, const Vec3 &color=Vec3(1, 1, 1),
 		const float fSpecularMult=1.0f, const char *projectTexture=0, float projectFov=0, const char *helper=0,
-		const Vec3 &offset=Vec3Constants<float>::fVec3_Zero, const Vec3 &dir=Vec3Constants<float>::fVec3_OneY, 
+		const Vec3 &offset={}, const Vec3 &dir=Vec3(0, 1, 0),
     const char* material=0, float fHDRDynamic=0.f );
-	unsigned int AttachLightEx(int slot, unsigned int id, bool attach, bool fakeLight = false , bool castShadows = false, IRenderNode* pCasterException = NULL, float radius=5.0f, const Vec3 &color=Vec3Constants<float>::fVec3_One,
+	unsigned int AttachLightEx(int slot, unsigned int id, bool attach, bool fakeLight = false , bool castShadows = false, IRenderNode* pCasterException = NULL, float radius=5.0f, const Vec3 &color=Vec3(1, 1, 1),
 		const float fSpecularMult=1.0f, const char *projectTexture=0, float projectFov=0, const char *helper=0,
-		const Vec3 &offset=Vec3Constants<float>::fVec3_Zero, const Vec3 &dir=Vec3Constants<float>::fVec3_OneY, 
+		const Vec3 &offset={}, const Vec3 &dir=Vec3(0, 1, 0),
 		const char* material=0, float fHDRDynamic=0.f );
-	void SpawnEffect(int slot, const char *effectName, const char *helper, const Vec3 &offset=Vec3Constants<float>::fVec3_Zero,
-		const Vec3 &dir=Vec3Constants<float>::fVec3_OneY, float scale=1.0f);
+	void SpawnEffect(int slot, const char *effectName, const char *helper, const Vec3 &offset={},
+		const Vec3 &dir=Vec3(0, 1, 0), float scale=1.0f);
 	IParticleEmitter *GetEffectEmitter(unsigned int id) const;
 	void SetEffectWorldTM(unsigned int id, const Matrix34 &tm);
 	Matrix34 GetEffectWorldTM(unsigned int it);
@@ -917,6 +917,7 @@ public:
 	bool AttachToHand(bool attach, bool checkAttachment = false);
 	bool AttachToBack(bool attach);
 	void EnableUpdate(bool enable, int slot=-1);
+	void UpdateFPAnimationUpdates();
 	void RequireUpdate(int slot=-1);
 	void Hide(bool hide);
 	void HideArms(bool hide);
@@ -953,7 +954,7 @@ public:
 	void UpdateMounted(float frameTime);
 	void OnPreProcessBonesRotation(IActor* pActor, const float frameTime);
 	void CheckViewChange();
-	void SetViewMode(int mode);
+	virtual void SetViewMode(int mode);
 	void CopyRenderFlags(IEntity *pOwner);
 	void ResetRenderFlags();
 	virtual void UseManualBlending(bool enable);
@@ -1276,6 +1277,7 @@ protected:
 	SParams								m_params;
 	SMountParams					m_mountparams;
 	SStats								m_stats;
+	bool m_fpAnimationUpdates = false;
 	SEditorStats					m_editorstats;
 	SCameraAnimationStats	m_camerastats;
 	TEffectInfoMap				m_effects;
@@ -1446,6 +1448,10 @@ public:
 	}
 
 	bool m_fpMasterHidden = false;
+	std::string m_skin;
+
+private:
+	void CheckSkin(CSynchedStorage* pSSS);
 };
 
 #endif //__ITEM_H__

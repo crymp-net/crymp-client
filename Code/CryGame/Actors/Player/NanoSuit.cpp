@@ -58,7 +58,7 @@ static void PrecacheMaterials(bool bCacheAsian)
 		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].body = matMan->LoadMaterial("objects/characters/human/us/nanosuit/nanosuit_us_defense.mtl");
 		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].helmet = matMan->LoadMaterial("objects/characters/human/us/nanosuit/nanosuit_us_helmet_defense.mtl");
 		g_USNanoMats[NANOMODE_DEFENSE_HIT_REACTION].arms = matMan->LoadMaterial("objects/weapons/arms_global/arms_nanosuit_us_defense.mtl");
-		// strategically leak it
+		// Keep materials referenced while cached
 		for (int i = 0; i < NANOMODE_LAST; ++i)
 		{
 			g_USNanoMats[i].body->AddRef();
@@ -87,13 +87,27 @@ static void PrecacheMaterials(bool bCacheAsian)
 		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].body = matMan->LoadMaterial("objects/characters/human/asian/nanosuit/nanosuit_asian_defense.mtl");
 		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].helmet = matMan->LoadMaterial("objects/characters/human/asian/nanosuit/nanosuit_asian_helmet_defense.mtl");
 		g_AsianNanoMats[NANOMODE_DEFENSE_HIT_REACTION].arms = matMan->LoadMaterial("objects/weapons/arms_global/arms_nanosuit_asian_defense.mtl");
-		// strategically leak it
+		// Keep materials referenced while cached
 		for (int i = 0; i < NANOMODE_LAST; ++i)
 		{
 			g_AsianNanoMats[i].body->AddRef();
 			g_AsianNanoMats[i].helmet->AddRef();
 			g_AsianNanoMats[i].arms->AddRef();
 		}
+	}
+}
+
+void CNanoSuit::ResetCachedMaterials()
+{
+	for (int i = 0; i < NANOMODE_LAST; ++i)
+	{
+		SAFE_RELEASE(g_USNanoMats[i].body);
+		SAFE_RELEASE(g_USNanoMats[i].helmet);
+		SAFE_RELEASE(g_USNanoMats[i].arms);
+
+		SAFE_RELEASE(g_AsianNanoMats[i].body);
+		SAFE_RELEASE(g_AsianNanoMats[i].helmet);
+		SAFE_RELEASE(g_AsianNanoMats[i].arms);
 	}
 }
 
@@ -887,6 +901,68 @@ bool CNanoSuit::SetMode(ENanoMode mode, bool forceUpdate, bool keepInvul)
 	return true;
 }
 
+void CNanoSuit::FinishCloakBlend(IEntity* pEntity)
+{
+	if (!pEntity)
+	{
+		return;
+	}
+	if (IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+	{
+		const uint32 blend = pRenderProxy->GetMaterialLayersBlend();
+		const bool cloaked = (pRenderProxy->GetMaterialLayersMask() & MTL_LAYER_CLOAK) != 0;
+		const uint32 finishedBlend = (blend & 0xffff00ff) | (cloaked ? 0xff00 : 0);
+		if (blend != finishedBlend)
+		{
+			pRenderProxy->SetMaterialLayersBlend(finishedBlend);
+		}
+	}
+	for (int i = 0; i < pEntity->GetChildCount(); ++i)
+	{
+		FinishCloakBlend(pEntity->GetChild(i));
+	}
+}
+
+void CNanoSuit::FinishRemoteCloakBlend()
+{
+	if (!gEnv->bClient || !m_pOwner || m_pOwner->IsClient())
+	{
+		return;
+	}
+
+	//CryMP: Finish the body and equipped items, including back attachments and accessories
+	//Only change the cloak byte, preserving frozen and wet layers
+	FinishCloakBlend(m_pOwner->GetEntity());
+	if (CItem* pItem = static_cast<CItem*>(m_pOwner->GetCurrentItem(true)))
+	{
+		FinishCloakBlend(pItem->GetEntity());
+		if (IItem* pSlave = pItem->GetDualWieldSlave())
+		{
+			FinishCloakBlend(pSlave->GetEntity());
+		}
+	}
+	if (IItem* pOffHand = m_pOwner->GetItemByClass(CItem::sOffHandClass))
+	{
+		FinishCloakBlend(pOffHand->GetEntity());
+	}
+	if (ICharacterInstance* pCharacter = m_pOwner->GetEntity()->GetCharacter(0))
+	{
+		if (IAttachmentManager* pAttachments = pCharacter->GetIAttachmentManager())
+		{
+			for (int i = 0; i < pAttachments->GetAttachmentCount(); ++i)
+			{
+				IAttachment* pAttachment = pAttachments->GetInterfaceByIndex(i);
+				IAttachmentObject* pObject = pAttachment ? pAttachment->GetIAttachmentObject() : nullptr;
+				if (pObject && pObject->GetAttachmentType() == IAttachmentObject::eAttachment_Entity)
+				{
+					CEntityAttachment* pEntityAttachment = static_cast<CEntityAttachment*>(pObject);
+					FinishCloakBlend(gEnv->pEntitySystem->GetEntity(pEntityAttachment->GetEntityId()));
+				}
+			}
+		}
+	}
+}
+
 void CNanoSuit::SetCloak(bool on, bool force)
 {
 	if (!m_pOwner)
@@ -905,6 +981,15 @@ void CNanoSuit::SetCloak(bool on, bool force)
 	m_cloak.m_active = on;
 	if (switched || force)
 	{
+		//CryMP: Client visual fix: render-only cloak fades otherwise stop while culled
+		//One timer per transition, replaced on reversal, with no extra character updates
+		m_pOwner->GetEntity()->KillTimer(CloakBlendTimer);
+		if (gEnv->bClient && !m_pOwner->IsClient())
+		{
+			//The engine advances the 0-255 blend at 255 units per second
+			m_pOwner->GetEntity()->SetTimer(CloakBlendTimer, 1000);
+		}
+
 		if (m_pOwner)
 		{
 			if (!force && on)

@@ -103,7 +103,7 @@ struct SCharacterMoveRequest
 {
 	SCharacterMoveRequest()
 	: type(eCMT_None)
-	, velocity(ZERO)
+	, velocity()
 	, rotation(Quat::CreateIdentity())
 	, allowStrafe(false)
 	, proceduralLeaning(false)
@@ -133,7 +133,6 @@ struct SAnimationBlendingParams
 		m_yawAngle = 0;
 		m_speed = 0;
 		m_strafeParam = 0;
-		m_StrafeVector = ZERO;
 		m_turnAngle = 0;
 		m_diffBodyMove = 0;
 		m_fBlendedDesiredSpeed = 0;

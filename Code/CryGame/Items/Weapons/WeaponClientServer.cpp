@@ -103,7 +103,7 @@ void CWeapon::NetMeleeAttack(bool weaponMelee, const Vec3 &pos, const Vec3 &dir)
 {
 	if (weaponMelee && m_melee)
 	{
-		m_melee->NetShootEx(pos, dir, ZERO, ZERO, 1.0f, 0);
+		m_melee->NetShootEx(pos, dir, Vec3(), Vec3(), 1.0f, 0);
 		if (IsServer())
 		{
 			void* extra = reinterpret_cast<void*>(static_cast<uintptr_t>(GetEntityId()));
@@ -112,7 +112,7 @@ void CWeapon::NetMeleeAttack(bool weaponMelee, const Vec3 &pos, const Vec3 &dir)
 	}
 	else if (m_fm)
 	{
-		m_fm->NetShootEx(pos, dir, ZERO, ZERO, 1.0f, 0);
+		m_fm->NetShootEx(pos, dir, Vec3(), Vec3(), 1.0f, 0);
 		if (IsServer())
 		{
 			void* extra = reinterpret_cast<void*>(static_cast<uintptr_t>(GetEntityId()));
@@ -140,64 +140,17 @@ int CWeapon::GetZoomStepFromFoV(float fov)
 //------------------------------------------------------------------------
 void CWeapon::NetZoom(float fov)
 {
-	if (CActor *pOwner=GetOwnerActor())
-	{
-		if (pOwner->IsClient())
-			return;
+	CActor* pOwner = GetOwnerActor();
+	if (!pOwner || pOwner->IsClient())
+		return;
 
-		SActorParams* pActorParams = pOwner->GetActorParams();
-		if (!pActorParams)
-			return;
+	SActorParams* pActorParams = pOwner->GetActorParams();
+	if (!pActorParams)
+		return;
 
-		const float previousFoV = pActorParams->zoomFoV;
-		pActorParams->zoomFoV = fov;
-
-		const bool pFpTarget = pOwner->IsFpSpectatorTarget();
-		if (!pFpTarget)
-			return;
-
-		if (m_zm)
-		{
-			if (fov > 0.99f)
-			{
-				ExitZoom();
-			}
-			else
-			{
-				const int currentZoomStep = GetZoomStepFromFoV(previousFoV);
-				const int newZoomStep = GetZoomStepFromFoV(fov);
-				const int diff = abs(currentZoomStep - newZoomStep);
-
-				//CryLogAlways("CurrentZoomStep: %i, NewZoomStep: %i, Diff %i", currentZoomStep, newZoomStep, diff);
-
-				if (!diff)
-					return;
-
-				const bool zoomed = IsZoomed();
-				if (!zoomed)
-				{
-					StartZoom(GetEntityId(), 1);
-					if (diff < 2)
-						return;
-				}
-
-				//Weapons with more than 1 step
-				if (diff)
-				{
-					//are we zooming in or out
-					const bool zoomIn = previousFoV > fov;
-					for (int i = 0, n = diff; i < n; ++i)
-					{
-						if (zoomIn)
-							m_zm->ZoomIn();
-						else
-							m_zm->ZoomOut();
-					}
-				}
-				
-			}
-		}
-	}
+	pActorParams->zoomFoV = fov;
+	if (pOwner->IsFpSpectatorTarget() && m_zm)
+		m_zm->NetSetZoomStep(GetZoomStepFromFoV(fov));
 }
 
 //------------------------------------------------------------------------

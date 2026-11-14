@@ -620,8 +620,7 @@ int ScriptBind_Sound::SetParameterValue(IFunctionHandler *pH)
 	{
 		if (strcmp(paramName, "pitch") == 0)
 		{
-			ptParamF32 value = paramValue;
-			pSound->SetParam(spPITCH, &value);
+			pSound->SetPitch((int)(paramValue * 1000.0f));
 		}
 		else
 		{

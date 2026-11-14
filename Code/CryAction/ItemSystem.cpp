@@ -2,6 +2,7 @@
 #include "CryCommon/CryAction/IGameplayRecorder.h"
 #include "CryCommon/CryAISystem/IAISystem.h"
 #include "CryCommon/CryAnimation/ICryAnimation.h"
+#include "CryCommon/CryCore/CryMalloc.h" // CryMalloc
 #include "CryCommon/CryEntitySystem/IEntitySystem.h"
 #include "CryCommon/CryScriptSystem/IScriptSystem.h"
 #include "CryCommon/CrySoundSystem/ISound.h"
@@ -294,7 +295,10 @@ void ItemSystem::Scan(const char* folderName)
 
 IItemParamsNode* ItemSystem::CreateParams()
 {
-	return new ItemParamsNode();
+	// use CryMalloc to match CryFree used by the original ItemParamsNode destructor
+	std::size_t allocatedSize = 0;
+	void* mem = CryMalloc(sizeof(ItemParamsNode), allocatedSize);
+	return new (mem) ItemParamsNode;
 }
 
 const IItemParamsNode* ItemSystem::GetItemParams(const char* itemName) const
@@ -1096,9 +1100,19 @@ void ItemSystem::ScanXml(XmlNodeRef& root, const char* xmlFile)
 			entityClass.sScriptFile = defaultScript;
 		}
 
-		if (!m_reloading)
+		IGameObjectSystem* pGOS = m_pGameFramework->GetIGameObjectSystem();
+		if (m_reloading)
 		{
-			m_pGameFramework->GetIGameObjectSystem()->RegisterExtension(itemName, pCreator, &entityClass);
+			if (!m_extensions.contains(itemName))
+			{
+				pGOS->RegisterExtension(itemName, pCreator, &entityClass);
+				m_extensions.insert(itemName);
+			}
+		}
+		else
+		{
+			pGOS->RegisterExtension(itemName, pCreator, &entityClass);
+			m_extensions.insert(itemName);
 		}
 	}
 

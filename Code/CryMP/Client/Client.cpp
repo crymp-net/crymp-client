@@ -7,7 +7,9 @@
 #include "CryCommon/CryNetwork/INetwork.h"
 #include "CryCommon/CryScriptSystem/IScriptSystem.h"
 #include "CryCommon/Cry3DEngine/I3DEngine.h"
+#include "CryCommon/CryRenderer/IRenderer.h"
 #include "CryGame/Game.h"
+#include "CryGame/HUD/TeamSelectionPreview.h"
 #include "CryMP/Common/Executor.h"
 #include "CryMP/Common/GSMasterHook.h"
 #include "CryMP/Common/ScriptBind_CPPAPI.h"
@@ -28,7 +30,6 @@
 #include "ScriptCallbacks.h"
 #include "ServerBrowser.h"
 #include "ServerConnector.h"
-#include "EngineCache.h"
 #include "ParticleManager.h"
 #include "DrawTools.h"
 #include "FFontHooks.h"
@@ -50,7 +51,11 @@ void Client::InitMasters()
 
 	if (m_masters.empty())
 	{
-		m_masters.emplace_back("crymp.org");
+		std::string defaultMaster{ "crymp.org" };
+		if (WinAPI::GetLocale() == "ru-RU") {
+			defaultMaster = "proxy.crymp.org";
+		}
+		m_masters.emplace_back(defaultMaster);
 	}
 
 	m_pScriptCallbacks->OnMasterResolved();
@@ -209,7 +214,6 @@ void Client::Init(IGameFramework *pGameFramework)
 	m_pServerBrowser     = std::make_unique<ServerBrowser>();
 	m_pServerConnector   = std::make_unique<ServerConnector>();
 	m_pServerPAK         = std::make_unique<ServerPAK>();
-	m_pEngineCache       = std::make_unique<EngineCache>();
 	m_pParticleManager   = std::make_unique<ParticleManager>();
 	m_pDrawTools         = std::make_unique<DrawTools>();
 
@@ -263,8 +267,9 @@ void Client::Init(IGameFramework *pGameFramework)
 	pScriptSystem->ExecuteFile("CryMP/Scripts/JSON.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/RPC.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/Client.lua", true, true);
-	pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true);
 	pScriptSystem->ExecuteFile("CryMP/Scripts/HandGripData.lua", true, true);
+
+	ReloadLocalizationLua();
 
 	InitMasters();
 
@@ -275,7 +280,9 @@ void Client::Init(IGameFramework *pGameFramework)
 	m_pGame = new CGame();
 	m_pGame->Init(pGameFramework);
 
-	m_pFileCache->Cleanup(86400);
+	m_pFileCache->Cleanup(14 * 86400);
+
+	WarmupRendererTextPath();
 }
 
 void Client::UpdateLoop()
@@ -387,6 +394,37 @@ void Client::AddKeyBind(const std::string_view& key, HSCRIPTFUNCTION function)
 
 void Client::OnKeyPress(const std::string_view& key)
 {
+	if (key == "lalt")
+	{
+		m_hudScaleModifierDown = true;
+		return;
+	}
+
+	if (m_hudScaleModifierDown)
+	{
+		if (key == "up")
+		{
+			m_hudScaleDirection = 1;
+			return;
+		}
+
+		if (key == "down")
+		{
+			m_hudScaleDirection = -1;
+			return;
+		}
+
+		if (key == "right")
+		{
+			ICVar* pHudScale = gEnv->pConsole->GetCVar("hud_scale");
+			if (pHudScale)
+				pHudScale->Set(1.0f);
+
+			m_hudScaleDirection = 0;
+			return;
+		}
+	}
+
 	for (const KeyBind& bind : m_keyBinds)
 	{
 		if (bind.key == key)
@@ -410,6 +448,21 @@ void Client::OnKeyPress(const std::string_view& key)
 
 void Client::OnKeyRelease(const std::string_view& key)
 {
+	if (key == "lalt")
+	{
+		m_hudScaleModifierDown = false;
+		m_hudScaleDirection = 0;
+		return;
+	}
+
+	if (key == "up" || key == "down" || key == "right")
+	{
+		m_hudScaleDirection = 0;
+
+		if (m_hudScaleModifierDown)
+			return;
+	}
+
 	for (const KeyBind& bind : m_keyBinds)
 	{
 		if (bind.key == key)
@@ -445,6 +498,8 @@ void Client::OnPostUpdate(float deltaTime)
 	m_pExecutor->OnUpdate();
 	m_pScriptCallbacks->OnUpdate(deltaTime);
 	m_pDrawTools->OnUpdate();
+
+	UpdateHudScale(deltaTime);
 }
 
 void Client::OnSaveGame(ISaveGame *pSaveGame)
@@ -467,12 +522,15 @@ void Client::OnActionEvent(const SActionEvent & event)
 	{
 		case eAE_disconnected:
 		{
+			m_pPendingPreloadLevel = nullptr;
+
 			EDisconnectionCause reason = static_cast<EDisconnectionCause>(event.m_value);
 			const char *message = event.m_description;
 
 			m_pScriptCallbacks->OnDisconnect(reason, message);
 			m_pServerPAK->OnDisconnect(reason, message);
 			m_pDrawTools->OnDisconnect(reason, message);
+			m_pServerConnector->OnDisconnect();
 
 			// prevent evil servers from changing the client version
 			SetVersionInLua();
@@ -485,6 +543,11 @@ void Client::OnActionEvent(const SActionEvent & event)
 		case eAE_resetBegin:
 		{
 			m_pScriptCallbacks->OnLoadingStart();
+			break;
+		}
+		case eAE_languageChanged:
+		{
+			ReloadLocalizationLua();
 			break;
 		}
 		case eAE_channelCreated:
@@ -512,26 +575,37 @@ void Client::OnLevelNotFound(const char *levelName)
 
 void Client::OnLoadingStart(ILevelInfo *pLevel)
 {
+	m_pPendingPreloadLevel = nullptr;
+	TeamSelectionPreview::Reset();
+
 	this->FixCVars();
 
 	gEnv->pScriptSystem->ForceGarbageCollection();
 
-	m_pServerPAK->OnLoadingStart(pLevel);
-	m_pEngineCache->OnLoadingStart(pLevel);
 	m_pScriptCallbacks->OnLoadingStart();
+	m_pPendingPreloadLevel = pLevel;
 }
 
 void Client::OnLoadingComplete(ILevel *pLevel)
 {
+	m_pPendingPreloadLevel = nullptr;
+	TeamSelectionPreview::Preload();
 }
 
 void Client::OnLoadingError(ILevelInfo *pLevel, const char *error)
 {
+	m_pPendingPreloadLevel = nullptr;
+	TeamSelectionPreview::Reset();
 }
 
 void Client::OnLoadingProgress(ILevelInfo *pLevel, int progressAmount)
 {
-	m_pEngineCache->OnLoadingProgress(pLevel, progressAmount);
+	if (pLevel && pLevel == m_pPendingPreloadLevel)
+	{
+		// The preload can report more loading progress while creating CGA instances.
+		m_pPendingPreloadLevel = nullptr;
+		m_pServerPAK->OnFirstLoadingProgress();
+	}
 }
 
 bool Client::OnBeforeSpawn(SEntitySpawnParams& params)
@@ -697,4 +771,50 @@ void Client::FixCVars()
 	// CryMP: these cvars are not net-synced and break terrain textures when set too low (zero)
 	LimitDetailMaterialsViewDistMinValue("e_detail_materials_view_dist_xy");
 	LimitDetailMaterialsViewDistMinValue("e_detail_materials_view_dist_z");
+}
+
+void Client::ReloadLocalizationLua()
+{
+	if (!gEnv->pScriptSystem->ExecuteFile("CryMP/Scripts/Localization.lua", true, true))
+	{
+		CryLogAlways("$4[CryMP] Failed to load Localization.lua");
+	}
+}
+
+void Client::WarmupRendererTextPath()
+{
+	// TEMP WORKAROUND for black console bug (mainly DX10).
+	//
+	// Queues one 2D text draw so the renderer/CryFont text path is initialized
+	// early. Without this, the console can render black on some maps
+	// (for example Poolday) because the text pipeline was not touched yet.
+	//
+	// Note:
+	// - The string must not be empty, otherwise fix won't work
+	// - This draw only happens for one frame and is effectively not visible.
+	//
+	// Proper fix belongs in the renderer / CryFont initialization path.
+
+	float color[] = { 1.f, 1.f, 1.f, 0.f };
+	gEnv->pRenderer->Draw2dLabel(1.f, 1.f, 1.f, color, false, ".");
+}
+
+void Client::UpdateHudScale(float deltaTime)
+{
+	if (!m_hudScaleDirection)
+		return;
+
+	ICVar* pHudScale = gEnv->pConsole->GetCVar("hud_scale");
+	if (!pHudScale)
+		return;
+
+	constexpr float minScale = 0.4f;
+	constexpr float maxScale = 1.2f;
+	constexpr float speed = 0.45f;
+
+	float scale = pHudScale->GetFVal();
+	scale += speed * deltaTime * static_cast<float>(m_hudScaleDirection);
+	scale = clamp_tpl(scale, minScale, maxScale);
+
+	pHudScale->Set(scale);
 }

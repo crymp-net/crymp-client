@@ -92,8 +92,6 @@ void CRapid::Activate(bool activate)
 	m_hasBarrelAttachment = !m_rapidparams.barrel_attachment.empty();
 	m_hasEngineAttachment = !m_rapidparams.engine_attachment.empty();
 
-	UpdateTpBarrelVisibility();
-
 	const auto slot = m_pWeapon->GetStats().fp ? CItem::eIGS_FirstPerson : CItem::eIGS_ThirdPerson;
 	UpdateRotation(slot, 0.0f);
 }
@@ -366,6 +364,12 @@ void CRapid::OnEnterThirdPerson()
 }
 
 //------------------------------------------------------------------------
+void CRapid::OnSetViewMode(int mode)
+{
+	UpdateTpBarrelVisibility(mode == CItem::eIVM_ThirdPerson);
+}
+
+//------------------------------------------------------------------------
 void CRapid::Accelerate(float acc)
 {
 	m_acceleration = acc;
@@ -477,7 +481,7 @@ void CRapid::UpdateRotation(CItem::eGeometrySlot slot, float frameTime)
 		}
 
 		Matrix33 spin = Matrix33::CreateRotationY(m_rotation_angle);
-		Matrix34 spinTM(spin, Vec3(ZERO));
+		Matrix34 spinTM(spin, Vec3());
 
 		Matrix34 finalTM = m_barrelBaseTM * spinTM;
 		m_pWeapon->GetEntity()->SetSlotLocalTM(barrelSlot, finalTM);
@@ -561,35 +565,12 @@ void CRapid::SetSlotRender(IEntity* pEnt, int slot, bool render)
 }
 
 //------------------------------------------------------------------------
-bool CRapid::ShouldShowTpBarrel() const
-{
-	const CWeapon::SStats& stats = m_pWeapon->GetStats();
-
-	if (stats.dropped)
-		return true;
-
-	if (m_rapidparams.tp_barrel_hide_fp && stats.fp)
-		return false;
-
-	const EntityId ownerId = m_pWeapon->GetOwnerId();
-	const bool hasOwner = (ownerId != 0);
-
-	if (hasOwner && !m_pWeapon->IsSelected())
-		return false;
-
-	return true;
-}
-
-//------------------------------------------------------------------------
-void CRapid::UpdateTpBarrelVisibility()
+void CRapid::UpdateTpBarrelVisibility(bool show)
 {
 	if (!(m_rapidparams.tp_barrel_enable && !m_rapidparams.tp_barrel_model.empty()))
 		return;
 
-	const int slot = m_rapidparams.tp_barrel_slot;
-	const bool show = ShouldShowTpBarrel();
-
-	SetSlotRender(m_pWeapon->GetEntity(), slot, show);
+	SetSlotRender(m_pWeapon->GetEntity(), m_rapidparams.tp_barrel_slot, show);
 }
 
 //------------------------------------------------------------------------

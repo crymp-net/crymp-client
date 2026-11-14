@@ -119,7 +119,7 @@ CItem::CItem()
 	m_noDrop(false),
 	m_constraintId(0),
 	m_useFPCamSpacePP(true),
-	m_serializeActivePhysics(0),
+	m_serializeActivePhysics(),
 	m_serializeDestroyed(false),
 	m_bPostPostSerialize(false)
 {
@@ -193,6 +193,13 @@ CItem::~CItem()
 	if (!(GetISystem()->IsSerializingFile() && GetGameObject()->IsJustExchanging()))
 		for (TAccessoryMap::iterator it = m_accessories.begin(); it != m_accessories.end(); ++it)
 			gEnv->pEntitySystem->RemoveEntity(it->second);
+
+	if (!gEnv->bServer) {
+		CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
+		if (pSSS) {
+			pSSS->UnregisterEntityCallback(GetEntityId());
+		}
+	}
 
 	if (m_pItemSystem)
 		m_pItemSystem->RemoveItem(GetEntityId());
@@ -306,6 +313,24 @@ bool CItem::Init(IGameObject* pGameObject)
 
 	if (!IsMounted())
 		GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_ON_RADAR);
+
+	if (!gEnv->bServer) {
+		CSynchedStorage* pSSS = g_pGame->GetSynchedStorage();
+		if (pSSS) {
+			pSSS->RegisterEntityCallback(GetEntityId(), [this](CSynchedStorage* pSS, EntityId id, TSynchedKey key) -> void {
+				if (key == 1001 || key == 1002) {
+					IItemSystem* pIS = static_cast<IItemSystem*>(gEnv->pGame->GetIGameFramework()->GetIItemSystem());
+					// this is a bit defensive, but it's better to be safe than sorry, 
+					// esp. when dealing with multi-threaded calls from network
+					//
+					// ensure the entity actually exists and it is registered to this item
+					if (pIS && pIS->GetItem(id) == this && GetEntityId() == id) {
+						CheckSkin(pSS);
+					}
+				}
+			});
+		}
+	}
 
 	return true;
 }
@@ -1180,6 +1205,10 @@ void CItem::Select(bool select)
 	m_stats.selected = select;
 
 	CheckViewChange();
+	if (select)
+	{
+		UpdateFPAnimationUpdates();
+	}
 
 	for (TAccessoryMap::iterator it = m_accessories.begin(); it != m_accessories.end(); it++)
 	{
@@ -1321,7 +1350,9 @@ void CItem::PlaySelectAnimation(CActor* pOwner, bool thirdpersonOnly)
 	{
 		ENanoMode curMode = pNanoSuit->GetMode();
 		if (curMode == NANOMODE_SPEED)
+		{
 			speedOverride = 1.75f;
+		}
 	}
 
 	// only LAW has 2 different select animations
@@ -1330,14 +1361,21 @@ void CItem::PlaySelectAnimation(CActor* pOwner, bool thirdpersonOnly)
 		: g_pItemStrings->select;
 
 	// Base flags
-	int flags = eIPAF_Default | eIPAF_NoBlend;
+	//CryMP: Client visual fix: restart selection instead of resuming a retained animation
+	int flags = eIPAF_Default | eIPAF_NoBlend | eIPAF_RestartAnimation;
 	if (thirdpersonOnly)
+	{
 		flags |= eIPAF_ForceThirdPerson;
+	}
 
 	if (speedOverride > 0.0f)
+	{
 		PlayAction(select_animation, 0, false, flags, speedOverride);
+	}
 	else
+	{
 		PlayAction(select_animation, 0, false, flags);
+	}
 }
 
 //------------------------------------------------------------------------
@@ -1439,8 +1477,8 @@ void CItem::Drop(float impulseScale, bool selectNext, bool byDeath)
 			SMovementState moveState;
 			pMC->GetMovementState(moveState);
 
-			Vec3 dir(ZERO);
-			Vec3 vel(ZERO);
+			Vec3 dir;
+			Vec3 vel;
 			dir.Set(0.0f, 0.0f, -1.0f);
 
 			if (pOwner->IsPlayer())
@@ -1751,13 +1789,17 @@ void CItem::PickUp(EntityId pickerId, bool sound, bool select, bool keepHistory)
 		}
 	}
 
+	//CryMP: Client/server fix: grants enter inventory without replacing the mounted weapon
+	const SActorStats* pActorStats = pActor->GetActorStats();
+	const bool usingMountedWeapon = pActorStats && pActorStats->mountedWeaponID != 0;
+
 	if (itemToSelect)
 	{
 		SPlayerStats* pStats = nullptr;
 		if (pActor->GetActorClassType() == CPlayer::GetActorClassType())
 			pStats = static_cast<SPlayerStats*>(pActor->GetActorStats());
 
-		if (select)
+		if (select && !usingMountedWeapon)
 		{
 			if (!pActor->GetLinkedVehicle() && !pActor->ShouldSwim() && (!pStats || !pStats->isOnLadder.Value()))
 			{
@@ -1782,9 +1824,8 @@ void CItem::PickUp(EntityId pickerId, bool sound, bool select, bool keepHistory)
 		GetGameObject()->SetNetworkParent(pickerId);
 		if ((GetEntity()->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY)) == 0)
 		{
-			bool remoteSelect = m_stats.selected;
-			if (m_params.select_on_pickup)
-				remoteSelect = true;
+			//CryMP: Server fix: select_on_pickup must not force remote clients off a mounted weapon
+			const bool remoteSelect = !usingMountedWeapon && (m_stats.selected || m_params.select_on_pickup);
 			pActor->GetGameObject()->InvokeRMIWithDependentObject(CActor::ClPickUp(), CActor::PickItemParams(GetEntityId(), remoteSelect, sound), eRMI_ToAllClients | eRMI_NoLocalCalls, GetEntityId());
 
 			const char* displayName = GetDisplayName();
@@ -2020,7 +2061,7 @@ Vec3 CItem::GetMountedAngleLimits() const
 	if (m_stats.mounted)
 		return Vec3(m_mountparams.min_pitch, m_mountparams.max_pitch, m_mountparams.yaw_range);
 	else
-		return ZERO;
+		return {};
 }
 
 //------------------------------------------------------------------------
@@ -2280,40 +2321,64 @@ void CItem::StartUse(EntityId userId)
 //------------------------------------------------------------------------
 void CItem::StopUse(EntityId userId)
 {
-	if (userId != m_ownerId)
+	//CryMP: Client/server fix: clear use state even when the owner is being removed
+	if (!m_ownerId || userId != m_ownerId)
+	{
 		return;
+	}
 
 	CActor* pActor = GetOwnerActor();
-	if (!pActor)
-		return;
+	const bool ownerRemoved = !pActor || pActor->GetEntity()->IsGarbage();
 
-	/* Handled in UpdateDraw() now 
-	//Draw legs again for the FP player
-	if (pActor->IsClient())
+	if (!ownerRemoved)
 	{
-		pActor->m_hideMaster = false;
+		if (pActor->GetHealth() > 0)
+		{
+			pActor->SelectLastItem(true);
+		}
+		else
+		{
+			Select(false);
+		}
+
+		if (IAnimationGraphState* pGraph = pActor->GetAnimationGraphState())
+		{
+			pGraph->SetInput("Action", "idle");
+		}
+
+		ApplyViewLimit(userId, false);
 	}
-	*/
-
-	if (pActor->GetHealth() > 0)
-		pActor->SelectLastItem(true);
-
-	pActor->GetAnimationGraphState()->SetInput("Action", "idle");
-
-	ApplyViewLimit(userId, false);
+	else
+	{
+		//Cancel pending actions without selecting another
+		//item or accessing actor extensions that are being destroyed
+		GetScheduler()->Reset(true);
+		ReleaseStaticSounds();
+	}
 
 	if (m_stats.mounted)
 	{
-		AttachArms(false, false);
+		if (m_params.arms)
+		{
+			ResetCharacterAttachment(eIGS_FirstPerson, ITEM_ARMS_ATTACHMENT_NAME);
+		}
+		SetViewMode(eIVM_FirstPerson);
 	}
 
 	EnableUpdate(false);
 
 	m_stats.used = false;
+	m_stats.selected = false;
+	m_stats.fp = false;
 
 	SetOwnerId(0);
 
-	CloakEnable(false, pActor->IsCloaked());
+	CloakEnable(false, !ownerRemoved && pActor->IsCloaked());
+
+	if (ownerRemoved)
+	{
+		return;
+	}
 
 	// TODO: precreate this table
 	SmartScriptTable locker(gEnv->pScriptSystem);
@@ -2325,10 +2390,14 @@ void CItem::StopUse(EntityId userId)
 	pActor->LinkToMountedWeapon(0);
 
 	if (pActor->GetAnimatedCharacter())
+	{
 		pActor->GetAnimatedCharacter()->SetNoMovementOverride(false);
+	}
 
 	if (IsServer())
+	{
 		pActor->GetGameObject()->InvokeRMI(CActor::ClStopUse(), CActor::ItemIdParam(GetEntityId()), eRMI_ToAllClients | eRMI_NoLocalCalls);
+	}
 }
 
 //------------------------------------------------------------------------
@@ -2628,8 +2697,45 @@ void CItem::RequireUpdate(int slot)
 }
 
 //------------------------------------------------------------------------
+//CryMP: Client visual fix: own one update reference for the local player or spectator target
+//Refresh even when a spectator target changes without changing its camera mode
+void CItem::UpdateFPAnimationUpdates()
+{
+	//Deselect already releases this reference through EnableUpdate(false)
+	//OffHand owns carry/grenade updates, including remote players
+	if (!m_stats.selected || GetEntity()->GetClass() == sOffHandClass)
+	{
+		return;
+	}
+	CActor* pOwner = GetOwnerActor();
+	const bool enable = gEnv->bClient && m_stats.selected && !m_stats.mounted && pOwner && (pOwner->IsClient() || pOwner->IsFpSpectatorTarget() || pOwner->IsTpSpectatorTarget());
+	if (enable != m_fpAnimationUpdates)
+	{
+		m_fpAnimationUpdates = enable;
+		if (enable)
+		{
+			GetGameObject()->EnableUpdateSlot(this, eIUS_General);
+		}
+		else
+		{
+			GetGameObject()->DisableUpdateSlot(this, eIUS_General);
+		}
+	}
+
+	if (CItem* pSlave = static_cast<CItem*>(GetDualWieldSlave()))
+	{
+		pSlave->UpdateFPAnimationUpdates();
+	}
+}
+
+//------------------------------------------------------------------------
 void CItem::EnableUpdate(bool enable, int slot)
 {
+	//CryMP: Disabling the general slot also releases our view-animation reference
+	if (!enable && (slot == -1 || slot == eIUS_General))
+	{
+		m_fpAnimationUpdates = false;
+	}
 	if (enable)
 	{
 		if (slot == -1)
@@ -3101,6 +3207,23 @@ void CItem::GetMemoryStatistics(ICrySizer* s)
 		iter->second.GetMemoryStatistics(s);
 	for (TInstanceActionMap::iterator iter = m_instanceActions.begin(); iter != m_instanceActions.end(); ++iter)
 		iter->second.GetMemoryStatistics(s);
+}
+
+void CItem::CheckSkin(CSynchedStorage *pSSS) {
+	int SKIN_KEY = m_stats.viewmode == eIVM_FirstPerson ? 1001 : 1002;
+	IEntity* pEntity = GetEntity();
+	std::string skin;
+	if (pEntity && pSSS->GetEntityValue(pEntity->GetId(), SKIN_KEY, skin) && skin != m_skin) {
+		m_skin = skin;
+		IMaterialManager* pMM = gEnv->p3DEngine->GetMaterialManager();
+		IMaterial* pMaterial = pMM->LoadMaterial(skin.c_str());
+		if (pMaterial) {
+			pEntity->SetMaterial(pMaterial);
+		}
+		else {
+			CryLogWarning("Couldn't find material '%s'", skin.c_str());
+		}
+	}
 }
 
 

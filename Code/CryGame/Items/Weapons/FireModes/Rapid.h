@@ -34,8 +34,8 @@ protected:
 			ResetValue(barrel_attachment, "");
 			ResetValue(engine_attachment, "");
 
-			ResetValue(camshake_rotate, Vec3(0));
-			ResetValue(camshake_shift, Vec3(0));
+			ResetValue(camshake_rotate, Vec3());
+			ResetValue(camshake_shift, Vec3());
 			ResetValue(camshake_perShot, 0.0f);
 
 			ResetValue(tp_barrel_enable, false);
@@ -43,9 +43,9 @@ protected:
 			ResetValue(tp_barrel_model, "");
 			ResetValue(tp_barrel_hide_fp, false);
 
-			ResetValue(tp_barrel_offset, Vec3(ZERO));
+			ResetValue(tp_barrel_offset, Vec3());
 			ResetValue(tp_barrel_scale, 1.0f);
-			ResetValue(tp_barrel_rotation, Vec3(ZERO));
+			ResetValue(tp_barrel_rotation, Vec3());
 			ResetValue(barrel_spin_mult, 1.0f);
 		}
 
@@ -132,6 +132,7 @@ public:
 
 	void OnEnterFirstPerson() override;
 	void OnEnterThirdPerson() override;
+	void OnSetViewMode(int mode) override;
 
 protected:
 	virtual void Accelerate(float acc);
@@ -141,8 +142,7 @@ protected:
 	virtual void FinishDeceleration();
 
 	void SetSlotRender(IEntity* pEnt, int slot, bool render);
-	bool ShouldShowTpBarrel() const;
-	void UpdateTpBarrelVisibility();
+	void UpdateTpBarrelVisibility(bool show);
 
 	SRapidActions m_rapidactions;
 	SRapidParams  m_rapidparams;

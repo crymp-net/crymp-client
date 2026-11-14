@@ -17,6 +17,8 @@ History:
 #include "HUD.h"
 #include "HUDRadar.h"
 #include "HUDSilhouettes.h"
+#include "HUDPowerStruggle.h"
+#include "HUDTeamInstantAction.h"
 #include "GameFlashAnimation.h"
 #include "CryGame/Actors/Actor.h"
 #include "CryCommon/CryAction/IWorldQuery.h"
@@ -127,6 +129,14 @@ void CHUDScopes::DisplayBinoculars(CPlayer* pPlayerActor)
 {
 	if (!pPlayerActor)
 		return;
+
+	if (CPlayer* pSpectatorTargetPlayer = CPlayer::FromIActor(pPlayerActor->GetSpectatorTargetActor()))
+	{
+		pPlayerActor = pSpectatorTargetPlayer;
+
+		//CryMP: No radar in spectator mode, need to update it here
+		UpdateBinocularsDistance(pPlayerActor);
+	}
 
 	CCamera& rCamera = gEnv->pSystem->GetViewCamera();
 
@@ -274,6 +284,121 @@ void CHUDScopes::DisplayBinoculars(CPlayer* pPlayerActor)
 
 //-----------------------------------------------------------------------------------------------------
 
+EntityId CHUDScopes::RayCastBinoculars(CPlayer* pPlayer, ray_hit& rayHit)
+{
+	rayHit = ray_hit();
+
+	if (!pPlayer)
+		return 0;
+
+	Vec3 pos, dir, up, right;
+
+	const Matrix34& rmatCamera = gEnv->pSystem->GetViewCamera().GetMatrix();
+	pos = rmatCamera.GetTranslation();
+	dir = rmatCamera.GetColumn1();
+	up = rmatCamera.GetColumn2();
+	right = (dir % up).GetNormalizedSafe();
+
+	IEntity* pPlayerEntity = pPlayer->GetEntity();
+	if (!pPlayerEntity)
+		return 0;
+
+	IPhysicalEntity* pPhysEnt = pPlayerEntity->GetPhysics();
+	if (!pPhysEnt)
+		return 0;
+
+	const int objTypes = ent_all;
+	const unsigned int flags = (13 & rwi_pierceability_mask);
+
+	right = right * g_pGameCVars->hud_binocsScanningWidth;
+	up = up * g_pGameCVars->hud_binocsScanningWidth;
+
+	Vec3 positions[4];
+	positions[0] = pos + right + up;
+	positions[1] = pos + right - up;
+	positions[2] = pos - right - up;
+	positions[3] = pos - right + up;
+
+	ray_hit bestHit = ray_hit();
+	bool hasHit = false;
+
+	for (int i = 0; i < 4; ++i)
+	{
+		ray_hit hit = ray_hit();
+
+		if (gEnv->pPhysicalWorld->RayWorldIntersection(positions[i], 300.0f * dir, objTypes, flags, &hit, 1, &pPhysEnt, 1))
+		{
+			IEntity* pLookAt = gEnv->pEntitySystem->GetEntityFromPhysics(hit.pCollider);
+
+			if (pLookAt)
+			{
+				rayHit = hit;
+				return pLookAt->GetId();
+			}
+
+			if (!hasHit || hit.dist < bestHit.dist)
+			{
+				bestHit = hit;
+				hasHit = true;
+			}
+		}
+	}
+
+	if (hasHit)
+		rayHit = bestHit;
+
+	return 0;
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+EntityId CHUDScopes::UpdateBinocularsDistance(CPlayer* pPlayer)
+{
+	if (!pPlayer)
+		return 0;
+
+	EntityId lookAtObjectID = 0;
+
+	IWorldQuery* pWorldQuery = pPlayer->GetGameObject()->GetWorldQuery();
+	if (pWorldQuery)
+	{
+		lookAtObjectID = pWorldQuery->GetLookAtEntityId();
+	}
+
+	ray_hit rayHit;
+
+	if (!lookAtObjectID)
+	{
+		lookAtObjectID = RayCastBinoculars(pPlayer, rayHit);
+	}
+
+	// When in a cinematic, pActor view doesn't move (it's faked), so let's not use the lookAtEntityId
+	if (lookAtObjectID && !g_pHUD->IsInCinematic())
+	{
+		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(lookAtObjectID);
+		if (pEntity)
+		{
+			const Vec3 playerPos = pPlayer->GetEntity()->GetWorldPos();
+			const Vec3 targetPos = pEntity->GetWorldPos();
+
+			float fDistance = (targetPos - playerPos).GetLength();
+			SetBinocularsDistance(fDistance);
+
+			return lookAtObjectID;
+		}
+	}
+	else if (rayHit.pCollider)
+	{
+		SetBinocularsDistance(rayHit.dist);
+		return lookAtObjectID; 
+	}
+
+	SetBinocularsDistance(0.0f);
+	return 0;
+}
+
+//-----------------------------------------------------------------------------------------------------
+
 void CHUDScopes::DisplayScope(CPlayer* pPlayerActor)
 {
 	if (GetCurrentScope() != CHUDScopes::ESCOPE_NONE)
@@ -296,7 +421,7 @@ void CHUDScopes::DisplayScope(CPlayer* pPlayerActor)
 		{
 			int zoommode = m_iZoomLevel;
 
-			Vec3 vWorldPos = Vec3(ZERO);
+			Vec3 vWorldPos;
 			if (!pCurrentWeapon->GetScopePosition(vWorldPos))
 				vWorldPos = g_pHUD->m_pRenderer->GetCamera().GetPosition();
 
@@ -397,6 +522,16 @@ void CHUDScopes::ShowBinoculars(bool bVisible, bool bShowIfNoHUD, bool bNoFadeOu
 
 	g_pHUD->m_pHUDSilhouettes->SetType((IsBinocularsShown() && !m_bThirdPerson) ? 1 : 0);
 
+	if (g_pHUD->GetPowerStruggleHUD())
+	{
+		//CryMP: Hide SwingOMeter when binoculars are shown
+		g_pHUD->GetPowerStruggleHUD()->SetSOMHidden(CHUDPowerStruggle::eSOMHideReason_Binoculars, bVisible);
+	}
+	else if (g_pHUD->GetTeamInstantActionHUD())
+	{
+		g_pHUD->GetTeamInstantActionHUD()->SetTIAScoreHidden(CHUDTeamInstantAction::eTIAScoreHideReason_Binoculars, bVisible);
+	}
+
 	HUD_CALL_LISTENERS(OnBinoculars(bVisible));
 }
 
@@ -425,13 +560,16 @@ void CHUDScopes::ShowScope(int iVisible)
 	{
 		m_animSniperScope.Invoke("setVisible", false);
 		m_eShowScope = ESCOPE_NONE;
+		m_bScopeZoomPending = false;
 		return;
 	}
 
 	SFlashVarValue args[2] = { true, iVisible };
 	m_animSniperScope.Invoke("setVisible", args, 2);
 	m_eShowScope = (EScopeMode)iVisible;
-	m_iZoomLevel = 0;
+	if (!m_bScopeZoomPending)
+		m_iZoomLevel = 0;
+	m_bScopeZoomPending = false;
 
 	IFlashPlayer* pScopePlayer = m_animSniperScope.GetFlashPlayer();
 	if (pScopePlayer)
@@ -442,23 +580,36 @@ void CHUDScopes::ShowScope(int iVisible)
 
 void CHUDScopes::SetScopeZoomMode(int iZoomMode, string& scopeType)
 {
+	int previousZoomLevel = m_iZoomLevel;
+	if (m_eShowScope == ESCOPE_NONE && iZoomMode > 0)
+	{
+		if (!m_bScopeZoomPending)
+			previousZoomLevel = 0;
+		m_bScopeZoomPending = true;
+	}
+
+	if (iZoomMode == previousZoomLevel)
+		return;
+
 	int type = 1;
 	if (!_stricmp(scopeType.c_str(), "scope_assault"))	//assault scope has no sound atm.
 		type = 0;
 	else if (!_stricmp(scopeType.c_str(), "scope_sniper"))
 		type = 2;
 
-	if (type && m_iZoomLevel != iZoomMode)
+	if (type)
 	{
-		if (iZoomMode > m_iZoomLevel)
+		if (iZoomMode > previousZoomLevel)
 			g_pHUD->PlaySound((type == 2) ? ESound_SniperZoomIn : ESound_BinocularsZoomIn);
 		else
 			g_pHUD->PlaySound((type == 2) ? ESound_SniperZoomOut : ESound_BinocularsZoomOut);
 	}
 
+	//CryMP: Mode 0 skips the 10x -> 4x animation on entry.
+	const int flashZoomMode = (iZoomMode == 1 && previousZoomLevel == 0) ? 0 : iZoomMode;
 	m_iZoomLevel = iZoomMode;
 
-	m_animSniperScope.Invoke("setZoomMode", iZoomMode);
+	m_animSniperScope.Invoke("setZoomMode", flashZoomMode);
 }
 
 //-----------------------------------------------------------------------------------------------------

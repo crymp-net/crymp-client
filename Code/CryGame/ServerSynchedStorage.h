@@ -2,7 +2,7 @@
 
 #include "ClientSynchedStorage.h"
 
-class CServerSynchedStorage : public CNetMessageSinkHelper<CServerSynchedStorage, CSynchedStorage>
+class CServerSynchedStorage final : public CNetMessageSinkHelper<CServerSynchedStorage, CSynchedStorage>
 {
 	struct SChannel
 	{
@@ -93,7 +93,7 @@ class CServerSynchedStorage : public CNetMessageSinkHelper<CServerSynchedStorage
 	void AddToEntityQueueFor(int channelId, EntityId entityId, TSynchedKey key);
 
 public:
-	CServerSynchedStorage(IGameFramework *pGameFramework)
+	explicit CServerSynchedStorage(IGameFramework* pGameFramework)
 	{
 		m_pGameFramework = pGameFramework;
 	}
@@ -110,7 +110,6 @@ public:
 	void OnClientEnteredGame(int channelId);
 
 protected:
-	void OnGlobalChanged(TSynchedKey key, const TSynchedValue & value) override;
-	void OnEntityChanged(EntityId entityId, TSynchedKey key, const TSynchedValue & value) override;
-	void ClearNonExistingEntities();
+	void OnGlobalChanged(TSynchedKey key) override;
+	void OnEntityChanged(EntityId entityId, TSynchedKey key) override;
 };

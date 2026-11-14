@@ -60,14 +60,14 @@ void CTrooper::Revive(ReasonForRevive reason)
 	m_Rollx = 0;
 	m_oldDirFwd = 0;
 	m_oldDirStrafe = 0;
-	m_oldVelocity = ZERO;
+	m_oldVelocity = {};
 
 	m_fDistanceToPathEnd = 0;
 	m_bExactPositioning = false;
 	m_lastExactPositioningTime = 0.f;
 	
-	m_landModelOffset = ZERO;
-	m_steerModelOffset = ZERO;
+	m_landModelOffset = {};
+	m_steerModelOffset = {};
 
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(0);
 	int tNum(0);
@@ -91,7 +91,7 @@ void CTrooper::Revive(ReasonForRevive reason)
 	m_overrideFlyAction = "idle";
 	
 	m_bNarrowEnvironment = false;
-	m_lastCheckEnvironmentPos = ZERO;
+	m_lastCheckEnvironmentPos = {};
 	m_fTtentacleBlendRotation = 0.f;
 
 	m_jumpParams.Reset();
@@ -136,7 +136,7 @@ void CTrooper::SetParams(SmartScriptTable &rTable,bool resetFirst)
 		return;
 	}	
 
-	m_jumpParams.addVelocity = ZERO;
+	m_jumpParams.addVelocity = {};
 	if(rTable->GetValue("jumpTo",m_jumpParams.dest) && !m_jumpParams.dest.IsZero() || rTable->GetValue("addVelocity",m_jumpParams.addVelocity))
 	{
 		rTable->GetValue("jumpVelocity",m_jumpParams.velocity);
@@ -550,7 +550,7 @@ void CTrooper::ProcessRotation(float frameTime)
 				{
 					pPhysEnt->GetStatus(&livStat);
 					Vec3 groundNormal((up+livStat.groundSlope).GetNormalizedSafe());
-					Vec3 localUp(invViewMtx * (Vec3Constants<float>::fVec3_OneZ * Matrix33::CreateRotationXYZ(Ang3(rollx,roll,0))));
+					Vec3 localUp(invViewMtx * (Vec3(0, 0, 1) * Matrix33::CreateRotationXYZ(Ang3(rollx,roll,0))));
 					Vec3 localGroundN(invViewMtx * groundNormal);
 					Vec3 localUpx(localUp.x,0,localUp.z);
 					Vec3 localUpy(0, localUp.y, localUp.z);
@@ -784,7 +784,7 @@ void CTrooper::ProcessMovement(float frameTime)
 	CTimeValue currTime = gEnv->pSystem->GetITimer()->GetFrameStartTime();
 
 	if (!m_stats.isFloating)
-		move -= move * (m_baseMtx * Matrix33::CreateScale(Vec3Constants<float>::fVec3_OneZ));//make it flat
+		move -= move * (m_baseMtx * Matrix33::CreateScale(Vec3(0, 0, 1)));//make it flat
 
 	if (m_stats.sprintLeft)
 		move *= m_params.sprintMultiplier;
@@ -869,7 +869,7 @@ void CTrooper::ProcessMovement(float frameTime)
 			else
 				m_jumpParams.state = JS_None;
 
-			m_jumpParams.velocity = ZERO;
+			m_jumpParams.velocity = {};
 			m_jumpParams.startTime= currTime;
 		}
 
@@ -922,7 +922,7 @@ void CTrooper::ProcessMovement(float frameTime)
 								ray_hit hit;
 								int rayFlags = rwi_stop_at_pierceable|(geom_colltype_player<<rwi_colltype_bit);
 								Vec3 pos(GetEntity()->GetWorldPos());
-								if (gEnv->pPhysicalWorld->RayWorldIntersection(pos, (vN.z<0 ? vN : -Vec3Constants<float>::fVec3_OneZ)*20, ent_terrain|ent_static|ent_rigid, rayFlags, &hit, 1, &phys, 1))
+								if (gEnv->pPhysicalWorld->RayWorldIntersection(pos, (vN.z<0 ? vN : -Vec3(0, 0, 1))*20, ent_terrain|ent_static|ent_rigid, rayFlags, &hit, 1, &phys, 1))
 								{
 
 									// find approximate time of landing with given velocity
@@ -1135,8 +1135,8 @@ void CTrooper::ProcessAnimation(ICharacterInstance *pCharacter,float frameTime)
 			float landTime = (gEnv->pSystem->GetITimer()->GetFrameStartTime() -m_jumpParams.startTime).GetSeconds();
 			if(landTime>= ClandDuration)
 			{
-				m_landModelOffset = ZERO;
-				//m_stats.dynModelOffset = ZERO;
+				m_landModelOffset = {};
+				//m_stats.dynModelOffset = {};
 				m_jumpParams.state = JS_None;
 			}
 			else
@@ -1145,7 +1145,7 @@ void CTrooper::ProcessAnimation(ICharacterInstance *pCharacter,float frameTime)
 				if(m_jumpParams.curVelocity.z< -0.01f) // going down
 				{
 					m_jumpParams.curVelocity -= m_jumpParams.initLandVelocity * frameTime * (ClandDuration - timeToZero) * ClandStiffnessMultiplier;
-					//Interpolate(m_jumpParams.curVelocity,ZERO,1/(m_landDuration - timeToZero),gEnv->pSystem->GetITimer()->GetFrameTime());
+					//Interpolate(m_jumpParams.curVelocity,{},1/(m_landDuration - timeToZero),gEnv->pSystem->GetITimer()->GetFrameTime());
 /*					char b[1000];
 					sprintf(b,"%f\n",m_jumpParams.curVelocity.z);
 					OutputDebugString(b);
@@ -1154,7 +1154,7 @@ void CTrooper::ProcessAnimation(ICharacterInstance *pCharacter,float frameTime)
 				}
 				else
 				{
-					Interpolate(m_landModelOffset,ZERO,2/timeToZero,frameTime);
+					Interpolate(m_landModelOffset,{},2/timeToZero,frameTime);
 				}
 			}
 		}
@@ -1163,7 +1163,7 @@ void CTrooper::ProcessAnimation(ICharacterInstance *pCharacter,float frameTime)
 	// simulating inertia when changing speed/direction
 	if(m_steerInertia>0)
 	{
-		Vec3 goalSteelModelOffset(ZERO);
+		Vec3 goalSteelModelOffset;
 		float dot = 0;
 		float interpolateSpeed;
 		if(m_stats.inAir<=0 && !m_bExactPositioning && !m_stats.isGrabbed)

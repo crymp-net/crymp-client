@@ -124,11 +124,11 @@ struct CScan::TagEntitiesDelay
 		//Here is when entities are displayed on Radar
 		if (gEnv->bServer)
 		{
-			pScan->NetShoot(ZERO, 0);
+			pScan->NetShoot(Vec3(), 0);
 		}
 		else
 		{
-			pWeapon->RequestShoot(0, ZERO, ZERO, ZERO, ZERO, 1.0f, 0, 0, 0, false);
+			pWeapon->RequestShoot(0, Vec3(), Vec3(), Vec3(), Vec3(), 1.0f, 0, 0, 0, false);
 		}
 	}
 };

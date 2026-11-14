@@ -41,9 +41,9 @@ public:
 
 private:
     float     m_speed = 0.0f;
-    Vec3      m_pos = Vec3(ZERO);
-    Vec3      m_dest = Vec3(ZERO);
-    Vec3      m_startingpos = Vec3(ZERO);
+    Vec3      m_pos = {};
+    Vec3      m_dest = {};
+    Vec3      m_startingpos = {};
     float     m_age = 0.0f;
     float     m_lifeTime = 1.5f;
     bool      m_useGeometry = false;
@@ -61,8 +61,8 @@ public:
     {
         const char* geometry = nullptr;
         const char* effect = nullptr;
-        Vec3        position = Vec3(ZERO);
-        Vec3        destination = Vec3(ZERO);
+        Vec3        position = {};
+        Vec3        destination = {};
         float       speed = 0.0f;
         float       lifetime = 1.5f;
     };

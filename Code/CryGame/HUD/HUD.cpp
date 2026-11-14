@@ -28,6 +28,7 @@ History:
 #include "CryGame/MPTutorial.h"
 
 #include "HUD.h"
+#include "TeamSelectionPreview.h"
 #include "HUDObituary.h"
 #include "HUDRadar.h"
 #include "HUDScore.h"
@@ -150,8 +151,8 @@ CHUD::CHUD()
 	m_bInMenu = false;
 	m_bDestroyInitializePending = false;
 
-	m_friendlyTrackerStatus = 0;
-	m_hostileTrackerStatus = 0;
+	m_friendlyTrackerStatus.fill(0);
+	m_hostileTrackerStatus.fill(0);
 
 	m_bThirdPerson = false;
 	m_bNightVisionActive = false;
@@ -305,6 +306,7 @@ CHUD::CHUD()
 
 CHUD::~CHUD()
 {
+	TeamSelectionPreview::Suspend();
 	ShowDeathFX(0);
 
 	if (m_bCutscenePlaying)
@@ -441,16 +443,6 @@ CWeapon* CHUD::GetCurrentWeapon()
 	return 0;
 }
 
-void OnChangeChatResolution(ICVar* p)
-{
-	const int mode = p->GetIVal();
-
-	if (g_pGame->GetHUD())
-	{
-		g_pGame->GetHUD()->EnableChatGfx(mode > 0);
-	}
-}
-
 //-----------------------------------------------------------------------------------------------------
 
 void CHUD::EnableChatGfx(bool highResolution)
@@ -462,6 +454,11 @@ void CHUD::EnableChatGfx(bool highResolution)
 
 	const char* path = highResolution ? "Libs/UI/HUD_ChatSystem_HR.gfx" : "Libs/UI/HUD_ChatSystem.gfx";
 	m_animChat.Load(path, eFD_Left);
+	if (!highResolution)
+	{
+		m_animChat.SetDock(eFD_Left | eFD_Bottom | eFD_Scaling);
+	}
+
 	if (m_pHUDTextChat)
 		m_pHUDTextChat->Init(&m_animChat);
 }
@@ -513,66 +510,78 @@ bool CHUD::Init(IActor* pActor)
 
 	if (gEnv->bMultiplayer || loadEverything)
 	{
-		m_animKillLog.Load("Libs/UI/HUD_KillLog.gfx", eFD_Left, eFAF_Visible);
+		m_animKillLog.Load("Libs/UI/HUD_KillLog.gfx", eFD_Left | eFD_Top | eFD_Scaling, eFAF_Visible);
 	}
 
-	m_animPlayerStats.Load("Libs/UI/HUD_AmmoHealthEnergySuit.gfx", eFD_Right, eFAF_Visible | eFAF_ThisHandler);
-	m_animAmmoPickup.Load("Libs/UI/HUD_AmmoPickup.gfx", eFD_Right, eFAF_Visible);
-	m_animFriendlyProjectileTracker.Load("Libs/UI/HUD_GrenadeDetect_Friendly.gfx", eFD_Center, eFAF_Visible);
-	if (!m_animFriendlyProjectileTracker.IsLoaded()) //asset missing so far ..
-		m_animFriendlyProjectileTracker.Load("Libs/UI/HUD_GrenadeDetect.gfx", eFD_Center, eFAF_Visible);
-	m_animHostileProjectileTracker.Load("Libs/UI/HUD_GrenadeDetect.gfx", eFD_Center, eFAF_Visible);
-	m_animMissionObjective.Load("Libs/UI/HUD_MissionObjective_Icon.gfx", eFD_Center, eFAF_Visible);
-	m_animQuickMenu.Load("Libs/UI/HUD_QuickMenu.gfx");
-	m_animRadarCompassStealth.Load("Libs/UI/HUD_RadarCompassStealth.gfx", eFD_Left, eFAF_Visible);
+	m_animPlayerStats.Load("Libs/UI/HUD_AmmoHealthEnergySuit.gfx", eFD_Right | eFD_Bottom | eFD_Scaling, eFAF_Visible | eFAF_ThisHandler);
+	m_animAmmoPickup.Load("Libs/UI/HUD_AmmoPickup.gfx", eFD_Right | eFD_Bottom | eFD_Scaling, eFAF_Visible);
 
-	m_animNetworkConnection.Load("Libs/UI/HUD_Network_Icon.gfx", eFD_Center, eFAF_ThisHandler);
+	for (auto& anim : m_animFriendlyProjectileTrackers)
+	{
+		anim.Load("Libs/UI/HUD_GrenadeDetect_Friendly.gfx", eFD_Center, eFAF_Visible);
+	}
+
+	for (auto& anim : m_animHostileProjectileTrackers)
+	{
+		anim.Load("Libs/UI/HUD_GrenadeDetect.gfx", eFD_Center, eFAF_Visible);
+	}
+
+	m_animMissionObjective.Load("Libs/UI/HUD_MissionObjective_Icon.gfx", eFD_Center, eFAF_Visible);
+	m_animQuickMenu.Load("Libs/UI/HUD_QuickMenu.gfx", eFD_Center | eFD_Scaling);
+	m_animRadarCompassStealth.Load("Libs/UI/HUD_RadarCompassStealth.gfx", eFD_Left | eFD_Bottom | eFD_Scaling, eFAF_Visible);
+	m_animRadarCompassStealth.SetMaxScale(1.15f);
+
+	m_animNetworkConnection.Load("Libs/UI/HUD_Network_Icon.gfx", eFD_Center | eFD_Scaling, eFAF_ThisHandler);
 
 	m_pHUDRadar->SetFlashRadar(&m_animRadarCompassStealth);
 	if (gEnv->bMultiplayer)
-		m_animHexIcons.Load("Libs/UI/HUD_HexIcons.gfx", eFD_Left, eFAF_Visible);
+	{
+		m_animHexIcons.Load("Libs/UI/HUD_HexIcons.gfx", eFD_Left | eFD_Bottom | eFD_Scaling, eFAF_Visible);
+	}
 	else
-		m_animHexIcons.Load("Libs/UI/HUD_SP_HexIcons.gfx", eFD_Left, eFAF_Visible);
+	{
+		m_animHexIcons.Load("Libs/UI/HUD_SP_HexIcons.gfx", eFD_Left | eFD_Bottom | eFD_Scaling, eFAF_Visible);
+	}
 
-	m_animTacLock.Load("Libs/UI/HUD_Tac_Lock.gfx", eFD_Center, eFAF_ThisHandler);
+	m_animTacLock.Load("Libs/UI/HUD_Tac_Lock.gfx", eFD_Center | eFD_Scaling, eFAF_ThisHandler);
 	m_animWarningMessages.Load("Libs/UI/HUD_ErrorMessages.gfx", eFD_Center, eFAF_ThisHandler | eFAF_ManualRender);
 	m_animOverlayMessages.Load("Libs/UI/HUD_OverlayMessage.gfx", eFD_Center, eFAF_ThisHandler | eFAF_ManualRender);
+	m_animOverlayMessages.ForceHUDScaleApply();
 	m_animBigOverlayMessages.Load("Libs/UI/HUD_OverlayMessageFading.gfx", eFD_Center, eFAF_ThisHandler | eFAF_ManualRender);
-	m_animHUDCornerLeft.Load("Libs/UI/HUD_Corner_Left.gfx", eFD_Left, eFAF_Visible);
-	m_animHUDCornerRight.Load("Libs/UI/HUD_Corner_Right.gfx", eFD_Right, eFAF_Visible);
+	m_animBigOverlayMessages.ForceHUDScaleApply();
+	m_animHUDCornerLeft.Load("Libs/UI/HUD_Corner_Left.gfx", eFD_Left | eFD_Top | eFD_Scaling, eFAF_Visible);
+	m_animHUDCornerRight.Load("Libs/UI/HUD_Corner_Right.gfx", eFD_Right | eFD_Top | eFD_Scaling, eFAF_Visible);
 
 	//load the map
-	m_animWeaponSelection.Load("Libs/UI/HUD_WeaponSelection.gfx", eFD_Right, eFAF_Visible);
-	m_animPDA.Load("Libs/UI/HUD_PDA_Map.gfx", eFD_Right, eFAF_ThisHandler);
+	m_animWeaponSelection.Load("Libs/UI/HUD_WeaponSelection.gfx", eFD_Right | eFD_Bottom | eFD_Scaling, eFAF_Visible);
+	m_animPDA.Load("Libs/UI/HUD_PDA_Map.gfx", eFD_Right | eFD_Top | eFD_Scaling, eFAF_ThisHandler);
 	m_animDownloadEntities.Load("Libs/UI/HUD_DownloadEntities.gfx");
 
 	//CryMP
-	m_animHitIndicatorPlayer.Load("Libs/UI/HUD_HitIndicatorPlayer.gfx", eFD_Center, eFAF_Visible);
-	m_animHitIndicatorVehicle.Load("Libs/UI/HUD_HitIndicatorVehicle.gfx", eFD_Center, eFAF_Visible);
-
-	m_animTrackedRadioMessage.Load("Libs/UI/HUD_GrenadeDetect_Friendly.gfx", eFD_Center, eFAF_Visible);
-	if (!m_animTrackedRadioMessage.IsLoaded()) //asset missing so far ..
-		m_animTrackedRadioMessage.Load("Libs/UI/HUD_GrenadeDetect.gfx", eFD_Center, eFAF_Visible);
+	m_animHitIndicatorPlayer.Load("Libs/UI/HUD_HitIndicatorPlayer.gfx", eFD_Center | eFD_Scaling, eFAF_Visible);
+	m_animHitIndicatorVehicle.Load("Libs/UI/HUD_HitIndicatorVehicle.gfx", eFD_Center | eFD_Scaling, eFAF_Visible);
+	m_animTrackedRadioMessage.Load("Libs/UI/HUD_GrenadeDetect_Friendly.gfx", eFD_Center | eFD_Scaling, eFAF_Visible);
 
 	// these are delay-loaded elsewhere!!!
 	if (loadEverything)
 	{
-		m_animKillAreaWarning.Load("Libs/UI/HUD_Area_Warning.gfx", eFD_Center, true);
-		m_animDeathMessage.Load("Libs/UI/HUD_KillEvents.gfx", eFD_Center, true);
-		m_animGamepadConnected.Load("Libs/UI/HUD_GamePad_Stats.gfx");
-		m_animBreakHUD.Load("Libs/UI/HUD_Lost.gfx", eFD_Center, eFAF_ManualRender | eFAF_Visible);
-		m_animRebootHUD.Load("Libs/UI/HUD_Reboot.gfx", eFD_Center, eFAF_Visible | eFAF_ThisHandler);
+		m_animKillAreaWarning.Load("Libs/UI/HUD_Area_Warning.gfx", eFD_Center | eFD_Scaling, true);
+		m_animDeathMessage.Load("Libs/UI/HUD_KillEvents.gfx", eFD_Center | eFD_Scaling, true);
+		m_animGamepadConnected.Load("Libs/UI/HUD_GamePad_Stats.gfx", eFD_Center | eFD_Scaling);
+		m_animBreakHUD.Load("Libs/UI/HUD_Lost.gfx", eFD_Center | eFD_Scaling, eFAF_ManualRender | eFAF_Visible);
+		m_animRebootHUD.Load("Libs/UI/HUD_Reboot.gfx", eFD_Center | eFD_Scaling, eFAF_Visible | eFAF_ThisHandler);
 	}
 	else
 	{
-		m_animKillAreaWarning.Init("Libs/UI/HUD_Area_Warning.gfx", eFD_Center, true);
-		m_animDeathMessage.Init("Libs/UI/HUD_KillEvents.gfx", eFD_Center, true);
-		m_animGamepadConnected.Init("Libs/UI/HUD_GamePad_Stats.gfx");
-		m_animBreakHUD.Init("Libs/UI/HUD_Lost.gfx", eFD_Center, eFAF_Visible);
-		m_animRebootHUD.Init("Libs/UI/HUD_Reboot.gfx", eFD_Center, eFAF_Visible | eFAF_ThisHandler);
+		m_animKillAreaWarning.Init("Libs/UI/HUD_Area_Warning.gfx", eFD_Center | eFD_Scaling, true);
+		m_animDeathMessage.Init("Libs/UI/HUD_KillEvents.gfx", eFD_Center | eFD_Scaling, true);
+		m_animGamepadConnected.Init("Libs/UI/HUD_GamePad_Stats.gfx", eFD_Center | eFD_Scaling);
+		m_animBreakHUD.Init("Libs/UI/HUD_Lost.gfx", eFD_Center | eFD_Scaling, eFAF_Visible);
+		m_animRebootHUD.Init("Libs/UI/HUD_Reboot.gfx", eFD_Center | eFD_Scaling, eFAF_Visible | eFAF_ThisHandler);
 	}
 
 	m_animWeaponAccessories.Load("Libs/UI/HUD_WeaponAccessories.gfx", eFD_Center, eFAF_ThisHandler);
+
 	if (loadEverything)
 	{
 		if (!gEnv->bMultiplayer)
@@ -580,6 +589,7 @@ bool CHUD::Init(IActor* pActor)
 			m_animCinematicBar.Load("Libs/UI/HUD_CineBar.gfx", eFD_Center, eFAF_ThisHandler | eFAF_ManualRender | eFAF_Visible);
 		}
 		m_animSubtitles.Load("Libs/UI/HUD_Subtitle.gfx", eFD_Center, eFAF_ThisHandler | eFAF_ManualRender | eFAF_Visible);
+		m_animSubtitles.ForceHUDScaleApply();
 	}
 	else
 	{
@@ -588,6 +598,7 @@ bool CHUD::Init(IActor* pActor)
 			m_animCinematicBar.Init("Libs/UI/HUD_CineBar.gfx", eFD_Center, eFAF_ThisHandler | eFAF_ManualRender | eFAF_Visible);
 		}
 		m_animSubtitles.Init("Libs/UI/HUD_Subtitle.gfx", eFD_Center, eFAF_ThisHandler | eFAF_ManualRender | eFAF_Visible);
+		m_animSubtitles.ForceHUDScaleApply();
 	}
 
 	m_pHUDRadar->SetFlashPDA(&m_animPDA);
@@ -627,9 +638,6 @@ bool CHUD::Init(IActor* pActor)
 		{
 			m_pHUDTeamInstantAction = new CHUDTeamInstantAction(this);
 			m_hudObjectsList.push_back(m_pHUDTeamInstantAction);
-
-			if (m_pHUDTeamInstantAction)
-				m_pHUDTeamInstantAction->Show(true);
 		}
 		else if (m_currentGameRules == EHUD_INSTANTACTION)
 		{
@@ -639,7 +647,8 @@ bool CHUD::Init(IActor* pActor)
 
 		if (m_pGameRules->GetTeamCount() > 1)
 		{
-			m_animTeamSelection.Load("Libs/UI/HUD_TeamSelection.gfx", eFD_Center, eFAF_ManualRender | eFAF_ThisHandler);
+			m_animTeamSelection.Load("Libs/UI/HUD_TeamSelection.gfx", eFD_Center | eFD_Scaling, eFAF_ManualRender | eFAF_ThisHandler);
+
 			m_animTeamSelection.GetFlashPlayer()->SetVisible(false);
 		}
 	}
@@ -657,6 +666,7 @@ bool CHUD::Init(IActor* pActor)
 	// This one is on top of others because it displays important
 	// messages, so let's put it at the end of the rendering list
 	m_animMessages.Load("Libs/UI/HUD_Messages.gfx");
+	m_animMessages.ForceHUDScaleApply();
 
 	UpdateHUDElements();
 
@@ -711,12 +721,19 @@ bool CHUD::Init(IActor* pActor)
 	m_hudAmmunition["tacbullet"] = 16;
 	m_hudAmmunition["avexplosive"] = 17;
 
-	if (ICVar* pChatResolutionCVar = gEnv->pConsole->GetCVar("mp_chatHighResolution"))
-	{
-		pChatResolutionCVar->SetOnChangeCallback(OnChangeChatResolution);
-	}
-
 	return true;
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CHUD::Reload()
+{
+	ILevelSystem* pLevelSystem = g_pGame->GetIGameFramework()->GetILevelSystem();
+	ILevel* pLevel = pLevelSystem->GetCurrentLevel();
+	if (pLevel)
+	{
+		OnLoadingComplete(pLevel);
+	}
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -752,7 +769,8 @@ void CHUD::ShowBootSequence()
 	}
 
 	SetHUDColor();
-	m_animInitialize.Load("Libs/UI/HUD_Initialize.gfx", eFD_Center, eFAF_ThisHandler | eFAF_ManualRender);
+	m_animInitialize.Load("Libs/UI/HUD_Initialize.gfx", eFD_Center | eFD_Scaling, eFAF_ThisHandler | eFAF_ManualRender);
+
 	m_animInitialize.SetVisible(true);
 	PlaySound(ESound_Reboot);
 }
@@ -894,13 +912,13 @@ void CHUD::GameRulesSet()
 
 	if (gEnv->bMultiplayer)
 	{
-		if (!stricmp(name.c_str(), "InstantAction"))
+		if (!_stricmp(name.c_str(), "InstantAction"))
 			gameRules = EHUD_INSTANTACTION;
-		else if (!stricmp(name.c_str(), "PowerStruggle"))
+		else if (!_stricmp(name.c_str(), "PowerStruggle"))
 			gameRules = EHUD_POWERSTRUGGLE;
-		else if (!stricmp(name.c_str(), "TeamAction"))
+		else if (!_stricmp(name.c_str(), "TeamAction"))
 			gameRules = EHUD_TEAMACTION;
-		else if (!stricmp(name.c_str(), "TeamInstantAction"))
+		else if (!_stricmp(name.c_str(), "TeamInstantAction"))
 			gameRules = EHUD_TEAMINSTANTACTION;
 	}
 
@@ -2555,7 +2573,7 @@ bool CHUD::OnAction(const ActionId& action, int activationMode, float value)
 				{
 					PlaySound(ESound_NightVisionSelect);
 					PlaySound(ESound_NightVisionAmbience);
-					m_animNightVisionBattery.Load("Libs/UI/HUD_NightVision.gfx", eFD_Right);
+					m_animNightVisionBattery.Load("Libs/UI/HUD_NightVision.gfx", eFD_Right | eFD_Top | eFD_Scaling);
 				}
 				else
 				{
@@ -2726,7 +2744,9 @@ void CHUD::ShowReviveCycle(bool show)
 	{
 		if (!m_animSpawnCycle.IsLoaded())
 		{
-			m_animSpawnCycle.Load("Libs/UI/HUD_MP_SpawnCircle.gfx", eFD_Center, eFAF_ManualRender | eFAF_Visible);
+			m_animSpawnCycle.Load("Libs/UI/HUD_MP_SpawnCircle.gfx", eFD_Center | eFD_Scaling, eFAF_ManualRender | eFAF_Visible);
+			CHUDCommon::RepositionFlashAnimation(&m_animSpawnCycle);
+
 			SetFlashColor(&m_animSpawnCycle);
 		}
 		m_fRemainingReviveCycleTime = -1.0f;
@@ -2781,7 +2801,7 @@ bool CHUD::ShowPDA(bool show, bool buyMenu)
 		{
 			if (m_pHUDTeamInstantAction)
 			{
-				m_pHUDTeamInstantAction->Show(!show);
+				m_pHUDTeamInstantAction->SetTIAScoreHidden(CHUDTeamInstantAction::eTIAScoreHideReason_PDA, show);
 			}
 
 			if (!buyMenu && show && m_pModalHUD == NULL)
@@ -2838,7 +2858,7 @@ bool CHUD::ShowPDA(bool show, bool buyMenu)
 		}
 
 		if (m_pHUDPowerStruggle)
-			m_pHUDPowerStruggle->HideSOM(true);
+			m_pHUDPowerStruggle->SetSOMHidden(CHUDPowerStruggle::eSOMHideReason_PDA, true);
 
 		if (m_pClientActor->GetHealth() <= 0 && !gEnv->bMultiplayer)
 			return false;
@@ -2913,7 +2933,7 @@ bool CHUD::ShowPDA(bool show, bool buyMenu)
 		}
 
 		if (m_pHUDPowerStruggle)
-			m_pHUDPowerStruggle->HideSOM(false);
+			m_pHUDPowerStruggle->SetSOMHidden(CHUDPowerStruggle::eSOMHideReason_PDA, false);
 
 		PlaySound(ESound_MapClose);
 		HUD_CALL_LISTENERS(PDAClosed());
@@ -3160,7 +3180,12 @@ void CHUD::OnPostUpdate(float frameTime)
 		if (!m_bInMenu && !IsScoreboardActive() && m_animTeamSelection.GetVisible())
 		{
 			m_animTeamSelection.GetFlashPlayer()->Advance(frameTime);
+			TeamSelectionPreview::Draw(m_animTeamSelection.GetFlashPlayer(), frameTime);
 			m_animTeamSelection.GetFlashPlayer()->Render();
+		}
+		else
+		{
+			TeamSelectionPreview::Suspend();
 		}
 	}
 
@@ -3268,6 +3293,9 @@ void CHUD::OnPostUpdate(float frameTime)
 	bool loadedGame = UpdateTimers(frameTime);
 	if (loadedGame)
 		return;
+
+	//CryMP
+	UpdateTextScale();
 
 	//updates ammo display
 	UpdatePlayerAmmo();
@@ -3450,9 +3478,8 @@ void CHUD::OnPostUpdate(float frameTime)
 		{
 			if (!m_animSpectate.IsLoaded())
 			{
-				m_animSpectate.Load("Libs/UI/HUD_Spectate.gfx", eFD_Center, eFAF_Visible | eFAF_ManualRender);
-
-				FadeCinematicBars(3);
+				m_animSpectate.Load("Libs/UI/HUD_Spectate.gfx", eFD_CenteredFit | eFD_Center | eFD_Bottom, eFAF_Visible | eFAF_ManualRender);
+				CHUDCommon::RepositionFlashAnimation(&m_animSpectate);
 
 				// SNH: moved text setting to further down (with player name display)
 				//	as text changes based on current spectator mode.
@@ -3514,15 +3541,21 @@ void CHUD::OnPostUpdate(float frameTime)
 					m_animPlayerPP.GetFlashPlayer()->Render();
 				}
 			}
-			if (m_animFriendlyProjectileTracker.GetVisible()) //CryMP: grenade indicator in spectator mode
+			for (auto& anim : m_animFriendlyProjectileTrackers)
 			{
-				m_animFriendlyProjectileTracker.GetFlashPlayer()->Advance(frameTime);
-				m_animFriendlyProjectileTracker.GetFlashPlayer()->Render();
+				if (anim.GetVisible())
+				{
+					anim.GetFlashPlayer()->Advance(frameTime);
+					anim.GetFlashPlayer()->Render();
+				}
 			}
-			if (m_animHostileProjectileTracker.GetVisible())
+			for (auto& anim : m_animHostileProjectileTrackers)
 			{
-				m_animHostileProjectileTracker.GetFlashPlayer()->Advance(frameTime); //CryMP: grenade indicator in spectator mode
-				m_animHostileProjectileTracker.GetFlashPlayer()->Render();
+				if (anim.GetVisible())
+				{
+					anim.GetFlashPlayer()->Advance(frameTime);
+					anim.GetFlashPlayer()->Render();
+				}
 			}
 			if (m_animMissionObjective.GetVisible() && m_bShowAllOnScreenObjectives) //CryMP: for names in mp spectatemode, update mission objective!
 			{
@@ -3549,10 +3582,19 @@ void CHUD::OnPostUpdate(float frameTime)
 
 			CreateInterference();
 
-			for (CGameFlashAnimation *pAnim : m_gameFlashAnimationsList)
+			for (CGameFlashAnimation* pAnim : m_gameFlashAnimationsList)
 			{
 				if (pAnim->GetFlags() & eFAF_ManualRender)
 					continue;
+
+				if (g_pGameCVars->hud_scale > 1.0f)
+				{
+					if ((m_pModalHUD == &m_animPDA || m_pModalHUD == &m_animBuyMenu) &&
+						(pAnim == &m_animPlayerStats || pAnim == &m_animRadarCompassStealth))
+					{
+						continue;
+					}
+				}
 
 				if (pAnim->GetVisible())
 				{
@@ -4361,7 +4403,9 @@ void CHUD::ActorRevive(IActor* pActor, EntityId vehicleId)
 
 		//CryMP make sure hud hasn't been hidden by spectator
 		if (!m_animPlayerStats.GetVisible())
+		{
 			m_animPlayerStats.SetVisible(true);
+		}
 
 		m_bFirstFrame = true; //Update HUD
 	}
@@ -4994,30 +5038,38 @@ void CHUD::UnloadSimpleHUDElements(bool unload)
 
 	if (!unload)
 	{
-		m_animTrackedRadioMessage.Reload(); // CryMP: tracked radio messages
-		m_animFriendlyProjectileTracker.Reload();
-		m_animHostileProjectileTracker.Reload();
+		m_animTrackedRadioMessage.Reload();
+
+		for (auto& anim : m_animFriendlyProjectileTrackers)
+			anim.Reload();
+
+		for (auto& anim : m_animHostileProjectileTrackers)
+			anim.Reload();
+
 		m_animMissionObjective.Reload();
 		m_animQuickMenu.Reload();
 		m_animTacLock.Reload();
-		//		m_animTargetter.Reload();
 		m_animDownloadEntities.Reload();
 
 		ResetQuickMenu();
 	}
 	else
 	{
-		m_animTrackedRadioMessage.Reload(); // CryMP: tracked radio messages
-		m_animFriendlyProjectileTracker.Unload();
-		m_animHostileProjectileTracker.Unload();
+		m_animTrackedRadioMessage.Reload();
+
+		for (auto& anim : m_animFriendlyProjectileTrackers)
+			anim.Unload();
+
+		for (auto& anim : m_animHostileProjectileTrackers)
+			anim.Unload();
+
 		m_animMissionObjective.Unload();
 		m_animQuickMenu.Unload();
 		m_animTacLock.Unload();
-		//		m_animTargetter.Unload();
 		m_animDownloadEntities.Unload();
 
-		m_friendlyTrackerStatus = 0;
-		m_hostileTrackerStatus = 0;
+		m_friendlyTrackerStatus.fill(0);
+		m_hostileTrackerStatus.fill(0);
 	}
 }
 
@@ -5034,7 +5086,8 @@ void CHUD::LoadGameRulesHUD(bool load)
 		{
 			if (!m_animObjectivesTab.IsLoaded())
 			{
-				m_animObjectivesTab.Load("Libs/UI/HUD_MissionObjectives.gfx", eFD_Left, eFAF_Visible);
+				m_animObjectivesTab.Load("Libs/UI/HUD_MissionObjectives.gfx", eFD_Left | eFD_Top | eFD_Scaling, eFAF_Visible);
+
 				m_animObjectivesTab.Invoke("showObjectives", "noAnim");
 				m_animObjectivesTab.SetVisible(false);
 			}
@@ -5061,9 +5114,13 @@ void CHUD::LoadGameRulesHUD(bool load)
 				EnableChatGfx(g_pGameCVars->mp_chatHighResolution > 0);
 			}
 			if (!m_animVoiceChat.IsLoaded())
-				m_animVoiceChat.Load("Libs/UI/HUD_MultiPlayer_VoiceChat.gfx", eFD_Right, eFAF_ThisHandler);
+			{
+				m_animVoiceChat.Load("Libs/UI/HUD_MultiPlayer_VoiceChat.gfx", eFD_Right | eFD_Top | eFD_Scaling, eFAF_ThisHandler);
+			}
 			if (!m_animBattleLog.IsLoaded())
-				m_animBattleLog.Load("Libs/UI/HUD_MP_Log.gfx", eFD_Left);
+			{
+				m_animBattleLog.Load("Libs/UI/HUD_MP_Log.gfx", eFD_Left | eFD_Top | eFD_Scaling);
+			}
 		}
 		else
 		{
@@ -5094,24 +5151,37 @@ void CHUD::LoadGameRulesHUD(bool load)
 			}
 			if (!m_animObjectivesTab.IsLoaded())
 			{
-				m_animObjectivesTab.Load("Libs/UI/HUD_MissionObjectives.gfx", eFD_Left, eFAF_Visible);
+				m_animObjectivesTab.Load("Libs/UI/HUD_MissionObjectives.gfx", eFD_Left | eFD_Top | eFD_Scaling, eFAF_Visible);
+
 				m_animObjectivesTab.Invoke("showObjectives", "noAnim");
 				m_animObjectivesTab.SetVisible(false);
 			}
 			if (!m_animVoiceChat.IsLoaded())
-				m_animVoiceChat.Load("Libs/UI/HUD_MultiPlayer_VoiceChat.gfx", eFD_Right, eFAF_ThisHandler);
+			{
+				m_animVoiceChat.Load("Libs/UI/HUD_MultiPlayer_VoiceChat.gfx", eFD_Right | eFD_Scaling, eFAF_ThisHandler);
+			}
 			if (!m_animBattleLog.IsLoaded())
-				m_animBattleLog.Load("Libs/UI/HUD_MP_Log.gfx", eFD_Left, eFAF_Default | eFAF_SkipBreak);
+			{
+				m_animBattleLog.Load("Libs/UI/HUD_MP_Log.gfx", eFD_Left | eFD_Top | eFD_Scaling, eFAF_Default | eFAF_SkipBreak);
+			}
 
 			if (!m_animRadioButtons.IsLoaded())
-				m_animRadioButtons.Load("Libs/UI/HUD_MP_Radio_Buttons.gfx", eFD_Center, eFAF_ThisHandler | eFAF_SkipBreak);
+			{
+				m_animRadioButtons.Load("Libs/UI/HUD_MP_Radio_Buttons.gfx", eFD_Center | eFD_Top | eFD_Scaling, eFAF_ThisHandler | eFAF_SkipBreak);
+			}
 
 			if (!m_animBuyMenu.IsLoaded())
-				m_animBuyMenu.Load("Libs/UI/HUD_PDA_Buy.gfx", eFD_Right, eFAF_ThisHandler);
+			{
+				m_animBuyMenu.Load("Libs/UI/HUD_PDA_Buy.gfx", eFD_Right | eFD_Top | eFD_Scaling, eFAF_ThisHandler);
+			}
 			if (!m_animPlayerPP.IsLoaded())
-				m_animPlayerPP.Load("Libs/UI/HUD_MP_PPoints.gfx", eFD_Right, eFAF_Default | eFAF_SkipBreak);
+			{
+				m_animPlayerPP.Load("Libs/UI/HUD_MP_PPoints.gfx", eFD_Right | eFD_Top | eFD_Scaling, eFAF_Default | eFAF_SkipBreak);
+			}
 			if (!m_animTutorial.IsLoaded())
-				m_animTutorial.Load("Libs/UI/HUD_Tutorial.gfx");
+			{
+				m_animTutorial.Load("Libs/UI/HUD_Tutorial.gfx", eFD_Center);
+			}
 		}
 		else
 		{
@@ -5142,18 +5212,20 @@ void CHUD::LoadGameRulesHUD(bool load)
 				EnableChatGfx(g_pGameCVars->mp_chatHighResolution > 0);
 			}
 			if (!m_animVoiceChat.IsLoaded())
-				m_animVoiceChat.Load("Libs/UI/HUD_MultiPlayer_VoiceChat.gfx", eFD_Right, eFAF_ThisHandler);
+			{
+				m_animVoiceChat.Load("Libs/UI/HUD_MultiPlayer_VoiceChat.gfx", eFD_Right | eFD_Scaling, eFAF_ThisHandler);
+			}
 			if (!m_animBattleLog.IsLoaded())
-				m_animBattleLog.Load("Libs/UI/HUD_MP_Log.gfx", eFD_Left);
-			// This one is on top of others because it displays important
-			// messages, so let's put it at the end of the rendering list
-			if (!m_animMessages.IsLoaded())
-				m_animMessages.Load("Libs/UI/HUD_Messages.gfx");
+			{
+				m_animBattleLog.Load("Libs/UI/HUD_MP_Log.gfx", eFD_Left | eFD_Top | eFD_Scaling);
+			}
 			//if (!m_animMPMessages.IsLoaded())
 			//	m_animMPMessages.Load("Libs/UI/HUD_MP_Messages.gfx", eFD_Center, eFAF_Visible);
 
 			if (!m_animRadioButtons.IsLoaded())
-				m_animRadioButtons.Load("Libs/UI/HUD_MP_Radio_Buttons.gfx", eFD_Center, eFAF_ThisHandler | eFAF_SkipBreak);
+			{
+				m_animRadioButtons.Load("Libs/UI/HUD_MP_Radio_Buttons.gfx", eFD_Center | eFD_Top | eFD_Scaling, eFAF_ThisHandler | eFAF_SkipBreak);
+			}
 		}
 		else
 		{
@@ -5163,7 +5235,6 @@ void CHUD::LoadGameRulesHUD(bool load)
 			m_animChat.Unload();
 			m_animVoiceChat.Unload();
 			m_animBattleLog.Unload();
-			m_animMessages.Unload();
 			//m_animMPMessages.Unload();
 			m_pHUDTeamInstantAction->Show(false);
 			//m_pHUDInstantAction->Show(false);
@@ -5185,22 +5256,32 @@ void CHUD::LoadGameRulesHUD(bool load)
 			}
 			if (!m_animObjectivesTab.IsLoaded())
 			{
-				m_animObjectivesTab.Load("Libs/UI/HUD_MissionObjectives.gfx", eFD_Left, eFAF_Visible);
+				m_animObjectivesTab.Load("Libs/UI/HUD_MissionObjectives.gfx", eFD_Left | eFD_Top | eFD_Scaling, eFAF_Visible);
 				m_animObjectivesTab.Invoke("showObjectives", "noAnim");
 				m_animObjectivesTab.SetVisible(false);
 			}
 			if (!m_animVoiceChat.IsLoaded())
-				m_animVoiceChat.Load("Libs/UI/HUD_MultiPlayer_VoiceChat.gfx", eFD_Right, eFAF_ThisHandler);
+			{
+				m_animVoiceChat.Load("Libs/UI/HUD_MultiPlayer_VoiceChat.gfx", eFD_Right | eFD_Scaling, eFAF_ThisHandler);
+			}
 			if (!m_animBattleLog.IsLoaded())
-				m_animBattleLog.Load("Libs/UI/HUD_MP_Log.gfx", eFD_Left);
+			{
+				m_animBattleLog.Load("Libs/UI/HUD_MP_Log.gfx", eFD_Left | eFD_Top | eFD_Scaling);
+			}
 
 			if (!m_animRadioButtons.IsLoaded())
-				m_animRadioButtons.Load("Libs/UI/HUD_MP_Radio_Buttons.gfx", eFD_Center, eFAF_ThisHandler);
+			{
+				m_animRadioButtons.Load("Libs/UI/HUD_MP_Radio_Buttons.gfx", eFD_Center | eFD_Top | eFD_Scaling, eFAF_ThisHandler);
+			}
 
 			if (!m_animBuyMenu.IsLoaded())
-				m_animBuyMenu.Load("Libs/UI/HUD_PDA_Buy.gfx", eFD_Right, eFAF_ThisHandler);
+			{
+				m_animBuyMenu.Load("Libs/UI/HUD_PDA_Buy.gfx", eFD_Right | eFD_Top | eFD_Scaling, eFAF_ThisHandler);
+			}
 			if (!m_animPlayerPP.IsLoaded())
-				m_animPlayerPP.Load("Libs/UI/HUD_MP_PPoints.gfx", eFD_Right);
+			{
+				m_animPlayerPP.Load("Libs/UI/HUD_MP_PPoints.gfx", eFD_Right | eFD_Top | eFD_Scaling, eFAF_Default | eFAF_SkipBreak);
+			}
 		}
 		else
 		{
@@ -5454,3 +5535,42 @@ void CHUD::GameOver(int localWinner, int winnerTeam, EntityId id)
 }
 
 //-----------------------------------------------------------------------------------------------------
+
+void CHUD::UpdateTextScale()
+{
+	float hudScale = g_pGameCVars->hud_scale;
+
+	bool scaleChanged = hudScale != m_lastHudScale;
+
+	if (scaleChanged)
+		m_lastHudScale = hudScale;
+
+	if (scaleChanged || m_animMessages.NeedsHUDScaleApply())
+		m_animMessages.ApplyScale(hudScale);
+
+	if (scaleChanged || m_animOverlayMessages.NeedsHUDScaleApply())
+		m_animOverlayMessages.ApplyScale(hudScale);
+
+	if (scaleChanged || m_animBigOverlayMessages.NeedsHUDScaleApply())
+		m_animBigOverlayMessages.ApplyScale(hudScale);
+
+	if (scaleChanged || m_animSubtitles.NeedsHUDScaleApply())
+		m_animSubtitles.ApplyScale(hudScale);
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+void CHUD::OnMaxGrenadeIndicatorsChanged()
+{
+	const int maxIndicators = CLAMP(
+		g_pGameCVars->hud_maxGrenadeIndicators,
+		0,
+		kMaxGrenadeTrackers
+	);
+
+	for (int i = maxIndicators; i < kMaxGrenadeTrackers; ++i)
+	{
+		UpdateProjectileTracker(m_animFriendlyProjectileTrackers[i], nullptr, m_friendlyTrackerStatus[i], Vec3());
+		UpdateProjectileTracker(m_animHostileProjectileTrackers[i], nullptr, m_hostileTrackerStatus[i], Vec3());
+	}
+}

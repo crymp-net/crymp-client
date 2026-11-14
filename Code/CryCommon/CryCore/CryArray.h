@@ -15,17 +15,8 @@ struct FModuleAlloc
 {
 	static void* Alloc( void* oldptr, size_t oldsize, size_t newsize )
 	{
-		if (newsize)
-		{
-			return (oldptr) ? CryRealloc(oldptr, newsize) : CryMalloc(newsize);
-		}
-
-		if (oldptr)
-		{
-			CryFree(oldptr);
-		}
-
-		return 0;
+		std::size_t allocatedSize = 0;
+		return CryRealloc(oldptr, newsize, allocatedSize);
 	}
 };
 
@@ -380,7 +371,8 @@ struct FModuleAlloc16
     }
     if (newsize)
     {
-      unsigned char *pData = (unsigned char *)CryMalloc(newsize+16+sizeof(char *)+sizeof(DynArray<char>::Header));
+      std::size_t allocSize = 0;
+      unsigned char *pData = (unsigned char *)CryMalloc(newsize+16+sizeof(char *)+sizeof(DynArray<char>::Header), allocSize);
       unsigned char *bPtrRes = (unsigned char *)((ptrdiff_t)(pData+16+sizeof(char *)) & ~0xf);
       ((unsigned char**)bPtrRes)[-1] = pData;
       if (oldptr)

@@ -23,10 +23,10 @@ class classname: public CSetGlobalMsg \
 
 class CServerSynchedStorage;
 
-class CClientSynchedStorage: public CNetMessageSinkHelper<CClientSynchedStorage, CSynchedStorage>
+class CClientSynchedStorage final : public CNetMessageSinkHelper<CClientSynchedStorage, CSynchedStorage>
 {
 public:
-	CClientSynchedStorage(IGameFramework *pGameFramework)
+	explicit CClientSynchedStorage(IGameFramework* pGameFramework)
 	{
 		m_pGameFramework = pGameFramework;
 	}

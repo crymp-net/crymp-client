@@ -6,6 +6,8 @@
 
 #include "CryCommon/CrySystem/ISystem.h"
 
+struct ICVar;
+
 class LocalizationManager final : public ILocalizationManager
 {
 public:
@@ -113,6 +115,9 @@ public:
 	void LocalizeDate(time_t time, bool isLocalTime, bool useShort, bool showWeekday, wstring& result) override;
 	void LocalizeDuration(int seconds, wstring& result) override;
 
+	void ChangeLanguage(const char* language) override;
+	bool LanguageExists(const char* language) const override;
+
 	////////////////////////////////////////////////////////////////////////////////
 
 private:
@@ -130,6 +135,8 @@ private:
 	template<typename ResultString, typename T>
 	void FormatStringMessageImpl(ResultString& result,
 	                             std::basic_string_view<T> format, const T** args, int count) const;
+
+	void PatchFlashFont();
 
 	static void AssignLocalizedInfo(SLocalizedInfo& info, const Label& label);
 	static void AssignLocalizedSoundInfo(SLocalizedSoundInfo& soundInfo, const Label& label);

@@ -5,10 +5,12 @@
 #include <cwchar>
 #include <type_traits>
 
+#include "CryAction/GameFramework.h"
 #include "CryCommon/CryInput/IInput.h"
 #include "Library/StringTools.h"
 #include "Library/WinAPI.h"
 
+#include "CryPak.h"
 #include "LocalizationManager.h"
 
 LocalizationManager LocalizationManager::s_globalInstance;
@@ -468,31 +470,32 @@ void LocalizationManager::LogInfo()
 
 std::string_view LocalizationManager::GetLanguageFromSystem()
 {
-	static constexpr struct { char code[2 + 1]; const char* name; } LANGUAGES[] = {
+	static constexpr struct { std::string_view code; std::string_view name; } LANGUAGES[] = {
 		{ "en", "English" },
 		{ "de", "German" },
 		{ "cs", "Czech" },
-		{ "sk", "Czech" },  // Slovak -> Czech
+		{ "sk", "Czech" },      // Slovak -> Czech
 		{ "pl", "Polish" },
 		{ "es", "Spanish" },
 		{ "fr", "French" },
 		{ "it", "Italian" },
 		{ "hu", "Hungarian" },
 		{ "ru", "Russian" },
-		{ "be", "Russian" },  // Belarusian -> Russian
-	//	{ "uk", "Russian" },  // Ukrainian -> Russian, disabled for political reasons
+		{ "be", "Russian" },    // Belarusian -> Russian
 		{ "tr", "Turkish" },
 		{ "ja", "Japanese" },
-		{ "zn", "Chinese" },
+		{ "zh", "Chinese" },
 		{ "th", "Thai" },
 	};
 
-	char code[8] = {};
-	WinAPI::GetSystemLanguageCode(code, sizeof(code));
+	char code[8 + 1] = {};
+	WinAPI::GetSystemLanguageCode(code, sizeof(code) - 1);
+
+	const std::string_view sysLangCode(code);
 
 	for (const auto& language : LANGUAGES)
 	{
-		if (std::memcmp(language.code, code, 2 + 1) == 0)
+		if (language.code == sysLangCode)
 		{
 			return language.name;
 		}
@@ -508,6 +511,8 @@ bool LocalizationManager::SetLanguage(const char* name)
 	m_language.id = LanguageNameToID(loweredName);
 	m_language.name = loweredName;
 	m_language.prettyName = name;
+
+	PatchFlashFont();
 
 	return true;
 }
@@ -831,6 +836,68 @@ void LocalizationManager::LocalizeDuration(int seconds, wstring& result)
 	LocalizeString(buffer, result);
 }
 
+void LocalizationManager::ChangeLanguage(const char* language)
+{
+	if (!language || !*language)
+		return;
+
+	if (!LanguageExists(language))
+	{
+		CryLogAlways("$4[CryMP] Language '%s' not found!", language);
+		return;
+	}
+
+	if (StringTools::IsEqualNoCase(language, GetLanguage()))
+	{
+		//CryLogAlways("$4[CryMP] Language is already set to %s", language);
+		return;
+	}
+
+	const auto langToPaksPath = [](const char* lang) -> std::string {
+		std::string path = "Localized/";
+		path += lang;
+		path += "*.pak";  // match English.pak, English1.pak, English2.pak, etc.
+		return path;
+	};
+
+	const std::string oldPaks = langToPaksPath(GetLanguage());
+	const std::string newPaks = langToPaksPath(language);
+
+	gEnv->pCryPak->ClosePacks(oldPaks.c_str());
+	gEnv->pCryPak->OpenPacks("Game/", newPaks.c_str());
+
+	FreeData();
+	SetLanguage(language);
+
+	LoadExcelXmlSpreadsheet("Languages/dialog_recording_list.xml");
+	LoadExcelXmlSpreadsheet("Languages/ai_dialog_recording_list.xml");
+	LoadExcelXmlSpreadsheet("Languages/ui_dialog_recording_list.xml");
+	LoadExcelXmlSpreadsheet("Languages/ui_text_messages.xml");
+	LoadExcelXmlSpreadsheet("Languages/mp_text_messages.xml");
+	LoadExcelXmlSpreadsheet("Languages/game_text_messages.xml");
+	LoadExcelXmlSpreadsheet("Languages/game_controls.xml");
+	LoadExcelXmlSpreadsheet("Languages/ps_basic_tutorial_subtitles.xml");
+	LoadExcelXmlSpreadsheet("Languages/ui_credit_list.xml");
+
+	gEnv->pSoundSystem->Silence(false, true);
+	GameFramework::GetInstance()->OnActionEvent(SActionEvent(eAE_languageChanged));
+
+	CryLogAlways("$3[CryMP] Changed game language to %s", language);
+}
+
+bool LocalizationManager::LanguageExists(const char* language) const
+{
+	if (!language || !*language)
+		return false;
+
+	const std::string path = StringTools::Format(
+		"Localized/%s.pak",
+		language
+	);
+
+	return gEnv->pCryPak->IsFileExist(path.c_str());
+}
+
 const LocalizationManager::Label* LocalizationManager::FindLabelImpl(std::string_view loweredName) const
 {
 	if (loweredName.length() > 0 && loweredName[0] == '@')
@@ -1086,6 +1153,33 @@ void LocalizationManager::FormatStringMessageImpl(ResultString& result,
 				format.remove_prefix(2);
 			}
 		}
+	}
+}
+
+void LocalizationManager::PatchFlashFont()
+{
+	CryPak& pak = CryPak::GetInstance();
+
+	const std::string& lang = m_language.name;
+
+	// these languages have their own special font
+	if (lang == "japanese" || lang == "korean" || lang == "chinese" || lang == "thai")
+	{
+		// use the original font
+		pak.RemoveRedirect("Languages/HUD_Font_LocFont.gfx");
+		pak.RemoveRedirect("Languages/HUD_Font_LocFont_glyphs.gfx");
+	}
+	else
+	{
+		// use the unified font from the client pak for all other languages
+		pak.AddRedirect(
+			"Languages/HUD_Font_LocFont.gfx",
+			"Languages/HUD_Font_LocFont_override.gfx"
+		);
+		pak.AddRedirect(
+			"Languages/HUD_Font_LocFont_glyphs.gfx",
+			"Languages/HUD_Font_LocFont_glyphs_override.gfx"
+		);
 	}
 }
 

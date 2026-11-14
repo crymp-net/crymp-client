@@ -109,6 +109,10 @@ public:
 		return m_name.data();
 	}
 
+	std::string_view sv() const {
+		return m_name;
+	}
+
 	std::size_t length() const
 	{
 		return m_name.length();

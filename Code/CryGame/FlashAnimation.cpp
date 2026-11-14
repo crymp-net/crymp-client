@@ -55,8 +55,11 @@ bool CFlashAnimation::LoadAnimation(const char* name)
 
 	m_pFlashPlayer = GetISystem()->CreateFlashPlayerInstance();
 
-	if(m_pFlashPlayer && m_pFlashPlayer->Load(name))
+	if (m_pFlashPlayer && m_pFlashPlayer->Load(name))
+	{
+		m_needsHUDScaleApply = true;
 		return true;
+	}
 
 	SAFE_RELEASE(m_pFlashPlayer);
 	return false;
@@ -156,4 +159,37 @@ bool CFlashAnimation::CheckedInvoke(const char* pMethodName, const SFlashVarValu
 		return m_pFlashPlayer->Invoke(pMethodName, pArgs, numArgs, pResult);
 
 	return true;
+}
+
+bool CFlashAnimation::NeedsHUDScaleApply() const
+{
+	return m_needsHUDScaleApply;
+}
+
+void CFlashAnimation::ForceHUDScaleApply()
+{
+	m_needsHUDScaleApply = true;
+}
+
+void CFlashAnimation::ApplyScale(float hudScale)
+{
+	if (!m_pFlashPlayer)
+		return;
+
+	if (m_ignoreHUDScale)
+	{
+		m_needsHUDScaleApply = false;
+		return;
+	}
+
+	if (!m_pFlashPlayer->IsAvailable("setScale"))
+		return;
+
+	const float scale = m_useFixedScale ? m_fixedScale : CLAMP(hudScale, m_minScale, m_maxScale);
+
+	SFlashVarValue arg(scale);
+	if (Invoke("setScale", arg))
+	{
+		m_needsHUDScaleApply = false;
+	}
 }

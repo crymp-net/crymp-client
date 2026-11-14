@@ -80,7 +80,7 @@ public:
 		Vec3 initLandVelocity;
 		bool bUseLandEvent;
 
-		SJumpParams():dest(ZERO),velocity(ZERO),addVelocity(ZERO), curVelocity(ZERO),initLandVelocity(ZERO)
+		SJumpParams()
 		{
 			Reset();
 		}
@@ -117,11 +117,11 @@ public:
 
 		void Reset()
 		{
-			dest = ZERO;
-			velocity = ZERO;
-			curVelocity = ZERO;
-			addVelocity = ZERO;
-			initLandVelocity = ZERO;
+			dest = {};
+			velocity = {};
+			curVelocity = {};
+			addVelocity = {};
+			initLandVelocity = {};
 			duration = 0.f;
 			state = JS_None;
 			startTime = 0.f;

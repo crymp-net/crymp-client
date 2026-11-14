@@ -1073,6 +1073,10 @@ CMPLobbyUI::~CMPLobbyUI()
 	gSortType = m_serverlist->m_sorttype;
 }
 
+void CMPLobbyUI::SetFlashPlayer(IFlashPlayer* plr)
+{
+	m_player = plr;
+}
 
 bool CMPLobbyUI::HandleFSCommand(EGsUiCommand cmd, const char* pArgs)
 {
@@ -1336,6 +1340,7 @@ bool  CMPLobbyUI::GetSelectedServer(SServerInfo& srv)
 	if (m_serverlist->m_selectedServer == -1)
 		return false;
 	srv = m_serverlist->GetSelectedServer();
+
 	return true;
 }
 
@@ -1693,7 +1698,11 @@ void  CMPLobbyUI::SetServerDetails(const SServerDetails& sd)
 
 	m_cmd = MPPath;
 	m_cmd += "SetPlayerGameMode";
-	m_player->Invoke1(m_cmd.c_str(), sd.m_gamemode.c_str());
+	if (sd.m_gamemode == "PowerStruggle" || sd.m_gamemode == "InstantAction" || sd.m_gamemode == "TeamInstantAction") {
+		m_player->Invoke1(m_cmd.c_str(), sd.m_gamemode.c_str());
+	} else {
+		m_player->Invoke1(m_cmd.c_str(), sd.m_teams == 2 ? "PowerStruggle" : "InstantAction");
+	}
 
 	if (!sd.m_players.empty())
 	{

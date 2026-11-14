@@ -274,9 +274,11 @@ void CHUDTagNames::DrawTagName(IActor* pActor, bool bLocalVehicle)
 		tagColor = COLOR_DEAD;
 	}
 
+	bool isFFA = IsFFA();
+
 	for (EntityId teamMateId : *m_pHUD->GetRadar()->GetSelectedTeamMates())
 	{
-		if (entityId == teamMateId)
+		if (entityId == teamMateId && pGameRules->GetTeam(teamMateId) == iClientTeam && !isFFA)
 		{
 			// Teammate is selected in radar, force the visibility of that name
 			bDrawOnTop = true;
@@ -409,9 +411,11 @@ void CHUDTagNames::DrawTagName(IVehicle* pVehicle)
 			bDrawOnTop = true;
 		}
 
+		bool isFFA = IsFFA();
+
 		for (EntityId teamMateId : *m_pHUD->GetRadar()->GetSelectedTeamMates())
 		{
-			if (uiEntityId == teamMateId)
+			if (uiEntityId == teamMateId && pGameRules->GetTeam(teamMateId) == iClientTeam && !isFFA)
 			{
 				// Teammate is selected in radar, force the visibility of that name
 				bDrawOnTop = true;
@@ -758,6 +762,11 @@ bool CHUDTagNames::NeedsHealthBar(IActor* iActor) {
 
 bool CHUDTagNames::NeedsHealthBar(IVehicle* pVehicle) {
 	return pVehicle->GetStatus().health < 1.0f;
+}
+
+bool CHUDTagNames::IsFFA()
+{
+	return g_pGame->GetGameRules()->GetTeamCount() < 2;
 }
 
 //-----------------------------------------------------------------------------------------------------

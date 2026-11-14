@@ -156,7 +156,7 @@ bool CBinocular::OnActionAttack(EntityId actorId, const ActionId& actionId, int 
 	if (activationMode == eAAM_OnPress)
 	{
 		// trigger OnShoot in here.. Binocs don't have any firemode
-		Vec3 pos(ZERO);
+		Vec3 pos;
 		Vec3 dir(FORWARD_DIRECTION);
 
 		IActor* pActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(actorId);
@@ -171,7 +171,7 @@ bool CBinocular::OnActionAttack(EntityId actorId, const ActionId& actionId, int 
 				dir = state.eyeDirection;
 			}
 		}
-		OnShoot(actorId, 0, 0, pos, dir, Vec3(ZERO));
+		OnShoot(actorId, 0, 0, pos, dir, Vec3());
 	}
 
 	return true;

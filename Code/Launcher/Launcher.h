@@ -25,4 +25,18 @@ public:
     int Run(char* cmdLine = nullptr);
 
     static void OnEarlyEngineInit(ISystem* pSystem);
+	SSystemInitParams m_params = {};
+
+	void SetCmdLine();
+	void InitWorkingDirectory();
+	void LoadEngine();
+	void PatchEngine();
+	void StartEngine();
+
+public:
+	Launcher() = default;
+
+	void Run();
+
+	static void OnEarlyEngineInit(ISystem* pSystem);
 };

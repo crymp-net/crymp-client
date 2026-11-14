@@ -1,5 +1,4 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-
 #include <winsock2.h>
 
 #include <array>
@@ -14,6 +13,8 @@
 #include "Library/WinAPI.h"
 
 #include "GSMasterHook.h"
+
+extern void* g_pCryNetwork;
 
 namespace
 {
@@ -64,9 +65,7 @@ GSMasterHook::GSMasterHook()
 	g_pHostnameCVar = gEnv->pConsole->RegisterString("cl_master", "m.crymp.org", VF_NOT_NET_SYNCED,
 	                                                 "GameSpy master server hostname.");
 
-	void *pCryNetwork = gLauncher->GetDLLs().pCryNetwork;
-
-	WinAPI::HookIATByAddress(pCryNetwork, gethostbyname, gethostbyname_hook);
+	WinAPI::HookIATByAddress(g_pCryNetwork, gethostbyname, gethostbyname_hook);
 }
 
 GSMasterHook::~GSMasterHook()

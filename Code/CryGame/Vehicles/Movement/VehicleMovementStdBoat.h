@@ -96,7 +96,7 @@ protected:
   void Lift(bool lift);
   bool IsLifted();
 
-  void DrawImpulse(const pe_action_impulse& action, Vec3 offset=Vec3(ZERO), float scale=1, const ColorB& col=ColorB(255,0,0,255));
+  void DrawImpulse(const pe_action_impulse& action, Vec3 offset={}, float scale=1, const ColorB& col=ColorB(255,0,0,255));
   
   // driving
   float m_velMax;

@@ -130,7 +130,7 @@ void SIKLimb::Update(IEntity* pOwner, float frameTime)
 	assert(!_isnan(lAnimPos.len2()));
 
 	bool setLimbPos(true);
-	Vec3 finalPos = Vec3(ZERO);
+	Vec3 finalPos;
 
 	if (blendTime > 0.001f)
 	{
@@ -277,6 +277,25 @@ CActor::CActor()
 	m_airResistance = 0.0f;
 	m_airControl = 1.0f;
 	m_netLastSelectablePickedUp = 0;
+}
+
+//------------------------------------------------------------------------
+void CActor::Release()
+{
+	//CryMP: Client/server fix: release mounted weapons before actor destruction
+	//Clients may lose the stop-use RMI when its actor is removed, and the
+	//replicated current item may already have changed
+	const SActorStats* pStats = GetActorStats();
+	CItem* pItem = static_cast<CItem*>(pStats && pStats->mountedWeaponID ? m_pItemSystem->GetItem(pStats->mountedWeaponID) : GetCurrentItem());
+	if (pItem)
+	{
+		if (pItem->IsMounted() && pItem->GetOwnerId() == GetEntityId())
+		{
+			pItem->StopUse(GetEntityId());
+		}
+	}
+
+	delete this;
 }
 
 //------------------------------------------------------------------------
@@ -543,7 +562,6 @@ void CActor::Revive(ReasonForRevive reason)
 	m_inCombat = false;
 	m_enterCombat = false;
 	m_combatTimer = 0.0f;
-	//	m_lastFootStepPos = ZERO;
 	m_rightFoot = true;
 	m_pReplacementMaterial = 0;
 
@@ -875,9 +893,9 @@ void CActor::SetActorModel()
 		{
 			//entity:LoadObject
 			const char* ext = CryPath::GetExt(m_frozenModel.c_str());
-			if (stricmp(ext, CRY_CHARACTER_FILE_EXT) == 0 ||
-				stricmp(ext, CRY_CHARACTER_DEFINITION_FILE_EXT) == 0 ||
-				stricmp(ext, CRY_ANIM_GEOMETRY_FILE_EXT) == 0)
+			if (_stricmp(ext, CRY_CHARACTER_FILE_EXT) == 0 ||
+				_stricmp(ext, CRY_CHARACTER_DEFINITION_FILE_EXT) == 0 ||
+				_stricmp(ext, CRY_ANIM_GEOMETRY_FILE_EXT) == 0)
 			{
 				GetEntity()->LoadCharacter(EntitySlot::FROZEN, m_frozenModel.c_str());
 			}
@@ -1418,21 +1436,31 @@ void CActor::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_HIDE:
 	case ENTITY_EVENT_INVISIBLE:
 	{
-		IItem* pItem = GetCurrentItem();
-		if (pItem)
+		CItem* pItem = static_cast<CItem*>(GetCurrentItem());
+		//CryMP: Client/server fix: hiding the user must not hide a mounted weapon
+		if (pItem && !pItem->IsMounted())
+		{
 			pItem->GetEntity()->Hide(true);
+		}
 		if (!IsPlayer() && m_pWeaponAM)
+		{
 			m_pWeaponAM->HideAllAttachments(true);
+		}
 	}
 	break;
 	case ENTITY_EVENT_UNHIDE:
 	case ENTITY_EVENT_VISIBLE:
 	{
-		IItem* pItem = GetCurrentItem();
-		if (pItem)
+		CItem* pItem = static_cast<CItem*>(GetCurrentItem());
+		//CryMP: Client/server fix: mounted visibility is independent of the user
+		if (pItem && !pItem->IsMounted())
+		{
 			pItem->GetEntity()->Hide(false);
+		}
 		if (!IsPlayer() && m_pWeaponAM)
+		{
 			m_pWeaponAM->HideAllAttachments(false);
+		}
 		GetGameObject()->RequestRemoteUpdate(eEA_Physics | eEA_GameClientDynamic | eEA_GameServerDynamic | eEA_GameClientStatic | eEA_GameServerStatic);
 	}
 	break;
@@ -2643,7 +2671,7 @@ Vec3 CActor::GetLocalEyePos2(int slot) const
 		int id_right = GetBoneID(BONE_EYE_R);
 		int id_left = GetBoneID(BONE_EYE_L);
 
-		Vec3 PelvisPos = Vec3(ZERO);
+		Vec3 PelvisPos;
 		if (id_pelvis > -1)
 			//	PelvisPos = Quat::CreateRotationZ(-gf_PI/2)*pCharacter->GetISkeleton()->GetAbsJointByID(id_pelvis).t;
 			PelvisPos = pCharacter->GetISkeletonPose()->GetAbsJointByID(id_pelvis).t;
@@ -2894,7 +2922,7 @@ void CActor::SetIKPos(const char* pLimbName, const Vec3& goalPos, int priority,
 	blendIn = std::max(0.0f, blendIn);
 	recover = std::max(0.0f, recover);
 
-	m_IKLimbs[limbID].SetWPos(GetEntity(), goalPos, ZERO, blendIn, recover, priority);
+	m_IKLimbs[limbID].SetWPos(GetEntity(), goalPos, {}, blendIn, recover, priority);
 }
 
 void CActor::ClearIKPosBlending(const char* pLimbName)
@@ -2972,7 +3000,7 @@ Vec3 CActor::GetAIAttentionPos()
 			return pTarget->GetPos();
 	}
 
-	return ZERO;
+	return {};
 }
 
 //------------------------------------------------------------------------
@@ -4423,7 +4451,7 @@ bool CActor::IsGhostPit()
 }
 
 IAttachment* CActor::CreateBoneAttachment(int characterSlot, const char* boneName, const char* attachmentName,
-	const Vec3& offsetPosition /*= Vec3(ZERO)*/,
+	const Vec3& offsetPosition /*= {}*/,
 	const Quat& offsetRotation /*= Quat(IDENTITY)*/)
 {
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(characterSlot);

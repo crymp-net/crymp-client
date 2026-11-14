@@ -685,7 +685,7 @@ void CAnimatedGrabHandler::UpdatePosVelRot(float frameTime)
 			Vec3 assumedGrabPos = pEnt->GetSlotWorldTM(0) * m_grabStats.grabbedObjOfs;
 			Vec3 actualGrabPos = pGrab->GetWorldPos() + m_grabStats.entityGrabSpot;
 			Vec3 adjustment = actualGrabPos - assumedGrabPos;
-			pLimb->SetWPos(pEnt,animPos + adjustment,ZERO,0.5f,2.0f,1000);
+			pLimb->SetWPos(pEnt,animPos + adjustment,{},0.5f,2.0f,1000);
 			//gEnv->pRenderer->GetIRenderAuxGeom()->DrawSphere(pGrab->GetWorldPos() + m_grabStats.entityGrabSpot, 0.5f, ColorB(0,255,0,100));
 		}
 		

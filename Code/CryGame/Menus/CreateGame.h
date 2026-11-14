@@ -47,6 +47,7 @@ struct CMultiPlayerMenu::SCreateGame
 	
   IFlashPlayer* m_player;
 
+  void SetFlashPlayer(IFlashPlayer* pPlayer);
   bool HandleFSCommand(EGsUiCommand cmd, const char* pArgs);
   void StartServer();
   void GetLevelRotation();

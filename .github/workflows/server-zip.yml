@@ -1,0 +1,62 @@
+################################################################################
+# Reusable workflow for creating CryMP-Server.zip
+################################################################################
+
+name: Server Zip
+
+on:
+  workflow_call:
+    inputs:
+      build_artifact_32:
+        description: Name of build artifact with CryMP-Server32.exe
+        required: true
+        type: string
+      build_artifact_64:
+        description: Name of build artifact with CryMP-Server64.exe
+        required: true
+        type: string
+    outputs:
+      artifact_name:
+        description: Name of the resulting CryMP-Server.zip artifact
+        value: ${{ jobs.create.outputs.artifact_name }}
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_name: ${{ steps.prep.outputs.artifact_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          # for git describe
+          fetch-depth: 0
+
+      - name: Prepare artifact name
+        id: prep
+        run: |
+          version=$(git describe --dirty --tags --match 'v*')
+          echo "artifact_name=CryMP-Server-${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Download 32-bit build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.build_artifact_32 }}
+
+      - name: Download 64-bit build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.build_artifact_64 }}
+
+      - name: Prepare zip
+        run: |
+          chmod 755 CryMP-Server32.exe CryMP-Server64.exe
+          mv SSMs/SafeWriting/CryMP-Server ./
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.prep.outputs.artifact_name }}
+          path: |
+            CryMP-Server32.*
+            CryMP-Server64.*
+            CryMP-Server/

@@ -29,7 +29,7 @@ IActor* ActorIterator::Next()
 		return nullptr;
 	}
 
-	IActor* pActor = m_iterator->second;
+	IActor* pActor = m_pActorSystem->DecodeActor(m_iterator->second);
 	++m_iterator;
 
 	return pActor;

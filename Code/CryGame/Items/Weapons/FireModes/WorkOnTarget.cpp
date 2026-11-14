@@ -334,7 +334,8 @@ void CWorkOnTarget::OnEnterThirdPerson()
 //------------------------------------------------------------------------
 IEntity *CWorkOnTarget::CanWork()
 {
-	Vec3 pos, dir = Vec3(ZERO), Vec3(ZERO);
+	Vec3 pos;
+	Vec3 dir;
 	CActor *pActor = m_pWeapon->GetOwnerActor();
 	
 	static IPhysicalEntity* pSkipEntities[10];

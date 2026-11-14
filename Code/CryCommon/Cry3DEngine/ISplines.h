@@ -649,7 +649,7 @@ namespace spline
 						// In/out slopes equal, and computed automatically.
 						if (i==0 || i==last)
 							// Slope 0 at endpoints.
-							key.ds = key.dd = value_type(0.f);
+							key.ds = key.dd = value_type();
 						else
 						{
 							value_type s0 = this->value(i) - this->value(i-1),
@@ -745,7 +745,7 @@ namespace spline
 				}
 
 				// Last segment is just constant value.
-				m_coeffs[i].set(this->time(i), this->value(i), T(0.f), this->time(i)+1.f, this->value(i), T(0.f));
+				m_coeffs[i].set(this->time(i), this->value(i), T(), this->time(i)+1.f, this->value(i), T());
 			}
 		}
 

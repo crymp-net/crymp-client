@@ -250,13 +250,14 @@ public:
   CGameNetworkProfile* GetProfile()const;
   void AddGameModToList(std::string displayName, std::string name);
   void OnMenuOpened();
-  void OnShowIngameMenu();
+  void OnShowIngameMenu(bool updateWindow);
   bool IsIngame()const;
   void ShowYesNoDialog(const char* str, const char* name);
 	bool IsInLobby() const;
 	bool IsInLogin() const;
 	void SetIsInLogin(bool isInLogin);
 	void ShowRetrivePasswordResult(bool ok);
+	bool IsConnectingToPopulatedServer();
 
 private:
   IFlashPlayer*                   m_currentScreen;
@@ -276,6 +277,8 @@ private:
   int                             m_lastMenu;
   wstring                          m_errrorText;
 	bool                            m_isInLogin;
+
+	bool m_lastWindowSet = false;
 };
 
 

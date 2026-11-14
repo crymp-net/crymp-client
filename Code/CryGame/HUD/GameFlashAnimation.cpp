@@ -44,7 +44,7 @@ uint32 CGameFlashAnimation::GetFlags() const
 }
 //-----------------------------------------------------------------------------------------------------
 
-void CGameFlashAnimation::Init(const char *strFileName, EFlashDock docking, uint32 flags)
+void CGameFlashAnimation::Init(const char *strFileName, uint32 docking, uint32 flags)
 {
 	Unload();
 	m_fileName = strFileName;
@@ -86,7 +86,7 @@ bool CGameFlashAnimation::Reload(bool forceUnload)
 
 //-----------------------------------------------------------------------------------------------------
 
-bool CGameFlashAnimation::Load(const char *strFileName, EFlashDock docking, uint32 flags)
+bool CGameFlashAnimation::Load(const char *strFileName, uint32 docking, uint32 flags)
 {
 	Init(strFileName, docking, flags);
 	return Reload();

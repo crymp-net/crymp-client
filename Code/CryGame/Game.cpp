@@ -24,6 +24,7 @@
 #include "BulletTime.h"
 #include "SoundMoods.h"
 #include "HUD/HUD.h"
+#include "HUD/TeamSelectionPreview.h"
 #include "Items/Weapons/WeaponSystem.h"
 
 #include "CryCommon/CrySystem/CryPath.h"
@@ -59,6 +60,9 @@
 #include "CryMP/Client/WeatherSystem.h"
 #include "CryMP/Client/Advertising.h"
 #include "CryMP/Client/HealthManager.h"
+
+#include "Library/StringTools.h"
+#include "Library/WinAPI.h"
 
 #if defined(CRYSIS_BETA)
 #define CRYSIS_GUID "{CDC82B4A-7540-45A5-B92E-9A7C7033DBF4}"
@@ -123,6 +127,7 @@ CGame::CGame()
 
 CGame::~CGame()
 {
+	TeamSelectionPreview::Reset();
 	m_pFramework->EndGameContext();
 	m_pFramework->UnregisterListener(this);
 	ReleaseScriptBinds();
@@ -368,9 +373,18 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags)
 	ZoneScoped;
 
 	bool bRun = m_pFramework->PreUpdate(true, updateFlags);
+	if (gEnv->bClient && g_pGameCVars->mp_fpsLimit > 0) {
+		double target = 1.0 / g_pGameCVars->mp_fpsLimit;
+		double elapsed = (double)gEnv->pTimer->GetFrameTime();
+		if (elapsed < target) {
+			WinAPI::Wait(target - elapsed);
+		}
+	}
+
+	bool paused = m_pFramework->IsGamePaused();
 	float frameTime = gEnv->pTimer->GetFrameTime();
 
-	if (m_pFramework->IsGamePaused() == false)
+	if (paused == false)
 	{
 		m_pWeaponSystem->Update(frameTime);
 
@@ -508,6 +522,17 @@ const char* CGame::GetName()
 
 void CGame::OnPostUpdate(float fDeltaTime)
 {
+	if (gEnv->bClient)
+	{
+		if (GetMenu() && GetMenu()->IsActive() == false)
+		{
+			if (ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay())
+			{
+				pTOD->DebugDraw();
+				m_pWeatherSystem->PostUpdate();
+			}
+		}
+	}
 }
 
 void CGame::OnSaveGame(ISaveGame* pSaveGame)
@@ -598,13 +623,16 @@ void CGame::OnActionEvent(const SActionEvent& event)
 	case eAE_serverIp:
 		if (gEnv->bServer && GetServerSynchedStorage())
 		{
-			GetServerSynchedStorage()->SetGlobalValue(GLOBAL_SERVER_IP_KEY, string(event.m_description));
+			GetServerSynchedStorage()->SetGlobalValue(GLOBAL_SERVER_IP_KEY, StringTools::SafeString(event.m_description));
 			GetServerSynchedStorage()->SetGlobalValue(GLOBAL_SERVER_PUBLIC_PORT_KEY, event.m_value);
 		}
 		break;
 	case eAE_serverName:
 		if (gEnv->bServer && GetServerSynchedStorage())
-			GetServerSynchedStorage()->SetGlobalValue(GLOBAL_SERVER_NAME_KEY, string(event.m_description));
+			GetServerSynchedStorage()->SetGlobalValue(GLOBAL_SERVER_NAME_KEY, StringTools::SafeString(event.m_description));
+		break;
+	case  eAE_languageChanged:
+		ReloadFlashInstances();
 		break;
 	}
 }
@@ -989,4 +1017,41 @@ const char* CGame::GetMappedLevelName(const char* levelName) const
 {
 	TLevelMapMap::const_iterator iter = m_mapNames.find(CONST_TEMP_STRING(levelName));
 	return (iter == m_mapNames.end()) ? levelName : iter->second.c_str();
+}
+
+void CGame::ReloadFlashInstances()
+{
+	if (GetMenu())
+	{
+		if (GetMenu()->IsOnScreen(CFlashMenuObject::MENUSCREEN_FRONTENDSTART))
+		{
+			GetMenu()->DestroyStartMenu();
+			GetMenu()->InitStartMenu();
+
+			//CryLogAlways("$3[CryMP] Reloaded start-menu successfully");
+		}
+		if (GetMenu()->IsOnScreen(CFlashMenuObject::MENUSCREEN_FRONTENDINGAME))
+		{
+			GetMenu()->DestroyIngameMenu();
+			GetMenu()->InitIngameMenu();
+
+			//CryLogAlways("$3[CryMP] Reloaded in-game menu successfully");
+		}
+	}
+	if (m_pHUD && m_pFramework->GetClientActor())
+	{
+		SAFE_DELETE(m_pHUD);
+		g_pGame->InitHUD(m_pFramework->GetClientActor());
+
+		if (CHUD *pHUD = g_pGame->GetHUD())
+		{
+			pHUD->Reload();
+
+			//CryLogAlways("$3[CryMP] Reloaded HUD successfully");
+		}
+		else
+		{
+			CryLogAlways("$4[CryMP] Failed to load HUD");
+		}
+	}
 }

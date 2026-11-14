@@ -306,7 +306,7 @@ void CFists::RaiseWeapon(bool raise, bool faster /*= false*/)
 		return;
 
 	//Only when colliding something while running
-	if (raise)
+	if (raise && g_pGameCVars->mp_wallJump > 0.01f)
 	{
 		//Skip these checks for other clients
 		if (bIsClient)
@@ -340,7 +340,7 @@ void CFists::RaiseWeapon(bool raise, bool faster /*= false*/)
 		SetWeaponRaised(true);
 
 		//Also give the player some impulse into the opposite direction
-		Vec3 pos = ZERO;
+		Vec3 pos;
 
 		IPhysicalEntity* playerPhysics = pActor->GetEntity()->GetPhysics();
 		if (playerPhysics)

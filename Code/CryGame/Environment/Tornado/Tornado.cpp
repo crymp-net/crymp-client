@@ -386,7 +386,7 @@ void CTornado::UpdateTornadoSpline()
 	areaDef.pPoints = m_points;
 	areaDef.pGravityParams = &gravityParams;
 	gravityParams.gravity.Set(0, 0, -9.81f);
-	gravityParams.size = ZERO;
+	gravityParams.size = {};
 	gravityParams.falloff0 = -1.0f;	// ?: was NAN. CPhysicalProxy::PhysicalizeArea sets to 'unused' if less than zero...
 	//gravityParams.gravity.Set(0,0,0);
 
@@ -534,7 +534,7 @@ void CTornado::UpdateFlow()
 			aimpulse.iApplyTime = 0;
 			ppEnt->Action(&aimpulse);
 
-			//gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(spos.pos,ColorB(255,0,255,255),spos.pos+aimpulse.impulse.GetNormalizedSafe(ZERO),ColorB(255,0,255,255));
+			//gEnv->pRenderer->GetIRenderAuxGeom()->DrawLine(spos.pos,ColorB(255,0,255,255),spos.pos+aimpulse.impulse.GetNormalizedSafe(Vec3()),ColorB(255,0,255,255));
 		}
 	}
 }

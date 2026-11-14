@@ -43,11 +43,11 @@ enum class ActorType
 struct SActorFrameMovementParams
 {
 	SActorFrameMovementParams() :
-		desiredVelocity(ZERO),
+		desiredVelocity(),
 		desiredLean(0.0f),
-		deltaAngles(ZERO),
-		lookTarget(ZERO),
-		aimTarget(ZERO),
+		deltaAngles(),
+		lookTarget(),
+		aimTarget(),
 		lookIK(false),
 		aimIK(false),
 		jump(false),
@@ -780,7 +780,7 @@ public:
 
 	// IActor
 	virtual void ProcessEvent(SEntityEvent& event);
-	virtual void Release() { delete this; };
+	virtual void Release();
 	virtual void ResetAnimGraph();
 	virtual void FullSerialize(TSerialize ser);
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags);
@@ -1317,7 +1317,7 @@ public:
 	bool IsGhostPit();
 
 	IAttachment* CreateBoneAttachment(int characterSlot, const char* boneName, const char* attachmentName,
-		const Vec3& offsetPosition = Vec3(ZERO),
+		const Vec3& offsetPosition = {},
 		const Quat& offsetRotation = Quat(IDENTITY));
 
 	void HideAllAttachments(int characterSlot, bool hide, bool hideShadow);

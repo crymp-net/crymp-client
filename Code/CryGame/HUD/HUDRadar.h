@@ -256,8 +256,7 @@ private:
 	void					UpdateScanner(float frameTime);
 	void					ResetScanner();
 	void					GatherScannableObjects();
-	EntityId			RayCastBinoculars(CPlayer *pPlayer,ray_hit *pRayHit);
-	void					UpdateBinoculars(CActor *pActor, float fDeltaTime);
+	void					UpdateBinoculars(CPlayer *pPlayer, float fDeltaTime);
 	bool					CheckObjectMultiplayer(EntityId id);	// additional checks to see if this object is worth looking at in MP.
 
 	//activate minimap rendering

@@ -640,6 +640,16 @@ void CGameRules::OnClientDisconnect(int channelId, EDisconnectionCause cause, co
 	if (!pActor)
 		return;
 
+	//CryMP: Server fix: release standalone mounted weapons before disconnect/on-hold
+	//StopUse replicates the release through the existing ClStopUse RMI
+	if (CItem* pItem = static_cast<CItem*>(pActor->GetCurrentItem()))
+	{
+		if (pItem->IsMounted() && pItem->GetOwnerId() == pActor->GetEntityId())
+		{
+			pItem->StopUse(pActor->GetEntityId());
+		}
+	}
+
 	if (pActor)
 		m_pGameplayRecorder->Event(pActor->GetEntity(), GameplayEvent(eGE_Disconnected, "", keepClient ? 1.0f : 0.0f));
 
@@ -819,7 +829,7 @@ void CGameRules::OnChatMessage(EChatMessageType type, EntityId sourceId, EntityI
 	{
 		//CryMP: Mute check
 		IVoiceContext* pVoiceContext = gEnv->pGame->GetIGameFramework()->GetNetContext()->GetVoiceContext();
-		const bool muted = pVoiceContext->IsMuted(pClientActor->GetEntityId(), sourceId);
+		const bool muted = pVoiceContext ? pVoiceContext->IsMuted(pClientActor->GetEntityId(), sourceId): false;
 		if (muted)
 		{
 			return;
@@ -840,7 +850,7 @@ void CGameRules::OnChatMessage(EChatMessageType type, EntityId sourceId, EntityI
 	}
 
 	if (CHUDTextChat* pChat = SAFE_HUD_FUNC_RET(GetMPChat()))
-		pChat->AddChatMessage(sourceId, msg, teamFaction, teamChatOnly);
+		pChat->AddChatMessage(sourceId, targetId, msg, teamFaction, teamChatOnly);
 }
 
 //------------------------------------------------------------------------
@@ -1056,7 +1066,7 @@ void CGameRules::RevivePlayerInVehicle(CActor* pActor, EntityId vehicleId, int s
 	if (seatId < 0)
 	{
 		IVehicle* pSpawnVehicle = m_pGameFramework->GetIVehicleSystem()->GetVehicle(vehicleId);
-		Vec3 pos = ZERO;
+		Vec3 pos = {};
 		if (pSpawnVehicle && pSpawnVehicle->GetExitPositionForActor(pActor, pos, true))
 		{
 			Ang3 angles = pSpawnVehicle->GetEntity()->GetWorldAngles();	// face same direction as vehicle.
@@ -2544,7 +2554,7 @@ float CGameRules::GetMinEnemyDist() const
 EntityId CGameRules::GetSpawnLocationTeamFirst() const
 {
 	// find average pos
-	Vec3 avrgPos(ZERO);
+	Vec3 avrgPos;
 	for (const EntityId locId : m_spawnLocations)
 	{
 		const IEntity* pSpawn = m_pEntitySystem->GetEntity(locId);
@@ -4612,10 +4622,10 @@ void CGameRules::OnSetActorModel(CActor* pActor, int currTeamId)
 	const int CURR_KEY_MODEL = KEY_MODEL + currTeamId;
 	const int TEAM_ID_NK = 1;
 
-	string model;
+	std::string model;
 	if (GetSynchedEntityValue(playerId, CURR_KEY_MODEL, model) && model.length() > 0)
 	{
-		pActor->SetFileModel(model.c_str());
+		pActor->SetFileModel(model);
 	}
 	else if (isPlayer)
 	{

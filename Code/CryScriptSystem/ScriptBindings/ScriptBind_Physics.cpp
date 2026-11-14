@@ -265,7 +265,7 @@ int ScriptBind_Physics::SamplePhysEnvironment(IFunctionHandler *pH)
 
 	pSphere = gEnv->pPhysicalWorld->GetGeomManager()->CreatePrimitive(primitives::sphere::type, &sph);
 
-	int nEnts = gEnv->pPhysicalWorld->GetEntitiesInBox(sph.center - Vec3(sph.r), sph.center + Vec3(sph.r), pEnts, objtypes);
+	int nEnts = gEnv->pPhysicalWorld->GetEntitiesInBox(sph.center - Vec3(sph.r, sph.r, sph.r), sph.center + Vec3(sph.r, sph.r, sph.r), pEnts, objtypes);
 	for (i = 0; i < nEnts; i++)
 	{
 		for (sp.ipart = pEnts[i]->GetStatus(&snp) - 1; sp.ipart >= 0; sp.ipart--)

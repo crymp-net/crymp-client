@@ -18,6 +18,8 @@
 #ifndef __IREVERBMANAGER_H__
 #define __IREVERBMANAGER_H__
 
+#include "CryCommon/CryCore/platform.h"
+#include "CryCommon/CryEntitySystem/EntityId.h"
 #include "CryCommon/CryNetwork/SerializeFwd.h"
 
 #pragma once
@@ -66,6 +68,7 @@ enum SOUND_REVERB_PRESETS{
 
 struct IAudioDevice;
 struct ISound;
+struct IRenderer;
 
 struct CRYSOUND_REVERB_PROPERTIES /* MIN     MAX    DEFAULT   DESCRIPTION */
 {          
@@ -130,14 +133,6 @@ struct CRYSOUND_REVERB_CHANNELPROPERTIES
 #define CRYSOUND_REVERB_CHANNEL_ZERO			{0, 0, 0,				0,			0, 0.0f, 0, 0.0f,		0.0f,		0.0f,		0, 0.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0}
 #define CRYSOUND_REVERB_CHANNEL_GENERIC		{0, 0, 0,				0,			0, 0.0f, 0, 0.25f,	1.5f,		1.0f,		0, 1.0f, 0, 0.0f, 0.0f, 0.0f, 1.0f, 0}
 #define CRYSOUND_REVERB_CHANNEL_NOREVERB	{0, 0, -10000, -10000,	0, 0.0f, 0, 0.25f,	1.5f,		1.0f,		0, 1.0f, 0, 0.0f, 0.0f, 0.0f, 1.0f, 0}
-
-//#define FMOD_REVERB_CHANNELFLAGS_DIRECTHFAUTO  0x00000001
-//#define FMOD_REVERB_CHANNELFLAGS_ROOMAUTO  0x00000002
-//#define FMOD_REVERB_CHANNELFLAGS_ROOMHFAUTO  0x00000004
-//#define FMOD_REVERB_CHANNELFLAGS_ENVIRONMENT0  0x00000008
-//#define FMOD_REVERB_CHANNELFLAGS_ENVIRONMENT1  0x00000010
-//#define FMOD_REVERB_CHANNELFLAGS_ENVIRONMENT2  0x00000020
-//#define FMOD_REVERB_CHANNELFLAGS_DEFAULT  (FMOD_REVERB_CHANNELFLAGS_DIRECTHFAUTO | FMOD_REVERB_CHANNELFLAGS_ROOMAUTO| FMOD_REVERB_CHANNELFLAGS_ROOMHFAUTO| FMOD_REVERB_CHANNELFLAGS_ENVIRONMENT0)
 
 
 //////////////////////////////////////////////////////////////////////////

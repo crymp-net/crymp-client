@@ -41,7 +41,14 @@ void CItem::OnSelected(bool selected)
 //------------------------------------------------------------------------
 void CItem::OnEnterFirstPerson()
 {
-	EnableUpdate(true, eIUS_General);
+	if (m_stats.mounted || !m_stats.selected || GetEntity()->GetClass() == sOffHandClass)
+	{
+		EnableUpdate(true, eIUS_General);
+	}
+	else
+	{
+		UpdateFPAnimationUpdates();
+	}
 	//EnableHiddenSkinning(true); //unused
 	SetViewMode(eIVM_FirstPerson);
 	AttachToHand(false);
@@ -50,7 +57,14 @@ void CItem::OnEnterFirstPerson()
 
 	for (auto const& accessory : m_accessories)
 	{
-		if (accessory.first == g_pItemStrings->LAM || accessory.first == g_pItemStrings->LAMRifle || accessory.first == g_pItemStrings->LAMFlashLight || accessory.first == g_pItemStrings->LAMRifleFlashLight)
+		if (
+			accessory.first == g_pItemStrings->LAM 
+			|| accessory.first == g_pItemStrings->LAMRifle 
+			|| accessory.first == g_pItemStrings->LAMFlashLight 
+			|| accessory.first == g_pItemStrings->LAMRifleFlashLight 
+			// CryMP: allow custom attachments
+			|| accessory.first.sv().starts_with("LAM")
+		)
 		{
 			CItem* pItem = static_cast<CItem*>(m_pGameFramework->GetIItemSystem()->GetItem(accessory.second));
 			if (pItem)
@@ -64,17 +78,27 @@ void CItem::OnEnterFirstPerson()
 //------------------------------------------------------------------------
 void CItem::OnEnterThirdPerson()
 {
+	UpdateFPAnimationUpdates();
 	//EnableHiddenSkinning(false); //unused
 	AttachToHand(true);
 	AttachArms(false, false);
-	SetViewMode(eIVM_ThirdPerson);
+	//CryMP: Client visual fix: mounted weapons use first-person geometry in both camera modes
+	SetViewMode(m_stats.mounted ? eIVM_FirstPerson : eIVM_ThirdPerson);
 
 	if (CItem* pSlave = static_cast<CItem*>(GetDualWieldSlave()))
+	{
 		pSlave->OnEnterThirdPerson();
+	}
 
 	for (auto const& accessory : m_accessories)
 	{
-		if (accessory.first == g_pItemStrings->LAM || accessory.first == g_pItemStrings->LAMRifle || accessory.first == g_pItemStrings->LAMFlashLight || accessory.first == g_pItemStrings->LAMRifleFlashLight)
+		if (
+			accessory.first == g_pItemStrings->LAM 
+			|| accessory.first == g_pItemStrings->LAMRifle 
+			|| accessory.first == g_pItemStrings->LAMFlashLight 
+			|| accessory.first == g_pItemStrings->LAMRifleFlashLight 
+			// CryMP: allow custom attachments
+			|| accessory.first.sv().starts_with("LAM"))
 		{
 			CItem* pItem = static_cast<CItem*>(m_pGameFramework->GetIItemSystem()->GetItem(accessory.second));
 			if (pItem)
@@ -166,8 +190,8 @@ void CItem::OnHit(float damage, const char* damageType)
 					{
 						int slot = (m_stats.viewmode & eIVM_FirstPerson) ? eIGS_FirstPerson : eIGS_ThirdPerson;
 
-						SpawnEffect(slot, level.effect.c_str(), level.helper.c_str(), Vec3Constants<float>::fVec3_Zero,
-							Vec3Constants<float>::fVec3_OneZ, level.scale);
+						SpawnEffect(slot, level.effect.c_str(), level.helper.c_str(), Vec3(),
+							Vec3(0, 0, 1), level.scale);
 					}
 				}
 			}
@@ -195,7 +219,7 @@ void CItem::UpdateDamageLevel()
 		{
 			if (level.effectId == -1)
 				level.effectId = AttachEffect(slot, 0, true, level.effect.c_str(), level.helper.c_str(),
-					Vec3Constants<float>::fVec3_Zero, Vec3Constants<float>::fVec3_OneZ, level.scale, true);
+					Vec3(), Vec3(0, 0, 1), level.scale, true);
 		}
 		else if (level.effectId != -1)
 		{

@@ -18,6 +18,8 @@
 #ifndef __ISOUNDMOODMANAGER_H__
 #define __ISOUNDMOODMANAGER_H__
 
+#include "CryCommon/CryCore/platform.h"
+#include "CryCommon/CryCore/smartptr.h"
 #include "CryCommon/CryNetwork/SerializeFwd.h"
 
 #pragma once
@@ -53,7 +55,9 @@ enum enumGroupParamSemantics
 };
 // forward declaration
 
+class XmlNodeRef;
 struct ptParam;
+struct IRenderer;
 struct ISoundMoodManager;
 
 struct ICategory : public _i_reference_target_t

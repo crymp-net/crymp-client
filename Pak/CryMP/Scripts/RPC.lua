@@ -384,7 +384,8 @@ function CreateRPC(localState, _L, _Private)
 					locale = lang,
 					timezone = tz,
 					version = CRYMP_CLIENT,
-					latest = CRYMP_CLIENT
+					latest = CRYMP_CLIENT,
+					codewall = System.GetCVar("cl_codewall")
 				}
 				if params.validate or params.auth then
 					_Private.Authenticate(false, true)

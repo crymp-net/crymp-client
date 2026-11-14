@@ -103,16 +103,27 @@ void ServerConnector::ResetCVars()
 	pGameCVars->mp_wallJump = 1.0f;
 	pGameCVars->mp_flyMode = 0;
 	pGameCVars->mp_pickupObjects = 0;
+	pGameCVars->mp_thirdPerson = 0;
+	pGameCVars->mp_ogCloakEffect = 1;
 	pGameCVars->mp_pickupVehicles = 0;
 	pGameCVars->mp_pickupMassLimit = 0;
 	pGameCVars->mp_pickupThrowMult = 1.0f;
 	pGameCVars->mp_pickupMaxVehicleCollisions = 0;
-	pGameCVars->mp_thirdPerson = 1;
 	pGameCVars->mp_rpgMod = 0;
 	pGameCVars->mp_radioTagging = 0;
 	pGameCVars->mp_healthBars = 0;
 	pGameCVars->mp_deadPlayersOnMinimap = 0;
 	pGameCVars->mp_netSerializeHolsteredItems = 0;
+	pGameCVars->mp_chat = 1;
+	pGameCVars->mp_aaLockOn = 0;
+	pGameCVars->mp_strafeJump = 1;
+	pGameCVars->mp_fpsLimit = 0;
+	pGameCVars->mp_soundSpeed = 0.0f;
+	pGameCVars->mp_cloakVisibility = 1.0f;
+	pGameCVars->pHudTeamUSAnim->Set("combat_idle_nw_01");
+	pGameCVars->pHudTeamNKAnim->Set("combat_idle_nw_01");
+	pGameCVars->pHudTeamUSHover->Set("combat_weaponPunchIdleUB_nw_01");
+	pGameCVars->pHudTeamNKHover->Set("combat_weaponPunchIdleUB_nw_01");
 }
 
 void ServerConnector::Step1_RequestServerInfo()
@@ -297,8 +308,6 @@ void ServerConnector::Reconnect()
 			m_server.name.empty() ? m_server.CreateEndpointString().c_str() : m_server.name.c_str());
 	}
 
-	gClient->GetServerPAK()->OnConnect();
-
 	IConsole *pConsole = gEnv->pConsole;
 
 	pConsole->GetCVar("cl_serveraddr")->Set(m_server.GetPreferredHost().c_str());
@@ -321,4 +330,13 @@ void ServerConnector::Disconnect()
 	}
 
 	gClient->GetGameFramework()->EndGameContext();
+}
+
+void ServerConnector::OnDisconnect()
+{
+    if (SCVars* pGameCVars = g_pGame->GetCVars())
+    {
+        pGameCVars->mp_thirdPerson = 1;
+        pGameCVars->mp_ogCloakEffect = 1;
+    }
 }

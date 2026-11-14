@@ -44,39 +44,39 @@ size_t CClientSynchedStorage::CResetMsg::GetSize()
 	CClientSynchedStorage::class::class(int _channelId, CServerSynchedStorage *pStorage, TSynchedKey _key, TSynchedValue &_value) \
 	:	CSetGlobalMsg(CClientSynchedStorage::msgdef, _channelId, pStorage, _key, _value) {}; \
 	EMessageSendResult CClientSynchedStorage::class::WritePayload(TSerialize ser, uint32 currentSeq, uint32 basisSeq) \
-{ m_pStorage->SerializeValue(ser, key, value, NTypelist::IndexOf<type, TSynchedValueTypes>::value); \
+{ m_pStorage->SerializeValue(ser, key, value, type); \
 	return eMSR_SentOk; }
 
 #define IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE(type) \
 	TSynchedKey		key; \
 	TSynchedValue value; \
-	SerializeValue(ser, key, value, NTypelist::IndexOf<type, TSynchedValueTypes>::value); \
+	SerializeValue(ser, key, value, type); \
 	return true;
 
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetGlobalBoolMsg, eNRT_ReliableUnordered, 0)
 {
-	IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE(bool);
+	IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE(SynchedValueType::Bool);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetGlobalFloatMsg, eNRT_ReliableUnordered, 0)
 {
-	IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE(float);
+	IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE(SynchedValueType::Float);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetGlobalIntMsg, eNRT_ReliableUnordered, 0)
 {
-	IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE(int);
+	IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE(SynchedValueType::Int);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetGlobalEntityIdMsg, eNRT_ReliableUnordered, 0)
 {
-	IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE(EntityId);
+	IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE(SynchedValueType::EntityId);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetGlobalStringMsg, eNRT_ReliableUnordered, 0)
 {
-	IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE(string);
+	IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE(SynchedValueType::String);
 }
 
 CClientSynchedStorage::CSetGlobalMsg::CSetGlobalMsg(const SNetMessageDef *pDef, int _channelId, CServerSynchedStorage *pStorage, TSynchedKey _key, TSynchedValue &_value)
@@ -103,11 +103,11 @@ size_t CClientSynchedStorage::CSetGlobalMsg::GetSize()
 	return sizeof (*this);
 };
 
-DEFINE_GLOBAL_MESSAGE(CSetGlobalBoolMsg, bool, SetGlobalBoolMsg);
-DEFINE_GLOBAL_MESSAGE(CSetGlobalFloatMsg, float, SetGlobalFloatMsg);
-DEFINE_GLOBAL_MESSAGE(CSetGlobalIntMsg, int, SetGlobalIntMsg);
-DEFINE_GLOBAL_MESSAGE(CSetGlobalEntityIdMsg, EntityId, SetGlobalEntityIdMsg);
-DEFINE_GLOBAL_MESSAGE(CSetGlobalStringMsg, string, SetGlobalStringMsg);
+DEFINE_GLOBAL_MESSAGE(CSetGlobalBoolMsg, SynchedValueType::Bool, SetGlobalBoolMsg);
+DEFINE_GLOBAL_MESSAGE(CSetGlobalFloatMsg, SynchedValueType::Float, SetGlobalFloatMsg);
+DEFINE_GLOBAL_MESSAGE(CSetGlobalIntMsg, SynchedValueType::Int, SetGlobalIntMsg);
+DEFINE_GLOBAL_MESSAGE(CSetGlobalEntityIdMsg, SynchedValueType::EntityId, SetGlobalEntityIdMsg);
+DEFINE_GLOBAL_MESSAGE(CSetGlobalStringMsg, SynchedValueType::String, SetGlobalStringMsg);
 
 #undef DEFINE_GLOBAL_MESSAGE
 #undef IMPLEMENT_IMMEDIATE_GLOBAL_MESSAGE
@@ -156,7 +156,7 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetChannelStringMsg, eNRT
 	:	CSetEntityMsg(CClientSynchedStorage::msgdef, _channelId, pStorage, id, _key, _value) {}; \
 	EMessageSendResult CClientSynchedStorage::class::WritePayload(TSerialize ser, uint32 currentSeq, uint32 basisSeq) \
 { ser.Value("entityId", entityId, /* 'eid' */0x00656964); \
-	m_pStorage->SerializeValue(ser, key, value, NTypelist::IndexOf<type, TSynchedValueTypes>::value); \
+	m_pStorage->SerializeEntityValue(ser, entityId, key, value, type); \
 	return eMSR_SentOk; }
 
 #define IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE(type) \
@@ -164,33 +164,33 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetChannelStringMsg, eNRT
 	TSynchedValue value; \
 	EntityId			id; \
 	ser.Value("entityId", id, /* 'eid' */0x00656964); \
-	SerializeEntityValue(ser, id, key, value, NTypelist::IndexOf<type, TSynchedValueTypes>::value); \
+	SerializeEntityValue(ser, id, key, value, type); \
 	return true;
 
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetEntityBoolMsg, eNRT_ReliableUnordered, eMPF_AfterSpawning)
 {
-	IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE(bool);
+	IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE(SynchedValueType::Bool);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetEntityFloatMsg, eNRT_ReliableUnordered, eMPF_AfterSpawning)
 {
-	IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE(float);
+	IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE(SynchedValueType::Float);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetEntityIntMsg, eNRT_ReliableUnordered, eMPF_AfterSpawning)
 {
-	IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE(int);
+	IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE(SynchedValueType::Int);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetEntityEntityIdMsg, eNRT_ReliableUnordered, eMPF_AfterSpawning)
 {
-	IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE(EntityId);
+	IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE(SynchedValueType::EntityId);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientSynchedStorage, SetEntityStringMsg, eNRT_ReliableUnordered, eMPF_AfterSpawning)
 {
-	IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE(string);
+	IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE(SynchedValueType::String);
 }
 
 CClientSynchedStorage::CSetEntityMsg::CSetEntityMsg(const SNetMessageDef *pDef, int _channelId, CServerSynchedStorage *pStorage, EntityId id, TSynchedKey _key, TSynchedValue &_value)
@@ -218,11 +218,11 @@ size_t CClientSynchedStorage::CSetEntityMsg::GetSize()
 	return sizeof (*this);
 };
 
-DEFINE_ENTITY_MESSAGE(CSetEntityBoolMsg, bool, SetEntityBoolMsg);
-DEFINE_ENTITY_MESSAGE(CSetEntityFloatMsg, float, SetEntityFloatMsg);
-DEFINE_ENTITY_MESSAGE(CSetEntityIntMsg, int, SetEntityIntMsg);
-DEFINE_ENTITY_MESSAGE(CSetEntityEntityIdMsg, EntityId, SetEntityEntityIdMsg);
-DEFINE_ENTITY_MESSAGE(CSetEntityStringMsg, string, SetEntityStringMsg);
+DEFINE_ENTITY_MESSAGE(CSetEntityBoolMsg, SynchedValueType::Bool, SetEntityBoolMsg);
+DEFINE_ENTITY_MESSAGE(CSetEntityFloatMsg, SynchedValueType::Float, SetEntityFloatMsg);
+DEFINE_ENTITY_MESSAGE(CSetEntityIntMsg, SynchedValueType::Int, SetEntityIntMsg);
+DEFINE_ENTITY_MESSAGE(CSetEntityEntityIdMsg, SynchedValueType::EntityId, SetEntityEntityIdMsg);
+DEFINE_ENTITY_MESSAGE(CSetEntityStringMsg, SynchedValueType::String, SetEntityStringMsg);
 
 #undef DEFINE_ENTITY_MESSAGE
 #undef IMPLEMENT_IMMEDIATE_ENTITY_MESSAGE

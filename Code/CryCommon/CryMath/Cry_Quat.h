@@ -1081,13 +1081,13 @@ template <typename F> struct QuatT_tpl
 	*  Example 2:
 	*		QuatT qp=QuatT::CreateRotationXYZ( Ang3(0.5f,0.2f,0.9f), translation );
 	*/
-	ILINE void SetRotationXYZ( const Ang3_tpl<F>& rad, const Vec3_tpl<F>& trans=Vec3(ZERO) ) 
+	ILINE void SetRotationXYZ( const Ang3_tpl<F>& rad, const Vec3_tpl<F>& trans={} )
 	{
 		assert(rad.IsValid());
 		assert(trans.IsValid());
 		q.SetRotationXYZ(rad); t=trans;
 	}
-	ILINE static QuatT_tpl<F> CreateRotationXYZ( const Ang3_tpl<F>& rad, const Vec3_tpl<F>& trans=Vec3(ZERO) ) 
+	ILINE static QuatT_tpl<F> CreateRotationXYZ( const Ang3_tpl<F>& rad, const Vec3_tpl<F>& trans={} )
 	{	
 		assert(rad.IsValid());
 		assert(trans.IsValid());
@@ -1096,12 +1096,12 @@ template <typename F> struct QuatT_tpl
 
 
 
-	ILINE void SetRotationAA(F cosha, F sinha, const Vec3_tpl<F> axis, const Vec3_tpl<F>& trans=Vec3(ZERO) )	
+	ILINE void SetRotationAA(F cosha, F sinha, const Vec3_tpl<F> axis, const Vec3_tpl<F>& trans={} )
 	{
 		q.SetRotationAA(cosha,sinha,axis); 	
 		t=trans; 	
 	}
-	ILINE static QuatT_tpl<F> CreateRotationAA( F cosha, F sinha, const Vec3_tpl<F> axis, const Vec3_tpl<F>& trans=Vec3(ZERO) ) 
+	ILINE static QuatT_tpl<F> CreateRotationAA( F cosha, F sinha, const Vec3_tpl<F> axis, const Vec3_tpl<F>& trans={} )
 	{	
 		QuatT_tpl<F> qt;  qt.SetRotationAA(cosha,sinha,axis,trans);	return qt;	
 	}
@@ -1328,7 +1328,7 @@ template <typename F> struct QuatTS_tpl
 
 	ILINE void SetIdentity() 
 	{
-		q.SetIdentity(); t=Vec3(ZERO); s=1;
+		q.SetIdentity(); t={}; s=1;
 	}
 
 	explicit ILINE QuatTS_tpl(const Matrix34_tpl<F>& m)	

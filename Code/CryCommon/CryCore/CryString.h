@@ -614,7 +614,8 @@ inline void CryStringT<T>::_AllocData( size_type nLen )
 	else
 	{
 		size_type allocLen = sizeof(StrHeader) + (nLen+1)*sizeof(value_type);
-		StrHeader* pData = (StrHeader*) CryMalloc(allocLen);
+		std::size_t allocatedSize = 0;
+		StrHeader* pData = (StrHeader*) CryMalloc(allocLen, allocatedSize);
 
 		_usedMemory( allocLen ); // For statistics.
 

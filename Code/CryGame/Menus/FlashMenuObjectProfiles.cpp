@@ -160,8 +160,8 @@ void CFlashMenuObject::SwitchProfiles(const char* oldProfile, const char* newPro
 	{
 		m_pPlayerProfileManager->ActivateProfile(userName, oldProfile);
 
-		if (m_multiplayerMenu)
-			m_multiplayerMenu->DoLogoff();
+		if (m_mpHub)
+			m_mpHub->DoLogoff();
 
 		g_pGame->GetOptions()->SaveValueToProfile("Activated", 0);
 		g_pGame->GetOptions()->SaveProfile();

@@ -32,11 +32,20 @@ public:
 	CHUDTeamInstantAction(CHUD *pHUD);
 	~CHUDTeamInstantAction();
 
+	enum ETIAScoreHideReason
+	{
+		eTIAScoreHideReason_None = 0,
+		eTIAScoreHideReason_PDA = BIT(0),
+		eTIAScoreHideReason_Binoculars = BIT(1),
+	};
+
 	void Update(float fDeltaTime);
 	void Reset();
-	void Show(bool show);
 	void SetHUDColor();
 	void UpdateStats();
+
+	void Show(bool show);
+	void SetTIAScoreHidden(ETIAScoreHideReason reason, bool show);
 
 //	virtual bool IsFactoryType(EntityId entity, EBuyMenuPage type);
 
@@ -55,6 +64,8 @@ private:
 
 	int m_roundTime;
 	int m_scoreLimit;
+
+	int m_tiaScoreHideFlags = 0;
 };
 
 #endif

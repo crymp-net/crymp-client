@@ -107,6 +107,7 @@ public:
 
 private:
 	void CollectViewership(float delta);
+	void LoadAds(const std::string& response);
 	void FetchAds();
 	void FetchAdsPak();
 	void DisplayAds();

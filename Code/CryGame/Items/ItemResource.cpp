@@ -675,7 +675,7 @@ tSoundID CItem::PlayAction(const ItemString& actionName, int layer, bool loop, u
 	{
 		//		CryLogWarning("Action '%s' not found on item '%s'!", actionName, GetEntity()->GetName());
 
-		for (int i = 0;i < eIGS_Last;i++)
+		for (int i = 0; i < eIGS_Last; i++)
 		{
 			m_animationTime[i] = 0;
 			m_animationSpeed[i] = 1.0f;
@@ -737,7 +737,6 @@ tSoundID CItem::PlayAction(const ItemString& actionName, int layer, bool loop, u
 
 		if (pSoundProxy)
 		{
-
 			TempResourceName name;
 			FixResourceName(action.sound[sid].name, name, flags);
 			//nSoundFlags = nSoundFlags | (fp?FLAG_SOUND_DEFAULT_3D|FLAG_SOUND_RELATIVE:FLAG_SOUND_DEFAULT_3D);
@@ -750,8 +749,14 @@ tSoundID CItem::PlayAction(const ItemString& actionName, int layer, bool loop, u
 				result = pSoundProxy->PlaySoundEx(name.c_str(), vOffset, FORWARD_DIRECTION, nSoundFlags, 1.0f, 0, 0, eSoundSemantic_Weapon, pSkipEnts, nSkipEnts);
 				ISound* pSound = pSoundProxy->GetSound(result);
 
-				if (pSound && action.sound[sid].sphere > 0.0f)
-					pSound->SetSphereSpec(action.sound[sid].sphere);
+				if (pSound)
+				{
+					if (action.sound[sid].pitch != 1.0f)
+						pSound->SetPitch((int)(action.sound[sid].pitch * 1000.0f));
+
+					if (action.sound[sid].sphere > 0.0f)
+						pSound->SetSphereSpec(action.sound[sid].sphere);
+				}
 			}
 			else
 			{
@@ -777,8 +782,14 @@ tSoundID CItem::PlayAction(const ItemString& actionName, int layer, bool loop, u
 					result = pSoundProxy->PlaySoundEx(name.c_str(), vOffset, FORWARD_DIRECTION, nSoundFlags, 1.0f, 0, 0, eSoundSemantic_Weapon, pSkipEnts, nSkipEnts);
 					ISound* pSound = pSoundProxy->GetSound(result);
 
-					if (pSound && action.sound[sid].sphere > 0.0f)
-						pSound->SetSphereSpec(action.sound[sid].sphere);
+					if (pSound)
+					{
+						if (action.sound[sid].pitch != 1.0f)
+							pSound->SetPitch((int)(action.sound[sid].pitch * 1000.0f));
+
+						if (action.sound[sid].sphere > 0.0f)
+							pSound->SetSphereSpec(action.sound[sid].sphere);
+					}
 				}
 
 				if (action.sound[sid].isstatic)
@@ -796,7 +807,12 @@ tSoundID CItem::PlayAction(const ItemString& actionName, int layer, bool loop, u
 					{
 						ISound* pSound = pSoundProxy->GetSound(pInstanceAudio->id);
 						if (pSound)
-							pSound->Play(1.0, true, true, pSoundProxy);
+						{
+							pSound->Play(1.0f, true, true, pSoundProxy);
+
+							if (action.sound[sid].pitch != 1.0f)
+								pSound->SetPitch((int)(action.sound[sid].pitch * 1000.0f));
+						}
 					}
 				}
 			}

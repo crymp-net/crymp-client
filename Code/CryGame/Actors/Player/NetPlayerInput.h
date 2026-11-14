@@ -29,7 +29,7 @@ public:
 	virtual void Reset();
 	virtual void DisableXI(bool disabled);
 
-	virtual void GetMemoryStatistics(ICrySizer * s) {s->Add(*this);}
+	virtual void GetMemoryStatistics(ICrySizer*) {}
 
 	virtual EInputType GetType() const
 	{

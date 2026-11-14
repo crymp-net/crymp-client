@@ -403,7 +403,7 @@ void CDebugGun::Shoot(bool bPrimary)
 		gEnv->pConsole->ExecuteString(vehicleCmd.c_str());
 	}
 
-	OnShoot(GetOwnerId(), 0, 0, pos, dir, Vec3(ZERO));
+	OnShoot(GetOwnerId(), 0, 0, pos, dir, Vec3());
 }
 
 //------------------------------------------------------------------------

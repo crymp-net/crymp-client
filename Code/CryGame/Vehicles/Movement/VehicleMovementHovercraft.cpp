@@ -47,11 +47,11 @@ CVehicleMovementHovercraft::CVehicleMovementHovercraft()
 , m_thrusterTilt( 0 )
 , m_dampLimitCoeff( 1 )
 , m_pushTilt( 0 )
-, m_pushOffset(ZERO)
+, m_pushOffset()
 , m_cornerTilt( 0 )
-, m_cornerOffset(ZERO)
+, m_cornerOffset()
 , m_turnDamping( 0 )
-, m_massOffset(ZERO)
+, m_massOffset()
 , m_hoverTimer( 0.f )
 , m_linearDamping( 0.1f )
 , m_bRetainGravity( false )
@@ -279,7 +279,7 @@ bool CVehicleMovementHovercraft::InitThrusters(SmartScriptTable table)
     // place thrusters at helpers
     for (int i=0; i<m_numThrusters; ++i)
     {
-      m_vecThrusters.push_back( new SThruster( Vec3(ZERO), thrusterDir ));
+      m_vecThrusters.push_back( new SThruster( Vec3(), thrusterDir ));
 
       SmartScriptTable thruster;
       if (thrusterTable->GetAt(i+1, thruster))
@@ -343,7 +343,7 @@ bool CVehicleMovementHovercraft::InitThrusters(SmartScriptTable table)
       }
     }
 
-    assert(m_vecThrusters.size() == m_numThrusters);
+    assert(static_cast<int>(m_vecThrusters.size()) == m_numThrusters);
   }
 
   // tilt thruster direction to outside
@@ -391,7 +391,7 @@ bool CVehicleMovementHovercraft::InitThrusters(SmartScriptTable table)
   float gravity = m_gravity.IsZero() ? 9.81f : m_gravity.len();
   m_liftForce = mass * gravity;
 
-  assert(m_numThrusters == m_vecThrusters.size());
+  assert(m_numThrusters == static_cast<int>(m_vecThrusters.size()));
 
   int pushingThrusters = 0;
   for (int i=0; i<m_numThrusters; ++i)

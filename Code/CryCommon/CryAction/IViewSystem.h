@@ -37,7 +37,7 @@ enum EMotionBlurType
 struct SViewParams
 {
 	SViewParams() :
-		position(ZERO),
+		position(),
 		rotation(IDENTITY),
 		nearplane(0.0f),
 		fov(0.0f),
@@ -45,9 +45,9 @@ struct SViewParams
 		groundOnly(false),
 		shakingRatio(0.0f),
 		currentShakeQuat(IDENTITY),
-		currentShakeShift(ZERO),
+		currentShakeShift(),
 		idTarget(0),
-		targetPos(ZERO),
+		targetPos(),
 		frameTime(0.0f),
 		angleVel(0.0f),
 		vel(0.0f),
@@ -55,10 +55,10 @@ struct SViewParams
 		blend(true),
 		blendPosSpeed(5.0f),
 		blendRotSpeed(10.0f),
-		blendPosOffset(ZERO),
+		blendPosOffset(),
 		blendRotOffset(IDENTITY),
 		viewIDLast(0),
-		positionLast(ZERO),
+		positionLast(),
 		rotationLast(IDENTITY)
 	{
 	}

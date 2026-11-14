@@ -105,8 +105,8 @@ void CHomingMissile::Update(SEntityUpdateContext& ctx, int updateSlot)
 //-----------------------------------------------------------------------------
 void CHomingMissile::UpdateControlledMissile(float frameTime)
 {
-	bool isServer = gEnv->bServer;
-	bool isClient = gEnv->bClient;
+	const bool isServer = gEnv->bServer;
+	const bool isClient = gEnv->bClient;
 
 	CActor* pClientActor = 0;
 	if (gEnv->bClient)
@@ -167,8 +167,8 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 			{
 				if (IMovementController* pMC = pClientActor->GetMovementController())
 				{
-					Vec3 eyePos(ZERO);
-					Vec3 eyeDir(ZERO);
+					Vec3 eyePos;
+					Vec3 eyeDir;
 
 					IVehicle* pVehicle = pClientActor->GetLinkedVehicle();
 					if (!pVehicle)
@@ -251,6 +251,11 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 		}
 	}
 
+	if (!isServer)
+	{
+		return;
+	}
+
 	//This code is shared by both modes above (auto and controlled)
 	if (!m_destination.IsZero())
 	{
@@ -274,7 +279,7 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 		{
 			Vec3 currentVel = status.v;
 			Vec3 currentPos = pos.pos;
-			Vec3 goalDir(ZERO);
+			Vec3 goalDir;
 
 			assert(!_isnan(currentSpeed));
 			assert(!_isnan(currentVel.x) && !_isnan(currentVel.y) && !_isnan(currentVel.z));
@@ -333,6 +338,10 @@ void CHomingMissile::UpdateControlledMissile(float frameTime)
 //----------------------------------------------------------------------------
 void CHomingMissile::UpdateCruiseMissile(float frameTime)
 {
+	if (!gEnv->bServer)
+	{
+		return;
+	}
 
 	IRenderer* pRenderer = gEnv->pRenderer;
 	IRenderAuxGeom* pGeom = pRenderer->GetIRenderAuxGeom();
@@ -376,7 +385,7 @@ void CHomingMissile::UpdateCruiseMissile(float frameTime)
 
 	float currentSpeed = status.v.len();
 	Vec3 currentPos = GetEntity()->GetWorldPos();
-	Vec3 goalDir(ZERO);
+	Vec3 goalDir;
 
 	if (!m_destination.IsZero())
 	{

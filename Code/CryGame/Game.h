@@ -18,6 +18,8 @@
 # pragma once
 #endif
 
+#include <functional>
+
 #include "CryCommon/CryGame/IGame.h"
 #include "CryCommon/CryAction/IGameFramework.h"
 #include "CryCommon/CryAction/IGameObjectSystem.h"
@@ -195,6 +197,8 @@ public:
 	const string& GetLastSaveGame() { string tmp; return GetLastSaveGame(tmp); }
 
   ILINE SCVars *GetCVars() {return m_pCVars;}
+
+  void ReloadFlashInstances();
 
 protected:
 	virtual void LoadActionMaps(const char* filename = "libs/config/defaultProfile.xml");

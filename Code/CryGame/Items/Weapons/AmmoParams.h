@@ -83,6 +83,16 @@ struct SWhizParams
 	SWhizParams(const IItemParamsNode* whiz);
 };
 
+struct SMissileApproachParams
+{
+	const char* sound;
+	float prediction;
+	float passRadius;
+	float distanceMultiplier;
+
+	SMissileApproachParams(const IItemParamsNode* missileApproach);
+};
+
 
 // this structure holds cached XML attributes for fast acccess
 struct SAmmoParams
@@ -124,6 +134,7 @@ struct SAmmoParams
 	SExplosionParams*			pExplosion;
 	SFlashbangParams*			pFlashbang;
 	SWhizParams*					pWhiz;
+	SMissileApproachParams*         pMissileApproach;
 	SWhizParams*					pRicochet;
 	STrailParams*					pTrail;
 	STrailParams*					pTrailUnderWater;
@@ -146,7 +157,7 @@ private:
 	void LoadCollision();
 	void LoadExplosion();
 	void LoadFlashbang();
-	void LoadTrailsAndWhizzes();
+	void LoadSoundParams();
 };
 
 #endif//__AMMOPARAMS_H__

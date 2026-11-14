@@ -196,6 +196,7 @@ public:
 
 	static SNanoMaterial* GetNanoMaterial(ENanoMode mode, bool bAsian=false);
 	static bool AssignNanoMaterialToEntity(IEntity* pEntity, SNanoMaterial* pNanoMaterial);
+	static void ResetCachedMaterials();
 
 	CNanoSuit();
 	~CNanoSuit();
@@ -245,6 +246,8 @@ public:
 	//get sprinting multiplier for ground movement
 	float GetSprintMultiplier(bool strafing);
 	void SetCloak(bool on, bool force=false);
+	static constexpr int CloakBlendTimer = 0x434C4F41;
+	void FinishRemoteCloakBlend();
 	float GetHealthRegenDelay() { return m_healthRegenDelay; }
 
 	//set energy back to max
@@ -266,6 +269,7 @@ public:
 	}
 
 private:
+	static void FinishCloakBlend(IEntity* pEntity);
 	void Precache();
 	void Balance(float energy);
 	bool SetAllSlots(float armor, float strength, float speed);

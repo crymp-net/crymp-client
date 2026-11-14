@@ -109,7 +109,8 @@ public:
     {
       assert(&p<m_pElements || &p>=(m_pElements+m_nAllocatedCount));
       m_nAllocatedCount = m_nCount*2 + 8;
-      m_pElements = (T*)CryRealloc(m_pElements,m_nAllocatedCount*sizeof(T));
+      std::size_t allocatedSize = 0;
+      m_pElements = (T*)CryRealloc(m_pElements,m_nAllocatedCount*sizeof(T),allocatedSize);
       assert(m_pElements);
     }
 
@@ -131,7 +132,8 @@ public:
     {
       m_nAllocatedCount = elem_count;
 
-      T * new_elements = (T*)CryMalloc(m_nAllocatedCount*sizeof(T));
+      std::size_t allocatedSize = 0;
+      T * new_elements = (T*)CryMalloc(m_nAllocatedCount*sizeof(T), allocatedSize);
       assert(new_elements);
       memset(new_elements, 0, sizeof(T)*m_nAllocatedCount);
       memcpy(new_elements, m_pElements, sizeof(T)*m_nCount);

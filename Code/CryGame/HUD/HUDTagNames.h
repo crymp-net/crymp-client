@@ -84,6 +84,7 @@ private:
 
 	bool NeedsHealthBar(IActor* pActor);
 	bool NeedsHealthBar(IVehicle* pVehicle);
+	bool IsFFA();
 };
 
 //-----------------------------------------------------------------------------------------------------

@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include <miniz.h>
+#include <miniz/miniz.h>
 
 #include "IPak.h"
 #include "ZipCache.h"

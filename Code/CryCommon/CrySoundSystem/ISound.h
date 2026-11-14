@@ -128,6 +128,9 @@ typedef uint32	tSoundID;
 #define FLAG_SOUND_DAYLIGHT							0x02000000  // this sound has a daylight parameter
 #define FLAG_SOUND_SQUELCH							0x04000000  // this sound has a radio squelch parameter
 #define FLAG_SOUND_DOPPLER_PARAM				0x08000000  // this sound has a doppler parameter
+#define FLAG_SOUND_MOVIE								0x10000000  // this is a movie sound
+//CryMP
+#define FLAG_SOUND_NO_3D_VELOCITY    0x20000000  //CryMP: don't pass source velocity
 
 
 //#define FLAG_SOUND_DEFAULT_3D (FLAG_SOUND_3D | FLAG_SOUND_RADIUS | FLAG_SOUND_CULLING | FLAG_SOUND_OBSTRUCTION )
@@ -411,8 +414,8 @@ struct SObstruction
 			for (int i=0; i< SOUND_MAX_OBSTRUCTION_TESTS; ++i)
 			{
 				ObstructionTests[i].SoundID = INVALID_SOUNDID;
-				ObstructionTests[i].vOrigin = Vec3(0);
-				ObstructionTests[i].vDirection = Vec3(0);
+				ObstructionTests[i].vOrigin = {};
+				ObstructionTests[i].vDirection = {};
 				ObstructionTests[i].nHits = 0;
 				ObstructionTests[i].nPierceability = 0;
 				ObstructionTests[i].nTestForTest = 0;
@@ -1108,21 +1111,6 @@ struct IMicrophone
 	virtual void Release() = 0;
 
 };
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-typedef ISoundSystem* (*PFNCREATESOUNDSYSTEM)(struct ISystem*, void*);
-
-#ifdef CRYSOUNDSYSTEM_EXPORTS
-	#define CRYSOUND_API DLL_EXPORT
-#else
-	#define CRYSOUND_API DLL_IMPORT
-#endif
-
-extern "C"
-{
-	CRYSOUND_API ISoundSystem* CreateSoundSystem(struct ISystem*, void *pInitData);
-}
 
 //////////////////////////////////////////////////////////////////////////
 // interface that passes all parameters via a structures

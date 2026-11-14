@@ -32,6 +32,7 @@
 #include "Menus/FlashMenuObject.h"
 #include "Menus/MPHub.h"
 
+
 static void OnChangeThirdPerson(ICVar* pCVar)
 {
 	CPlayer* pPlayer = static_cast<CPlayer*>(gEnv->pGame->GetIGameFramework()->GetClientActor());
@@ -598,6 +599,7 @@ void SCVars::InitCVars(IConsole* pConsole)
 	//CryMP CVars 
 	const int OPTIONAL_SYNC = 0;	
 
+
 	pConsole->Register("mp_crymp", &mp_crymp, 0, OPTIONAL_SYNC, "Enable high precision look direction serialization");
 	pConsole->Register("mp_circleJump", &mp_circleJump, 0.0f, OPTIONAL_SYNC, "Enable circle jumping as in 5767");
 	pConsole->Register("mp_wallJump", &mp_wallJump, 1.0f, OPTIONAL_SYNC, "WallJump multiplier");
@@ -625,6 +627,70 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_ogCloakEffect", &mp_ogCloakEffect, 1, OPTIONAL_SYNC, "Enables old cloak function");
 	pConsole->Register("mp_deadPlayersOnMinimap", &mp_deadPlayersOnMinimap, 0, OPTIONAL_SYNC, "Display dead players on minimap");
 	pConsole->Register("mp_suitHitReaction", &mp_suitHitReaction, 0, OPTIONAL_SYNC, "Activates NanoHitReaction");
+	pConsole->Register("mp_chat", &mp_chat, 1, OPTIONAL_SYNC, "Sets chat features support (0: old chat, 1: new chat without server support, 2: new chat with partial server support, 3: new chat with full server support)");
+	pConsole->Register("mp_strafeJump", &mp_strafeJump, 1, OPTIONAL_SYNC, "Enables or disables strafe jumping");
+	pConsole->Register("mp_fpsLimit", &mp_fpsLimit, 0, OPTIONAL_SYNC, "Sets FPS upper boundary (0: disabled)");
+	pConsole->Register("mp_soundSpeed", &mp_soundSpeed, 0.0f, OPTIONAL_SYNC, "Speed of sound (0 = infinite)");
+	pConsole->Register("mp_cloakVisibility", &mp_cloakVisibility, 1.0f, OPTIONAL_SYNC, "Controls cloak visibility(0 = least visible, 1 = original Crysis, > 1 = more visible)",
+		[](ICVar* pCVar)
+		{
+			if (!gEnv->bClient)
+				return;
+
+			IMaterialManager* pMaterialManager = gEnv->p3DEngine->GetMaterialManager();
+			if (!pMaterialManager)
+				return;
+
+			IMaterial* pDefaultLayersMaterial = pMaterialManager->GetDefaultLayersMaterial();
+			if (!pDefaultLayersMaterial)
+				return;
+
+			const float cloakVisibility = clamp_tpl(
+				pCVar->GetFVal(),
+				0.0f,
+				2.0f);
+
+			for (int i = 0; i < pDefaultLayersMaterial->GetLayerCount(); ++i)
+			{
+				const IMaterialLayer* pLayer = pDefaultLayersMaterial->GetLayer(i);
+				if (!pLayer)
+					continue;
+
+				const SShaderItem& shaderItem = pLayer->GetShaderItem();
+
+				if (!shaderItem.m_pShader || !shaderItem.m_pShaderResources)
+					continue;
+
+				const char* pShaderName = shaderItem.m_pShader->GetName();
+				if (!pShaderName || _stricmp(pShaderName, "CloakLayer") != 0)
+					continue;
+
+				DynArray<SShaderParam>& params = shaderItem.m_pShaderResources->GetParameters();
+
+				UParamVal value{};
+				value.m_Float = cloakVisibility;
+
+				if (SShaderParam::SetParam("CloakVisibility", &params, value))
+				{
+					shaderItem.m_pShaderResources->UpdateConstants(shaderItem.m_pShader);
+
+					if (fabsf(cloakVisibility - 1.0f) < 0.001f)
+					{
+						CryLogAlways("$3[CryMP] Cloak visibility set to $6original Crysis");
+					}
+					else
+					{
+						CryLogAlways("$3[CryMP] Cloak visibility set to $6%.2f", cloakVisibility);
+					}
+				}
+				else
+				{
+					CryLogAlways("[Cloak] CloakVisibility parameter not found");
+				}
+
+				break;
+			}
+		});
 
 	//CryMP CVars (un-synced)
 	pConsole->Register("mp_newSpectator", &mp_newSpectator, 1, VF_NOT_NET_SYNCED, "");
@@ -636,7 +702,19 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_animationModelMultSpeed", &mp_animationModelMultSpeed, 1.0f, VF_NOT_NET_SYNCED);
 	pConsole->Register("mp_menuSpeed", &mp_menuSpeed, 3.0f, VF_NOT_NET_SYNCED);
 	pConsole->Register("mp_hitIndicator", &mp_hitIndicator, 1, VF_NOT_NET_SYNCED, "Enable hit indicator");
-	pConsole->Register("mp_chatHighResolution", &mp_chatHighResolution, 0, VF_NOT_NET_SYNCED);
+	pConsole->Register("mp_chatHighResolution", &mp_chatHighResolution, 0,
+		VF_NOT_NET_SYNCED,
+		"Enable high resolution chat rendering",
+		[](ICVar* pVar)
+		{
+			const int mode = pVar->GetIVal();
+
+			if (g_pGame->GetHUD())
+			{
+				g_pGame->GetHUD()->EnableChatGfx(mode > 0);
+			}
+		}
+	);
 	pConsole->Register("mp_spectatorSlowMult", &mp_spectatorSlowMult, 0.15f, VF_NOT_NET_SYNCED, "Speed mult for spectating while holding Ctrl");
 	pConsole->Register("mp_buyPageKeepTime", &mp_buyPageKeepTime, 30, VF_NOT_NET_SYNCED, "The time in sec it will remember your last buy page");
 	pConsole->Register("mp_attachBoughtEquipment", &mp_attachBoughtEquipment, 0, VF_NOT_NET_SYNCED, "Automatically attach bought weapon attachments");
@@ -647,7 +725,134 @@ void SCVars::InitCVars(IConsole* pConsole)
 	pConsole->Register("mp_abandonTime", &mp_abandonTime, 10.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds after which vehicles explode");
 	pConsole->Register("mp_explosiveRemovalTime", &mp_explosiveRemovalTime, 30.f, VF_NOT_NET_SYNCED/*VF_CHEAT*/, "Time in seconds for explosive removal after death");
 	pConsole->Register("mp_explosion_mfx", &mp_explosion_mfx, 1, VF_NOT_NET_SYNCED, "Enable mfx via ClExplosion rmi for server controlled missiles");
+	pConsole->Register("mp_missileApproachSound", &mp_missileApproachSound, 1, VF_NOT_NET_SYNCED, "Enable missile approach sound");
+
+	pConsole->Register("cl_hud_chat", &cl_hud_chat, 1, VF_NOT_NET_SYNCED, "Shows / hides chat");
 	pConsole->Register("ads", &ads, 1, VF_NOT_NET_SYNCED, "Enable or disable (100h+) ads");
+
+	//CryMP
+	pHudTeamUSAnim = pConsole->RegisterString("hud_teamUSAnim", "combat_idle_nw_01", OPTIONAL_SYNC, "US team preview idle animation or comma-separated random pool; unknown clips are skipped, empty pools use the default");
+	pHudTeamNKAnim = pConsole->RegisterString("hud_teamNKAnim", "combat_idle_nw_01", OPTIONAL_SYNC, "NK team preview idle animation or comma-separated random pool; unknown clips are skipped, empty pools use the default");
+	pHudTeamUSHover = pConsole->RegisterString("hud_teamUSHover", "combat_weaponPunchIdleUB_nw_01", OPTIONAL_SYNC, "US team preview hover animation or comma-separated random pool; each hover chooses another valid clip");
+	pHudTeamNKHover = pConsole->RegisterString("hud_teamNKHover", "combat_weaponPunchIdleUB_nw_01", OPTIONAL_SYNC, "NK team preview hover animation or comma-separated random pool; each hover chooses another valid clip");
+
+	pConsole->RegisterInt("hud_teamPreview3D", 1, VF_NOT_NET_SYNCED, "Live team characters; 0 restores Flash animation");
+	pConsole->RegisterFloat("hud_teamPreviewDistance", 3.5f, VF_NOT_NET_SYNCED, "Fixed preview camera distance; increase to leave more room for wide animations");
+
+	pConsole->Register("hud_scale", &hud_scale, 1.0f, VF_NOT_NET_SYNCED,
+		"Scale of the HUD",
+		[](ICVar* pVar)
+		{
+			const float clamped = CLAMP(pVar->GetFVal(), 0.4f, 1.2f);
+
+			if (pVar->GetFVal() != clamped)
+			{
+				pVar->Set(clamped);
+				return;
+			}
+
+			if (g_pGame->GetHUD())
+			{
+				g_pGame->GetHUD()->UpdateRatio();
+			}
+		}
+	);
+
+	pConsole->Register(
+		"hud_maxGrenadeIndicators",
+		&hud_maxGrenadeIndicators,
+		3,
+		VF_NOT_NET_SYNCED,
+		"Maximum grenade HUD indicators per side. 0 disables grenade indicators, 1 keeps vanilla behavior.",
+		[](ICVar* pVar)
+		{
+			if (CHUD* pHUD = g_pGame->GetHUD())
+			{
+				pHUD->OnMaxGrenadeIndicatorsChanged();
+			}
+		}
+	);
+
+	mp_language = pConsole->RegisterString("mp_language", "", VF_NOT_NET_SYNCED, "Change game language",
+		[](ICVar* pVar)
+		{
+			if (!pVar)
+				return;
+
+			const char* language = pVar->GetString();
+			if (!language || !language[0])
+				return;
+
+			ILocalizationManager* pLoc = gEnv->pSystem->GetLocalizationManager();
+			if (pLoc)
+			{
+				pLoc->ChangeLanguage(language);
+			}
+		}
+	);
+
+	const char* lang = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
+	mp_language->Set(lang);
+
+	pConsole->RegisterAutoComplete(
+		"mp_language",
+		[]() -> IConsoleArgumentAutoComplete*
+		{
+			struct AutoComplete final : IConsoleArgumentAutoComplete
+			{
+				std::vector<const char*> values;
+
+				AutoComplete()
+				{
+					ILocalizationManager* pLoc = gEnv->pSystem->GetLocalizationManager();
+					if (!pLoc)
+						return;
+
+					const char* languages[] =
+					{
+						"English",
+						"Czech",
+						"French",
+						"German",
+						"Hungarian",
+						"Italian",
+						"Japanese",
+						"Chinese",
+						"Korean",
+						"Polish",
+						"Russian",
+						"Spanish",
+						"Turkish",
+						"Thai",
+					};
+
+					values.reserve(std::size(languages));
+
+					for (const char* lang : languages)
+					{
+						if (pLoc->LanguageExists(lang))
+						{
+							values.emplace_back(lang);
+						}
+					}
+				}
+
+				int GetCount() const override
+				{
+					return static_cast<int>(values.size());
+				}
+
+				const char* GetValue(int index) const override
+				{
+					return values[index];
+				}
+			};
+
+			static AutoComplete s_instance;
+			return &s_instance;
+		}()
+	);
+
 }
 
 //------------------------------------------------------------------------
@@ -954,13 +1159,23 @@ void SCVars::ReleaseCVars()
 	pConsole->UnregisterVariable("aim_assistCrosshairSize", true);
 	pConsole->UnregisterVariable("aim_assistCrosshairDebug", true);
 
+	pConsole->UnregisterVariable("hud_teamPreview3D", true);
+	pConsole->UnregisterVariable("hud_teamPreviewDistance", true);
+	pConsole->UnregisterVariable("hud_teamUSAnim", true);
+	pConsole->UnregisterVariable("hud_teamNKAnim", true);
+	pConsole->UnregisterVariable("hud_teamUSHover", true);
+	pConsole->UnregisterVariable("hud_teamNKHover", true);
 	pConsole->UnregisterVariable("mp_crymp", true);
 	pConsole->UnregisterVariable("mp_circleJump", true);
 	pConsole->UnregisterVariable("mp_wallJump", true);
+	pConsole->UnregisterVariable("mp_strafeJump", true);
 	pConsole->UnregisterVariable("mp_flyMode", true);
 	pConsole->UnregisterVariable("mp_messageCenterColor", true);
 	pConsole->UnregisterVariable("mp_radioTagging", true);
 	pConsole->UnregisterVariable("mp_healthBars", true);
+	pConsole->UnregisterVariable("mp_fpsLimit", true);
+	pConsole->UnregisterVariable("mp_chat", true);
+	pConsole->UnregisterVariable("cl_hud_chat", true);
 }
 
 //------------------------------------------------------------------------
@@ -1027,6 +1242,19 @@ void CGame::RegisterConsoleCommands()
 
 	m_pConsole->AddCommand("g_battleDust_reload", CmdBattleDustReload, 0, "Reload the battle dust parameters xml");
 	m_pConsole->AddCommand("preloadforstats", "PreloadForStats()", VF_CHEAT, "Preload multiplayer assets for memory statistics.");
+
+	m_pConsole->AddCommand("reloadhud",
+		[](IConsoleCmdArgs* pArgs)
+		{
+			CryLogAlways("Reloading HUD (Flash instances)...");
+			if (g_pGame)
+			{
+				g_pGame->ReloadFlashInstances();
+			}
+		},
+		0,
+		"Reloads HUD Flash instances"
+	);
 }
 
 //------------------------------------------------------------------------
@@ -1068,6 +1296,8 @@ void CGame::UnregisterConsoleCommands()
 
 	// variables from CHUDCommon
 	m_pConsole->RemoveCommand("ShowGODMode");
+
+	m_pConsole->RemoveCommand("reloadhud");
 }
 
 //------------------------------------------------------------------------
@@ -1187,7 +1417,7 @@ void CGame::CmdKill(IConsoleCmdArgs* pArgs)
 	if (pGameRules)
 	{
 		HitInfo suicideInfo(pClientActor->GetEntityId(), pClientActor->GetEntityId(), pClientActor->GetEntityId(),
-			-1, 0, 0, -1, 0, ZERO, ZERO, ZERO);
+			-1, 0, 0, -1, 0, {}, {}, {});
 		suicideInfo.SetDamage(10000);
 
 		pGameRules->ClientHit(suicideInfo);
@@ -1212,7 +1442,7 @@ void CGame::CmdVehicleKill(IConsoleCmdArgs* pArgs)
 	if (pGameRules)
 	{
 		HitInfo suicideInfo(pVehicle->GetEntityId(), pVehicle->GetEntityId(), pVehicle->GetEntityId(),
-			-1, 0, 0, -1, 0, pVehicle->GetEntity()->GetWorldPos(), ZERO, ZERO);
+			-1, 0, 0, -1, 0, pVehicle->GetEntity()->GetWorldPos(), {}, {});
 		suicideInfo.SetDamage(10000);
 
 		pGameRules->ClientHit(suicideInfo);

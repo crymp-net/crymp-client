@@ -8,8 +8,20 @@
 #include "Library/WinAPI.h"
 #include "Library/StringTools.h"
 
+#include "CryGame/GameCVars.h"
+
 #include "HUDTextChat.h"
 #include "HUD.h"
+#include "HUDRadar.h"
+
+// old chat behavior
+#define CHAT_BEHAVIOR_OLD 0
+// new chat behavior without server explicitly support (resort to !pm)
+#define CHAT_BEHAVIOR_NEW_WITHOUT_SERVER_SUPPORT 1
+// new chat behavior with partial server support (send message directly)
+#define CHAT_BEHAVIOR_NEW_WITH_PARTIAL_SERVER_SUPPORT 2
+// new chat behavior with full server support (server sends message also to originator)
+#define CHAT_BEHAVIOR_NEW_WITH_FULL_SERVER_SUPPORT 3
 
 void CHUDTextChat::History::Add(const std::wstring& message)
 {
@@ -116,10 +128,67 @@ void CHUDTextChat::Update(float deltaTime)
 		}
 	}
 
-	if (m_inputText != m_lastInputText)
+	if (m_inputText != m_lastInputText 
+		|| m_chatTarget != m_lastChatTarget 
+		|| m_lastChatPMTargetId != m_chatPMTargetId 
+		|| m_cursor != m_lastCursor
+		|| m_forceUpdate)
 	{
-		m_flashChat->Invoke("setInputText", StringTools::ToUtf8(m_inputText).c_str());
+		std::wstring prefixTag = L"";
+
+		// Compute chat prefix tag if in PM mode
+		if (m_chatTarget == eCT_PM && m_chatPMTargetId) {
+			if (gEnv->pEntitySystem->GetEntity(m_chatPMTargetId)) {
+				prefixTag = L"[To " + StringTools::ToWide(gEnv->pEntitySystem->GetEntity(m_chatPMTargetId)->GetName()) + L"] ";
+			} else {
+				m_chatTarget = eCT_All;
+				m_chatPMTargetId = 0;
+				m_flashChat->Invoke("setShowGlobalChat");
+			}
+		}
+
+		std::wstring fullWText = prefixTag + m_inputText;
+
+		// If we exceed the length, then cut the text and put ... accordingly
+		if (fullWText.length() > MAX_MESSAGE_LENGTH) {
+			const std::wstring ellipsis = L"...";
+			const std::size_t prefixLen = prefixTag.length();
+			const std::size_t availableSpace = MAX_MESSAGE_LENGTH - prefixLen;
+
+			// Adjust cursor relative to the start of the actual message
+			// m_cursor is assumed to be the index within m_inputText
+			std::size_t start = 0;
+			if (m_cursor > (availableSpace / 2)) {
+				start = m_cursor - (availableSpace / 2);
+			}
+
+			// Clamp start to ensure we don't overflow the end of the string
+			if (start + availableSpace > m_inputText.length()) {
+				start = (m_inputText.length() > availableSpace) ? (m_inputText.length() - availableSpace) : 0;
+			}
+
+			std::wstring midSection = m_inputText.substr(start, availableSpace);
+
+			// Apply ellipsis markers
+			if (start > 0 && midSection.length() >= 3) {
+				midSection.replace(0, 3, ellipsis);
+			}
+			if (start + availableSpace < m_inputText.length() && midSection.length() >= 3) {
+				midSection.replace(midSection.length() - 3, 3, ellipsis);
+			}
+
+			fullWText = prefixTag + midSection;
+		}
+
+		// Convert back to UTF-8 and set text in Flash
+		std::string finalTagUtf8 = StringTools::ToUtf8(fullWText);
+		m_flashChat->Invoke("setInputText", finalTagUtf8.c_str());
+
 		m_lastInputText = m_inputText;
+		m_lastChatTarget = m_chatTarget;
+		m_lastChatPMTargetId = m_chatPMTargetId;
+		m_lastCursor = m_cursor;
+		m_forceUpdate = false;
 	}
 }
 
@@ -241,24 +310,54 @@ void CHUDTextChat::HandleFSCommand(const char* command, const char* args)
 	}
 }
 
-void CHUDTextChat::AddChatMessage(EntityId sourceId, const wchar_t* msg, int teamFaction, bool teamChat)
+void CHUDTextChat::AddChatMessage(EntityId sourceId, EntityId targetId, const wchar_t* msg, int teamFaction, bool teamChat)
 {
-	IEntity* source = gEnv->pEntitySystem->GetEntity(sourceId);
-	const char* nick = source ? source->GetName() : "";
-
-	this->AddChatMessage(nick, msg, teamFaction, teamChat);
-}
-
-
-void CHUDTextChat::AddChatMessage(EntityId sourceId, const char* msg, int teamFaction, bool teamChat)
-{
+	EntityId clientId = g_pGame->GetIGameFramework()->GetClientActorId();
 	IEntity* pSource = gEnv->pEntitySystem->GetEntity(sourceId);
-	const char* nick = pSource ? pSource->GetName() : "";
 
-	this->AddChatMessage(nick, msg, teamFaction, teamChat);
+	std::string strNick{ pSource ? pSource->GetName() : "" };
+	// wrap player name in [From/To] envelope if the server at least partially supports new PM system
+	if (targetId && g_pGameCVars->mp_chat >= CHAT_BEHAVIOR_NEW_WITH_PARTIAL_SERVER_SUPPORT) {
+		IEntity* pTarget = gEnv->pEntitySystem->GetEntity(targetId);
+		if (pTarget) {
+			if (sourceId == clientId) {
+				strNick = std::string{ "[To " } + pTarget->GetName() + "]";
+			} else if(pSource && !strcmp(pSource->GetClass()->GetName(), "Player")) {
+				strNick = std::string{ "[From " } + strNick + "]";
+			}
+		}
+	}
+
+	if (CanSeeMessageFrom(pSource)) {
+		this->AddChatMessage(strNick.c_str(), targetId, msg, teamFaction, teamChat);
+	}
 }
 
-void CHUDTextChat::AddChatMessage(const char* nick, const wchar_t* msg, int teamFaction, bool teamChat)
+
+void CHUDTextChat::AddChatMessage(EntityId sourceId, EntityId targetId, const char* msg, int teamFaction, bool teamChat)
+{
+	EntityId clientId = g_pGame->GetIGameFramework()->GetClientActorId();
+	IEntity* pSource = gEnv->pEntitySystem->GetEntity(sourceId);
+
+	std::string strNick{ pSource ? pSource->GetName() : "" };
+	// wrap player name in [From/To] envelope if the server at least partially supports new PM system
+	if (targetId && g_pGameCVars->mp_chat >= CHAT_BEHAVIOR_NEW_WITH_PARTIAL_SERVER_SUPPORT) {
+		IEntity* pTarget = gEnv->pEntitySystem->GetEntity(targetId);
+		if (pTarget) {
+			if (sourceId == clientId) {
+				strNick = std::string{ "[To " } + pTarget->GetName() + "]";
+			} else if (pSource && !strcmp(pSource->GetClass()->GetName(), "Player")) {
+				strNick = std::string{ "[From " } + strNick + "]";
+			}
+		}
+	}
+
+	if (CanSeeMessageFrom(pSource)) {
+		this->AddChatMessage(strNick.c_str(), targetId, msg, teamFaction, teamChat);
+	}
+}
+
+void CHUDTextChat::AddChatMessage(const char* nick, EntityId targetId, const wchar_t* msg, int teamFaction, bool teamChat)
 {
 	if (!m_flashChat)
 	{
@@ -278,7 +377,7 @@ void CHUDTextChat::AddChatMessage(const char* nick, const wchar_t* msg, int team
 	}
 }
 
-void CHUDTextChat::AddChatMessage(const char* nick, const char* msg, int teamFaction, bool teamChat)
+void CHUDTextChat::AddChatMessage(const char* nick, EntityId targetId, const char* msg, int teamFaction, bool teamChat)
 {
 	if (!m_flashChat)
 	{
@@ -319,20 +418,40 @@ void CHUDTextChat::OpenChat(int type)
 	m_flashChat->Invoke("setVisibleChatBox", 1);
 	m_flashChat->Invoke("GamepadAvailable", m_showVirtualKeyboard);
 
-	if (type == 2)
-	{
-		m_teamChat = true;
-		m_flashChat->Invoke("setShowTeamChat");
+	if (g_pGameCVars->mp_chat == CHAT_BEHAVIOR_OLD) {
+		if (type == 2)
+		{
+			m_chatTarget = IsFFA() ? eCT_All : eCT_Team;
+		}
+		else {
+			m_chatTarget = eCT_All;
+		}
 	}
-	else
-	{
-		m_teamChat = false;
+	else {
+		if (m_chatTarget != eCT_PM) {
+			if (type == 2)
+			{
+				m_chatTarget = IsFFA() ? eCT_All : eCT_Team;
+			}
+			else {
+				m_chatTarget = eCT_All;
+			}
+		}
+	}
+	
+
+	if (m_chatTarget == eCT_All) {
 		m_flashChat->Invoke("setShowGlobalChat");
+	} else if (m_chatTarget == eCT_PM) {
+		m_flashChat->Invoke("setShowPMChat");
+	} else {
+		m_flashChat->Invoke("setShowTeamChat");
 	}
 
 	m_repeatEvent = SInputEvent();
 	m_inputText.clear();
 	m_cursor = 0;
+	m_forceUpdate = true;
 
 	m_history.ResetSelection();
 }
@@ -417,15 +536,48 @@ void CHUDTextChat::Flush()
 
 	if (!m_inputText.empty())
 	{
-		const EChatMessageType chatType = m_teamChat ? eChatToTeam : eChatToAll;
+		EntityId targetId = 0;
+		EChatMessageType chatType = eChatToAll;
+		switch (m_chatTarget) {
+		case eCT_All:
+			chatType = eChatToAll;
+			break;
+		case eCT_Team:
+			chatType = eChatToTeam;
+			break;
+		case eCT_PM:
+			chatType = eChatToTarget;
+			targetId = m_chatPMTargetId;
+			break;
+		}
+
+		std::string prefix{};
 		const EntityId senderID = m_pHUD->m_pClientActor->GetEntityId();
+
+		// in case improved chat is enabled, but server doesn't support handling it or doesn't specify how to handle it
+		// use !pm system that most of SSMs support
+		if (chatType == eChatToTarget && g_pGameCVars->mp_chat == CHAT_BEHAVIOR_NEW_WITHOUT_SERVER_SUPPORT) {
+			IEntity* pTarget = gEnv->pEntitySystem->GetEntity(targetId);
+			if (pTarget) {
+				targetId = 0;
+				chatType = eChatToAll;
+				prefix = std::string{ "!pm " } + pTarget->GetName() + " ";
+			}
+		}
 
 		m_pHUD->m_pGameRules->SendChatMessage(
 			chatType,
 			senderID,
-			0,
-			StringTools::ToUtf8(m_inputText).c_str()
+			targetId,
+			(prefix + StringTools::ToUtf8(m_inputText)).c_str()
 		);
+
+		// delivery of messages is handled by servers and most of servers don't or won't implement
+		// delivering outgoing message to target back to sender, to handle that
+		// force displaying outgoing PM here manually
+		if (chatType == eChatToTarget && g_pGameCVars->mp_chat == CHAT_BEHAVIOR_NEW_WITH_PARTIAL_SERVER_SUPPORT) {
+			AddChatMessage(senderID, targetId, m_inputText.c_str(), 0, false);
+		}
 
 		m_history.Add(m_inputText);
 
@@ -479,6 +631,9 @@ void CHUDTextChat::ProcessInput(const SInputEvent& event)
 	{
 		this->Paste();
 	}
+	else if (event.keyId == eKI_Tab) {
+		this->RotateTarget();
+	}
 }
 
 void CHUDTextChat::VirtualKeyboardInput(const char* direction)
@@ -487,4 +642,113 @@ void CHUDTextChat::VirtualKeyboardInput(const char* direction)
 	{
 		m_flashChat->Invoke("moveCursor", direction);
 	}
+}
+
+void CHUDTextChat::RotateTarget() {
+	if (g_pGameCVars->mp_chat == CHAT_BEHAVIOR_OLD) {
+		return;
+	}
+
+	bool isFFA = IsFFA();
+
+	if (m_chatTarget == eCT_All && !isFFA) {
+		// we move from ALL to TEAM only if match isn't FFA
+		// if the match is FFA, we rotate directly to PMs
+		m_chatTarget = eCT_Team;
+		m_chatPMTargetId = 0;
+		m_flashChat->Invoke("setShowTeamChat");
+	}
+	else if (m_chatTarget == eCT_Team || (m_chatTarget == eCT_All && isFFA)) {
+		// we move from TEAM to PMs (first selected player)
+		// optionally this applies also when in FFA ALL
+		m_chatTarget = eCT_PM;
+		std::vector<EntityId> players = GetSelectedTeamMates();
+		if (players.size() > 0) {
+			m_chatTarget = eCT_PM;
+			m_chatPMTargetId = players.at(0);
+			m_flashChat->Invoke("setShowPMChat");
+		} else {
+			m_chatTarget = eCT_All;
+			m_chatPMTargetId = 0;
+			m_flashChat->Invoke("setShowGlobalChat");
+		}
+	}
+	else if (m_chatTarget == eCT_PM) {
+		// if already in PM and requested PM, rotate to next player, if there is no next player, rotate to ALL
+		std::vector<EntityId> players = GetSelectedTeamMates();
+		if (players.size() > 0) {
+			size_t atNow = -1;
+			for (size_t i = 0; i < players.size(); i++) {
+				if (players.at(i) == m_chatPMTargetId) {
+					atNow = i;
+					break;
+				}
+			}
+			if (atNow == -1) {
+				// previously selected player probably left
+				m_chatTarget = eCT_PM;
+				m_chatPMTargetId = players.at(0);
+				m_flashChat->Invoke("setShowPMChat");
+			} else if (atNow >= 0 && atNow < players.size() - 1) {
+				// rotate to next selected player
+				m_chatTarget = eCT_PM;
+				m_chatPMTargetId = players.at(atNow + 1);
+				m_flashChat->Invoke("setShowPMChat");
+			} else {
+				// we rotated past last selected player and go back to ALL
+				m_chatTarget = eCT_All;
+				m_chatPMTargetId = 0;
+				m_flashChat->Invoke("setShowGlobalChat");
+			}
+		} else {
+			// if there is no players, we fallback to ALL
+			m_chatTarget = eCT_All;
+			m_chatPMTargetId = 0;
+			m_flashChat->Invoke("setShowGlobalChat");
+		}
+	}
+}
+
+bool CHUDTextChat::CanSeeMessageFrom(const IEntity* pSource) {
+	IGameFramework* pFW = g_pGame->GetIGameFramework();
+	EntityId clientActorId = pFW->GetClientActorId();
+
+	IVoiceContext* pVoiceContext = pFW->GetNetContext()->GetVoiceContext();
+	if (pSource && pVoiceContext && pVoiceContext->IsMuted(clientActorId, pSource->GetId())) {
+		return false;
+	}
+
+	if (g_pGameCVars->cl_hud_chat == 1) {
+		return true;
+	} else {
+		// if cl_hud_chat is disabled, then player cannot see messages from other players
+		if (
+			pSource 
+			&& !strcmp(pSource->GetClass()->GetName(), "Player") 
+			&& pSource->GetId() != clientActorId
+		) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+}
+
+bool CHUDTextChat::IsFFA()
+{
+	return g_pGame->GetGameRules()->GetTeamCount() < 2;
+}
+
+std::vector<EntityId> CHUDTextChat::GetSelectedTeamMates() 
+{
+	std::vector<EntityId> mates;
+	auto players = m_pHUD->GetRadar()->GetSelectedTeamMates();
+	if (players) {
+		for (EntityId id : *players) {
+			if (gEnv->pEntitySystem->GetEntity(id)) {
+				mates.push_back(id);
+			}
+		}
+	}
+	return mates;
 }

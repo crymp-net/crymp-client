@@ -439,6 +439,7 @@ struct SCVars
 	int			mp_crymp;
 	float		mp_circleJump;
 	float		mp_wallJump;
+	int			mp_strafeJump;
 	int			mp_flyMode;
 	int			mp_pickupObjects;
 	int			mp_pickupVehicles;
@@ -483,8 +484,24 @@ struct SCVars
 	float		mp_abandonTime;
 	float		mp_explosiveRemovalTime;
 	int         mp_explosion_mfx;
+	int			mp_fpsLimit;
+	float		mp_soundSpeed;
+	float       mp_cloakVisibility;
+	int         mp_missileApproachSound;
+	ICVar*      mp_language;
+
+	int			mp_chat;
+	int			cl_hud_chat;
 
 	int			ads;
+
+	ICVar* pHudTeamUSAnim;
+	ICVar* pHudTeamNKAnim;
+	ICVar* pHudTeamUSHover;
+	ICVar* pHudTeamNKHover;
+
+	float       hud_scale;
+	int         hud_maxGrenadeIndicators;
 
 	SCVars();
 	~SCVars();

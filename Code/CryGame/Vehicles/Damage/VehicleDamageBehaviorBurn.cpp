@@ -21,7 +21,7 @@ History:
 CVehicleDamageBehaviorBurn::~CVehicleDamageBehaviorBurn()
 {
 	if (gEnv->pAISystem)
-	  gEnv->pAISystem->RegisterDamageRegion(this, Sphere(ZERO, -1.0f)); // disable
+	  gEnv->pAISystem->RegisterDamageRegion(this, Sphere(Vec3(), -1.0f)); // disable
 }
 
 
@@ -89,7 +89,7 @@ void CVehicleDamageBehaviorBurn::Activate(bool activate)
     m_timerId = -1;
 
 		if (gEnv->pAISystem)
-	    gEnv->pAISystem->RegisterDamageRegion(this, Sphere(ZERO, -1.0f)); // disable
+	    gEnv->pAISystem->RegisterDamageRegion(this, Sphere(Vec3(), -1.0f)); // disable
   }
 
   m_isActive = activate;
@@ -143,7 +143,7 @@ void CVehicleDamageBehaviorBurn::Update(const float deltaTime)
 				worldPos = m_pVehicle->GetEntity()->GetWorldTM().GetTranslation();
 
       SEntityProximityQuery query;
-      query.box = AABB(worldPos-Vec3(m_radius), worldPos+Vec3(m_radius));
+      query.box = AABB(worldPos-Vec3(m_radius, m_radius, m_radius), worldPos+Vec3(m_radius, m_radius, m_radius));
       gEnv->pEntitySystem->QueryProximity(query);
 
       IEntity* pEntity = 0;

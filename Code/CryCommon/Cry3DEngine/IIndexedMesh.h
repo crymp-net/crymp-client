@@ -604,7 +604,8 @@ public:
 private:
 	void *ReAllocElements(void *old_ptr,int new_elem_num, int size_of_element)
 	{
-		return CryRealloc(old_ptr,new_elem_num*size_of_element);
+		std::size_t allocatedSize = 0;
+		return CryRealloc(old_ptr,new_elem_num*size_of_element,allocatedSize);
 	}
 };
 

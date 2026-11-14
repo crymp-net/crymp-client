@@ -1,4 +1,5 @@
 #pragma once
+
 #include <array>
 #include <map>
 #include <optional>
@@ -7,6 +8,7 @@
 #include <utility>
 
 #include "CryCommon/CryMath/Cry_Math.h"
+#include "CryCommon/Cry3DEngine/I3DEngine.h"
 
 struct WeatherVariable {
 	float value;
@@ -32,12 +34,12 @@ class CWeatherSystem {
 	};
 
 	bool                          m_enabled = false;
-	string                        m_lastTodXmlPath;
+	std::string                   m_lastTodXmlPath;
 	std::map<int, float[3]>       m_originalWeatherValues;
 	std::optional<Vec3>           m_originalWind;
 	std::map<int, IStatInstGroup> m_originalGroups;
 
-	std::map<int, string>                                 m_activeValues;
+	std::map<int, std::string>                            m_activeValues;
 	std::set<std::string>                                 m_activeEffects;
 	std::optional<unsigned>                               m_activeMask;
 	std::map<std::string, std::vector<IParticleEmitter*>> m_activeEmitters;
@@ -45,10 +47,15 @@ class CWeatherSystem {
 	float m_time;
 	float m_lastUpdate;
 
+	int m_todCallbackId;
+
 	static bool tod_hooked;
 	static constexpr int WEATHER_NAMESPACE = 2000;
 	static constexpr int WEATHER_ENV_NAMESPACE = 2100;
 	static constexpr int WEATHER_TOD_PATH_ID = 2300;
+	static constexpr int WEATHER_TOD_BLEND_DURATION_SECONDS_ID = 2301;
+	static constexpr int WEATHER_TOD_SHOW_CLOCK_BAR_ID = 2302;
+	static constexpr int WEATHER_TOD_SHOW_BLEND_BAR_ID = 2303;
 
 	static constexpr std::array<EERType, 1> static_entities = {
 		eERType_Brush,
@@ -56,12 +63,17 @@ class CWeatherSystem {
 
 public:
 	CWeatherSystem();
+	~CWeatherSystem();
 	void Update(float frameTime);
 	void Reset(bool deapply = true);
 
 	bool IsFrozen() const;
 	bool IsWet() const;
+	void PostUpdate();
+
+	void OnTODUpdate(bool interpolate, bool force);
 private:
+
 	bool SetWeatherVariable(int variableId, float value, bool interpolate = true, bool update = false);
 	bool SetWeatherVariable(int variableId, float x, float y, float z, bool update = false);
 	std::optional<WeatherVariable> GetWeatherVariable(int variableId);
@@ -78,11 +90,15 @@ private:
 	void ApplyLayer(unsigned layer);
 	void RemoveLayer(unsigned layer);
 
-	// Hook functions
-	void TODUpdate(bool interpolate, bool force);
 
 	// Utility functions
 	std::string GetFrozenGrassName(std::string_view path);
 	std::string GetNormalGrassName(std::string_view path);
 	SEffectInfo GetEffectInfo(std::string_view effect);
+
+	std::string m_cachedTodXmlPath;
+	std::string m_cachedTodXmlName;
+
+	void UpdateTodXmlNameCache(std::string_view xmlPath);
+	std::string_view GetTodXmlName(std::string_view xmlPath) const;
 };

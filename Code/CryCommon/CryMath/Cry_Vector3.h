@@ -10,25 +10,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#ifndef VECTOR_H
-#define VECTOR_H
-
-#if _MSC_VER > 1000
-# pragma once
-#endif
-
-
-// some constants
-template<typename T> struct Vec3_tpl;
-
-template<typename T> struct Vec3Constants
-{
-	static const Vec3_tpl<T> fVec3_Zero;
-	static const Vec3_tpl<T> fVec3_OneX;
-	static const Vec3_tpl<T> fVec3_OneY;
-	static const Vec3_tpl<T> fVec3_OneZ;
-  static const Vec3_tpl<T> fVec3_One;
-};
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,35 +21,19 @@ template<typename T> struct Vec3Constants
 ///////////////////////////////////////////////////////////////////////////////
 template <typename F> struct Vec3_tpl
 {
+	F x{};
+	F y{};
+	F z{};
 
-	F x,y,z;
-
-#ifdef _DEBUG
-	ILINE Vec3_tpl() 
-	{
-		if (sizeof(F)==4)
-		{
-			uint32* p=(uint32*)&x;		p[0]=F32NAN;	p[1]=F32NAN; p[2]=F32NAN;
-		}
-		if (sizeof(F)==8)
-		{
-			uint64* p=(uint64*)&x;		p[0]=F64NAN;	p[1]=F64NAN; p[2]=F64NAN;
-		}
-	}
-#else
-	ILINE Vec3_tpl()	{};
-#endif
-
+	Vec3_tpl() = default;
 
 	/*!
 	* template specailization to initialize a vector 
 	* 
 	* Example:
-	*  Vec3 v0=Vec3(ZERO);
 	*  Vec3 v1=Vec3(MIN);
 	*  Vec3 v2=Vec3(MAX);
 	*/
-	Vec3_tpl(type_zero) : x(0),y(0),z(0) {}
 	Vec3_tpl(type_min);
 	Vec3_tpl(type_max);
 
@@ -82,8 +48,6 @@ template <typename F> struct Vec3_tpl
 	ILINE Vec3_tpl( F vx, F vy, F vz ) : x(vx),y(vy),z(vz){ assert(this->IsValid()); }
 	ILINE void operator () ( F vx, F vy, F vz ) { x=vx; y=vy; z=vz; assert(this->IsValid()); }
 	ILINE Vec3_tpl<F>& Set(const F xval,const F yval, const F zval) { x=xval; y=yval; z=zval; assert(this->IsValid()); return *this; }
-
-	explicit Vec3_tpl( F f ) : x(f),y(f),z(f) { assert(this->IsValid()); }
 
 	/*!
 	* the copy/casting/assignement constructor 
@@ -223,7 +187,7 @@ template <typename F> struct Vec3_tpl
 	//! normalize the vector
 	// check for null vector - set to the passed in vector (which should be normalised!) if it is null vector
 	// returns the original length of the vector
-	ILINE F NormalizeSafe(const struct Vec3_tpl<F>& safe = Vec3Constants<F>::fVec3_Zero) 
+	ILINE F NormalizeSafe(const Vec3_tpl<F>& safe = {})
 	{ 
 		assert(this->IsValid()); 
 		F fLen2 = x*x+y*y+z*z;
@@ -248,7 +212,7 @@ template <typename F> struct Vec3_tpl
 	}
 
 	//! return a safely normalized vector - returns safe vector (should be normalised) if original is zero length
-	ILINE Vec3_tpl GetNormalizedSafe(const struct Vec3_tpl<F>& safe = Vec3Constants<F>::fVec3_OneX) const 
+	ILINE Vec3_tpl GetNormalizedSafe(const Vec3_tpl& safe = Vec3_tpl(1, 0, 0)) const
 	{ 
 		F fLen2 = x*x+y*y+z*z;	
 		if (fLen2 > 0.0f)
@@ -425,20 +389,13 @@ template <typename F> struct Vec3_tpl
 		return( Vec3_tpl( x * rhs.x, y * rhs.y, z * rhs.z ) ); 
 	}
 
-	//DEPRICATED ILINE friend F GetDistance(const Vec3_tpl<F> &vec1, const Vec3_tpl<F> &vec2) { 
-		//return  sqrt_tpl((vec2.x-vec1.x)*(vec2.x-vec1.x)+(vec2.y-vec1.y)*(vec2.y-vec1.y)+(vec2.z-vec1.z)*(vec2.z-vec1.z)); 
-	//}	
-	//DEPRICATED ILINE friend F	GetSquaredDistance(const Vec3_tpl<F> &vec1, const Vec3_tpl<F> &vec2)	{		
-		//return (vec2.x-vec1.x)*(vec2.x-vec1.x)+(vec2.y-vec1.y)*(vec2.y-vec1.y)+(vec2.z-vec1.z)*(vec2.z-vec1.z);
-	//}
 	//three methods for a "dot-product" operation
 	ILINE F Dot (const Vec3_tpl<F> &vec2)	const	{ return x*vec2.x + y*vec2.y + z*vec2.z; }
 	//two methods for a "cross-product" operation
 	ILINE Vec3_tpl<F> Cross (const Vec3_tpl<F> &vec2) const	{	return Vec3_tpl<F>( y*vec2.z  -  z*vec2.y,     z*vec2.x -    x*vec2.z,   x*vec2.y  -  y*vec2.x); 	}	
 
-	//f32* fptr=vec;
-	DEPRICATED operator F* ()					{ return (F*)this; }
-	template <class T>	explicit DEPRICATED Vec3_tpl(const T *src) { x=src[0]; y=src[1]; z=src[2]; }
+	explicit operator F*() { return reinterpret_cast<F*>(this); }
+	static Vec3_tpl FromPtr(F* p) { return Vec3_tpl(p[0], p[1], p[2]); }
 
 	ILINE Vec3_tpl& zero() { x=y=z=0; return *this; }
 	ILINE F len() const { return sqrt_tpl(x*x+y*y+z*z); }
@@ -614,26 +571,12 @@ inline Vec3 SphereRandom(float fRadius)
 ///////////////////////////////////////////////////////////////////////////////
 template <typename F> struct Vec4_tpl
 {
-	F x,y,z,w;
+	F x{};
+	F y{};
+	F z{};
+	F w{};
 
-#ifdef _DEBUG
-	ILINE Vec4_tpl() 
-	{
-		if (sizeof(F)==4)
-		{
-			uint32* p=(uint32*)&x;		p[0]=F32NAN;	p[1]=F32NAN; p[2]=F32NAN; p[3]=F32NAN;
-		}
-		if (sizeof(F)==8)
-		{
-			uint64* p=(uint64*)&x;		p[0]=F64NAN;	p[1]=F64NAN; p[2]=F64NAN; p[3]=F64NAN;
-		}
-	
-	}
-#else
-	ILINE Vec4_tpl()	{};
-#endif
-
-
+	Vec4_tpl() = default;
 
 	ILINE Vec4_tpl( F vx, F vy, F vz, F vw ) { x=vx; y=vy; z=vz; w=vw; };
 	ILINE Vec4_tpl( const Vec3_tpl<F> &v, F vw ) {  x=v.x; y=v.y; z=v.z; w=vw; };
@@ -643,18 +586,6 @@ template <typename F> struct Vec4_tpl
 
 	ILINE F &operator [] (int index)		  { assert(index>=0 && index<=3); return ((F*)this)[index]; }
 	ILINE F operator [] (int index) const { assert(index>=0 && index<=3); return ((F*)this)[index]; }
-
-
-
-
-
-
-
-
-
-
-
-
 
 	ILINE Vec4_tpl<F> operator * (F k) const 
 	{ 
@@ -807,29 +738,14 @@ ILINE Vec4_tpl<F1> operator / (const Vec4_tpl<F1> &v0, const Vec4_tpl<F2> &v1)
 
 template <typename F> struct Ang3_tpl
 {
-	F x,y,z;
+	F x{};
+	F y{};
+	F z{};
 
-#ifdef _DEBUG
-	ILINE Ang3_tpl() 
-	{
-		if (sizeof(F)==4)
-		{
-			uint32* p=(uint32*)&x;		p[0]=F32NAN;	p[1]=F32NAN; p[2]=F32NAN;
-		}
-		if (sizeof(F)==8)
-		{
-			uint64* p=(uint64*)&x;		p[0]=F64NAN;	p[1]=F64NAN; p[2]=F64NAN;
-		}
-	}
-#else
-	ILINE Ang3_tpl()	{};
-#endif
-
-
-	Ang3_tpl(type_zero) { x=y=z=0; }
+	Ang3_tpl() = default;
 
 	void operator () ( F vx, F vy,F vz ) { x=vx; y=vy; z=vz; };
-	ILINE Ang3_tpl<F>( F vx, F vy, F vz )	{	x=vx; y=vy; z=vz;	}  
+	ILINE Ang3_tpl( F vx, F vy, F vz )	{	x=vx; y=vy; z=vz;	}
 
 	explicit ILINE Ang3_tpl(const Vec3_tpl<F>& v) : x((F)v.x), y((F)v.y), z((F)v.z) { assert(this->IsValid()); }
 
@@ -1024,13 +940,13 @@ ILINE f32 Snap_s180( f32 val ) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-template <typename F> struct AngleAxis_tpl {
+template <typename F> struct AngleAxis_tpl
+{
+	F angle{};
+	Vec3_tpl<F> axis{};
 
-	//! storage for the Angle&Axis coordinates.
-	F angle; Vec3_tpl<F> axis;
+	AngleAxis_tpl() = default;
 
-	// default quaternion constructor
-	AngleAxis_tpl( void ) { };
 	AngleAxis_tpl( F a, F ax, F ay, F az ) {  angle=a; axis.x=ax; axis.y=ay; axis.z=az; }
 	AngleAxis_tpl( F a, Vec3_tpl<F> &n ) { angle=a; axis=n; }
 	void operator () ( F a, const Vec3_tpl<F> &n ) {  angle=a; axis=n; }
@@ -1082,29 +998,13 @@ ILINE const Vec3_tpl<F> AngleAxis_tpl<F>::operator * ( const Vec3_tpl<F> &v ) co
 //////////////////////////////////////////////////////////////////////
 template<typename F> struct Plane_tpl
 {
-
 	//plane-equation: n.x*x + n.y*y + n.z*z + d > 0 is in front of the plane 
-	Vec3_tpl<F>	n;	//!< normal
-	F	d;						//!< distance
+	Vec3_tpl<F> n{}; //!< normal
+	F d{}; //!< distance
 
 	//----------------------------------------------------------------	 
 
-#ifdef _DEBUG
-	ILINE Plane_tpl() 
-	{
-		if (sizeof(F)==4)
-		{
-			uint32* p=(uint32*)&n.x;		p[0]=F32NAN;	p[1]=F32NAN; p[2]=F32NAN; p[3]=F32NAN;
-		}
-		if (sizeof(F)==8)
-		{
-			uint64* p=(uint64*)&n.x;		p[0]=F64NAN;	p[1]=F64NAN; p[2]=F64NAN; p[3]=F64NAN;
-		}
-	}
-#else
-	ILINE Plane_tpl()	{};
-#endif
-
+	Plane_tpl() = default;
 
 	ILINE Plane_tpl( const Plane_tpl<F> &p ) {	n=p.n; d=p.d; }
 	ILINE Plane_tpl( const Vec3_tpl<F> &normal, const F &distance ) {  n=normal; d=distance; }
@@ -1180,18 +1080,3 @@ template<typename F> struct Plane_tpl
 typedef Plane_tpl<f32>	Plane;
 typedef Plane_tpl<real>	Planer;
 typedef Plane_tpl<f64>	Plane_f64;
-
-//-----------------------------------------------------------------
-// define the constants
-
-template <typename T> const Vec3_tpl<T> Vec3Constants<T>::fVec3_Zero(0, 0, 0);
-template <typename T> const Vec3_tpl<T> Vec3Constants<T>::fVec3_OneX(1, 0, 0);
-template <typename T> const Vec3_tpl<T> Vec3Constants<T>::fVec3_OneY(0, 1, 0);
-template <typename T> const Vec3_tpl<T> Vec3Constants<T>::fVec3_OneZ(0, 0, 1);
-template <typename T> const Vec3_tpl<T> Vec3Constants<T>::fVec3_One(1, 1, 1);
-
-
-
-
-
-#endif //vector

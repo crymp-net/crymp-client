@@ -9,9 +9,9 @@ extern "C"
 #include <lauxlib.h>
 }
 
+#include <mimalloc.h>
 #include <tracy/Tracy.hpp>
 
-#include "CryCommon/CryCore/CryMalloc.h"
 #include "CryCommon/CrySystem/CryFile.h"
 #include "CryCommon/CrySystem/ISystem.h"
 #include "CryCommon/CrySystem/IConsole.h"
@@ -23,6 +23,100 @@ extern "C"
 #include "ScriptUtil.h"
 
 static lua_State *g_L = nullptr;
+
+//////////////////////
+// Safe Lua libs
+/////////////////////
+
+static int getboolfield(lua_State* L, const char* key) {
+	int res;
+	lua_getfield(L, -1, key);
+	res = lua_isnil(L, -1) ? -1 : lua_toboolean(L, -1);
+	lua_pop(L, 1);
+	return res;
+}
+
+
+static int getfield(lua_State* L, const char* key, int d) {
+	int res;
+	lua_getfield(L, -1, key);
+	if (lua_isnumber(L, -1))
+		res = (int)lua_tointeger(L, -1);
+	else {
+		if (d < 0)
+			return luaL_error(L, "field " LUA_QS " missing in date table", key);
+		res = d;
+	}
+	lua_pop(L, 1);
+	return res;
+}
+
+static int os_clock(lua_State* L) {
+	lua_pushnumber(L, ((lua_Number)clock()) / (lua_Number)CLOCKS_PER_SEC);
+	return 1;
+}
+
+static int os_time(lua_State* L) {
+	time_t t;
+	if (lua_isnoneornil(L, 1))  /* called without args? */
+		t = time(NULL);  /* get current time */
+	else {
+		struct tm ts;
+		luaL_checktype(L, 1, LUA_TTABLE);
+		lua_settop(L, 1);  /* make sure table is at the top */
+		ts.tm_sec = getfield(L, "sec", 0);
+		ts.tm_min = getfield(L, "min", 0);
+		ts.tm_hour = getfield(L, "hour", 12);
+		ts.tm_mday = getfield(L, "day", -1);
+		ts.tm_mon = getfield(L, "month", -1) - 1;
+		ts.tm_year = getfield(L, "year", -1) - 1900;
+		ts.tm_isdst = getboolfield(L, "isdst");
+		t = mktime(&ts);
+	}
+	if (t == (time_t)(-1))
+		lua_pushnil(L);
+	else
+		lua_pushnumber(L, (lua_Number)t);
+	return 1;
+}
+
+static const luaL_Reg oslib[] = {
+  {"clock",     os_clock},
+  {"time",      os_time},
+  {NULL, NULL}
+};
+
+/* }====================================================== */
+
+
+
+LUALIB_API int luaopen_safeos(lua_State* L) {
+	luaL_register(L, LUA_OSLIBNAME, oslib);
+	return 1;
+}
+
+
+static const luaL_Reg lualibs[] = {
+  {"", luaopen_base},
+  {LUA_TABLIBNAME, luaopen_table},
+  {LUA_OSLIBNAME, luaopen_safeos},
+  {LUA_STRLIBNAME, luaopen_string},
+  {LUA_MATHLIBNAME, luaopen_math},
+  {LUA_DBLIBNAME, luaopen_debug},
+  {NULL, NULL}
+};
+
+
+LUALIB_API void luaL_opensafelibs(lua_State* L) {
+	const luaL_Reg* lib = lualibs;
+	for (; lib->func; lib++) {
+		lua_pushcfunction(L, lib->func);
+		lua_pushstring(L, lib->name);
+		lua_call(L, 1, 0);
+	}
+}
+
+
 
 static HSCRIPTFUNCTION RefToFunctionHandle(int ref)
 {
@@ -73,8 +167,11 @@ void *ScriptSystem::Allocate(size_t size)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
 
-	// TODO: optimized memory allocator
-	void *block = CryMalloc(size);
+#ifdef CRYMP_ASAN
+	void *block = malloc(size);
+#else
+	void* block = mi_malloc(size);
+#endif
 	TracyAllocN(block, size, "ScriptSystem");
 
 	// we never fail
@@ -92,7 +189,11 @@ void ScriptSystem::Deallocate(void *block)
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_SCRIPT);
 
 	TracyFreeN(block, "ScriptSystem");
-	CryFree(block);
+#ifdef CRYMP_ASAN
+	free(block);
+#else
+	mi_free(block);
+#endif
 }
 
 void ScriptSystem::PushAny(const ScriptAnyValue & any)
@@ -957,9 +1058,15 @@ void ScriptSystem::LuaInit()
 	// set handler for errors in unprotected environment
 	lua_atpanic(m_L, ScriptSystem::PanicHandler);
 
-	// standard Lua libraries
-	luaL_openlibs(m_L);
-
+	if (!gEnv->pSystem->IsDedicated()) {
+		// safe Lua libraries
+		luaL_opensafelibs(m_L);
+	}
+	else {
+		// standard Lua libraries
+		CryLogAlways("$3[CryMP] Loading all Lua libraries");
+		luaL_openlibs(m_L);
+	}
 	// custom Lua libraries
 	bitlib_init(m_L);
 
@@ -1143,6 +1250,7 @@ void DumpLuaStackTrace(std::FILE* file) {
 		int level = 0;
 
 		std::fprintf(file, "Lua stack:\n");
+		std::fflush(file);
 
 		while (lua_getstack(g_L, level++, &ar) && lua_getinfo(g_L, "Sln", &ar))
 		{
@@ -1152,9 +1260,11 @@ void DumpLuaStackTrace(std::FILE* file) {
 				ar.what,
 				ar.namewhat,
 				ar.name);
+			std::fflush(file);
 		}
 		std::fflush(file);
 	} else {
 		std::fprintf(file, "Lua was already closed\n");
+		std::fflush(file);
 	}
 }

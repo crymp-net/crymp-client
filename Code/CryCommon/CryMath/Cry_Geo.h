@@ -242,7 +242,10 @@ struct AABB {
 	//! Reset Bounding box before calculating bounds.
 	//! These values ensure that Add() functions work correctly for Reset bbs, without additional testing.
 	inline void Reset()	
-		{	min = Vec3(9999999.0f);	max = Vec3(-9999999.0f);	}
+	{
+		min = Vec3(9999999.0f, 9999999.0f, 9999999.0f);
+		max = Vec3(-9999999.0f, -9999999.0f, -9999999.0f);
+	}
 
 	inline bool IsReset() const 
 		{ return min.x > max.x; }
@@ -255,7 +258,7 @@ struct AABB {
 		{ return (min+max)*0.5f; }
 
 	ILINE Vec3 GetSize() const 
-		{ return IsReset() ? Vec3(ZERO) : max-min; }
+		{ return IsReset() ? Vec3() : max-min; }
 
 	ILINE float GetRadius() const 
 		{ return IsReset() ? 0.f : (max-min).len()*0.5f; }

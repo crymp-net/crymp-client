@@ -2,6 +2,7 @@
 // Crytek Source File.
 // Copyright (C) Crytek GmbH, 2001-2008.
 // -------------------------------------------------------------------------
+#include "CryCommon/CryCore/CrySizer.h"
 #include "CryCommon/CrySystem/ISystem.h"
 #include "HUDObituary.h"
 #include "CryCommon/CryAction/IUIDraw.h"

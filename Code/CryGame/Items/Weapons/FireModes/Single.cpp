@@ -1419,7 +1419,7 @@ bool CSingle::Shoot(bool resetAnimation, bool autoreload, bool noSound)
 		g_shoots.push_back(shoot);*/
 
 
-	Vec3 tracerhit(ZERO);
+	Vec3 tracerhit;
 	static IPhysicalEntity* pSkipEnts[10];
 	int nSkip = GetSkipEntities(m_pWeapon, pSkipEnts, 10);
 	int intersect = gEnv->pPhysicalWorld->RayWorldIntersection(pos, dir * WEAPON_HIT_RANGE, ent_all,
@@ -1590,7 +1590,7 @@ Vec3 CSingle::GetFireHelperPos() const
 		return m_pWeapon->GetSlotHelperPos(slot, m_fireparams.helper[id].c_str(), true);
 	}
 
-	return Vec3(ZERO);
+	return {};
 }
 
 //------------------------------------------------------------------------
@@ -1721,8 +1721,8 @@ Vec3 CSingle::GetProbableHit(float range, bool* pbHit, ray_hit* pHit) const
 	else
 	{
 		// fallback    
-		pos = GetFiringPos(Vec3Constants<float>::fVec3_Zero);
-		dir = range * GetFiringDir(Vec3Constants<float>::fVec3_Zero, pos);
+		pos = GetFiringPos(Vec3());
+		dir = range * GetFiringDir(Vec3(), pos);
 	}
 
 	static ray_hit hit;
@@ -2067,7 +2067,7 @@ void CSingle::SetupEmitters(bool attach)
 		if (m_muzzleflash.helper[id].empty() && offset.GetLengthSquared() < 1e-6f)
 		{
 			IWeaponFiringLocator* pLocator = m_pWeapon->GetFiringLocator();
-			Vec3 locatorOffset(ZERO);
+			Vec3 locatorOffset;
 
 			if (pLocator && pLocator->GetFiringPos(m_pWeapon->GetEntityId(), this, locatorOffset))
 			{
@@ -2128,7 +2128,7 @@ void CSingle::MuzzleFlashEffect(bool attach, bool light, bool effect)
 			{
 				m_mflightId[id] = m_pWeapon->AttachLight(slot, 0, true, m_muzzleflash.light_radius[id],
 					m_muzzleflash.light_color[id], 1.0f, 0, 0, m_muzzleflash.light_helper[id].c_str());
-				//m_muzzleflash.light_color[id], Vec3Constants<float>::fVec3_One, 0, 0, m_muzzleflash.light_helper[id].c_str());
+				//m_muzzleflash.light_color[id], Vec3(1, 1, 1), 0, 0, m_muzzleflash.light_helper[id].c_str());
 			}
 
 			m_pWeapon->EnableLight(true, m_mflightId[id]);
@@ -2272,7 +2272,7 @@ void CSingle::SpinUpEffect(bool attach)
 			//CryLog("[%s] spinup effect (true)", m_pWeapon->GetEntity()->GetName());
 
 			m_suId = m_pWeapon->AttachEffect(slot, 0, true, m_spinup.effect[id].c_str(),
-				m_spinup.helper[id].c_str(), Vec3Constants<float>::fVec3_Zero, Vec3Constants<float>::fVec3_OneY, 1.0f, false);
+				m_spinup.helper[id].c_str(), Vec3(), Vec3(0, 1, 0), 1.0f, false);
 
 			//m_sulightId = m_pWeapon->AttachLight(slot, 0, true, m_spinup.light_radius[id], m_spinup.light_color[id], Vec3(1,1,1), 0, 0,
 			m_sulightId = m_pWeapon->AttachLight(slot, 0, true, m_spinup.light_radius[id], m_spinup.light_color[id], 1, 0, 0,
