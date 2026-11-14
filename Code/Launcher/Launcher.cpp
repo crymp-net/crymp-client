@@ -37,6 +37,11 @@
 #include "Resources.h"
 #include "StartupTime.h"
 
+#ifdef EDITOR_LAUNCHER //for editor
+//#include "CryMallocHook.h"
+#include "LauncherCommon.h"
+#endif
+
 #include "config.h"
 
 std::uintptr_t CRYACTION_BASE = 0;
@@ -62,7 +67,13 @@ void* g_pFmodEventNet = nullptr;
 bool g_hasC1Fmod = false;
 bool g_hasWarheadWarsFmod = false;
 
-static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
+#ifdef EDITOR_LAUNCHER
+void* g_pEditor = nullptr;
+void* g_pCryGame = nullptr;
+void* g_pXToolkitPro = nullptr;
+#endif
+
+/*static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
 {
 	using CrySystemEntry = ISystem* (*)(SSystemInitParams&);
 
@@ -76,6 +87,25 @@ static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
 	{
 		throw StringTools::ErrorFormat("CrySystem initialization failed!");
 	}
+}*/
+
+static void InitCrySystem(void* pCrySystem, SSystemInitParams& params)
+{
+    using CrySystemEntry = ISystem* (*)(SSystemInitParams&);
+
+    auto entry = reinterpret_cast<CrySystemEntry>(
+        WinAPI::DLL::GetSymbol(pCrySystem, "CreateSystemInterface")
+    );
+
+    if (!entry)
+    {
+        throw StringTools::ErrorFormat("The CrySystem DLL is not valid!");
+    }
+
+    if (!entry(params))
+    {
+        throw StringTools::ErrorFormat("CrySystem initialization failed!");
+    }
 }
 
 static void LogBytes(const char* message, std::size_t bytes)
@@ -1084,6 +1114,58 @@ void Launcher::InitWorkingDirectory()
 	WinAPI::SetWorkingDirectory(dir);
 }
 
+
+#ifdef EDITOR_LAUNCHER //new
+
+static WinAPI::VersionResource g_editorVersion;
+
+static void OnEditorVersionInit(MemoryPatch::Editor::Version* version)
+{
+    version->file_major = g_editorVersion.major;
+    version->file_minor = g_editorVersion.minor;
+    version->file_patch = g_editorVersion.patch;
+    version->file_tweak = g_editorVersion.tweak;
+
+    version->product_major = g_editorVersion.major;
+    version->product_minor = g_editorVersion.minor;
+    version->product_patch = g_editorVersion.patch;
+    version->product_tweak = g_editorVersion.tweak;
+}
+
+static int CallAfxWinMain(void* instance, char* cmdLine)
+{
+    using TAfxWinMain = int(__stdcall*)(void*, void*, char*, int);
+
+#ifdef BUILD_64BIT
+    constexpr std::size_t ordinal = 1225;
+#else
+    constexpr std::size_t ordinal = 1207;
+#endif
+
+    void* mfc80 = WinAPI::DLL::Get("mfc80.dll");
+
+    if (!mfc80)
+        throw StringTools::ErrorFormat("Failed to load MFC80.dll!");
+
+    void* function = WinAPI::DLL::GetSymbol(
+        mfc80,
+        reinterpret_cast<const char*>(ordinal)
+    );
+
+    if (!function)
+        throw StringTools::ErrorFormat("Failed to load MFC80.dll!");
+
+    return reinterpret_cast<TAfxWinMain>(function)(
+        instance,
+        nullptr,
+        cmdLine,
+        10
+    );
+}
+
+#endif
+
+
 void Launcher::LoadEngine()
 {
 	void* msvcr80 = WinAPI::DLL::Load("msvcr80.dll");
@@ -1269,6 +1351,75 @@ void Launcher::LoadEngine()
 	}
 }
 
+
+#ifdef EDITOR_LAUNCHER
+
+void Launcher::LoadEditor()
+{
+    // Load CrySystem.dll
+    g_pCrySystem = LauncherCommon::LoadDLL("CrySystem.dll");
+
+    const int gameBuild = LauncherCommon::GetGameBuild(g_pCrySystem);
+    LauncherCommon::VerifyGameBuild(gameBuild);
+
+    // Load the Crysis Editor executable
+    g_pEditor = LauncherCommon::LoadEXE("Editor.exe");
+
+    WinAPI::VersionResource editorVersion;
+
+    if (!WinAPI::GetVersionResource(g_pEditor, editorVersion))
+    {
+        throw StringTools::SysErrorFormat(
+            "Failed to get the Editor version!"
+        );
+    }
+
+    if (editorVersion.tweak != 5767)
+    {
+        throw StringTools::ErrorFormat(
+            "Unsupported Crysis 1 Editor build %d!",
+            editorVersion.tweak
+        );
+    }
+
+    g_editorVersion = editorVersion;
+
+    // Load required engine DLLs
+    g_pCryGame = LauncherCommon::LoadDLL("CryGame.dll");
+    g_pCryAction = LauncherCommon::LoadDLL("CryAction.dll");
+    g_pCryNetwork = LauncherCommon::LoadDLL("CryNetwork.dll");
+
+    // Load renderer
+    if (LauncherCommon::IsDX10())
+    {
+        g_pCryRenderD3D10 =
+            LauncherCommon::LoadDLL("CryRenderD3D10.dll");
+    }
+    else
+    {
+        g_pCryRenderD3D9 =
+            LauncherCommon::LoadDLL("CryRenderD3D9.dll");
+    }
+
+    // Load FMOD
+#ifdef BUILD_64BIT
+    g_pFmodEx = LauncherCommon::LoadDLL("fmodex64.dll");
+    g_pXToolkitPro =
+        LauncherCommon::LoadDLL("ToolkitPro1042vc80x64.dll");
+#else
+    g_pFmodEx = LauncherCommon::LoadDLL("fmodex.dll");
+    g_pXToolkitPro =
+        LauncherCommon::LoadDLL("ToolkitPro1042vc80.dll");
+#endif
+
+    // Load sound system
+    g_pCrySoundSystem =
+        LauncherCommon::LoadDLL("CrySoundSystem.dll");
+}
+
+#endif
+
+
 void Launcher::PatchEngine()
 {
 	if (g_pCryAction)
@@ -1387,6 +1538,148 @@ void Launcher::PatchEngine()
 	}
 }
 
+
+#ifdef EDITOR_LAUNCHER
+
+void Launcher::PatchEditor()
+{
+    if (g_pEditor)
+    {
+        MemoryPatch::Editor::FixBrokenPanels(
+            g_pEditor,
+            g_editorVersion.tweak
+        );
+
+        MemoryPatch::Editor::HookVersionInit(
+            g_pEditor,
+            g_editorVersion.tweak,
+            &OnEditorVersionInit
+        );
+    }
+
+    if (g_pCryAction)
+    {
+        MemoryPatch::CryAction::HookCryWarning(
+            g_pCryAction,
+            &LauncherCommon::OnCryWarning
+        );
+
+        MemoryPatch::CryAction::HookGameWarning(
+            g_pCryAction,
+            &LauncherCommon::OnGameWarning
+        );
+    }
+
+    if (g_pCryNetwork)
+    {
+        MemoryPatch::CryNetwork::HookCryWarning(
+            g_pCryNetwork,
+            &LauncherCommon::OnCryWarning
+        );
+    }
+
+    if (g_pCrySystem)
+    {
+        MemoryPatch::CrySystem::AllowDX9VeryHighSpec(g_pCrySystem);
+
+        MemoryPatch::CrySystem::FixCPUInfoOverflow(g_pCrySystem);
+
+        MemoryPatch::CrySystem::HookError(
+            g_pCrySystem,
+            &CrashLogger::OnEngineError
+        );
+
+        MemoryPatch::CrySystem::HookCryWarning(
+            g_pCrySystem,
+            &LauncherCommon::OnCryWarning
+        );
+    }
+
+    if (g_pCryRenderD3D9)
+    {
+        MemoryPatch::CryRenderD3D9::HookAdapterInfo(
+            g_pCryRenderD3D9,
+            &LauncherCommon::OnD3D9Info
+        );
+    }
+
+    if (g_pCryRenderD3D10)
+    {
+        MemoryPatch::CryRenderD3D10::FixLowRefreshRateBug(
+            g_pCryRenderD3D10
+        );
+
+        MemoryPatch::CryRenderD3D10::HookAdapterInfo(
+            g_pCryRenderD3D10,
+            &LauncherCommon::OnD3D10Info
+        );
+
+        MemoryPatch::CryRenderD3D10::HookInitAPI(
+            g_pCryRenderD3D10,
+            &LauncherCommon::OnD3D10Init
+        );
+    }
+
+    if (g_pFmodEx &&
+        LauncherCommon::IsFMODExVersionCorrect(
+            g_pFmodEx,
+            LauncherCommon::GetGameBuild(nullptr)
+        ))
+    {
+        MemoryPatch::FMODEx::Fix64BitHeapAddressTruncation(
+            g_pFmodEx
+        );
+    }
+}
+
+#endif
+
+
+
+#ifdef EDITOR_LAUNCHER
+
+int Launcher::StartEditor(char* cmdLine)
+{
+    using TAfxWinMain = int(__stdcall*)(void*, void*, char*, int);
+
+#ifdef BUILD_64BIT
+    constexpr std::size_t ordinal = 1225;
+#else
+    constexpr std::size_t ordinal = 1207;
+#endif
+
+    void* mfc80 = WinAPI::DLL::Get("mfc80.dll");
+
+    if (!mfc80)
+    {
+        throw StringTools::ErrorFormat(
+            "Failed to load MFC80.dll!"
+        );
+    }
+
+    void* function = WinAPI::DLL::GetSymbol(
+        mfc80,
+        reinterpret_cast<const char*>(ordinal)
+    );
+
+    if (!function)
+    {
+        throw StringTools::ErrorFormat(
+            "Failed to find AfxWinMain in MFC80.dll!"
+        );
+    }
+
+    return reinterpret_cast<TAfxWinMain>(function)(
+        g_pEditor,
+        nullptr,
+        cmdLine,
+        10
+    );
+}
+
+#endif
+
+
 void Launcher::StartEngine()
 {
 	const bool oldAction = WinAPI::CmdLine::HasArg("-oldaction");
@@ -1397,7 +1690,10 @@ void Launcher::StartEngine()
 	{
 		using CryActionEntry = IGameFramework::TEntryFunction;
 
-		auto entry = static_cast<CryActionEntry>(WinAPI::DLL::GetSymbol(g_pCryAction, "CreateGameFramework"));
+		auto entry = reinterpret_cast<CryActionEntry>(
+			WinAPI::DLL::GetSymbol(g_pCryAction, "CreateGameFramework")
+		);
+
 		if (!entry)
 		{
 			throw StringTools::ErrorFormat("The CryAction DLL is not valid!");
@@ -1476,6 +1772,7 @@ void Launcher::StartEngine()
 
 	gEnv->pSystem->ExecuteCommandLine();
 }
+
 
 void Launcher::OnEarlyEngineInit(ISystem* pSystem)
 {
@@ -1563,62 +1860,80 @@ struct DummySystemCallback : public ISystemUserCallback
 	void GetMemoryUsage(ICrySizer*) override {}
 };
 
-void Launcher::Run()
+
+int Launcher::Run(char* cmdLine)
 {
-	DummySystemCallback dummyCallback;
+    DummySystemCallback dummyCallback;
 
-	m_params.hInstance = WinAPI::DLL::Get(nullptr);  // EXE handle
-	m_params.pLog = &Logger::GetInstance();
-#ifdef SERVER_LAUNCHER
-	m_params.isDedicatedServer = true;
+    m_params.hInstance = WinAPI::DLL::Get(nullptr);
+    m_params.pLog = &Logger::GetInstance();
+
+    if (WinAPI::GetApplicationPath().filename().string().find("CryMP") != 0)
+    {
+        throw StringTools::ErrorFormat("Invalid name of the executable!");
+    }
+
+    if (WinAPI::CmdLine::HasArg("-mod"))
+    {
+        throw StringTools::ErrorFormat("Mods are not supported!");
+    }
+
+    this->InitWorkingDirectory();
+    this->SetCmdLine();
+
+#ifdef EDITOR_LAUNCHER
+
+    // Crysis Editor startup
+    this->LoadEditor();
+    this->PatchEditor();
+
+    return this->StartEditor(cmdLine);
+
 #else
-	m_params.isDedicatedServer = WinAPI::CmdLine::HasArg("-dedicated");
+
+    // Client / Server startup
+#ifdef SERVER_LAUNCHER
+    m_params.isDedicatedServer = true;
+#else
+    m_params.isDedicatedServer = WinAPI::CmdLine::HasArg("-dedicated");
 #endif
 
-	if (WinAPI::CmdLine::HasArg("-headless"))
-	{
-		m_params.pUserCallback = &dummyCallback;
-		m_params.isDedicatedServer = true;
-	}
+    if (WinAPI::CmdLine::HasArg("-headless"))
+    {
+        m_params.pUserCallback = &dummyCallback;
+        m_params.isDedicatedServer = true;
+    }
 
-	if (WinAPI::GetApplicationPath().filename().string().find("CryMP") != 0)
-	{
-		throw StringTools::ErrorFormat("Invalid name of the executable!");
-	}
+    CryMemoryManager::Init();
 
-	if (WinAPI::CmdLine::HasArg("-mod"))
-	{
-		throw StringTools::ErrorFormat("Mods are not supported!");
-	}
+    this->LoadEngine();
+    this->PatchEngine();
 
-	this->InitWorkingDirectory();
-	this->SetCmdLine();
+    RandomGenerator::Init();
 
-	CryMemoryManager::Init();
+    if (m_params.isDedicatedServer)
+    {
+        Server server;
+        gServer = &server;
 
-	this->LoadEngine();
-	this->PatchEngine();
+        this->StartEngine();
 
-	RandomGenerator::Init();
-
-	if (m_params.isDedicatedServer)
-	{
-		Server server;
-		gServer = &server;
-
-		this->StartEngine();
-
-		gServer->UpdateLoop();
-	}
-	else
-	{
+        gServer->UpdateLoop();
+    }
+    else
+    {
 #ifdef CLIENT_LAUNCHER
-		Client client;
-		gClient = &client;
+        Client client;
+        gClient = &client;
 
-		this->StartEngine();
+        this->StartEngine();
 
-		gClient->UpdateLoop();
+        gClient->UpdateLoop();
 #endif
-	}
+    }
+
+    return 0;
+
+#endif
 }
+
