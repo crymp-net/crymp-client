@@ -3,7 +3,7 @@
 #include <cstdio>
 #endif
 
-#include "Library/OS.h"
+#include "Library/WinAPI.h"
 #include "Library/StringTools.h"
 
 #include "Launcher.h"
@@ -44,7 +44,7 @@ int __stdcall WinMain(void*, void*, char* cmdLine, int)
 #ifdef CRYMP_CONSOLE_APP
         std::fprintf(stderr, "%s\n", error.what());
 #else
-        OS::ErrorBox(error.what());
+        WinAPI::ErrorBox(error.what());
 #endif
         return 1;
     }
