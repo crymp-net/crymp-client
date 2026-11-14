@@ -65,6 +65,11 @@ jobs:
           chmod 755 CryMP-Client32.exe CryMP-Client64.exe
           zip "CryMP-Client-${{ github.ref_name }}.zip" CryMP-Client32.* CryMP-Client64.*
 
+      - name: Create server zip
+        run: |
+          chmod 755 CryMP-Server32.exe CryMP-Server64.exe
+          zip -r "CryMP-Server-${{ github.ref_name }}.zip" CryMP-Server32.* CryMP-Server64.* CryMP-Server/
+
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
